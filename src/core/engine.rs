@@ -1,26 +1,29 @@
 use crate::core::*;
 use crate::rendering::*;
 use crate::input::*;
+use crate::world::*;
 
 use miniquad::*;
-use std::time::{Instant, Duration};
 
 pub struct GameEngine {
-    game: Box<dyn Game>,
-    settings: GameSettings,
+    _game: Box<dyn Game>,
+    _settings: GameSettings,
     input_engine: InputEngine,
     rendering_engine: RenderingEngine,
+    world_engine: WorldEngine,
 }
 impl GameEngine {
-    pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
+    pub fn new(game: Box<dyn Game>, settings: GameSettings, _ctx: &mut Context) -> Self {
         let input_engine = InputEngine::new();
         let rendering_engine = RenderingEngine::new();
+        let world_engine = WorldEngine::new();
 
         GameEngine {
-            game,
-            settings,
+            _game: game,
+            _settings: settings,
             input_engine,
             rendering_engine,
+            world_engine,
         }
     }
 }
@@ -41,9 +44,7 @@ impl EventHandler for GameEngine {
         self.input_engine.key_up(keycode);
     }
 
-
-
     fn draw(&mut self, mut ctx: &mut Context) {
-        self.rendering_engine.update(&mut ctx);
+        self.rendering_engine.update(&mut ctx, self.world_engine.world_mut());
     }
 }

@@ -17,7 +17,7 @@ impl InputEngine {
     }
 
     pub fn update(&mut self) {
-        for (key, mut state) in &mut self.keys {
+        for (_key, state) in &mut self.keys {
             state.rollover();
         }
 
