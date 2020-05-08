@@ -6,5 +6,5 @@ pub fn main() {
 
 pub struct MyGame;
 impl Game for MyGame {
-
+    fn initialize(&mut self, emd: Emerald) {}
 }

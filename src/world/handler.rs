@@ -12,12 +12,6 @@ impl<'a> WorldHandler<'a> {
         }
     }
 
-    pub fn pop_world() -> Option<World> {
-        None
-    }
-
-    pub fn push_world() {}
-
     pub fn physics(&mut self) -> PhysicsHandler {
         let world = self.engine.world_mut();
 

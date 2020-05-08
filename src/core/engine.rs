@@ -16,7 +16,8 @@ impl GameEngine {
     pub fn new(game: Box<dyn Game>, settings: GameSettings, _ctx: &mut Context) -> Self {
         let input_engine = InputEngine::new();
         let rendering_engine = RenderingEngine::new();
-        let world_engine = WorldEngine::new();
+        let mut world_engine = WorldEngine::new();
+        world_engine.push(World::new());
 
         GameEngine {
             _game: game,
