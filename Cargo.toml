@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-miniquad = "0.2.55"
+miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
 paintbrush = { path = "../paintbrush" }
 gilrs = "0.7.4"
 quad-gl = "0.1.3"

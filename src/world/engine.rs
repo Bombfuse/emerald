@@ -10,11 +10,9 @@ impl WorldEngine {
         }
     }
 
-    pub fn pop(&mut self) -> Option<World> {
-        None
-    }
+    pub fn pop(&mut self) -> Option<World> { self.world_stack.pop() }
 
-    pub fn push(&mut self, world: World) { }
+    pub fn push(&mut self, world: World) { self.world_stack.push(world) }
 
     pub fn world(&self) -> &World {
         if self.world_stack.len() == 0 {
