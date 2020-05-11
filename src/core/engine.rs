@@ -15,7 +15,7 @@ pub struct GameEngine {
 impl GameEngine {
     pub fn new(game: Box<dyn Game>, settings: GameSettings, _ctx: &mut Context) -> Self {
         let input_engine = InputEngine::new();
-        let rendering_engine = RenderingEngine::new();
+        let rendering_engine = RenderingEngine::new(settings.render_settings.clone());
         let mut world_engine = WorldEngine::new();
         world_engine.push(World::new());
 
@@ -33,9 +33,7 @@ impl EventHandler for GameEngine {
 
     }
 
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32) {
-        println!("{:?}", (x, y));
-    }
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32) {}
 
     fn key_down_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _keymods: KeyMods, _repeat: bool) {
         self.input_engine.key_down(keycode);

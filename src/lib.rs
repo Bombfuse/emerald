@@ -7,7 +7,6 @@ pub use crate::core::*;
 pub use crate::rendering::*;
 pub use crate::input::*;
 pub use crate::world::*;
-
 pub use paintbrush::*;
 
 use miniquad::*;
