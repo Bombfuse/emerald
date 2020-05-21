@@ -1,4 +1,5 @@
 use crate::world::*;
+use crate::assets::*;
 
 pub struct Emerald<'a> {
     world_engine: &'a mut WorldEngine,
@@ -10,14 +11,22 @@ impl<'a> Emerald<'a> {
         }
     }
 
+    /// Asset loading
+    pub fn loader(&mut self) -> AssetLoader {
+        AssetLoader::new()
+    }
 
     /// World
-    pub fn world(&mut self) -> WorldHandler {
-        WorldHandler::new(&mut self.world_engine)
+    pub fn world(&mut self) -> &mut World {
+        self.world_engine.world_mut()
+    }
+    
+    pub fn world_borrow(&mut self) -> &World {
+        self.world_engine.world()
     }
 
     pub fn create_world(&mut self) -> World {
-        World::new()
+        self.world_engine.create_world()
     }
 
     pub fn push_world(&mut self, world: World) { self.world_engine.push(world) }

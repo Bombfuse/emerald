@@ -13,11 +13,12 @@ pub struct GameEngine {
     world_engine: WorldEngine,
 }
 impl GameEngine {
-    pub fn new(game: Box<dyn Game>, settings: GameSettings, _ctx: &mut Context) -> Self {
+    pub fn new(game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
         let input_engine = InputEngine::new();
-        let rendering_engine = RenderingEngine::new(settings.render_settings.clone());
+        let rendering_engine = RenderingEngine::new(&mut ctx, settings.render_settings.clone());
         let mut world_engine = WorldEngine::new();
-        world_engine.push(World::new());
+        let base_world = world_engine.create_world();
+        world_engine.push(base_world);
 
         GameEngine {
             _game: game,
