@@ -1,5 +1,5 @@
 use crate::*;
-use miniquad::{Bindings, FilterMode, Context};
+use miniquad::{Bindings, FilterMode, Context, BufferType, Buffer};
 
 use std::fs::File;
 use std::path::Path;
@@ -22,6 +22,20 @@ impl Texture {
         Self::from_png_bytes(&mut ctx, &bytes)
     }
 
+    pub fn default(mut ctx: &mut Context) -> Result<Self, EmeraldError> {
+        let pixels: [u8; 4 * 4 * 4] = [
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00,
+            0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        ];
+
+        let texture = miniquad::Texture::from_rgba8(ctx, 4, 4, &pixels);
+        
+        Self::from_texture(&mut ctx, texture)
+    }
+
     pub fn from_png_bytes(ctx: &mut Context, bytes: &[u8]) -> Result<Self, EmeraldError> {
         let img = image::load_from_memory(&bytes)
             .unwrap_or_else(|e| panic!(e))
@@ -41,7 +55,7 @@ impl Texture {
     ) -> Result<Self, EmeraldError> {
         let texture = miniquad::Texture::from_rgba8(&mut ctx, width, height, bytes);
 
-        Self::from_texture(&mut ctx, texture)
+        Self::from_texture(&mut ctx, texture)   
     }
 
     pub fn from_texture(ctx: &mut miniquad::Context, texture: miniquad::Texture) -> Result<Self, EmeraldError> {
@@ -68,8 +82,7 @@ impl Texture {
     }
 }
 
-
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub struct TextureKey(usize);
 impl Default for TextureKey {
     fn default() -> TextureKey {

@@ -17,7 +17,7 @@ pub use paintbrush::*;
 pub use nphysics2d::nalgebra::Vector2;
 //
 
-use miniquad::*;
+use miniquad::{conf, UserData};
 
 pub fn start(game: Box<dyn Game>, settings: GameSettings) {
     miniquad::start(conf::Conf::default(), move |mut ctx| {

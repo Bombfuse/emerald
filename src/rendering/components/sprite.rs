@@ -8,7 +8,7 @@ pub struct Sprite {
     pub scale: Vector2<f32>,
     pub offset: Vector2<f32>,
     pub color: Color,
-    pub(crate) texture: TextureKey,
+    pub(crate) texture_key: TextureKey,
 }
 impl Sprite {
 }
@@ -21,7 +21,7 @@ impl Default for Sprite {
             scale: Vector2::new(1.0, 1.0),
             offset: Vector2::new(0.0, 0.0),
             color: WHITE,
-            texture: TextureKey::default(),
+            texture_key: TextureKey::default(),
         }
     }
 }

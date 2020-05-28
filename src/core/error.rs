@@ -17,11 +17,3 @@ impl std::convert::From<std::io::Error> for EmeraldError {
         }
     }
 }
-
-// impl std::convert::From<tiled::TiledError> for EmeraldError {
-//     fn from(t: tiled::TiledError) -> EmeraldError {
-//         EmeraldError {
-//             message: t.description().to_string(),
-//         }
-//     }
-// }

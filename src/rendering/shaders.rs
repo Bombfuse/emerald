@@ -2,15 +2,15 @@
 use miniquad::*;
 
 #[repr(C)]
-struct Vec2 {
-    x: f32,
-    y: f32,
+pub struct Vec2 {
+    pub x: f32,
+    pub y: f32,
 }
 
 #[repr(C)]
-struct Vertex {
-    pos: Vec2,
-    uv: Vec2,
+pub struct Vertex {
+    pub pos: Vec2,
+    pub uv: Vec2,
 }
 
 #[repr(C)]
