@@ -1,4 +1,5 @@
 use crate::*;
+use crate::rendering::shaders::*;
 use miniquad::{Bindings, FilterMode, Context, BufferType, Buffer};
 
 use std::fs::File;
@@ -60,7 +61,12 @@ impl Texture {
 
     pub fn from_texture(ctx: &mut miniquad::Context, texture: miniquad::Texture) -> Result<Self, EmeraldError> {
         #[rustfmt::skip]
-        let vertices: [f32; 8] = [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
+        let vertices: [Vertex; 4] = [
+            Vertex { pos : Vec2 { x: -0.1, y: -0.1 }, uv: Vec2 { x: 0., y: 1. } },
+            Vertex { pos : Vec2 { x:  0.1, y: -0.1 }, uv: Vec2 { x: 1., y: 1. } },
+            Vertex { pos : Vec2 { x:  0.1, y:  0.1 }, uv: Vec2 { x: 1., y: 0. } },
+            Vertex { pos : Vec2 { x: -0.1, y:  0.1 }, uv: Vec2 { x: 0., y: 0. } },
+        ];
         let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
 
         let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
@@ -82,10 +88,15 @@ impl Texture {
     }
 }
 
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
-pub struct TextureKey(usize);
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct TextureKey(String);
+impl TextureKey {
+    pub fn new<T: Into<String>>(texture_path: T) -> Self {
+        TextureKey(texture_path.into())
+    }
+}
 impl Default for TextureKey {
     fn default() -> TextureKey {
-        TextureKey(0)
+        TextureKey(String::from("emerald_default_texture"))
     }
 }

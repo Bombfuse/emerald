@@ -15,7 +15,7 @@ pub struct RenderingEngine {
 }
 impl RenderingEngine {
     pub fn new(mut ctx: &mut Context, settings: RenderSettings) -> Self {
-        let shader = Shader::new(ctx, VERTEX, FRAGMENT, META);
+        let shader = Shader::new(ctx, VERTEX, FRAGMENT, META).unwrap();
 
         let pipeline = Pipeline::new(
             ctx,
@@ -69,16 +69,13 @@ impl RenderingEngine {
     }
 
     pub fn sprite(&mut self, mut ctx: &mut Context, path: &str) -> Result<Sprite, EmeraldError> {
-        // let key = String::from(path);
+        let key = TextureKey::new(path);
 
-        // if !self.textures.contains_key(&key) {
-        //     let texture = Texture::new(&mut ctx, path)?;
-        //     self.textures.insert(key.clone(), texture);
-        // }
+        if !self.textures.contains_key(&key) {
+            let texture = Texture::new(&mut ctx, path)?;
+            self.textures.insert(key.clone(), texture);
+        }
         
-        // let mut texture = self.textures.get_mut(&key).unwrap();
-
-
-        Ok(Sprite::default())
+        Ok(Sprite::from_texture(key))
     }
 }

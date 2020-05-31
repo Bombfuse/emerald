@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct Sprite {
     pub target: Rectangle,
     pub position: Vector2<f32>,
@@ -11,6 +11,12 @@ pub struct Sprite {
     pub(crate) texture_key: TextureKey,
 }
 impl Sprite {
+    pub fn from_texture(texture_key: TextureKey) -> Self {
+        let mut sprite = Sprite::default();
+        sprite.texture_key = texture_key;
+
+        sprite
+    }
 }
 impl Default for Sprite {
     fn default() -> Sprite {
