@@ -62,10 +62,10 @@ impl Texture {
     pub fn from_texture(ctx: &mut miniquad::Context, texture: miniquad::Texture) -> Result<Self, EmeraldError> {
         #[rustfmt::skip]
         let vertices: [Vertex; 4] = [
-            Vertex { pos : Vec2 { x: -0.1, y: -0.1 }, uv: Vec2 { x: 0., y: 1. } },
-            Vertex { pos : Vec2 { x:  0.1, y: -0.1 }, uv: Vec2 { x: 1., y: 1. } },
-            Vertex { pos : Vec2 { x:  0.1, y:  0.1 }, uv: Vec2 { x: 1., y: 0. } },
-            Vertex { pos : Vec2 { x: -0.1, y:  0.1 }, uv: Vec2 { x: 0., y: 0. } },
+            Vertex { pos : Vec2 { x: 0.0, y: 0.0 }, uv: Vec2 { x: 0., y: 0. } },
+            Vertex { pos : Vec2 { x: texture.width as f32, y: 0.0 }, uv: Vec2 { x: 1., y: 0. } },
+            Vertex { pos : Vec2 { x: texture.width as f32, y: texture.height as f32 }, uv: Vec2 { x: 1., y: 1. } },
+            Vertex { pos : Vec2 { x: 0.0, y: texture.height as f32 }, uv: Vec2 { x: 0., y: 1. } },
         ];
         let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
 

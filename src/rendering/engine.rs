@@ -7,6 +7,7 @@ use paintbrush::*;
 use miniquad::{Pipeline, Bindings, BufferType, BufferLayout, Context, Buffer, VertexFormat, VertexAttribute, Shader};
 use legion::prelude::{Schedulable, Query, SystemBuilder, Read, Write, IntoQuery};
 use std::collections::HashMap;
+use glam::Mat4;
 
 pub struct RenderingEngine {
     settings: RenderSettings,
@@ -63,7 +64,8 @@ impl RenderingEngine {
 
         ctx.apply_bindings(&texture.bindings);
         ctx.apply_uniforms(&Uniforms {
-            offset: (position.x, position.y)
+            offset: (position.x, position.y),
+            viewSize: (800.0, 600.0),
         });
         ctx.draw(0, 6, 1);
     }
