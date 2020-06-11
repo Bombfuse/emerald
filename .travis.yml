@@ -1,0 +1,8 @@
+language: rust
+rust:
+  - stable
+  - nightly
+jobs:
+  allow_failures:
+    - rust: nightly
+  fast_finish: true
