@@ -20,7 +20,13 @@ pub use nphysics2d::nalgebra::Vector2;
 use miniquad::{conf, UserData};
 
 pub fn start(game: Box<dyn Game>, settings: GameSettings) {
-    miniquad::start(conf::Conf::default(), move |mut ctx| {
+    let mut config = conf::Conf::default();
+    config.window_title = settings.title.clone();
+    config.window_width = settings.render_settings.window_size.0 as i32;
+    config.window_height = settings.render_settings.window_size.1 as i32;
+    config.fullscreen = settings.render_settings.fullscreen;
+
+    miniquad::start(config, move |mut ctx| {
         UserData::owning(GameEngine::new(game, settings, &mut ctx), ctx)
     });
 }

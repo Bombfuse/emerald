@@ -56,7 +56,7 @@ impl Texture {
     ) -> Result<Self, EmeraldError> {
         let texture = miniquad::Texture::from_rgba8(&mut ctx, width, height, bytes);
 
-        Self::from_texture(&mut ctx, texture)   
+        Self::from_texture(&mut ctx, texture)
     }
 
     pub fn from_texture(ctx: &mut miniquad::Context, texture: miniquad::Texture) -> Result<Self, EmeraldError> {
