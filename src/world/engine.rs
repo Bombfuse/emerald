@@ -69,7 +69,7 @@ impl WorldEngine {
     }
 
     pub fn physics(&mut self) -> PhysicsHandler {
-        let mut world = self.world();
+        let world = self.world();
 
         PhysicsHandler::new(&mut world.physics_engine, &mut world.inner)
     }

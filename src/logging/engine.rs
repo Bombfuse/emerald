@@ -7,7 +7,7 @@ pub(crate) enum Log {
 }
 
 
-pub(crate) struct LoggingEngine {
+pub struct LoggingEngine {
     logs: Vec<Log>,
 }
 impl LoggingEngine {
@@ -29,7 +29,25 @@ impl LoggingEngine {
         self.logs = Vec::with_capacity(self.logs.len());
     }
 
-    pub fn log(&mut self, log: Log) {
+    fn log(&mut self, log: Log) {
         self.logs.push(log);
+    }
+
+    pub fn info<T: Into<String>>(&mut self, msg: T) {
+        let log = Log::Info(msg.into());
+        
+        self.log(log);
+    }
+
+    pub fn warning<T: Into<String>>(&mut self, msg: T) {
+        let log = Log::Warning(msg.into());
+        
+        self.log(log);
+    }
+
+    pub fn error<T: Into<String>>(&mut self, msg: T) {
+        let log = Log::Error(msg.into());
+        
+        self.log(log);
     }
 }

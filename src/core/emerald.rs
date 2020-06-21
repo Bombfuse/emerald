@@ -33,8 +33,8 @@ impl<'a> Emerald<'a> {
     }
 
     /// Logging
-    pub fn logger(&mut self) -> LoggingHandler {
-        LoggingHandler::new(&mut self.logging_engine)
+    pub fn logger(&mut self) -> &mut LoggingEngine {
+        &mut self.logging_engine
     }
 
     /// Input

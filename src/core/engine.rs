@@ -53,7 +53,6 @@ impl EventHandler for GameEngine {
         self.game.update(emd);
 
         self.logging_engine.update();
-        self.rendering_engine.update(&mut ctx, self.world_engine.world());
     }
 
     fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32) {}
