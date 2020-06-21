@@ -35,11 +35,11 @@ impl InputEngine {
         return self.get_key_state(keycode);
     }
 
-    pub fn key_down(&mut self, keycode: KeyCode) {
+    pub fn set_key_down(&mut self, keycode: KeyCode) {
         self.set_key_pressed(keycode, true)
     }
 
-    pub fn key_up(&mut self, keycode: KeyCode) {
+    pub fn set_key_up(&mut self, keycode: KeyCode) {
         self.set_key_pressed(keycode, false)
     }
 

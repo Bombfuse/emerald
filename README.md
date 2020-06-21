@@ -4,6 +4,12 @@
 [![Crates.io](https://img.shields.io/crates/v/emerald.svg)](https://crates.io/crates/emerald)
 [![Build Status](https://travis-ci.com/Bombfuse/emerald.svg?branch=master)](https://travis-ci.com/Bombfuser/emerald)
 
+## IN DEVELOPMENT
+## WIP, Not finished
+* Fonts
+* Audio
+* WASM/Android
+
 ## Lite
 
 A fully featured 2D engine with minimal dependencies.

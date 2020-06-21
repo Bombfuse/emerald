@@ -1,4 +1,3 @@
-use std::error::Error;
 
 #[derive(Debug, Clone)]
 pub struct EmeraldError {
@@ -10,10 +9,18 @@ impl std::fmt::Display for EmeraldError {
     }
 }
 
+
 impl std::convert::From<std::io::Error> for EmeraldError {
     fn from(e: std::io::Error) -> EmeraldError {
         EmeraldError {
-            message: e.description().to_string(),
+            message: e.to_string(),
+        }
+    }
+}
+impl std::convert::From<&str> for EmeraldError {
+    fn from(e: &str) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string(),
         }
     }
 }

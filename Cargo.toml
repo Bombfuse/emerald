@@ -10,8 +10,12 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# Nightly dependencies
 miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
 paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
+fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
+
+# Dependencies
 gilrs = "0.7.4"
 nphysics2d = "0.15.0"
 image = "0.23.4"

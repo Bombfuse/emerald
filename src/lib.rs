@@ -4,6 +4,7 @@ mod input;
 mod world;
 mod types;
 mod assets;
+mod logging;
 
 pub use crate::assets::*;
 pub use crate::core::*;
@@ -12,6 +13,7 @@ pub use crate::input::*;
 pub use crate::world::*;
 pub use crate::types::*;
 pub use paintbrush::*;
+pub use logging::*;
 
 // physics/math/collision re-exports
 pub use nphysics2d::nalgebra::Vector2;
