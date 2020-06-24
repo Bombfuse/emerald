@@ -23,13 +23,7 @@ impl<'a> AssetLoader<'a> {
     }
 
     pub fn aseprite<T: Into<String>>(&mut self, path_to_texture: T, path_to_animations: T) -> Result<Aseprite, EmeraldError> {
-        let texture_path: String = path_to_texture.into();
-        let animation_path: String = path_to_animations.into();
-
-        let animation_file = self.file(animation_path)?;
-        let texture_file = self.file(texture_path)?;
-
-        self.rendering_engine.aseprite(&mut self.quad_ctx, texture_file, animation_file)
+        self.rendering_engine.aseprite(&mut self.quad_ctx, path_to_texture.into(), path_to_animations.into())
     }
 
     pub fn sprite(&mut self, path: &str) -> Result<Sprite, EmeraldError> {

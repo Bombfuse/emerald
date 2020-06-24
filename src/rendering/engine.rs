@@ -84,19 +84,28 @@ impl RenderingEngine {
         // Render texture font at target characters in sequence
     }
 
-    pub fn aseprite(&mut self, mut ctx: &mut Context, texture_file: File, animation_file: File) -> Result<Aseprite, EmeraldError> {
-        Aseprite::new(texture_file, animation_file)
+    pub fn aseprite<T: Into<String>>(&mut self, mut ctx: &mut Context, texture_file: T, animation_file: T) -> Result<Aseprite, EmeraldError> {
+        let sprite = self.sprite(&mut ctx, texture_file)?;
+
+        Aseprite::new(sprite, animation_file)
     }
 
-    pub fn sprite(&mut self, mut ctx: &mut Context, path: &str) -> Result<Sprite, EmeraldError> {
-        let key = TextureKey::new(path);
+    pub fn sprite<T: Into<String>>(&mut self, mut ctx: &mut Context, path: T) -> Result<Sprite, EmeraldError> {
+        let key = self.texture(&mut ctx, path.into())?;
+
+        Ok(Sprite::from_texture(key))
+    }
+
+    pub fn texture<T: Into<String>>(&mut self,  mut ctx: &mut Context, path: T) -> Result<TextureKey, EmeraldError> {
+        let path: String = path.into();
+        let key = TextureKey::new(path.clone());
 
         if !self.textures.contains_key(&key) {
             let texture = Texture::new(&mut ctx, path)?;
             self.textures.insert(key.clone(), texture);
         }
-        
-        Ok(Sprite::from_texture(key))
+
+        Ok(key)
     }
 
     pub fn font(&mut self, mut ctx: &mut Context, path: &str, font_size: u16) -> Result<FontKey, EmeraldError> {

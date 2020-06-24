@@ -13,12 +13,12 @@ pub struct Aseprite {
     pub animations: HashMap<String, AsepriteAnimation>,
 }
 impl Aseprite {
-    pub(crate) fn new(texture_file: File, animation_file: File) -> Result<Aseprite, EmeraldError> {
-        let mut aseprite = Aseprite {
+    pub(crate) fn new<T: Into<String>>(sprite: Sprite, animation_file: T) -> Result<Aseprite, EmeraldError> {
+        let aseprite = Aseprite {
             animations: HashMap::new(),
             current_animation: String::from(""),
             elapsed_time: 0.0,
-            sprite: Sprite::default(),
+            sprite,
         };
 
         Ok(aseprite)
