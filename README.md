@@ -5,10 +5,20 @@
 [![Build Status](https://travis-ci.com/Bombfuse/emerald.svg?branch=master)](https://travis-ci.com/Bombfuse/emerald)
 
 ## IN DEVELOPMENT
-## WIP, Not finished
-* Fonts
-* Audio
-* WASM/Android
+[x] Sprites
+
+[] Aseprite
+
+[] Logging
+
+[] Tilemaps
+
+[] Fonts
+
+[] Audio
+
+[] WASM/Android
+
 
 ## Lite
 
@@ -46,6 +56,20 @@ Emerald uses [Legion](https://github.com/TomGillen/legion) under the hood for ex
 
 ```
 query example here
+```
+
+## [Aseprite](https://www.aseprite.org/)
+
+Emerald has built in aseprite loading and rendering. Simply load in the texture and animation file, then tell it which animations to play.
+
+```
+let mut aseprite = emd.loader()
+    .aseprite("./assets/my_texture.png", "./assets/my_animation.json").unwrap();
+
+aseprite.play("some_aseprite_animation");
+
+emd.world()
+    .insert((), Some((aseprite, Position::zero())));
 ```
 
 

@@ -17,6 +17,7 @@ pub struct RenderingEngine {
     pipeline: Pipeline,
     textures: HashMap<TextureKey, Texture>,
     fonts: HashMap<FontKey, Font>,
+    font_atlases: HashMap<FontKey, Texture>,
 }
 impl RenderingEngine {
     pub fn new(mut ctx: &mut Context, settings: RenderSettings) -> Self {
@@ -33,7 +34,8 @@ impl RenderingEngine {
         );
 
         let mut textures: HashMap<TextureKey, Texture> = HashMap::new();
-        let fonts: HashMap<FontKey, Font> = HashMap::new();
+        let fonts = HashMap::new();
+        let font_atlases = HashMap::new();
 
         let default_texture = Texture::default(&mut ctx).unwrap();
         textures.insert(TextureKey::default(), default_texture);
@@ -43,6 +45,7 @@ impl RenderingEngine {
             pipeline,
             textures,
             fonts,
+            font_atlases,
         }
     }
 
@@ -81,6 +84,10 @@ impl RenderingEngine {
         // Render texture font at target characters in sequence
     }
 
+    pub fn aseprite(&mut self, mut ctx: &mut Context, texture_file: File, animation_file: File) -> Result<Aseprite, EmeraldError> {
+        Aseprite::new(texture_file, animation_file)
+    }
+
     pub fn sprite(&mut self, mut ctx: &mut Context, path: &str) -> Result<Sprite, EmeraldError> {
         let key = TextureKey::new(path);
 
@@ -92,8 +99,8 @@ impl RenderingEngine {
         Ok(Sprite::from_texture(key))
     }
 
-    pub fn font(&mut self, mut ctx: &mut Context, path: &str, _font_size: u16) -> Result<FontKey, EmeraldError> {
-        let key = FontKey::new(path);
+    pub fn font(&mut self, mut ctx: &mut Context, path: &str, font_size: u16) -> Result<FontKey, EmeraldError> {
+        let key = FontKey::new(path, font_size);
 
         if self.fonts.contains_key(&key) {
             return Ok(key);
@@ -113,7 +120,7 @@ impl RenderingEngine {
         let size: u16 = 128;
         let mut bytes = Vec::with_capacity((size * size) as usize);
 
-        for i in 0..(size * size) {
+        for _ in 0..(size * size) {
             bytes.push(0xFF);
         }
 

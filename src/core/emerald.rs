@@ -46,7 +46,4 @@ impl<'a> Emerald<'a> {
     pub fn world(&mut self) -> &mut WorldEngine {
         &mut self.world_engine
     }
-
-    pub fn push_world(&mut self, world: World) { self.world_engine.push(world) }
-    pub fn pop_world(&mut self, world: World) -> World { self.world_engine.pop().unwrap() }
 }
