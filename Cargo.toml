@@ -21,6 +21,7 @@ nphysics2d = "0.15.0"
 image = "0.23.4"
 legion = "0.2.1"
 glam = "0.8.7"
+instant = "0.1.4"
 
 [lib]
 name = "emerald"
@@ -29,6 +30,12 @@ path = "src/lib.rs"
 [[example]]
 name = "hello_world"
 path = "examples/hello_world/main.rs"
+
+[[example]]
+name = "bunnymark"
+
+[[example]]
+name = "sprite"
 
 [target.armv7-unknown-linux-gnueabihf]
 linker = "arm-none-linux-gnueabihf-gcc"

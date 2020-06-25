@@ -5,7 +5,7 @@ pub struct World {
     pub(crate) inner: legion::prelude::World,
 }
 impl World {
-    pub fn new(universe: &mut legion::prelude::Universe) -> Self {
+    pub(crate) fn new(universe: &mut legion::prelude::Universe) -> Self {
         let physics_engine = PhysicsEngine::new();
         let inner = universe.create_world();
 

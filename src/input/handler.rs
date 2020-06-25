@@ -20,6 +20,8 @@ impl<'a> InputHandler<'a> {
     pub fn is_key_just_pressed(&mut self, key: KeyCode) -> bool {
         let key_state = self.engine.get_key_state(key);
 
+        // println!("({}, {})", key_state.was_pressed, key_state.is_pressed);
+
         key_state.is_pressed && !key_state.was_pressed
     }
 }

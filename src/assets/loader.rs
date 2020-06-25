@@ -17,7 +17,10 @@ impl<'a> AssetLoader<'a> {
 
     pub fn file<T: Into<String>>(&self, file_path: T) -> Result<File, EmeraldError> {
         let file_path: String = file_path.into();
+        println!("{}", file_path);
+
         let file = File::open(file_path)?;
+
 
         Ok(file)
     }

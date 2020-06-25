@@ -48,9 +48,11 @@ impl WorldEngine {
         C: IntoComponentSource,
     { self.world().inner.insert(tags, components) }
 
+    pub fn queryable(&mut self) -> &mut legion::world::World { &mut self.world().inner }
+    pub fn queryable_ref(&self) -> &legion::world::World { &self.world_ref().inner }
 
     /// Get a reference to the current active world.
-    pub(crate) fn world_ref(&self) -> &World {
+    pub fn world_ref(&self) -> &World {
         if self.world_stack.len() == 0 {
             panic!("There are no worlds available to process.");
         }
@@ -59,7 +61,7 @@ impl WorldEngine {
     }
 
     /// Get a mutable reference to the current active world.
-    pub(crate) fn world(&mut self) -> &mut World {
+    pub fn world(&mut self) -> &mut World {
         if self.world_stack.len() == 0 {
             panic!("There are no worlds available to process.");
         }

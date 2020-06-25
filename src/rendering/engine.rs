@@ -7,7 +7,12 @@ use crate::rendering::font::FontKey;
 use std::fs::File;
 use std::io::Read as StdIoRead;
 
-use miniquad::{Pipeline, Bindings, BufferType, BufferLayout, Context, Buffer, VertexFormat, VertexAttribute, Shader};
+use miniquad::{
+    BlendFactor, BlendState, BlendValue, Equation,
+    Pipeline, PipelineParams,
+    Bindings, BufferType, BufferLayout,
+    Context, Buffer, VertexFormat,
+    VertexAttribute, Shader};
 use legion::prelude::{Schedulable, Query, SystemBuilder, Read, Write, IntoQuery};
 use std::collections::HashMap;
 use fontdue::{Font, FontSettings};
@@ -23,7 +28,20 @@ impl RenderingEngine {
     pub fn new(mut ctx: &mut Context, settings: RenderSettings) -> Self {
         let shader = Shader::new(ctx, VERTEX, FRAGMENT, META).unwrap();
 
-        let pipeline = Pipeline::new(
+        let mut params = PipelineParams::default();
+        params.depth_write = true;
+        params.color_blend = Some(BlendState::new(
+            Equation::Add,
+            BlendFactor::Value(BlendValue::SourceAlpha),
+            BlendFactor::OneMinusValue(BlendValue::SourceAlpha))
+        );
+        params.alpha_blend = Some(BlendState::new(
+            Equation::Add,
+            BlendFactor::Zero,
+            BlendFactor::One)
+        );
+
+        let pipeline = Pipeline::with_params(
             ctx,
             &[BufferLayout::default()],
             &[
@@ -31,6 +49,7 @@ impl RenderingEngine {
                 VertexAttribute::new("uv", VertexFormat::Float2),
             ],
             shader,
+            params,
         );
 
         let mut textures: HashMap<TextureKey, Texture> = HashMap::new();
@@ -52,25 +71,23 @@ impl RenderingEngine {
     pub fn update(&mut self, mut ctx: &mut Context, world: &mut World) {
         let sprite_query = <(Read<Sprite>, Read<Position>)>::query();
 
-        ctx.clear(Some(self.settings.background_color.percentage()), None, None);
-
         ctx.begin_default_pass(Default::default());
-        
+        ctx.clear(Some(self.settings.background_color.percentage()), None, None);
         ctx.apply_pipeline(&self.pipeline);
 
         for (sprite, position) in sprite_query.iter(&mut world.inner) {
             self.render_sprite(&mut ctx, &sprite, &position);
         }
+        
         ctx.end_render_pass();
-
         ctx.commit_frame();
     }
 
-    fn render_color_rect(&mut self, ctx: &mut Context, color_rect: &ColorRect) {}
+    // fn render_color_rect(&mut self, ctx: &mut Context, color_rect: &ColorRect) {}
 
     fn render_sprite(&mut self, ctx: &mut Context, sprite: &Sprite, position: &Position) {
         let texture = self.textures.get(&sprite.texture_key).unwrap();
-
+        
         ctx.apply_bindings(&texture.bindings);
         ctx.apply_uniforms(&Uniforms {
             offset: (position.x, position.y),
@@ -79,10 +96,10 @@ impl RenderingEngine {
         ctx.draw(0, 6, 1);
     }
 
-    fn render_label(&mut self, ctx: &mut Context, label: &Label, position: &Position) {
-        // Get font texture here
-        // Render texture font at target characters in sequence
-    }
+    // fn render_label(&mut self, ctx: &mut Context, label: &Label, position: &Position) {
+    //     // Get font texture here
+    //     // Render texture font at target characters in sequence
+    // }
 
     pub fn aseprite<T: Into<String>>(&mut self, mut ctx: &mut Context, texture_file: T, animation_file: T) -> Result<Aseprite, EmeraldError> {
         let sprite = self.sprite(&mut ctx, texture_file)?;

@@ -11,5 +11,7 @@ impl ButtonState {
         }
     }
 
-    pub fn rollover(&mut self) { self.was_pressed = self.is_pressed }
+    pub fn rollover(&mut self) {
+        self.was_pressed = self.is_pressed;
+    }
 }

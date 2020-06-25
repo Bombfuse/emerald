@@ -4,7 +4,10 @@ use crate::rendering::*;
 use crate::input::*;
 use crate::logging::*;
 
+use std::time::Duration;
+
 pub struct Emerald<'a> {
+    delta: Duration,
     quad_ctx: &'a mut miniquad::Context,
     rendering_engine: &'a mut RenderingEngine,
     logging_engine: &'a mut LoggingEngine,
@@ -12,19 +15,26 @@ pub struct Emerald<'a> {
     world_engine: &'a mut WorldEngine,
 }
 impl<'a> Emerald<'a> {
-    pub(crate) fn new(quad_ctx: &'a mut miniquad::Context,
+    pub(crate) fn new(
+        delta: Duration,
+        quad_ctx: &'a mut miniquad::Context,
         input_engine: &'a mut InputEngine,
         world_engine: &'a mut WorldEngine,
         logging_engine: &'a mut LoggingEngine,
         rendering_engine: &'a mut RenderingEngine) -> Self {
 
         Emerald {
+            delta,
             quad_ctx,
             rendering_engine,
             input_engine,
             logging_engine,
             world_engine,
         }
+    }
+
+    pub fn delta(&self) -> f32 {
+        self.delta.as_secs_f32()
     }
 
     /// Asset loading

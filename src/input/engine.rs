@@ -16,14 +16,14 @@ impl InputEngine {
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn rollover(&mut self) {
         for (_key, state) in &mut self.keys {
             state.rollover();
         }
 
-        while let Some(Event { id, event, time }) = self.gilrs.next_event() {
-            println!("{:?} New event from {}: {:?}", time, id, event);
-        }
+        // while let Some(Event { id, event, time }) = self.gilrs.next_event() {
+        //     println!("{:?} New event from {}: {:?}", time, id, event);
+        // }
     }
 
     pub fn get_key_state(&mut self, keycode: KeyCode) -> ButtonState {
@@ -35,7 +35,7 @@ impl InputEngine {
         return self.get_key_state(keycode);
     }
 
-    pub fn set_key_down(&mut self, keycode: KeyCode) {
+    pub fn set_key_down(&mut self, keycode: KeyCode, repeat: bool) {
         self.set_key_pressed(keycode, true)
     }
 
