@@ -19,6 +19,9 @@ pub use logging::*;
 pub use nphysics2d::nalgebra::Vector2;
 //
 
+// General re-exports for compatibility
+pub use instant::Instant;
+
 use miniquad::{conf, UserData};
 
 pub fn start(game: Box<dyn Game>, settings: GameSettings) {

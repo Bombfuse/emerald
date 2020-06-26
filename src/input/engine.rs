@@ -16,6 +16,7 @@ impl InputEngine {
         }
     }
 
+    #[inline]
     pub fn rollover(&mut self) {
         for (_key, state) in &mut self.keys {
             state.rollover();
@@ -26,6 +27,7 @@ impl InputEngine {
         // }
     }
 
+    #[inline]
     pub fn get_key_state(&mut self, keycode: KeyCode) -> ButtonState {
         if let Some(key) = self.keys.get(&keycode) {
             return key.clone();
@@ -35,14 +37,17 @@ impl InputEngine {
         return self.get_key_state(keycode);
     }
 
+    #[inline]
     pub fn set_key_down(&mut self, keycode: KeyCode, repeat: bool) {
         self.set_key_pressed(keycode, true)
     }
 
+    #[inline]
     pub fn set_key_up(&mut self, keycode: KeyCode) {
         self.set_key_pressed(keycode, false)
     }
 
+    #[inline]
     fn set_key_pressed(&mut self, keycode: KeyCode, is_pressed: bool) {
         if let Some(mut key) = self.keys.get_mut(&keycode) {
             key.is_pressed = is_pressed;

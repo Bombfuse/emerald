@@ -68,6 +68,7 @@ impl RenderingEngine {
         }
     }
 
+    #[inline]
     pub fn update(&mut self, mut ctx: &mut Context, world: &mut World) {
         let sprite_query = <(Read<Sprite>, Read<Position>)>::query();
 
@@ -85,6 +86,7 @@ impl RenderingEngine {
 
     // fn render_color_rect(&mut self, ctx: &mut Context, color_rect: &ColorRect) {}
 
+    #[inline]
     fn render_sprite(&mut self, ctx: &mut Context, sprite: &Sprite, position: &Position) {
         let texture = self.textures.get(&sprite.texture_key).unwrap();
         
@@ -101,18 +103,21 @@ impl RenderingEngine {
     //     // Render texture font at target characters in sequence
     // }
 
+    #[inline]
     pub fn aseprite<T: Into<String>>(&mut self, mut ctx: &mut Context, texture_file: T, animation_file: T) -> Result<Aseprite, EmeraldError> {
         let sprite = self.sprite(&mut ctx, texture_file)?;
 
         Aseprite::new(sprite, animation_file)
     }
 
+    #[inline]
     pub fn sprite<T: Into<String>>(&mut self, mut ctx: &mut Context, path: T) -> Result<Sprite, EmeraldError> {
         let key = self.texture(&mut ctx, path.into())?;
 
         Ok(Sprite::from_texture(key))
     }
 
+    #[inline]
     pub fn texture<T: Into<String>>(&mut self,  mut ctx: &mut Context, path: T) -> Result<TextureKey, EmeraldError> {
         let path: String = path.into();
         let key = TextureKey::new(path.clone());
@@ -125,6 +130,7 @@ impl RenderingEngine {
         Ok(key)
     }
 
+    #[inline]
     pub fn font(&mut self, mut ctx: &mut Context, path: &str, font_size: u16) -> Result<FontKey, EmeraldError> {
         let key = FontKey::new(path, font_size);
 

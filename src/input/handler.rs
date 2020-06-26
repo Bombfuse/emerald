@@ -11,12 +11,14 @@ impl<'a> InputHandler<'a> {
         }
     }
 
+    #[inline]
     pub fn is_key_pressed(&mut self, key: KeyCode) -> bool {
         let key_state = self.engine.get_key_state(key);
 
         key_state.is_pressed
     }
 
+    #[inline]
     pub fn is_key_just_pressed(&mut self, key: KeyCode) -> bool {
         let key_state = self.engine.get_key_state(key);
 

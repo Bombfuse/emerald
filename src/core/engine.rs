@@ -6,6 +6,7 @@ use crate::logging::*;
 
 use instant::Instant;
 use miniquad::*;
+use std::collections::VecDeque;
 
 pub struct GameEngine {
     game: Box<dyn Game>,
@@ -15,6 +16,7 @@ pub struct GameEngine {
     rendering_engine: RenderingEngine,
     world_engine: WorldEngine,
     last_instant: Instant,
+    fps_tracker: VecDeque<f64>,
 }
 impl GameEngine {
     pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
@@ -30,8 +32,13 @@ impl GameEngine {
         let now = Instant::now();
         let delta = now - last_instant;
 
+        let starting_amount = 50;
+        let mut fps_tracker = VecDeque::with_capacity(starting_amount);
+        fps_tracker.resize(starting_amount, 1.0 / 60.0);
+
         let emd = Emerald::new(
             delta,
+            0.0,
             &mut ctx,
             &mut input_engine,
             &mut world_engine,
@@ -40,8 +47,10 @@ impl GameEngine {
 
         game.initialize(emd);
 
+
         GameEngine {
             game,
+            fps_tracker,
             _settings: settings,
             input_engine,
             logging_engine,
@@ -50,15 +59,30 @@ impl GameEngine {
             last_instant,
         }
     }
+
+    /// Return frame rate averaged out over last 600 frames
+    /// https://github.com/17cupsofcoffee/tetra/blob/master/src/time.rs
+    #[inline]
+    pub fn get_fps(&self) -> f64 {
+        1.0 / (self.fps_tracker.iter().sum::<f64>() / self.fps_tracker.len() as f64)
+    }
+    
+    #[inline]
+    fn update_fps_tracker(&mut self, delta: f64) {
+        self.fps_tracker.pop_front();
+        self.fps_tracker.push_back(delta);
+    }
 }
 impl EventHandler for GameEngine {
+    #[inline]
     fn update(&mut self, mut ctx: &mut Context) {
         let now = Instant::now();
         let delta = now - self.last_instant;
-
+        self.update_fps_tracker(delta.as_secs_f64());
         
         let emd = Emerald::new(
             delta,
+            self.get_fps(),
             &mut ctx,
             &mut self.input_engine,
             &mut self.world_engine,
@@ -72,16 +96,17 @@ impl EventHandler for GameEngine {
         self.input_engine.rollover();
     }
 
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32) {}
-
+    #[inline]
     fn key_down_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _keymods: KeyMods, repeat: bool) {
         self.input_engine.set_key_down(keycode, repeat);
     }
 
+    #[inline]
     fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _keymods: KeyMods) {
         self.input_engine.set_key_up(keycode);
     }
 
+    #[inline]
     fn draw(&mut self, mut ctx: &mut Context) {
         self.rendering_engine.update(&mut ctx, self.world_engine.world());
     }
