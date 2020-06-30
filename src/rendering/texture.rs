@@ -1,6 +1,6 @@
 use crate::*;
 use crate::rendering::shaders::*;
-use miniquad::{Bindings, FilterMode, Context, BufferType, Buffer};
+use miniquad::{Bindings, FilterMode, Context, BufferType, Buffer, fs::load_file};
 
 use std::fs::File;
 use std::path::Path;

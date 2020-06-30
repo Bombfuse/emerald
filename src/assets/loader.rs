@@ -33,6 +33,19 @@ impl<'a> AssetLoader<'a> {
         self.rendering_engine.sprite(&mut self.quad_ctx, path)
     }
 
+    /// Meant to be used for WASM. Packs the textures into the WASM so
+    /// that they can be loaded immediately without breaking the API.
+    /// 
+    /// emd.loader()
+    ///     .set_texture(
+    ///         "./assets/bunny.png",
+    ///         include_bytes!("../static/assets/bunny.png").to_vec()
+    ///     );
+    /// 
+    pub fn set_texture(&mut self, name: &str, bytes: Vec<u8>) {
+        self.rendering_engine.set_texture(&mut self.quad_ctx, name, bytes)
+    }
+
     pub fn label<T: Into<String>>(&mut self, text: T, font_key: FontKey) -> Result<Label, EmeraldError> {
         let mut label = Label::default();
 

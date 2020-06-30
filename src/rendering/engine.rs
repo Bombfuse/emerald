@@ -131,6 +131,13 @@ impl RenderingEngine {
         Ok(key)
     }
 
+    pub fn set_texture(&mut self, mut ctx: &mut Context, name: &str, bytes: Vec<u8>) {
+        let texture = Texture::from_png_bytes(&mut ctx, bytes.as_slice()).unwrap();
+        let key = TextureKey::new(name.to_string());
+        
+        self.textures.insert(key, texture);
+    }
+
     #[inline]
     pub fn font(&mut self, mut ctx: &mut Context, path: &str, font_size: u16) -> Result<FontKey, EmeraldError> {
         let key = FontKey::new(path, font_size);
