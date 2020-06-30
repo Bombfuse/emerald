@@ -8,7 +8,6 @@ repository = "https://github.com/atkostudios/emerald"
 license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 # Nightly dependencies
 miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
@@ -16,12 +15,11 @@ paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master"
 fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
 
 # Dependencies
-gilrs = "0.7.4"
-nphysics2d = "0.15.0"
+instant = { version = "0.1.5", features = [ "now" ] }
+nphysics2d = {version = "0.15.0", default-features = false, features = ["dim2"] }
 image = "0.23.4"
-legion = "0.2.1"
+legion = { version = "0.2.1", default-features = false }
 glam = "0.8.7"
-instant = "0.1.4"
 
 [lib]
 name = "emerald"

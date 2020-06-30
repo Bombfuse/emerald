@@ -1,17 +1,14 @@
 use crate::input::*;
-use gilrs::*;
 use miniquad::*;
 
 use std::collections::HashMap;
 
 pub struct InputEngine {
-    gilrs: Gilrs,
     keys: HashMap<KeyCode, ButtonState>,
 }
 impl InputEngine {
     pub fn new() -> Self {
         InputEngine {
-            gilrs: Gilrs::new().unwrap(),
             keys: HashMap::new(),
         }
     }
@@ -21,10 +18,6 @@ impl InputEngine {
         for (_key, state) in &mut self.keys {
             state.rollover();
         }
-
-        // while let Some(Event { id, event, time }) = self.gilrs.next_event() {
-        //     println!("{:?} New event from {}: {:?}", time, id, event);
-        // }
     }
 
     #[inline]

@@ -94,6 +94,7 @@ impl RenderingEngine {
         ctx.apply_uniforms(&Uniforms {
             offset: (position.x, position.y),
             viewSize: (800.0, 600.0),
+            z_index: sprite.z_index,
         });
         ctx.draw(0, 6, 1);
     }

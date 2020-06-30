@@ -9,6 +9,7 @@ pub struct Sprite {
     pub offset: Vector2<f32>,
     pub color: Color,
     pub(crate) texture_key: TextureKey,
+    pub(crate) z_index: i64,
 }
 impl Sprite {
     pub fn from_texture(texture_key: TextureKey) -> Self {
@@ -28,6 +29,7 @@ impl Default for Sprite {
             offset: Vector2::new(0.0, 0.0),
             color: WHITE,
             texture_key: TextureKey::default(),
+            z_index: 0,
         }
     }
 }

@@ -3,6 +3,13 @@
 pub struct EmeraldError {
     message: String,
 }
+impl EmeraldError {
+    pub fn new<T: Into<String>>(msg: T) -> Self {
+        EmeraldError {
+            message: msg.into()
+        }
+    }
+}
 impl std::fmt::Display for EmeraldError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.message)

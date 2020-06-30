@@ -16,6 +16,7 @@ pub struct Emerald<'a> {
     world_engine: &'a mut WorldEngine,
 }
 impl<'a> Emerald<'a> {
+    #[inline]
     pub(crate) fn new(
         delta: Duration,
         fps: f64,

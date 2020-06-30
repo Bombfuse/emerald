@@ -17,6 +17,7 @@ pub struct Vertex {
 pub struct Uniforms {
     pub offset: (f32, f32),
     pub viewSize: (f32, f32),
+    pub z_index: i64,
 }
 
 pub const VERTEX: &str = r#"
@@ -27,11 +28,12 @@ attribute vec2 uv;
 
 uniform vec2 offset;
 uniform vec2 viewSize;
+uniform int z_index;
 
 varying lowp vec2 texcoord;
 
 void main() {
-    gl_Position = vec4(2.0 * (pos.x + offset.x) / viewSize.x - 1.0, 1.0 - 2.0 * (pos.y + offset.y) / viewSize.y, 0, 1);
+    gl_Position = vec4(2.0 * (pos.x + offset.x) / viewSize.x - 1.0, 1.0 - 2.0 * (pos.y + offset.y) / viewSize.y, z_index, 1);
     texcoord = uv;
 }"#;
 
@@ -50,6 +52,7 @@ pub const META: ShaderMeta = ShaderMeta {
         uniforms: &[
             UniformDesc::new("offset", UniformType::Float2),
             UniformDesc::new("viewSize", UniformType::Float2),
+            UniformDesc::new("z_index", UniformType::Int4),
         ],
     },
 };

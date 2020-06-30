@@ -26,8 +26,10 @@ impl Game for BunnymarkGame {
         self.count = 1000;
         emd.world().insert((),
             (0..1000).map(|_| {
-                position.x += 4.0;
-                (position.clone(), sprite.clone(), Vel { x: 5.0, y: 3.0 })
+                position.x += 6.0;
+                position.y += 1.0;
+                let mut s = sprite.clone();
+                (position.clone(), s, Vel { x: 5.0, y: 3.0 })
             })
         );
     }
@@ -35,7 +37,6 @@ impl Game for BunnymarkGame {
     #[inline]
     fn update(&mut self, mut emd: Emerald) {
         let (screen_width, screen_height) = emd.screen_size();
-        
 
         if emd.input().is_key_just_pressed(KeyCode::Space) {
             let sprite = emd.loader()
@@ -45,15 +46,17 @@ impl Game for BunnymarkGame {
             self.count += 1000;
             emd.world().insert((),
                 (0..1000).map(|_| {
-                    position.x += 4.0;
-                    (position.clone(), sprite.clone(), Vel { x: 5.0, y: 3.0 })
+                    position.x += 6.0;
+                    position.y += 1.0;
+                    let mut s = sprite.clone();
+                    (position.clone(), s, Vel { x: 5.0, y: 3.0 })
                 })
             );
         }
 
         let now = Instant::now();
         let bunny_query = <(Read<Sprite>, Write<Position>, Write<Vel>)>::query();
-        for (_, mut position, mut vel) in bunny_query.iter(emd.world().queryable()) {
+        for (_, mut position, mut vel) in bunny_query.iter_mut(emd.world().queryable()) {
             position.x += vel.x;
             position.y += vel.y;
 
@@ -77,8 +80,5 @@ impl Game for BunnymarkGame {
                 vel.y = 3.0;
             }
         }
-
-        let fps = emd.fps();
-        println!("FPS: {}, Bunny Count: {:?})", fps, self.count);
     }
 }
