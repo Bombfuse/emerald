@@ -18,6 +18,16 @@ pub struct BunnymarkGame {
 }
 impl Game for BunnymarkGame {
     fn initialize(&mut self, mut emd: Emerald) {
+        // Pack all game files into WASM binary
+        #[cfg(target_arch = "wasm32")]
+        {
+            emd.loader()
+                .pack_texture(
+                    "./static/assets/bunny.png",
+                    include_bytes!("../static/assets/bunny.png").to_vec()
+                );
+        }
+
         let sprite = emd.loader()
             .sprite("./static/assets/bunny.png").unwrap();
         

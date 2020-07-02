@@ -42,8 +42,8 @@ impl<'a> AssetLoader<'a> {
     ///         include_bytes!("../static/assets/bunny.png").to_vec()
     ///     );
     /// 
-    pub fn set_texture(&mut self, name: &str, bytes: Vec<u8>) {
-        self.rendering_engine.set_texture(&mut self.quad_ctx, name, bytes)
+    pub fn pack_texture(&mut self, name: &str, bytes: Vec<u8>) {
+        self.rendering_engine.pack_texture(&mut self.quad_ctx, name, bytes)
     }
 
     pub fn label<T: Into<String>>(&mut self, text: T, font_key: FontKey) -> Result<Label, EmeraldError> {

@@ -31,7 +31,7 @@ A simple API giving you direct access to physics, audio, and graphics.
 Given a handle to the emerald engine, you directly control physics, audio, and the game worlds.
 
 ### Asset Loading
-```
+```rust
 let my_sprite = emd.loader()
     .sprite("./my_assets/my_sprite.png").unwrap();
 
@@ -41,9 +41,9 @@ let my_font = emd.loader()
 
 ### Physics
 
-```
-    // You decide when physics steps!
-    // This makes it very easy to "pause" the game without altering your physics data.
+```rust
+    /// You decide when physics steps!
+    /// This makes it very easy to "pause" the game without altering your physics data.
 
     emd.world().physics().step();
 ```
@@ -82,6 +82,48 @@ Built on top of [miniquad](https://github.com/not-fl3/miniquad) and other cross 
 * Linux
 * Android
 * Web via WASM
+
+## WASM
+
+### Building
+
+`cargo build --target wasm32-unknown-unknown`
+
+### Asset Loading
+
+Use the `pack_texture` function to load texture data into the engine.
+
+```rust
+fn initialize(&mut self, mut emd: Emerald) {
+    /// Pack all game files into WASM binary with path references
+    /// so that regular file loading API is supported.
+    #[cfg(target_arch = "wasm32")]
+    {
+        emd.loader()
+            .pack_texture(
+                "./static/assets/bunny.png",
+                include_bytes!("../static/assets/bunny.png").to_vec()
+            );
+    }
+
+    /// We can now load texture/sprites via the normal API,
+    /// regardless of which platform we're targeting.
+    let sprite = emd.loader()
+        .sprite("./static/assets/bunny.png").unwrap();
+    
+    let mut position = Position::new(0.0, 0.0);
+
+    self.count = 1000;
+    emd.world().insert((),
+        (0..1000).map(|_| {
+            position.x += 6.0;
+            position.y += 1.0;
+            let mut s = sprite.clone();
+            (position.clone(), s, Vel { x: 5.0, y: 3.0 })
+        })
+    );
+}
+```
 
 
 ## Demos

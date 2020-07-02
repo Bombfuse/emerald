@@ -131,7 +131,7 @@ impl RenderingEngine {
         Ok(key)
     }
 
-    pub fn set_texture(&mut self, mut ctx: &mut Context, name: &str, bytes: Vec<u8>) {
+    pub fn pack_texture(&mut self, mut ctx: &mut Context, name: &str, bytes: Vec<u8>) {
         let texture = Texture::from_png_bytes(&mut ctx, bytes.as_slice()).unwrap();
         let key = TextureKey::new(name.to_string());
         
