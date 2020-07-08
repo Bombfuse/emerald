@@ -1,9 +1,8 @@
 use crate::*;
 use crate::rendering::shaders::*;
-use miniquad::{Bindings, FilterMode, Context, BufferType, Buffer, fs::load_file};
+use miniquad::{Bindings, FilterMode, Context, BufferType, Buffer};
 
 use std::fs::File;
-use std::path::Path;
 use std::io::prelude::*;
 
 #[derive(Clone, Debug)]
@@ -15,8 +14,7 @@ pub struct Texture {
     pub(crate) bindings: Bindings,
 }
 impl Texture {
-    pub fn new<P: AsRef<Path>>(mut ctx: &mut Context, path: P) -> Result<Self, EmeraldError> {
-        let mut file = File::open(path)?;
+    pub(crate) fn new(mut ctx: &mut Context, mut file: File) -> Result<Self, EmeraldError> {
         let mut bytes = vec![];
         file.read_to_end(&mut bytes)?;
 
@@ -67,11 +65,10 @@ impl Texture {
             Vertex { pos : Vec2 { x: texture.width as f32, y: texture.height as f32 }, uv: Vec2 { x: 1., y: 1. } },
             Vertex { pos : Vec2 { x: 0.0, y: texture.height as f32 }, uv: Vec2 { x: 0., y: 1. } },
         ];
-        let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
 
+        let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
         let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
         let index_buffer = Buffer::immutable(ctx, BufferType::IndexBuffer, &indices);
-
         let bindings = Bindings {
             vertex_buffers: vec![vertex_buffer],
             index_buffer: index_buffer,

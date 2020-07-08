@@ -12,7 +12,7 @@ license = "MIT OR Apache-2.0"
 # Nightly dependencies
 miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
 paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
-fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
+fontdue = { branch = "master", version = "0.1.1" }
 
 # Dependencies
 instant = { version = "0.1.5", features = [ "now" ] }

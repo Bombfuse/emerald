@@ -43,8 +43,4 @@ impl Tilemap {
     pub fn set_tilesheet(&mut self, tilesheet: TextureKey) {
         self.tilesheet = tilesheet
     }
-
-    pub fn size(&self) -> (u32, u32) {
-
-    }
 }

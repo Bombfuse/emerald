@@ -4,7 +4,7 @@ use crate::rendering::*;
 use std::fs::File;
 
 pub struct AssetLoader<'a> {
-    quad_ctx: &'a mut miniquad::Context,
+    pub(crate) quad_ctx: &'a mut miniquad::Context,
     rendering_engine: &'a mut RenderingEngine,
 }
 impl<'a> AssetLoader<'a> {
@@ -17,20 +17,28 @@ impl<'a> AssetLoader<'a> {
 
     pub fn file<T: Into<String>>(&self, file_path: T) -> Result<File, EmeraldError> {
         let file_path: String = file_path.into();
-        println!("{}", file_path);
-
         let file = File::open(file_path)?;
-
 
         Ok(file)
     }
 
     pub fn aseprite<T: Into<String>>(&mut self, path_to_texture: T, path_to_animations: T) -> Result<Aseprite, EmeraldError> {
-        self.rendering_engine.aseprite(&mut self.quad_ctx, path_to_texture.into(), path_to_animations.into())
+        let texture_path = path_to_texture.into();
+        let animation_path = path_to_animations.into();
+
+        let texture_file = self.file(texture_path.clone())?;
+        let animation_file = self.file(animation_path.clone())?;
+
+        self.rendering_engine.aseprite(&mut self.quad_ctx,
+            texture_file,
+            texture_path,
+            animation_file,
+            animation_path)
     }
 
     pub fn sprite(&mut self, path: &str) -> Result<Sprite, EmeraldError> {
-        self.rendering_engine.sprite(&mut self.quad_ctx, path)
+        let sprite_file = self.file(path)?;
+        self.rendering_engine.sprite(&mut self.quad_ctx, sprite_file, path)
     }
 
     /// Meant to be used for WASM. Packs the textures into the WASM so
@@ -56,6 +64,8 @@ impl<'a> AssetLoader<'a> {
     }
 
     pub fn font(&mut self, path: &str, font_size: u16) -> Result<FontKey, EmeraldError> {
-        self.rendering_engine.font(&mut self.quad_ctx, path, font_size)
+        let file = self.file(path)?;
+
+        self.rendering_engine.font(&mut self.quad_ctx, file, path, font_size)
     }
 }

@@ -1,12 +1,10 @@
 mod engine;
 mod render_settings;
 mod components;
-mod sprite_batch;
 mod texture;
 mod shaders;
 mod font;
 
-pub(crate) use sprite_batch::*;
 pub use render_settings::*;
 pub(crate) use texture::*;
 pub(crate) use engine::*;

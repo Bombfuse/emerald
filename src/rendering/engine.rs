@@ -90,12 +90,27 @@ impl RenderingEngine {
     fn render_sprite(&mut self, ctx: &mut Context, sprite: &Sprite, position: &Position) {
         let texture = self.textures.get(&sprite.texture_key).unwrap();
         
-        ctx.apply_bindings(&texture.bindings);
-        ctx.apply_uniforms(&Uniforms {
+        // let mut target = Rectangle::new(
+        //     sprite.target.x / texture.width as f32,
+        //     sprite.target.y / texture.height as f32,
+        //     (sprite.target.x + sprite.target.width) / texture.width as f32,
+        //     (sprite.target.y + sprite.target.height) / texture.height as f32,
+        // );
+
+        // if sprite.target.is_zero_sized() {
+        //     target = Rectangle::new(0.0, 0.0, 1.0, 1.0);
+        // }
+
+        let uniforms = Uniforms {
             offset: (position.x, position.y),
             viewSize: (800.0, 600.0),
+            // source: (target.x, target.y, target.width, target.height),
             z_index: sprite.z_index,
-        });
+            // color_mod: (1.0, 1.0, 1.0, 1.0),
+        };
+
+        ctx.apply_bindings(&texture.bindings);
+        ctx.apply_uniforms(&uniforms);
         ctx.draw(0, 6, 1);
     }
 
@@ -105,26 +120,32 @@ impl RenderingEngine {
     // }
 
     #[inline]
-    pub fn aseprite<T: Into<String>>(&mut self, mut ctx: &mut Context, texture_file: T, animation_file: T) -> Result<Aseprite, EmeraldError> {
-        let sprite = self.sprite(&mut ctx, texture_file)?;
+    pub fn aseprite<T: Into<String>>(&mut self,
+            mut ctx: &mut Context,
+            texture_file: File,
+            texture_file_path: T,
+            animation_file: File,
+            _animation_file_path: T
+        ) -> Result<Aseprite, EmeraldError> {
+        let sprite = self.sprite(&mut ctx, texture_file, texture_file_path)?;
 
         Aseprite::new(sprite, animation_file)
     }
 
     #[inline]
-    pub fn sprite<T: Into<String>>(&mut self, mut ctx: &mut Context, path: T) -> Result<Sprite, EmeraldError> {
-        let key = self.texture(&mut ctx, path.into())?;
+    pub fn sprite<T: Into<String>>(&mut self, mut ctx: &mut Context, file: File, path: T) -> Result<Sprite, EmeraldError> {
+        let key = self.texture(&mut ctx, file, path)?;
 
         Ok(Sprite::from_texture(key))
     }
 
     #[inline]
-    pub fn texture<T: Into<String>>(&mut self,  mut ctx: &mut Context, path: T) -> Result<TextureKey, EmeraldError> {
+    pub fn texture<T: Into<String>>(&mut self, mut ctx: &mut Context, file: File, path: T) -> Result<TextureKey, EmeraldError> {
         let path: String = path.into();
         let key = TextureKey::new(path.clone());
 
         if !self.textures.contains_key(&key) {
-            let texture = Texture::new(&mut ctx, path)?;
+            let texture = Texture::new(&mut ctx, file)?;
             self.textures.insert(key.clone(), texture);
         }
 
@@ -139,14 +160,13 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn font(&mut self, mut ctx: &mut Context, path: &str, font_size: u16) -> Result<FontKey, EmeraldError> {
+    pub fn font(&mut self, mut ctx: &mut Context, mut file: File, path: &str, font_size: u16) -> Result<FontKey, EmeraldError> {
         let key = FontKey::new(path, font_size);
 
         if self.fonts.contains_key(&key) {
             return Ok(key);
         }
 
-        let mut file = File::open(path)?;
         let mut font_data = Vec::new();
         file.read_to_end(&mut font_data)?;
 

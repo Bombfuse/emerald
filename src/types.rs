@@ -1,9 +1,9 @@
 #[derive(Clone, Copy, Debug)]
 pub struct Rectangle {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
 }
 impl Rectangle {
     pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
@@ -13,5 +13,9 @@ impl Rectangle {
     // Zeroed out rectangle. When a sprite uses a zeroed out rect, it draws the whole sprite.
     pub fn zeroed() -> Self {
         Rectangle::new(0.0, 0.0, 0.0, 0.0)
+    }
+
+    pub fn is_zero_sized(self) -> bool {
+        return self.width == 0.0 && self.height == 0.0
     }
 }
