@@ -4,6 +4,7 @@ use miniquad::{Bindings, FilterMode, Context, BufferType, Buffer};
 
 use std::fs::File;
 use std::io::prelude::*;
+use glam::Vec2;
 
 #[derive(Clone, Debug)]
 pub struct Texture {
@@ -60,10 +61,10 @@ impl Texture {
     pub fn from_texture(ctx: &mut miniquad::Context, texture: miniquad::Texture) -> Result<Self, EmeraldError> {
         #[rustfmt::skip]
         let vertices: [Vertex; 4] = [
-            Vertex { pos : Vec2 { x: 0.0, y: 0.0 }, uv: Vec2 { x: 0., y: 0. } },
-            Vertex { pos : Vec2 { x: texture.width as f32, y: 0.0 }, uv: Vec2 { x: 1., y: 0. } },
-            Vertex { pos : Vec2 { x: texture.width as f32, y: texture.height as f32 }, uv: Vec2 { x: 1., y: 1. } },
-            Vertex { pos : Vec2 { x: 0.0, y: texture.height as f32 }, uv: Vec2 { x: 0., y: 1. } },
+            Vertex { pos : Vec2::new(0.0, 0.0), uv: Vec2::new(0., 0.) },
+            Vertex { pos : Vec2::new(texture.width as f32, 0.0), uv: Vec2::new(1., 0.) },
+            Vertex { pos : Vec2::new(texture.width as f32, texture.height as f32), uv: Vec2::new(1., 1.) },
+            Vertex { pos : Vec2::new(0.0, texture.height as f32), uv: Vec2::new(0., 1.) },
         ];
 
         let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);

@@ -90,5 +90,7 @@ impl Game for BunnymarkGame {
                 vel.y = 3.0;
             }
         }
+
+        println!("{}, {}", self.count, emd.fps());
     }
 }

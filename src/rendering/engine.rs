@@ -13,6 +13,7 @@ use miniquad::{
     Bindings, BufferType, BufferLayout,
     Context, Buffer, VertexFormat,
     VertexAttribute, Shader};
+use glam::{Vec2, Vec4, Mat4};
 use legion::prelude::{Schedulable, Query, SystemBuilder, Read, Write, IntoQuery};
 use std::collections::HashMap;
 use fontdue::{Font, FontSettings};
@@ -89,24 +90,24 @@ impl RenderingEngine {
     #[inline]
     fn render_sprite(&mut self, ctx: &mut Context, sprite: &Sprite, position: &Position) {
         let texture = self.textures.get(&sprite.texture_key).unwrap();
-        
-        // let mut target = Rectangle::new(
-        //     sprite.target.x / texture.width as f32,
-        //     sprite.target.y / texture.height as f32,
-        //     (sprite.target.x + sprite.target.width) / texture.width as f32,
-        //     (sprite.target.y + sprite.target.height) / texture.height as f32,
-        // );
+        let mut target = Rectangle::new(
+            sprite.target.x / texture.width as f32,
+            sprite.target.y / texture.height as f32,
+            (sprite.target.x + sprite.target.width) / texture.width as f32,
+            (sprite.target.y + sprite.target.height) / texture.height as f32,
+        );
 
-        // if sprite.target.is_zero_sized() {
-        //     target = Rectangle::new(0.0, 0.0, 1.0, 1.0);
-        // }
+        if sprite.target.is_zero_sized() {
+            target = Rectangle::new(0.0, 0.0, 1.0, 1.0);
+        }
 
+        let model = Mat4::identity();
         let uniforms = Uniforms {
-            offset: (position.x, position.y),
-            viewSize: (800.0, 600.0),
-            // source: (target.x, target.y, target.width, target.height),
-            z_index: sprite.z_index,
-            // color_mod: (1.0, 1.0, 1.0, 1.0),
+            model,
+            offset: Vec2::new(position.x, position.y),
+            view_size: Vec2::new(800.0, 600.0),
+            z_index: sprite.z_index as f32,
+            target: Vec4::new(target.x, target.y, target.width, target.height)
         };
 
         ctx.apply_bindings(&texture.bindings);
