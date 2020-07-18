@@ -4,31 +4,18 @@
 [![Crates.io](https://img.shields.io/crates/v/emerald.svg)](https://crates.io/crates/emerald)
 [![Build Status](https://travis-ci.com/Bombfuse/emerald.svg?branch=master)](https://travis-ci.com/Bombfuse/emerald)
 
-## IN DEVELOPMENT
-[x] Sprites
-
-[] Aseprite
-
-[] Logging
-
-[] Tilemaps
-
-[] Fonts
-
-[] Audio
-
-[] WASM/Android
+## !!! IN DEVELOPMENT !!!
+[x] Sprites [x] WASM [] Aseprite [] Logging [] Tilemaps [] Fonts [] Audio []Android
 
 
-## Lite
+# Lite
 
 A fully featured 2D engine with minimal dependencies.
 
-## Simple, Powerful API
+# Simple, Powerful API
 
-A simple API giving you direct access to physics, audio, and graphics.
+A simple API giving you direct access to physics, audio, ECS worlds, and asset loading.
 
-Given a handle to the emerald engine, you directly control physics, audio, and the game worlds.
 
 ### Asset Loading
 ```rust
@@ -39,23 +26,38 @@ let my_font = emd.loader()
     .font("./my_assets/my_font.ttf").unwrap();
 ```
 
-### Physics
+
+# Portable
+
+Built on top of [miniquad](https://github.com/not-fl3/miniquad) and other cross platform libraries, Emerald is able to run almost anywhere.
+
+* Windows
+* MacOS
+* Linux
+* Android
+* Web via WASM
+
+## Physics
+You decide when physics steps!
+This makes it very easy to "pause" the game without needing to alter your physics data.
 
 ```rust
-    /// You decide when physics steps!
-    /// This makes it very easy to "pause" the game without altering your physics data.
-
     emd.world().physics().step();
 ```
 
-### ECS
+## ECS
 
 Emerald uses the [Entity Component System](https://en.wikipedia.org/wiki/Entity_component_system) paradigm for creating, managing, and updating game entities.
 
 Emerald uses [Legion](https://github.com/TomGillen/legion) under the hood for extremely fast entity iteration, and a remarkably clean query API.
 
-```
-query example here
+```rust
+
+let sprite_update_query = <(Read<Sprite>, Write<Position>)>::query();
+
+for (sprite, mut position) in sprite_update_query.iter_mut(emd.world().queryable()) {
+    position.x += 10.0;
+}
 ```
 
 ## [Aseprite](https://www.aseprite.org/)
@@ -73,23 +75,16 @@ emd.world()
 ```
 
 
-## Portable
-
-Built on top of [miniquad](https://github.com/not-fl3/miniquad) and other cross platform libraries, Emerald is able to run almost anywhere.
-
-* Windows
-* MacOS
-* Linux
-* Android
-* Web via WASM
 
 ## WASM
 
-### Building
+### Build
 
 `cargo build --target wasm32-unknown-unknown`
 
 ### Asset Loading
+
+In order to keep a clean, simple API, and avoid network requests for assets. Emerald takes the approach of packing all necessary assets into the WASM binary.
 
 Use the `pack_texture` function to load texture data into the engine.
 
