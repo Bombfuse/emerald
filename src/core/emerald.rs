@@ -53,6 +53,10 @@ impl<'a> Emerald<'a> {
         self.fps
     }
 
+    /// Disable all cameras then set the camera on the given entity as active.
+    #[inline]
+    pub fn make_active_camera(_entity: &Entity) {}
+
     /// Asset loading
     #[inline]
     pub fn loader(&mut self) -> AssetLoader {

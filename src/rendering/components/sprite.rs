@@ -22,7 +22,7 @@ impl Sprite {
 impl Default for Sprite {
     fn default() -> Sprite {
         Sprite {
-            target: Rectangle::new(0.0, 0.0, 20.0, 20.0),
+            target: Rectangle::zeroed(),
             position: Vector2::new(0.0, 0.0),
             rotation: 0.0,
             scale: Vector2::new(1.0, 1.0),

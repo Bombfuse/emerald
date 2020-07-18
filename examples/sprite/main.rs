@@ -1,7 +1,11 @@
 use emerald::*;
 
 pub fn main() {
-    emerald::start(Box::new(MyGame { }), GameSettings::default())
+    let mut settings = GameSettings::default();
+    let mut render_settings = RenderSettings::default();
+    render_settings.window_size = (480, 320);
+    settings.render_settings = render_settings;
+    emerald::start(Box::new(MyGame { }), settings)
 }
 
 pub struct MyGame;
@@ -18,10 +22,7 @@ impl Game for MyGame {
         }
 
         let sprite = emd.loader().sprite("./static/assets/bunny.png").unwrap();
-        let position = Position::new(15.0, 15.0);
 
-        emd.world().insert((), vec![(
-            sprite.clone(), position),
-            (sprite, Position::new(0.0, 0.0))]);
+        emd.world().insert((), vec![(sprite, Position::new(0.0, 0.0))]);
     }
 }

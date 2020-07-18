@@ -46,8 +46,7 @@ impl RenderingEngine {
             ctx,
             &[BufferLayout::default()],
             &[
-                VertexAttribute::new("pos", VertexFormat::Float2),
-                VertexAttribute::new("uv", VertexFormat::Float2),
+                VertexAttribute::new("position", VertexFormat::Float2),
             ],
             shader,
             params,
@@ -89,6 +88,7 @@ impl RenderingEngine {
 
     #[inline]
     fn render_sprite(&mut self, ctx: &mut Context, sprite: &Sprite, position: &Position) {
+        let view_size = ctx.screen_size();
         let texture = self.textures.get(&sprite.texture_key).unwrap();
         let mut target = Rectangle::new(
             sprite.target.x / texture.width as f32,
@@ -101,14 +101,32 @@ impl RenderingEngine {
             target = Rectangle::new(0.0, 0.0, 1.0, 1.0);
         }
 
-        let model = Mat4::identity();
-        let uniforms = Uniforms {
-            model,
-            offset: Vec2::new(position.x, position.y),
-            view_size: Vec2::new(800.0, 600.0),
-            z_index: sprite.z_index as f32,
-            target: Vec4::new(target.x, target.y, target.width, target.height)
-        };
+        let real_scale = Vec2::new(
+            sprite.scale.x * target.width * (f32::from(texture.height)),
+            sprite.scale.y * target.height * (f32::from(texture.height)),
+        );
+        let real_position = Vec2::new(
+            position.x,
+            position.y,
+        );
+        let real_offset = Vec2::new(
+            sprite.offset.x,
+            sprite.offset.y,
+        );
+
+        let mut uniforms = Uniforms::default();
+        let projection = Mat4::orthographic_lh(0.0, view_size.0, view_size.1, 0.0, -1.0, 1.0);
+
+        uniforms.projection = projection;
+        uniforms.model = crate::rendering::param_to_instance_transform(
+            sprite.rotation,
+            real_scale,
+            real_offset,
+            real_position,
+        );
+        uniforms.source = Vec4::new(target.x, target.y, target.width, target.height);
+
+        // println!("model: {}", uniforms.model);
 
         ctx.apply_bindings(&texture.bindings);
         ctx.apply_uniforms(&uniforms);
