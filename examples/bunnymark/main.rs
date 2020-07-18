@@ -23,13 +23,13 @@ impl Game for BunnymarkGame {
         {
             emd.loader()
                 .pack_texture(
-                    "./static/assets/bunny.png",
+                    "./examples/assets/bunny.png",
                     include_bytes!("../static/assets/bunny.png").to_vec()
                 );
         }
 
         let sprite = emd.loader()
-            .sprite("./static/assets/bunny.png").unwrap();
+            .sprite("./examples/assets/bunny.png").unwrap();
         
         let mut position = Position::new(0.0, 0.0);
 
@@ -50,7 +50,7 @@ impl Game for BunnymarkGame {
 
         if emd.input().is_key_just_pressed(KeyCode::Space) {
             let sprite = emd.loader()
-                .sprite("./static/assets/bunny.png").unwrap();
+                .sprite("./examples/assets/bunny.png").unwrap();
             
             let mut position = Position::new(0.0, 0.0);
             self.count += 1000;

@@ -25,4 +25,15 @@ impl Game for MyGame {
 
         emd.world().insert((), vec![(sprite, Position::new(0.0, 0.0))]);
     }
+
+    fn update(&mut self, mut emd: Emerald) {
+        let bunny_query = <(Write<Sprite>, Read<Position>)>::query();
+
+        for (mut sprite, pos) in bunny_query.iter_mut(emd.world().queryable()) {
+            if sprite.scale.x < 10.0 {
+                sprite.scale.x *= 1.01;
+                sprite.scale.y *= 1.01;
+            }
+        }
+    }
 }
