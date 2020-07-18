@@ -90,11 +90,12 @@ impl RenderingEngine {
     fn render_sprite(&mut self, ctx: &mut Context, sprite: &Sprite, position: &Position) {
         let view_size = ctx.screen_size();
         let texture = self.textures.get(&sprite.texture_key).unwrap();
+
         let mut target = Rectangle::new(
             sprite.target.x / texture.width as f32,
             sprite.target.y / texture.height as f32,
-            (sprite.target.x + sprite.target.width) / texture.width as f32,
-            (sprite.target.y + sprite.target.height) / texture.height as f32,
+            sprite.target.width / texture.width as f32,
+            sprite.target.height / texture.height as f32,
         );
 
         if sprite.target.is_zero_sized() {
@@ -124,6 +125,7 @@ impl RenderingEngine {
             real_offset,
             real_position,
         );
+
         uniforms.source = Vec4::new(target.x, target.y, target.width, target.height);
 
         // println!("model: {}", uniforms.model);
