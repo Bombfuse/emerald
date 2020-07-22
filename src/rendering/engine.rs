@@ -24,6 +24,7 @@ pub struct RenderingEngine {
     textures: HashMap<TextureKey, Texture>,
     fonts: HashMap<FontKey, Font>,
     font_atlases: HashMap<FontKey, Texture>,
+    pub(crate) projection: Rectangle,
 }
 impl RenderingEngine {
     pub fn new(mut ctx: &mut Context, settings: RenderSettings) -> Self {
@@ -65,25 +66,32 @@ impl RenderingEngine {
             textures,
             fonts,
             font_atlases,
+            projection: Rectangle::new(
+                0.0,
+                0.0,
+                settings.window_size.0 as f32,
+                settings.window_size.1 as f32
+            )
         }
     }
 
     #[inline]
     pub fn draw_world(&mut self, mut ctx: &mut Context, world: &mut World) {
-        let sprite_query = <(Read<Sprite>, Read<Position>)>::query();
-
-        ctx.begin_default_pass(Default::default());
-        ctx.clear(Some(self.settings.background_color.percentage()), None, None);
         ctx.apply_pipeline(&self.pipeline);
 
+        let sprite_query = <(Read<Sprite>, Read<Position>)>::query();
         for (sprite, position) in sprite_query.iter(&mut world.inner) {
             self.render_sprite(&mut ctx, &sprite, &position);
         }
-        
-        ctx.end_render_pass();
+    }
+
+    pub(crate) fn begin(&mut self, ctx: &mut Context) {
+        ctx.begin_default_pass(Default::default());
+        ctx.clear(Some(self.settings.background_color.percentage()), None, None);
     }
 
     pub(crate) fn render(&mut self, ctx: &mut Context) {
+        ctx.end_render_pass();
         ctx.commit_frame();
     }
 

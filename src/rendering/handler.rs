@@ -1,4 +1,4 @@
-use crate::{RenderingEngine, WorldEngine};
+use crate::{RenderingEngine, WorldEngine, Rectangle};
 use miniquad::Context;
 
 pub struct GraphicsHandler<'a> {
@@ -22,6 +22,14 @@ impl<'a> GraphicsHandler<'a> {
         self.rendering_engine.draw_world(&mut self.quad_ctx, self.world_engine.world())
     }
 
+    pub fn set_projection(&mut self, projection: Rectangle) {
+        self.rendering_engine.projection = projection;
+    }
+
+    /// Begin drawing to the screen
+    pub fn begin(&mut self) {
+        self.rendering_engine.begin(&mut self.quad_ctx);
+    }
 
     /// Commit all drawings to the screen
     pub fn render(&mut self) {

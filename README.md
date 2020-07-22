@@ -55,11 +55,11 @@ Graphics are set to draw the current game world by default, however you can writ
 
 ```rust
 fn draw(&mut self, mut emd: Emerald) {
-    emd.graphics()
-            .draw_world();
+    emd.graphics().begin();
 
-    emd.graphics()
-            .render();
+    emd.graphics().draw_world();
+
+    emd.graphics().render();
 }
 ```
 
