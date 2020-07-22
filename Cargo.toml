@@ -11,6 +11,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 # Nightly dependencies
 miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
+nanoserde = { git = "https://github.com/not-fl3/nanoserde", branch = "master" }
 paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
 fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
 

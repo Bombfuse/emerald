@@ -57,6 +57,10 @@ impl<'a> Emerald<'a> {
     #[inline]
     pub fn make_active_camera(_entity: &Entity) {}
 
+    pub fn graphics(&mut self) -> GraphicsHandler {
+        GraphicsHandler::new(&mut self.quad_ctx, &mut self.rendering_engine, self.world_engine)
+    }
+
     /// Asset loading
     #[inline]
     pub fn loader(&mut self) -> AssetLoader {

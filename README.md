@@ -12,20 +12,9 @@
 
 A fully featured 2D engine with minimal dependencies.
 
-# Simple, Powerful API
+# Simple and powerful API
 
-A simple API giving you direct access to physics, audio, ECS worlds, and asset loading.
-
-
-### Asset Loading
-```rust
-let my_sprite = emd.loader()
-    .sprite("./my_assets/my_sprite.png").unwrap();
-
-let my_font = emd.loader()
-    .font("./my_assets/my_font.ttf").unwrap();
-```
-
+A simple API giving you direct access to physics, audio, graphics, game worlds, and asset loading.
 
 # Portable
 
@@ -35,14 +24,43 @@ Built on top of [miniquad](https://github.com/not-fl3/miniquad) and other cross 
 * MacOS
 * Linux
 * Android
-* Web via WASM
+* Web via [WASM](https://webassembly.org/)
+
+
+### Asset Loading
+```rust
+let my_sprite = emd.loader()
+    .sprite("./my_assets/my_sprite.png")
+    .unwrap();
+
+let my_font = emd.loader()
+    .font("./my_assets/my_font.ttf")
+    .unwrap();
+```
+
 
 ## Physics
 You decide when physics steps!
 This makes it very easy to "pause" the game without needing to alter your physics data.
 
 ```rust
-    emd.world().physics().step();
+    emd.world()
+        .physics()
+        .step();
+```
+
+## Graphics
+
+Graphics are set to draw the current game world by default, however you can write your own `draw` function if you need to do more!
+
+```rust
+fn draw(&mut self, mut emd: Emerald) {
+    emd.graphics()
+            .draw_world();
+
+    emd.graphics()
+            .render();
+}
 ```
 
 ## ECS

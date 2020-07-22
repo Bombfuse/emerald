@@ -1,4 +1,6 @@
-#[derive(Clone, Copy, Debug)]
+use nanoserde::{DeJson};
+
+#[derive(Clone, Copy, Debug, DeJson)]
 pub struct Rectangle {
     pub x: f32,
     pub y: f32,

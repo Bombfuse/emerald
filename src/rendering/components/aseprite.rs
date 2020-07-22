@@ -1,6 +1,7 @@
-use crate::{EmeraldError};
+use crate::{EmeraldError, Rectangle};
 use crate::rendering::*;
 
+use nanoserde::{DeJson, SerJson};
 use std::collections::HashMap;
 use std::fs::File;
 
@@ -10,7 +11,7 @@ pub struct Aseprite {
     pub current_animation: String,
     elapsed_time: f32,
     pub sprite: Sprite,
-    pub animations: HashMap<String, AsepriteAnimation>,
+    pub animations: HashMap<String, Animation>,
 }
 impl Aseprite {
     pub(crate) fn new(sprite: Sprite, _animation_file: File) -> Result<Aseprite, EmeraldError> {
@@ -37,15 +38,32 @@ impl Aseprite {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct AsepriteAnimation {
-    pub from: u16,
-    pub to: u16,
-    pub direction: AsepriteAnimationDirection,
+
 }
 
-#[derive(Clone, Debug)]
-pub enum AsepriteAnimationDirection {
+#[derive(Clone, Debug, DeJson)]
+struct Frame { 
+    file_name: String,
+    frame: Rectangle,
+    duration: u32,
+    #[nserde(rename = "spriteSourceSize")]
+    sprite_source_size: Rectangle,
+    #[nserde(rename = "sourceSize")]
+    source_size: Rectangle,
+    rotated: bool,
+    trimmed: bool,
+}
+
+#[derive(Clone, Debug, DeJson)]
+pub struct Animation {
+    pub from: u16,
+    pub to: u16,
+    pub direction: AnimationDirection,
+}
+
+#[derive(Clone, Debug, DeJson)]
+pub enum AnimationDirection {
     Forward,
     Reverse
 }

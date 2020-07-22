@@ -108,6 +108,18 @@ impl EventHandler for GameEngine {
 
     #[inline]
     fn draw(&mut self, mut ctx: &mut Context) {
-        self.rendering_engine.update(&mut ctx, self.world_engine.world());
+        let start_of_frame = Instant::now();
+        let delta = start_of_frame - self.last_instant;
+
+        let emd = Emerald::new(
+            delta,
+            self.get_fps(),
+            &mut ctx,
+            &mut self.input_engine,
+            &mut self.world_engine,
+            &mut self.logging_engine,
+            &mut self.rendering_engine);
+
+        self.game.draw(emd);
     }
 }

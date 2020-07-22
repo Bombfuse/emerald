@@ -17,7 +17,7 @@ impl Game for MyGame {
             emd.loader()
                 .pack_texture(
                     "./examples/assets/bunny.png",
-                    include_bytes!("../examples/assets/bunny.png").to_vec()
+                    include_bytes!("../assets/bunny.png").to_vec()
                 );
         }
 

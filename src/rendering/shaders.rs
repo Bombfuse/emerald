@@ -13,14 +13,16 @@ pub struct Uniforms {
     pub model: Mat4,
     pub source: Vec4,
     pub color: Vec4,
+    pub z_index: f32,
 }
 impl Default for Uniforms {
     fn default() -> Uniforms {
         Uniforms {
-            projection: Mat4::orthographic_lh(0.0, 1.0, 0.0, 1.0, -1.0, 1.0),
+            projection: Mat4::orthographic_lh(0.0, 1.0, 0.0, 1.0, -100.0, 100.0),
             model: Mat4::identity(),
             source: Vec4::new(0.0, 0.0, 1.0, 1.0),
             color: Vec4::new(1.0, 1.0, 1.0, 1.0),
+            z_index: 0.0,
         }
     }
 }
@@ -37,11 +39,12 @@ uniform mat4 Projection;
 uniform vec4 Source;
 uniform vec4 Color;
 uniform mat4 Model;
-uniform float depth;
+
+uniform float z_index;
 
 void main() {
     gl_Position = Projection * Model * vec4(position, 0, 1);
-    gl_Position.z = depth;
+    gl_Position.z = z_index;
     color = Color;
     uv = position * Source.zw + Source.xy;
 }"#;
@@ -66,6 +69,7 @@ pub const META: ShaderMeta = ShaderMeta {
             UniformDesc::new("Model", UniformType::Mat4),
             UniformDesc::new("Source", UniformType::Float4),
             UniformDesc::new("Color", UniformType::Float4),
+            UniformDesc::new("z_index", UniformType::Float1),
         ],
     },
 };

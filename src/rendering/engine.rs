@@ -69,7 +69,7 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn update(&mut self, mut ctx: &mut Context, world: &mut World) {
+    pub fn draw_world(&mut self, mut ctx: &mut Context, world: &mut World) {
         let sprite_query = <(Read<Sprite>, Read<Position>)>::query();
 
         ctx.begin_default_pass(Default::default());
@@ -81,10 +81,15 @@ impl RenderingEngine {
         }
         
         ctx.end_render_pass();
+    }
+
+    pub(crate) fn render(&mut self, ctx: &mut Context) {
         ctx.commit_frame();
     }
 
-    // fn render_color_rect(&mut self, ctx: &mut Context, color_rect: &ColorRect) {}
+    fn render_color_rect(&mut self, ctx: &mut Context, color_rect: &ColorRect) {
+        let texture = self.textures.get(&TextureKey::default()).unwrap();
+    }
 
     #[inline]
     fn render_sprite(&mut self, ctx: &mut Context, sprite: &Sprite, position: &Position) {
@@ -127,8 +132,7 @@ impl RenderingEngine {
         );
 
         uniforms.source = Vec4::new(target.x, target.y, target.width, target.height);
-
-        // println!("model: {}", uniforms.model);
+        uniforms.z_index = sprite.z_index;
 
         ctx.apply_bindings(&texture.bindings);
         ctx.apply_uniforms(&uniforms);
