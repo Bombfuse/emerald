@@ -6,6 +6,8 @@ pub struct ColorRect {
     pub width: u32,
     pub height: u32,
     pub centered: bool,
+    pub rotation: f32,
+    pub z_index: f32,
 }
 impl ColorRect {
     pub fn new(color: Color, width: u32, height: u32) -> Self {
@@ -25,6 +27,8 @@ impl Default for ColorRect {
             width: 32,
             height: 32,
             centered: false,
+            rotation: 0.0,
+            z_index: 0.0,
         }
     }
 }

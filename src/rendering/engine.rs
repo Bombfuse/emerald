@@ -80,8 +80,14 @@ impl RenderingEngine {
         ctx.apply_pipeline(&self.pipeline);
 
         let sprite_query = <(Read<Sprite>, Read<Position>)>::query();
+        let color_rect_query = <(Read<ColorRect>, Read<Position>)>::query();
+
         for (sprite, position) in sprite_query.iter(&mut world.inner) {
-            self.render_sprite(&mut ctx, &sprite, &position);
+            self.draw_sprite(&mut ctx, &sprite, &position);
+        }
+
+        for (color_rect, position) in color_rect_query.iter(&mut world.inner) {
+            self.draw_color_rect(&mut ctx, &color_rect, &position);
         }
     }
 
@@ -95,15 +101,43 @@ impl RenderingEngine {
         ctx.commit_frame();
     }
 
-    fn render_color_rect(&mut self, ctx: &mut Context, color_rect: &ColorRect) {
+    fn draw_color_rect(&mut self, mut ctx: &mut Context, color_rect: &ColorRect, position: &Position) {
         let texture = self.textures.get(&TextureKey::default()).unwrap();
+        let (width, height) = (color_rect.width, color_rect.height);
+
+        let scaled_width = (width as f32) / (texture.width) as f32;
+        let scaled_height = (height as f32) / (texture.height) as f32;
+
+
+        let real_scale = Vec2::new(
+            scaled_width * (f32::from(texture.height)),
+            scaled_height * (f32::from(texture.height)),
+        );
+        let real_position = Vec2::new(
+            position.x,
+            position.y,
+        );
+        let real_offset = Vec2::new(
+            color_rect.offset.x,
+            color_rect.offset.y,
+        );
+
+
+        self.draw_texture(
+            &mut ctx,
+            &TextureKey::default(),
+            color_rect.z_index,
+            real_scale,
+            color_rect.rotation,
+            real_offset,
+            real_position,
+            Rectangle::new(0.0, 0.0, 1.0, 1.0)
+        )
     }
 
     #[inline]
-    fn render_sprite(&mut self, ctx: &mut Context, sprite: &Sprite, position: &Position) {
-        let view_size = ctx.screen_size();
+    fn draw_sprite(&mut self, mut ctx: &mut Context, sprite: &Sprite, position: &Position) {
         let texture = self.textures.get(&sprite.texture_key).unwrap();
-
         let mut target = Rectangle::new(
             sprite.target.x / texture.width as f32,
             sprite.target.y / texture.height as f32,
@@ -128,19 +162,41 @@ impl RenderingEngine {
             sprite.offset.y,
         );
 
+        self.draw_texture(&mut ctx,
+            &sprite.texture_key,
+            sprite.z_index,
+            real_scale,
+            sprite.rotation,
+            real_offset,
+            real_position,
+            target)
+    }
+
+    fn draw_texture(&mut self,
+        ctx: &mut Context,
+        texture_key: &TextureKey,
+        z_index: f32,
+        scale: Vec2,
+        rotation: f32,
+        offset: Vec2,
+        position: Vec2,
+        source: Rectangle,
+    ) {
+        let texture = self.textures.get(&texture_key).unwrap();
+        let view_size = ctx.screen_size();
         let mut uniforms = Uniforms::default();
         let projection = Mat4::orthographic_lh(0.0, view_size.0, view_size.1, 0.0, -1.0, 1.0);
 
         uniforms.projection = projection;
         uniforms.model = crate::rendering::param_to_instance_transform(
-            sprite.rotation,
-            real_scale,
-            real_offset,
-            real_position,
+            rotation,
+            scale,
+            offset,
+            position,
         );
 
-        uniforms.source = Vec4::new(target.x, target.y, target.width, target.height);
-        uniforms.z_index = sprite.z_index;
+        uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
+        uniforms.z_index = z_index;
 
         ctx.apply_bindings(&texture.bindings);
         ctx.apply_uniforms(&uniforms);

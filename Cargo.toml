@@ -36,5 +36,8 @@ name = "bunnymark"
 [[example]]
 name = "sprite"
 
+[[example]]
+name = "color_rect"
+
 [target.armv7-unknown-linux-gnueabihf]
 linker = "arm-none-linux-gnueabihf-gcc"
