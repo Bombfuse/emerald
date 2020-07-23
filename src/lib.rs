@@ -21,6 +21,7 @@ pub use nphysics2d::nalgebra::Vector2;
 
 // General re-exports for compatibility
 pub use instant::Instant;
+pub use nanoserde;
 
 use miniquad::{conf, UserData};
 
