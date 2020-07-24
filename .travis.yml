@@ -11,7 +11,7 @@ jobs:
     - rust: nightly
   fast_finish: true
 install:
-  - rustup install wasm32-unknown-unknown
+  - rustup target add wasm32-unknown-unknown
 script:
   - cargo build
   - cargo build --target wasm32-unknown-unknown
