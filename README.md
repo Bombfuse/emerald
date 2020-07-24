@@ -18,13 +18,15 @@ A simple API giving you direct access to physics, audio, graphics, game worlds, 
 
 Built on top of [miniquad](https://github.com/not-fl3/miniquad) and other cross platform libraries, Emerald is able to run almost anywhere.
 
-<img style="display: inline-block;" alt="MacOS" src="./assets/apple.svg" width=32>
-<img style="display: inline-block;" alt="Linux" src="./assets/linux.svg" width=32>
-<img style="display: inline-block;" alt="Windows" src="./assets/windows.svg" width=32>
-<img style="display: inline-block;" alt="RaspberryPi" src="./assets/raspberrypi.svg" width=32>
-<img style="display: inline-block;" alt="HTML5" src="./assets/webassembly.svg" width=32>
-<img style="display: inline-block;" alt="Android" src="./assets/android.svg" width=32>
-
+<div>
+    <img style="display: inline-blick;" alt="OpenGL" src="./assets/opengl.svg" width=32>
+    <img style="display: inline-blick;" alt="MacOS" src="./assets/apple.svg" width=32>
+    <img style="display: inline-blick;" alt="Linux" src="./assets/linux.svg" width=32>
+    <img style="display: inline-blick;" alt="Windows" src="./assets/windows.svg" width=32>
+    <img style="display: inline-blick;" alt="RaspberryPi" src="./assets/raspberrypi.svg" width=32>
+    <img style="display: inline-blick;" alt="HTML5" src="./assets/webassembly.svg" width=32>
+    <img style="display: inline-blick;" alt="Android" src="./assets/android.svg" width=32>
+</div>
 
 * Android WIP
 
