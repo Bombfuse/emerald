@@ -18,11 +18,16 @@ A simple API giving you direct access to physics, audio, graphics, game worlds, 
 
 Built on top of [miniquad](https://github.com/not-fl3/miniquad) and other cross platform libraries, Emerald is able to run almost anywhere.
 
-* Windows
-* MacOS
-* Linux
-* Android
-* Web via [WASM](https://webassembly.org/)
+<img alt="MacOS" src="./assets/apple.svg" width=32>
+<img alt="Linux" src="./assets/linux.svg" width=32>
+<img alt="Windows" src="./assets/windows.svg" width=32>
+<img alt="RaspberryPi" src="./assets/raspberrypi.svg" width=32>
+<img alt="HTML5" src="./assets/webassembly.svg" width=32>
+<img alt="Android" src="./assets/android.svg" width=32>
+
+
+* Android WIP
+
 
 
 ## Asset Loading
