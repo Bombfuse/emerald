@@ -131,7 +131,8 @@ impl RenderingEngine {
             color_rect.rotation,
             real_offset,
             real_position,
-            Rectangle::new(0.0, 0.0, 1.0, 1.0)
+            Rectangle::new(0.0, 0.0, 1.0, 1.0),
+            color_rect.color,
         )
     }
 
@@ -169,7 +170,8 @@ impl RenderingEngine {
             sprite.rotation,
             real_offset,
             real_position,
-            target)
+            target,
+            WHITE)
     }
 
     fn draw_texture(&mut self,
@@ -181,6 +183,7 @@ impl RenderingEngine {
         offset: Vec2,
         position: Vec2,
         source: Rectangle,
+        color: Color,
     ) {
         let texture = self.textures.get(&texture_key).unwrap();
         let view_size = ctx.screen_size();
@@ -197,6 +200,7 @@ impl RenderingEngine {
 
         uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
         uniforms.z_index = z_index;
+        uniforms.color = Vec4::new(color.r as f32, color.g as f32, color.b as f32, color.a as f32);
 
         ctx.apply_bindings(&texture.bindings);
         ctx.apply_uniforms(&uniforms);
