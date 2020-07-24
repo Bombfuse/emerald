@@ -16,6 +16,7 @@ pub use paintbrush::*;
 pub use logging::*;
 
 // physics/math/collision re-exports
+pub type Velocity = nphysics2d::math::Velocity<f32>;
 pub use nphysics2d::nalgebra::Vector2;
 //
 
