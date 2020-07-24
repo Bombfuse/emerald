@@ -12,3 +12,4 @@ jobs:
   fast_finish: true
 script:
   - cargo build
+  - cargo build --target wasm32-unknown-unknown

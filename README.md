@@ -1,12 +1,10 @@
 ![Emerald](./banner_large.png)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Crates.io](https://img.shields.io/crates/v/emerald.svg)](https://crates.io/crates/emerald)
 [![Build Status](https://travis-ci.com/Bombfuse/emerald.svg?branch=master)](https://travis-ci.com/Bombfuse/emerald)
 
-## !!! IN DEVELOPMENT !!!
-[x] Sprites [x] WASM [] Aseprite [] Logging [] Tilemaps [] Fonts [] Audio []Android
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 # Lite
 
@@ -27,7 +25,7 @@ Built on top of [miniquad](https://github.com/not-fl3/miniquad) and other cross 
 * Web via [WASM](https://webassembly.org/)
 
 
-### Asset Loading
+## Asset Loading
 ```rust
 let my_sprite = emd.loader()
     .sprite("./my_assets/my_sprite.png")
@@ -69,6 +67,8 @@ Emerald uses the [Entity Component System](https://en.wikipedia.org/wiki/Entity_
 
 Emerald uses [Legion](https://github.com/TomGillen/legion) under the hood for extremely fast entity iteration, and a remarkably clean query API.
 
+More detailed features can be found in the Legion documentation.
+
 ```rust
 
 let sprite_update_query = <(Read<Sprite>, Write<Position>)>::query();
@@ -82,7 +82,7 @@ for (sprite, mut position) in sprite_update_query.iter_mut(emd.world().queryable
 
 Emerald has built in aseprite loading and rendering. Simply load in the texture and animation file, then tell it which animations to play.
 
-```
+```rust
 let mut aseprite = emd.loader()
     .aseprite("./assets/my_texture.png", "./assets/my_animation.json").unwrap();
 
