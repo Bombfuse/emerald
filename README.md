@@ -6,13 +6,11 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-# Lite
+# Light and powerful
 
-A fully featured 2D engine with minimal dependencies.
+Emerald is designed to be as lightweight as possible, while remaining a fully-featured, cross-platform game engine.
 
-# Simple and powerful API
-
-A simple API giving you direct access to physics, audio, graphics, game worlds, and asset loading.
+The API is simple and powerful, giving you direct access to physics, audio, graphics, game worlds, and asset loading.
 
 # Portable
 
@@ -101,7 +99,7 @@ emd.world()
 
 
 
-## WASM
+## [WASM](https://webassembly.org/)
 
 ### Build
 
