@@ -198,9 +198,11 @@ impl RenderingEngine {
             position,
         );
 
+        let color = color.percentage();
+
         uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
         uniforms.z_index = z_index;
-        uniforms.color = Vec4::new(color.r as f32, color.g as f32, color.b as f32, color.a as f32);
+        uniforms.color = Vec4::new(color.0, color.1, color.2, color.3);
 
         ctx.apply_bindings(&texture.bindings);
         ctx.apply_uniforms(&uniforms);

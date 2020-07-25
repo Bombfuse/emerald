@@ -1,5 +1,4 @@
 ![Emerald](./banner_large.png)
-
 [![Crates.io](https://img.shields.io/crates/v/emerald.svg)](https://crates.io/crates/emerald)
 [![Build Status](https://travis-ci.com/Bombfuse/emerald.svg?branch=master)](https://travis-ci.com/Bombfuse/emerald)
 
@@ -17,13 +16,13 @@ The API is simple and powerful, giving you direct access to physics, audio, grap
 Built on top of [miniquad](https://github.com/not-fl3/miniquad) and other cross platform libraries, Emerald is able to run almost anywhere.
 
 <div>
-    <img style="display: inline-blick;" alt="OpenGL" src="./assets/opengl.svg" width=32>
-    <img style="display: inline-blick;" alt="MacOS" src="./assets/apple.svg" width=32>
-    <img style="display: inline-blick;" alt="Linux" src="./assets/linux.svg" width=32>
-    <img style="display: inline-blick;" alt="Windows" src="./assets/windows.svg" width=32>
-    <img style="display: inline-blick;" alt="RaspberryPi" src="./assets/raspberrypi.svg" width=32>
-    <img style="display: inline-blick;" alt="HTML5" src="./assets/webassembly.svg" width=32>
-    <img style="display: inline-blick;" alt="Android" src="./assets/android.svg" width=32>
+    <img alt="OpenGL" src="./assets/opengl.svg" width=32>
+    <img alt="MacOS" src="./assets/apple.svg" width=32>
+    <img alt="Linux" src="./assets/linux.svg" width=32>
+    <img alt="Windows" src="./assets/windows.svg" width=32>
+    <img alt="RaspberryPi" src="./assets/raspberrypi.svg" width=32>
+    <img alt="HTML5" src="./assets/webassembly.svg" width=32>
+    <img alt="Android" src="./assets/android.svg" width=32>
 </div>
 
 * Android WIP
