@@ -17,7 +17,7 @@ fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
 
 # Dependencies
 instant = { version = "0.1.5", features = [ "now" ] }
-nphysics2d = {version = "0.15.0", default-features = false, features = ["dim2"] }
+nphysics2d = { version = "0.16.1", default-features = false, features = ["dim2"] }
 image = "0.23.4"
 legion = { version = "0.2.1", default-features = false }
 glam = "0.8.7"

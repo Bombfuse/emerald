@@ -19,30 +19,31 @@ use nphysics2d::world::{
 
 use nphysics2d::joint::DefaultJointConstraintSet;
 use nphysics2d::force_generator::DefaultForceGeneratorSet;
+use nphysics2d::nalgebra::Isometry2;
 
 pub struct PhysicsEngine {
     geometrical_world: DefaultGeometricalWorld<f32>,
     mechanical_world: DefaultMechanicalWorld<f32>,
     bodies: DefaultBodySet<f32>,
     colliders: DefaultColliderSet<f32>,
-    joint_constraints: DefaultJointConstraintSet<f32>,
-    force_generators: DefaultForceGeneratorSet<f32>,
+    constraints: DefaultJointConstraintSet<f32>,
+    forces: DefaultForceGeneratorSet<f32>,
 }
 
 impl PhysicsEngine {
     pub(crate) fn new() -> Self {
-        let mechanical_world = DefaultMechanicalWorld::new(Vector2::new(0.0, -9.81));
+        let mechanical_world = DefaultMechanicalWorld::new(Vector2::new(0.0, 9.81));
         let geometrical_world = DefaultGeometricalWorld::new();
         let bodies = DefaultBodySet::new();
         let colliders = DefaultColliderSet::new();
-        let joint_constraints = DefaultJointConstraintSet::new();
-        let force_generators = DefaultForceGeneratorSet::new();
+        let constraints = DefaultJointConstraintSet::new();
+        let forces = DefaultForceGeneratorSet::new();
 
         PhysicsEngine {
             mechanical_world,
             geometrical_world,
-            joint_constraints,
-            force_generators,
+            constraints,
+            forces,
             colliders,
             bodies,
         }
@@ -55,6 +56,21 @@ impl PhysicsEngine {
             pos.x += vel.linear.x;
             pos.y += vel.linear.y;
         }
+
+
+        let physics_body_query = <(Read<Velocity>, Read<PhysicsBodyHandle>)>::query();
+
+        // for (vel, phb) in physics_body_query.iter(world) {
+        //     let body_position = self.colliders.get(pbh.collider_handles[0]).unwrap();
+        // }
+
+        self.mechanical_world.step(
+            &mut self.geometrical_world,
+            &mut self.bodies,
+            &mut self.colliders,
+            &mut self.constraints,
+            &mut self.forces,
+        );
     }
 
     pub(crate) fn create_body(&mut self, desc: &RigidBodyDesc<f32>) -> PhysicsBodyHandle {
@@ -69,5 +85,34 @@ impl PhysicsEngine {
         physics_handle.add_collider(handle);
 
         handle
+    }
+
+    pub(crate) fn sync_physics_positions_to_positions(&mut self, world: &legion::world::World) {
+        let update_positions_query = <(Read<Position>, Read<PhysicsBodyHandle>)>::query();
+        let update_velocity_query = <(Read<Velocity>, Read<PhysicsBodyHandle>)>::query();
+
+        for (pos, phb) in update_positions_query.iter(world) {
+            self.bodies.rigid_body_mut(phb.body_handle).unwrap()
+                .set_position(Isometry2::new(Vector2::new(pos.x, pos.y), std::f32::consts::FRAC_PI_2));
+        }
+
+        for (vel, phb) in update_velocity_query.iter(world) {
+            self.bodies.rigid_body_mut(phb.body_handle).unwrap()
+                .set_velocity(*vel);
+        }
+    }
+
+    pub(crate) fn sync_positions_to_physics_positions(&mut self, mut world: &mut legion::world::World) {
+        let sync_position_query = <(Write<Position>, Read<PhysicsBodyHandle>)>::query();
+
+        for (mut pos, pbh) in sync_position_query.iter_mut(world) {
+            let trans = self.bodies.rigid_body_mut(pbh.body_handle).unwrap()
+                .position().translation;
+
+            pos.x = trans.x;
+            pos.y = trans.y;
+
+            println!("{:?}", trans);
+        }
     }
 }

@@ -29,8 +29,12 @@ impl<'a> PhysicsHandler<'a> {
     }
 
     pub fn step_n(&mut self, n: u32) {
+        self.physics_engine.sync_physics_positions_to_positions(&mut self.world);
+        
         for _ in 0..n {
-            self.physics_engine.step(&mut self.world)
+            self.physics_engine.step(&mut self.world);
         }
+
+        self.physics_engine.sync_positions_to_physics_positions(&mut self.world);
     }
 }

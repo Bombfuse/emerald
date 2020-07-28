@@ -18,11 +18,19 @@ pub use logging::*;
 // physics/math/collision re-exports
 pub type Velocity = nphysics2d::math::Velocity<f32>;
 pub use nphysics2d::nalgebra::Vector2;
+pub use nphysics2d::object::{
+    RigidBody,
+    RigidBodyDesc,
+    ColliderDesc,
+    Collider,
+};
+pub use nphysics2d::ncollide2d::shape::{ShapeHandle, Ball, Cuboid};
 //
 
 // General re-exports for compatibility
 pub use instant::Instant;
 pub use nanoserde;
+pub use nphysics2d;
 
 use miniquad::{conf, UserData};
 
