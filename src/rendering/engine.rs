@@ -3,6 +3,7 @@ use crate::world::*;
 use crate::rendering::*;
 use crate::rendering::texture::{Texture};
 use crate::rendering::font::FontKey;
+use crate::physics::PhysicsBodyHandle;
 
 use std::fs::File;
 use std::io::Read as StdIoRead;
@@ -91,27 +92,60 @@ impl RenderingEngine {
         }
     }
 
+    #[inline]
+    pub fn draw_colliders(&mut self, mut ctx: &mut Context, world: &mut World, collider_color: Color) {
+        let physics_body_query = <(Read<PhysicsBodyHandle>)>::query();
+
+        ctx.apply_pipeline(&self.pipeline);
+        
+        let mut color_rect = ColorRect::default();
+        color_rect.color = collider_color;
+
+        for ph in physics_body_query.iter(&world.inner) {
+            for collider_handle in &ph.collider_handles {
+                if let Some(collider) = world.physics_engine.colliders.get(collider_handle.clone()) {
+                    let trans = collider.position().translation;
+                    let bf = world.physics_engine.geometrical_world.broad_phase();
+                    let aabb = collider
+                        .proxy_handle()
+                        .and_then(|h| bf.proxy(h))
+                        .map(|p| p.0);
+
+                    if let Some(aabb) = aabb {
+                        let mut pos = Position::new(aabb.center().coords.x, aabb.center().coords.y);
+                        color_rect.width = aabb.half_extents().x as u32 * 2;
+                        color_rect.height = aabb.half_extents().y as u32 * 2;
+
+                        pos.x -= (color_rect.width / 2) as f32;
+                        pos.y -= (color_rect.height / 2) as f32;
+
+                        self.draw_color_rect(&mut ctx, &color_rect, &pos);
+                    }
+                }
+            }
+        }
+
+    }
+
+    #[inline]
     pub(crate) fn begin(&mut self, ctx: &mut Context) {
         ctx.begin_default_pass(Default::default());
         ctx.clear(Some(self.settings.background_color.percentage()), None, None);
     }
 
+    #[inline]
     pub(crate) fn render(&mut self, ctx: &mut Context) {
         ctx.end_render_pass();
         ctx.commit_frame();
     }
 
+    #[inline]
     fn draw_color_rect(&mut self, mut ctx: &mut Context, color_rect: &ColorRect, position: &Position) {
-        let texture = self.textures.get(&TextureKey::default()).unwrap();
         let (width, height) = (color_rect.width, color_rect.height);
 
-        let scaled_width = (width as f32) / (texture.width) as f32;
-        let scaled_height = (height as f32) / (texture.height) as f32;
-
-
         let real_scale = Vec2::new(
-            scaled_width * (f32::from(texture.height)),
-            scaled_height * (f32::from(texture.height)),
+            width as f32,
+            height as f32,
         );
         let real_position = Vec2::new(
             position.x,
@@ -121,7 +155,6 @@ impl RenderingEngine {
             color_rect.offset.x,
             color_rect.offset.y,
         );
-
 
         self.draw_texture(
             &mut ctx,
@@ -174,6 +207,7 @@ impl RenderingEngine {
             WHITE)
     }
 
+    #[inline]
     fn draw_texture(&mut self,
         ctx: &mut Context,
         texture_key: &TextureKey,
@@ -201,8 +235,8 @@ impl RenderingEngine {
         let color = color.percentage();
 
         uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
-        uniforms.z_index = z_index;
         uniforms.color = Vec4::new(color.0, color.1, color.2, color.3);
+        uniforms.z_index = z_index;
 
         ctx.apply_bindings(&texture.bindings);
         ctx.apply_uniforms(&uniforms);

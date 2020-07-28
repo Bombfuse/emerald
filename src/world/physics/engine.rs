@@ -22,17 +22,17 @@ use nphysics2d::force_generator::DefaultForceGeneratorSet;
 use nphysics2d::nalgebra::Isometry2;
 
 pub struct PhysicsEngine {
-    geometrical_world: DefaultGeometricalWorld<f32>,
-    mechanical_world: DefaultMechanicalWorld<f32>,
-    bodies: DefaultBodySet<f32>,
-    colliders: DefaultColliderSet<f32>,
+    pub(crate) geometrical_world: DefaultGeometricalWorld<f32>,
+    pub(crate) mechanical_world: DefaultMechanicalWorld<f32>,
+    pub(crate) bodies: DefaultBodySet<f32>,
+    pub(crate) colliders: DefaultColliderSet<f32>,
     constraints: DefaultJointConstraintSet<f32>,
     forces: DefaultForceGeneratorSet<f32>,
 }
 
 impl PhysicsEngine {
     pub(crate) fn new() -> Self {
-        let mechanical_world = DefaultMechanicalWorld::new(Vector2::new(0.0, 9.81));
+        let mechanical_world = DefaultMechanicalWorld::new(Vector2::new(0.0, 0.0));
         let geometrical_world = DefaultGeometricalWorld::new();
         let bodies = DefaultBodySet::new();
         let colliders = DefaultColliderSet::new();
@@ -56,13 +56,6 @@ impl PhysicsEngine {
             pos.x += vel.linear.x;
             pos.y += vel.linear.y;
         }
-
-
-        let physics_body_query = <(Read<Velocity>, Read<PhysicsBodyHandle>)>::query();
-
-        // for (vel, phb) in physics_body_query.iter(world) {
-        //     let body_position = self.colliders.get(pbh.collider_handles[0]).unwrap();
-        // }
 
         self.mechanical_world.step(
             &mut self.geometrical_world,
@@ -108,11 +101,8 @@ impl PhysicsEngine {
         for (mut pos, pbh) in sync_position_query.iter_mut(world) {
             let trans = self.bodies.rigid_body_mut(pbh.body_handle).unwrap()
                 .position().translation;
-
             pos.x = trans.x;
             pos.y = trans.y;
-
-            println!("{:?}", trans);
         }
     }
 }

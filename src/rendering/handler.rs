@@ -9,7 +9,7 @@ pub struct GraphicsHandler<'a> {
 impl<'a> GraphicsHandler<'a> {
     pub fn new(quad_ctx: &'a mut Context,
         rendering_engine: &'a mut RenderingEngine,
-        world_engine: &'a mut WorldEngine
+        world_engine: &'a mut WorldEngine,
     ) -> Self {
         GraphicsHandler {
             quad_ctx,
@@ -20,6 +20,10 @@ impl<'a> GraphicsHandler<'a> {
 
     pub fn draw_world(&mut self) {
         self.rendering_engine.draw_world(&mut self.quad_ctx, self.world_engine.world())
+    }
+
+    pub fn draw_colliders(&mut self, color: crate::Color) {
+        self.rendering_engine.draw_colliders(&mut self.quad_ctx, self.world_engine.world(), color)
     }
 
     pub fn set_projection(&mut self, projection: Rectangle) {

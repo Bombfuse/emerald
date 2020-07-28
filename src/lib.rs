@@ -23,6 +23,7 @@ pub use nphysics2d::object::{
     RigidBodyDesc,
     ColliderDesc,
     Collider,
+    BodyStatus,
 };
 pub use nphysics2d::ncollide2d::shape::{ShapeHandle, Ball, Cuboid};
 //
