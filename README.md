@@ -1,8 +1,6 @@
 ![Emerald](./banner_large.png)
 [![Crates.io](https://img.shields.io/crates/v/emerald.svg)](https://crates.io/crates/emerald)
 [![Build Status](https://travis-ci.com/Bombfuse/emerald.svg?branch=master)](https://travis-ci.com/Bombfuse/emerald)
-
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 # Light and powerful
