@@ -4,13 +4,10 @@ use emerald::*;
 /// Basic Bunnymark
 /// 
 
-pub struct Vel {
-    pub x: f32,
-    pub y: f32,
-}
-
 pub fn main() {
-    emerald::start(Box::new(BunnymarkGame { count: 0, }), GameSettings::default())
+    let mut settings = GameSettings::default();
+    settings.render_settings.window_size = (320, 180);
+    emerald::start(Box::new(BunnymarkGame { count: 0, }), settings)
 }
 
 pub struct BunnymarkGame {
@@ -31,7 +28,7 @@ impl Game for BunnymarkGame {
         let mut sprite = emd.loader()
             .sprite("./examples/assets/bunny.png").unwrap();
         
-        sprite.offset = Vector2::new(-6.0, 0.0);
+        sprite.offset = Vector2::new(-10.0, 0.0);
         
         let mut position = Position::new(0.0, 0.0);
 
@@ -41,7 +38,7 @@ impl Game for BunnymarkGame {
                 position.x += 6.0;
                 position.y += 1.0;
                 let mut s = sprite.clone();
-                (position.clone(), s, Vel { x: 5.0, y: 3.0 })
+                (position.clone(), s, Velocity::linear(5.0, 3.0))
             })
         );
     }
@@ -49,6 +46,7 @@ impl Game for BunnymarkGame {
     #[inline]
     fn update(&mut self, mut emd: Emerald) {
         let (screen_width, screen_height) = emd.screen_size();
+        let sprite_width = 32.0;
 
         if emd.input().is_key_just_pressed(KeyCode::Space) {
             let sprite = emd.loader()
@@ -61,38 +59,37 @@ impl Game for BunnymarkGame {
                     position.x += 6.0;
                     position.y += 1.0;
                     let mut s = sprite.clone();
-                    (position.clone(), s, Vel { x: 5.0, y: 3.0 })
+                    (position.clone(), s, Velocity::linear(5.0, 3.0))
                 })
             );
         }
 
         let now = Instant::now();
-        let bunny_query = <(Read<Sprite>, Write<Position>, Write<Vel>)>::query();
+        let bunny_query = <(Read<Sprite>, Write<Position>, Write<Velocity>)>::query();
         for (_, mut position, mut vel) in bunny_query.iter_mut(emd.world().queryable()) {
-            position.x += vel.x;
-            position.y += vel.y;
-
-            if position.x >= screen_width {
-                position.x = screen_width;
-                vel.x *= -1.0;
+            if position.x >= screen_width - sprite_width / 2.0 {
+                position.x = screen_width - sprite_width / 2.0;
+                vel.linear.x *= -1.0;
             }
 
             if position.x <= 0.0 {
                 position.x = 0.0;
-                vel.x *= -1.0;
+                vel.linear.x *= -1.0;
             }
 
-            if position.y >= screen_height {
-                position.y = screen_height;
-                vel.y = -3.0;
+            if position.y >= screen_height - sprite_width {
+                position.y = screen_height - sprite_width;
+                vel.linear.y = -3.0;
             }
 
             if position.y <= 0.0 {
                 position.y = 0.0;
-                vel.y = 3.0;
+                vel.linear.y = 3.0;
             }
+
         }
 
+        emd.world().physics().step();
         println!("{}, {}", self.count, emd.fps());
     }
 }

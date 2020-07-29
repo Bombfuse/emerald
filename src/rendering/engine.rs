@@ -104,7 +104,6 @@ impl RenderingEngine {
         for ph in physics_body_query.iter(&world.inner) {
             for collider_handle in &ph.collider_handles {
                 if let Some(collider) = world.physics_engine.colliders.get(collider_handle.clone()) {
-                    let trans = collider.position().translation;
                     let bf = world.physics_engine.geometrical_world.broad_phase();
                     let aabb = collider
                         .proxy_handle()
@@ -148,8 +147,8 @@ impl RenderingEngine {
             height as f32,
         );
         let real_position = Vec2::new(
-            position.x,
-            position.y,
+            position.x + color_rect.offset.x,
+            position.y + color_rect.offset.y,
         );
         let real_offset = Vec2::new(
             color_rect.offset.x,
@@ -162,7 +161,7 @@ impl RenderingEngine {
             color_rect.z_index,
             real_scale,
             color_rect.rotation,
-            real_offset,
+            Vec2::new(0.0, 0.0),
             real_position,
             Rectangle::new(0.0, 0.0, 1.0, 1.0),
             color_rect.color,
@@ -188,8 +187,8 @@ impl RenderingEngine {
             sprite.scale.y * target.height * (f32::from(texture.height)),
         );
         let real_position = Vec2::new(
-            position.x,
-            position.y,
+            position.x + sprite.offset.x,
+            position.y + sprite.offset.y,
         );
         let real_offset = Vec2::new(
             sprite.offset.x,
@@ -201,7 +200,7 @@ impl RenderingEngine {
             sprite.z_index,
             real_scale,
             sprite.rotation,
-            real_offset,
+            Vec2::new(0.0, 0.0),
             real_position,
             target,
             WHITE)
