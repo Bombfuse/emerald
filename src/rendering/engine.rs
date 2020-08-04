@@ -101,8 +101,12 @@ impl RenderingEngine {
         let mut color_rect = ColorRect::default();
         color_rect.color = collider_color;
 
+
+
         for ph in physics_body_query.iter(&world.inner) {
-            for collider_handle in &ph.collider_handles {
+            let physics_body = world.physics_engine.physics_bodies.get(&ph).unwrap();
+
+            for collider_handle in &physics_body.collider_handles {
                 if let Some(collider) = world.physics_engine.colliders.get(collider_handle.clone()) {
                     let bf = world.physics_engine.geometrical_world.broad_phase();
                     let aabb = collider
@@ -150,10 +154,6 @@ impl RenderingEngine {
             position.x + color_rect.offset.x,
             position.y + color_rect.offset.y,
         );
-        let real_offset = Vec2::new(
-            color_rect.offset.x,
-            color_rect.offset.y,
-        );
 
         self.draw_texture(
             &mut ctx,
@@ -183,16 +183,12 @@ impl RenderingEngine {
         }
 
         let real_scale = Vec2::new(
-            sprite.scale.x * target.width * (f32::from(texture.height)),
+            sprite.scale.x * target.width * (f32::from(texture.width)),
             sprite.scale.y * target.height * (f32::from(texture.height)),
         );
         let real_position = Vec2::new(
             position.x + sprite.offset.x,
             position.y + sprite.offset.y,
-        );
-        let real_offset = Vec2::new(
-            sprite.offset.x,
-            sprite.offset.y,
         );
 
         self.draw_texture(&mut ctx,
@@ -221,7 +217,11 @@ impl RenderingEngine {
         let texture = self.textures.get(&texture_key).unwrap();
         let view_size = ctx.screen_size();
         let mut uniforms = Uniforms::default();
-        let projection = Mat4::orthographic_lh(0.0, view_size.0, view_size.1, 0.0, -1.0, 1.0);
+
+        let projection = match self.settings.scalar {
+            ScreenScalar::Keep => Mat4::orthographic_lh(0.0, self.settings.window_size.0 as f32, self.settings.window_size.1 as f32, 0.0, -1.0, 1.0),
+            ScreenScalar::None => Mat4::orthographic_lh(0.0, view_size.0, view_size.1, 0.0, -1.0, 1.0),
+        };
 
         uniforms.projection = projection;
         uniforms.model = crate::rendering::param_to_instance_transform(

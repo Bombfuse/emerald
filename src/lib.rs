@@ -11,6 +11,7 @@ pub use crate::core::*;
 pub use crate::rendering::*;
 pub use crate::input::*;
 pub use crate::world::*;
+pub use crate::world::physics::*;
 pub use crate::types::*;
 pub use paintbrush::*;
 pub use logging::*;

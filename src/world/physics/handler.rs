@@ -1,6 +1,7 @@
 use crate::world::*;
 use crate::physics::*;
 use crate::physics::components::*;
+use crate::Vector2;
 
 use nphysics2d::object::{RigidBodyDesc, ColliderDesc, DefaultColliderHandle};
 
@@ -24,17 +25,47 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.create_collider(&mut physics_body_handle, &desc)
     }
 
+    pub fn create_ground_collider(&mut self, desc: &ColliderDesc<f32>) -> DefaultColliderHandle {
+        self.physics_engine.create_ground_collider(&desc)
+    }
+
     pub fn step(&mut self) {
         self.step_n(1);
     }
 
     pub fn step_n(&mut self, n: u32) {
-        self.physics_engine.sync_physics_positions_to_positions(&mut self.world);
+        self.physics_engine.sync_physics_world_to_game_world(&mut self.world);
         
         for _ in 0..n {
             self.physics_engine.step(&mut self.world);
         }
 
-        self.physics_engine.sync_positions_to_physics_positions(&mut self.world);
+        self.physics_engine.sync_game_world_to_physics_world(&mut self.world);
+    }
+
+    pub fn move_and_collide(&mut self, phb: &mut PhysicsBodyHandle, distance: Vector2<f32>) {}
+    pub fn move_and_slide(&mut self, phb: &mut PhysicsBodyHandle, distance: Vector2<f32>) {}
+
+    pub fn set_gravity(&mut self, gravity: Vector2<f32>) { }
+
+    pub fn set_ccd_substeps(&mut self, substep_count: usize) {
+        self.physics_engine
+            .mechanical_world
+            .integration_parameters
+            .max_ccd_substeps = substep_count;
+    }
+
+    pub fn set_ccd_max_position_iterations(&mut self, iterations: usize) {
+        self.physics_engine
+            .mechanical_world
+            .integration_parameters
+            .max_ccd_position_iterations = iterations;
+    }
+
+    pub fn set_ccd_on_penetration_enabled(&mut self, enabled: bool) {
+        self.physics_engine
+            .mechanical_world
+            .integration_parameters
+            .ccd_on_penetration_enabled = enabled;
     }
 }

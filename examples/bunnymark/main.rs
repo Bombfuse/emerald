@@ -27,7 +27,6 @@ impl Game for BunnymarkGame {
 
         let mut sprite = emd.loader()
             .sprite("./examples/assets/bunny.png").unwrap();
-        
         sprite.offset = Vector2::new(-10.0, 0.0);
         
         let mut position = Position::new(0.0, 0.0);
@@ -49,8 +48,9 @@ impl Game for BunnymarkGame {
         let sprite_width = 32.0;
 
         if emd.input().is_key_just_pressed(KeyCode::Space) {
-            let sprite = emd.loader()
+            let mut sprite = emd.loader()
                 .sprite("./examples/assets/bunny.png").unwrap();
+            sprite.offset = Vector2::new(-10.0, 0.0);
             
             let mut position = Position::new(0.0, 0.0);
             self.count += 1000;

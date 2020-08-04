@@ -11,6 +11,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 # Nightly dependencies
 miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
+quad-snd = { git = "https://github.com/not-fl3/quad-snd", branch = "master" }
 nanoserde = { git = "https://github.com/not-fl3/nanoserde", branch = "master" }
 paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
 fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
@@ -21,6 +22,11 @@ nphysics2d = { version = "0.16.1", default-features = false, features = ["dim2"]
 image = "0.23.4"
 legion = { version = "0.2.1", default-features = false }
 glam = "0.8.7"
+uuid = { version = "0.8", features = ["wasm-bindgen", "v4"] }
+log = "0.4.11"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_log = { version = "0.2.0" }
 
 [lib]
 name = "emerald"

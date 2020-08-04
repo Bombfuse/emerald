@@ -1,22 +1,14 @@
 use nphysics2d::object::{DefaultBodyHandle, DefaultColliderHandle};
+use uuid::Uuid;
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct PhysicsBodyHandle {
-    pub(crate) body_handle: DefaultBodyHandle,
-    pub(crate) body_part_count: u8,
-    pub(crate) collider_handles: Vec<DefaultColliderHandle>,
+    pub(crate) body_id: Uuid,
 }
 impl PhysicsBodyHandle {
-    pub fn new(body_handle: DefaultBodyHandle) -> Self {
+    pub(crate) fn new(body_id: Uuid) -> Self {
         PhysicsBodyHandle {
-            body_handle,
-            body_part_count: 0,
-            collider_handles: Vec::new(),
+            body_id,
         }
-    }
-
-    pub fn add_collider(&mut self, collider_handle: DefaultColliderHandle) {
-        self.collider_handles.push(collider_handle);
-        self.body_part_count += 1;
     }
 }

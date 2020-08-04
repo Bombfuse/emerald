@@ -82,7 +82,7 @@ impl Texture {
             height: texture.height as u16,
             inner: texture,
             bindings,
-            filter: FilterMode::Linear,
+            filter: FilterMode::Nearest,
         })
     }
 }
