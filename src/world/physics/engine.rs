@@ -20,7 +20,8 @@ use nphysics2d::world::{
 
 use nphysics2d::joint::DefaultJointConstraintSet;
 use nphysics2d::force_generator::DefaultForceGeneratorSet;
-use nphysics2d::nalgebra::Isometry2;
+use nphysics2d::nalgebra::{Isometry2, Translation2};
+
 
 use uuid::Uuid;
 
@@ -109,14 +110,28 @@ impl PhysicsEngine {
         self.colliders.insert(desc.build(BodyPartHandle(ground_handle, 0)))
     }
 
+    pub(crate) fn move_and_collide(&mut self, phb: PhysicsBodyHandle, translation: Vector2<f32>) {}
+
+    pub(crate) fn move_and_slide(&mut self, phb: PhysicsBodyHandle, translation: Vector2<f32>) {
+        let physics_body = self.physics_bodies.get_mut(&phb).unwrap();
+        let pos = self.bodies.rigid_body_mut(physics_body.body_handle).unwrap().position().clone();
+
+        self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
+            .set_position(Isometry2::new(
+                Vector2::new(
+                    pos.translation.x + translation.x,
+                    pos.translation.y + translation.y
+                ),
+                std::f32::consts::FRAC_PI_2
+            ))
+    }
+
     pub(crate) fn sync_physics_world_to_game_world(&mut self, world: &legion::world::World) {
         let update_positions_query = <(Read<Position>, Read<PhysicsBodyHandle>)>::query();
         let update_velocity_query = <(Read<Velocity>, Read<PhysicsBodyHandle>)>::query();
 
         for (pos, phb) in update_positions_query.iter(world) {
-            let physics_body = self.physics_bodies.get(&phb).unwrap();
-            self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
-                .set_position(Isometry2::new(Vector2::new(pos.x, pos.y), std::f32::consts::FRAC_PI_2));
+            self.sync_physics_position_to_entity_position(&pos, *phb);
         }
 
         for (vel, phb) in update_velocity_query.iter(world) {
@@ -131,12 +146,7 @@ impl PhysicsEngine {
         let sync_velocity_query = <(Write<Velocity>, Read<PhysicsBodyHandle>)>::query();
 
         for (mut pos, phb) in sync_position_query.iter_mut(world) {
-            let physics_body = self.physics_bodies.get(&phb).unwrap();
-            let trans = self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
-                .position().translation;
-
-            pos.x = trans.x;
-            pos.y = trans.y;
+            self.sync_entity_position_to_physics_position(pos, *phb);
         }
 
         for (mut entity_velocity, phb) in sync_velocity_query.iter_mut(world) {
@@ -146,5 +156,32 @@ impl PhysicsEngine {
 
             *entity_velocity = velocity.clone();
         }
+    }
+
+    pub(crate) fn sync_game_entity_position_to_physics_body(&mut self,
+            mut world: &mut legion::world::World,
+            physics_body_handle: PhysicsBodyHandle) {
+        let sync_position_query = <(Write<Position>, Read<PhysicsBodyHandle>)>::query();
+
+        for (mut pos, phb_comparison) in sync_position_query.iter_mut(world) {
+            if physics_body_handle == *phb_comparison {
+                self.sync_entity_position_to_physics_position(pos, physics_body_handle);
+            }
+        }
+    }
+
+    fn sync_entity_position_to_physics_position(&mut self, mut pos: legion::borrow::RefMut<Position>, phb: PhysicsBodyHandle) {
+        let physics_body = self.physics_bodies.get(&phb).unwrap();
+        let trans = self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
+            .position().translation;
+
+        pos.x = trans.x;
+        pos.y = trans.y;
+    }
+
+    fn sync_physics_position_to_entity_position(&mut self, pos: &Position, phb: PhysicsBodyHandle) {
+        let physics_body = self.physics_bodies.get(&phb).unwrap();
+        self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
+            .set_position(Isometry2::new(Vector2::new(pos.x, pos.y), std::f32::consts::FRAC_PI_2));
     }
 }

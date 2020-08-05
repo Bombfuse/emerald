@@ -43,8 +43,16 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.sync_game_world_to_physics_world(&mut self.world);
     }
 
-    pub fn move_and_collide(&mut self, phb: &mut PhysicsBodyHandle, distance: Vector2<f32>) {}
-    pub fn move_and_slide(&mut self, phb: &mut PhysicsBodyHandle, distance: Vector2<f32>) {}
+    pub fn move_and_collide(&mut self, phb: PhysicsBodyHandle, distance: Vector2<f32>) {
+        self.physics_engine.move_and_collide(phb, distance);
+        self.physics_engine.sync_game_world_to_physics_world(&mut self.world);
+    }
+
+    pub fn move_and_slide(&mut self, phb: PhysicsBodyHandle, distance: Vector2<f32>) {
+        self.physics_engine.move_and_slide(phb, distance);
+
+        self.physics_engine.sync_game_entity_position_to_physics_body(&mut self.world, phb);
+    }
 
     pub fn set_gravity(&mut self, gravity: Vector2<f32>) { }
 
