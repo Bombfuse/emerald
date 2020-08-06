@@ -3,12 +3,14 @@ use crate::assets::*;
 use crate::rendering::*;
 use crate::input::*;
 use crate::logging::*;
+use crate::audio::*;
 
 use std::time::Duration;
 
 pub struct Emerald<'a> {
     delta: Duration,
     fps: f64,
+    audio_engine: &'a mut AudioEngine,
     quad_ctx: &'a mut miniquad::Context,
     rendering_engine: &'a mut RenderingEngine,
     logging_engine: &'a mut LoggingEngine,
@@ -21,6 +23,7 @@ impl<'a> Emerald<'a> {
         delta: Duration,
         fps: f64,
         quad_ctx: &'a mut miniquad::Context,
+        audio_engine: &'a mut AudioEngine,
         input_engine: &'a mut InputEngine,
         world_engine: &'a mut WorldEngine,
         logging_engine: &'a mut LoggingEngine,
@@ -29,6 +32,7 @@ impl<'a> Emerald<'a> {
         Emerald {
             delta,
             fps,
+            audio_engine,
             quad_ctx,
             rendering_engine,
             input_engine,
@@ -64,7 +68,12 @@ impl<'a> Emerald<'a> {
     /// Asset loading
     #[inline]
     pub fn loader(&mut self) -> AssetLoader {
-        AssetLoader::new(&mut self.quad_ctx, &mut self.rendering_engine)
+        AssetLoader::new(&mut self.quad_ctx, &mut self.rendering_engine, &mut self.audio_engine)
+    }
+
+    #[inline]
+    pub fn audio(&mut self) -> AudioHandler {
+        AudioHandler::new(&mut self.audio_engine)
     }
 
     /// Logging

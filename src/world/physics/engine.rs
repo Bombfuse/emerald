@@ -62,12 +62,12 @@ impl PhysicsEngine {
     }
 
     pub(crate) fn step(&mut self, mut world: &mut legion::prelude::World) {
-        let non_physics_bodies_query = <(Read<Velocity>, Write<Position>)>::query()
-            .filter(!component::<PhysicsBodyHandle>());
-        for (vel, mut pos) in non_physics_bodies_query.iter_mut(world) {
-            pos.x += vel.linear.x;
-            pos.y += vel.linear.y;
-        }
+        // let non_physics_bodies_query = <(Read<Velocity>, Write<Position>)>::query()
+        //     .filter(!component::<PhysicsBodyHandle>());
+        // for (vel, mut pos) in non_physics_bodies_query.iter_mut(world) {
+        //     pos.x += vel.linear.x;
+        //     pos.y += vel.linear.y;
+        // }
 
         self.mechanical_world.step(
             &mut self.geometrical_world,
@@ -113,17 +113,18 @@ impl PhysicsEngine {
     pub(crate) fn move_and_collide(&mut self, phb: PhysicsBodyHandle, translation: Vector2<f32>) {}
 
     pub(crate) fn move_and_slide(&mut self, phb: PhysicsBodyHandle, translation: Vector2<f32>) {
-        let physics_body = self.physics_bodies.get_mut(&phb).unwrap();
-        let pos = self.bodies.rigid_body_mut(physics_body.body_handle).unwrap().position().clone();
+        // let physics_body = self.physics_bodies.get_mut(&phb).unwrap();
+        // let pos = self.bodies.rigid_body_mut(physics_body.body_handle).unwrap().position().clone();
 
-        self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
-            .set_position(Isometry2::new(
-                Vector2::new(
-                    pos.translation.x + translation.x,
-                    pos.translation.y + translation.y
-                ),
-                std::f32::consts::FRAC_PI_2
-            ))
+
+        // self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
+        //     .set_position(Isometry2::new(
+        //         Vector2::new(
+        //             pos.translation.x + translation.x,
+        //             pos.translation.y + translation.y
+        //         ),
+        //         std::f32::consts::FRAC_PI_2
+        //     ))
     }
 
     pub(crate) fn sync_physics_world_to_game_world(&mut self, world: &legion::world::World) {
@@ -138,6 +139,9 @@ impl PhysicsEngine {
             let physics_body = self.physics_bodies.get(&phb).unwrap();
             self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
                 .set_velocity(*vel);
+
+            println!("{:?} {:?}", phb, self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
+            .velocity());
         }
     }
 

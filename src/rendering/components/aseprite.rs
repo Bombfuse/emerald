@@ -14,7 +14,7 @@ pub struct Aseprite {
     pub animations: HashMap<String, Animation>,
 }
 impl Aseprite {
-    pub(crate) fn new(sprite: Sprite, _animation_file: File) -> Result<Aseprite, EmeraldError> {
+    pub fn new(sprite: Sprite, _animation_file: File) -> Result<Aseprite, EmeraldError> {
         let aseprite = Aseprite {
             animations: HashMap::new(),
             current_animation: String::from(""),
@@ -38,6 +38,7 @@ impl Aseprite {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct AsepriteAnimation {
 
 }

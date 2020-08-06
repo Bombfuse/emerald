@@ -1,17 +1,21 @@
 use crate::*;
 use crate::rendering::*;
+use crate::audio::*;
 
 use std::fs::File;
+use std::ffi::OsStr;
 
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
     rendering_engine: &'a mut RenderingEngine,
+    audio_engine: &'a mut AudioEngine,
 }
 impl<'a> AssetLoader<'a> {
-    pub fn new(quad_ctx: &'a mut miniquad::Context, rendering_engine: &'a mut RenderingEngine) -> Self {
+    pub(crate) fn new(quad_ctx: &'a mut miniquad::Context, rendering_engine: &'a mut RenderingEngine, audio_engine: &'a mut AudioEngine) -> Self {
         AssetLoader {
             rendering_engine,
             quad_ctx,
+            audio_engine,
         }
     }
 
@@ -67,5 +71,20 @@ impl<'a> AssetLoader<'a> {
         let file = self.file(path)?;
 
         self.rendering_engine.font(&mut self.quad_ctx, file, path, font_size)
+    }
+
+    pub fn sound<T: Into<String>>(&mut self, path: T) -> Result<Sound, EmeraldError> {
+        let path: String = path.into();
+        let file_path = std::path::Path::new(&path);
+
+        let sound_format = match file_path.extension().and_then(OsStr::to_str) {
+            Some("wav") => SoundFormat::Wav,
+            Some("ogg") => SoundFormat::Ogg,
+            _ => return Err(EmeraldError::new(format!("Unable to parse sound from {:?}", file_path))),
+        };
+
+        let sound_file = self.file(path)?;
+
+        self.audio_engine.load(sound_file, sound_format)
     }
 }

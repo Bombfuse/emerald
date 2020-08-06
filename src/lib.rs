@@ -5,6 +5,7 @@ mod world;
 mod types;
 mod assets;
 mod logging;
+mod audio;
 
 pub use crate::assets::*;
 pub use crate::core::*;
@@ -15,6 +16,7 @@ pub use crate::world::physics::*;
 pub use crate::types::*;
 pub use paintbrush::*;
 pub use logging::*;
+pub use audio::*;
 
 // physics/math/collision re-exports
 pub type Velocity = nphysics2d::math::Velocity<f32>;

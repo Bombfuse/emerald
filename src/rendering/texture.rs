@@ -11,7 +11,7 @@ pub struct Texture {
     pub(crate) inner: miniquad::Texture,
     pub(crate) width: u16,
     pub(crate) height: u16,
-    filter: FilterMode,
+    pub(crate) filter: FilterMode,
     pub(crate) bindings: Bindings,
 }
 impl Texture {

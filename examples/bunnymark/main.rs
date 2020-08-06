@@ -21,7 +21,7 @@ impl Game for BunnymarkGame {
             emd.loader()
                 .pack_texture(
                     "./examples/assets/bunny.png",
-                    include_bytes!("../static/assets/bunny.png").to_vec()
+                    include_bytes!("../examples/assets/bunny.png").to_vec()
                 );
         }
 

@@ -3,6 +3,7 @@ use crate::rendering::*;
 use crate::input::*;
 use crate::world::*;
 use crate::logging::*;
+use crate::audio::*;
 
 use instant::Instant;
 use miniquad::*;
@@ -11,6 +12,7 @@ use std::collections::VecDeque;
 pub struct GameEngine {
     game: Box<dyn Game>,
     _settings: GameSettings,
+    audio_engine: AudioEngine,
     input_engine: InputEngine,
     logging_engine: LoggingEngine,
     rendering_engine: RenderingEngine,
@@ -20,6 +22,7 @@ pub struct GameEngine {
 }
 impl GameEngine {
     pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
+        let mut audio_engine = AudioEngine::new();
         let mut input_engine = InputEngine::new();
         let mut rendering_engine = RenderingEngine::new(&mut ctx, settings.render_settings.clone());
         let mut world_engine = WorldEngine::new();
@@ -40,6 +43,7 @@ impl GameEngine {
             delta,
             0.0,
             &mut ctx,
+            &mut audio_engine,
             &mut input_engine,
             &mut world_engine,
             &mut logging_engine,
@@ -52,6 +56,7 @@ impl GameEngine {
             game,
             fps_tracker,
             _settings: settings,
+            audio_engine,
             input_engine,
             logging_engine,
             rendering_engine,
@@ -84,12 +89,14 @@ impl EventHandler for GameEngine {
             delta,
             self.get_fps(),
             &mut ctx,
+            &mut self.audio_engine,
             &mut self.input_engine,
             &mut self.world_engine,
             &mut self.logging_engine,
             &mut self.rendering_engine);
 
         self.game.update(emd);
+        self.audio_engine.frame();
         self.logging_engine.update();
         self.input_engine.rollover();
 
@@ -115,6 +122,7 @@ impl EventHandler for GameEngine {
             delta,
             self.get_fps(),
             &mut ctx,
+            &mut self.audio_engine,
             &mut self.input_engine,
             &mut self.world_engine,
             &mut self.logging_engine,

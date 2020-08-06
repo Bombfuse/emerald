@@ -204,7 +204,7 @@ impl RenderingEngine {
 
     #[inline]
     fn draw_texture(&mut self,
-        ctx: &mut Context,
+        mut ctx: &mut Context,
         texture_key: &TextureKey,
         z_index: f32,
         scale: Vec2,
@@ -214,7 +214,7 @@ impl RenderingEngine {
         source: Rectangle,
         color: Color,
     ) {
-        let texture = self.textures.get(&texture_key).unwrap();
+        let mut texture = self.textures.get(&texture_key).unwrap();
         let view_size = ctx.screen_size();
         let mut uniforms = Uniforms::default();
 
@@ -236,6 +236,8 @@ impl RenderingEngine {
         uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
         uniforms.color = Vec4::new(color.0, color.1, color.2, color.3);
         uniforms.z_index = z_index;
+        
+        texture.inner.set_filter(&mut ctx, texture.filter);
 
         ctx.apply_bindings(&texture.bindings);
         ctx.apply_uniforms(&uniforms);

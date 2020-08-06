@@ -1,7 +1,7 @@
 use crate::world::*;
 use crate::physics::*;
 use crate::physics::components::*;
-use crate::Vector2;
+use crate::{Instant, Vector2};
 
 use nphysics2d::object::{RigidBodyDesc, ColliderDesc, DefaultColliderHandle};
 
@@ -34,6 +34,8 @@ impl<'a> PhysicsHandler<'a> {
     }
 
     pub fn step_n(&mut self, n: u32) {
+        let start = Instant::now();
+
         self.physics_engine.sync_physics_world_to_game_world(&mut self.world);
         
         for _ in 0..n {
@@ -41,6 +43,9 @@ impl<'a> PhysicsHandler<'a> {
         }
 
         self.physics_engine.sync_game_world_to_physics_world(&mut self.world);
+
+        let end = Instant::now();
+        println!("Physics Step Duration: {:?}", end - start);
     }
 
     pub fn move_and_collide(&mut self, phb: PhysicsBodyHandle, distance: Vector2<f32>) {
