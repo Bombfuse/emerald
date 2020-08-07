@@ -15,7 +15,7 @@ use miniquad::{
     Context, Buffer, VertexFormat,
     VertexAttribute, Shader};
 use glam::{Vec2, Vec4, Mat4};
-use legion::prelude::{Schedulable, Query, SystemBuilder, Read, Write, IntoQuery};
+use legion::*;
 use std::collections::HashMap;
 use fontdue::{Font, FontSettings};
 
@@ -77,13 +77,13 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn draw_world(&mut self, mut ctx: &mut Context, world: &mut World) {
+    pub fn draw_world(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld) {
         ctx.apply_pipeline(&self.pipeline);
 
-        let sprite_query = <(Read<Sprite>, Read<Position>)>::query();
-        let color_rect_query = <(Read<ColorRect>, Read<Position>)>::query();
+        let mut sprite_query = <(&Sprite, &Position)>::query();
+        let mut color_rect_query = <(&ColorRect, &Position)>::query();
 
-        for (sprite, position) in sprite_query.iter(&mut world.inner) {
+        for (sprite, position) in sprite_query.iter(&world.inner) {
             self.draw_sprite(&mut ctx, &sprite, &position);
         }
 
@@ -93,15 +93,13 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn draw_colliders(&mut self, mut ctx: &mut Context, world: &mut World, collider_color: Color) {
-        let physics_body_query = <(Read<PhysicsBodyHandle>)>::query();
+    pub fn draw_colliders(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld, collider_color: Color) {
+        let mut physics_body_query = <&PhysicsBodyHandle>::query();
 
         ctx.apply_pipeline(&self.pipeline);
         
         let mut color_rect = ColorRect::default();
         color_rect.color = collider_color;
-
-
 
         for ph in physics_body_query.iter(&world.inner) {
             let physics_body = world.physics_engine.physics_bodies.get(&ph).unwrap();
@@ -219,8 +217,8 @@ impl RenderingEngine {
         let mut uniforms = Uniforms::default();
 
         let projection = match self.settings.scalar {
-            ScreenScalar::Keep => Mat4::orthographic_lh(0.0, self.settings.window_size.0 as f32, self.settings.window_size.1 as f32, 0.0, -1.0, 1.0),
-            ScreenScalar::None => Mat4::orthographic_lh(0.0, view_size.0, view_size.1, 0.0, -1.0, 1.0),
+            ScreenScalar::Keep => Mat4::orthographic_rh_gl(0.0, self.settings.window_size.0 as f32, self.settings.window_size.1 as f32, 0.0, -1.0, 1.0),
+            ScreenScalar::None => Mat4::orthographic_rh_gl(0.0, view_size.0, view_size.1, 0.0, -1.0, 1.0),
         };
 
         uniforms.projection = projection;

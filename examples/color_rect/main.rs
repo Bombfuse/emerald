@@ -13,6 +13,6 @@ impl Game for Example {
     fn initialize(&mut self, mut emd: Emerald) {
         let color_rect = ColorRect::default();
 
-        emd.world().insert((), vec![(color_rect, Position::new(0.0, 0.0))]);
+        emd.world().inner().push((color_rect, Position::new(0.0, 0.0)));
     }
 }

@@ -1,8 +1,8 @@
 mod engine;
-mod world;
+mod emerald_world;
 pub mod physics;
 
 pub use engine::*;
-pub use world::*;
+pub use emerald_world::*;
 
-pub use legion::prelude::*;
+pub use legion::*;

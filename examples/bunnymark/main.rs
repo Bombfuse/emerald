@@ -32,7 +32,7 @@ impl Game for BunnymarkGame {
         let mut position = Position::new(0.0, 0.0);
 
         self.count = 1000;
-        emd.world().insert((),
+        emd.world().inner().extend(
             (0..1000).map(|_| {
                 position.x += 6.0;
                 position.y += 1.0;
@@ -54,7 +54,7 @@ impl Game for BunnymarkGame {
             
             let mut position = Position::new(0.0, 0.0);
             self.count += 1000;
-            emd.world().insert((),
+            emd.world().inner().extend(
                 (0..1000).map(|_| {
                     position.x += 6.0;
                     position.y += 1.0;
@@ -65,8 +65,9 @@ impl Game for BunnymarkGame {
         }
 
         let now = Instant::now();
-        let bunny_query = <(Read<Sprite>, Write<Position>, Write<Velocity>)>::query();
-        for (_, mut position, mut vel) in bunny_query.iter_mut(emd.world().queryable()) {
+        let mut bunny_query = <(&Sprite, &mut Position, &mut Velocity)>::query();
+
+        for (_, mut position, mut vel) in bunny_query.iter_mut(emd.world().inner()) {
             if position.x >= screen_width - sprite_width / 2.0 {
                 position.x = screen_width - sprite_width / 2.0;
                 vel.linear.x *= -1.0;

@@ -60,13 +60,13 @@ impl PhysicsEngine {
         }
     }
 
-    pub(crate) fn step(&mut self, mut world: &mut legion::prelude::World) {
-        // let non_physics_bodies_query = <(Read<Velocity>, Write<Position>)>::query()
-        //     .filter(!component::<PhysicsBodyHandle>());
-        // for (vel, mut pos) in non_physics_bodies_query.iter_mut(world) {
-        //     pos.x += vel.linear.x;
-        //     pos.y += vel.linear.y;
-        // }
+    pub(crate) fn step(&mut self, mut world: &mut legion::World) {
+        let mut non_physics_bodies_query = <(&Velocity, &mut Position)>::query()
+            .filter(!component::<PhysicsBodyHandle>());
+        for (vel, mut pos) in non_physics_bodies_query.iter_mut(world) {
+            pos.x += vel.linear.x;
+            pos.y += vel.linear.y;
+        }
 
         self.mechanical_world.step(
             &mut self.geometrical_world,
@@ -127,8 +127,8 @@ impl PhysicsEngine {
     }
 
     pub(crate) fn sync_physics_world_to_game_world(&mut self, world: &legion::world::World) {
-        let update_positions_query = <(Read<Position>, Read<PhysicsBodyHandle>)>::query();
-        let update_velocity_query = <(Read<Velocity>, Read<PhysicsBodyHandle>)>::query();
+        let mut update_positions_query = <(&Position, &PhysicsBodyHandle)>::query();
+        let mut update_velocity_query = <(&Velocity, &PhysicsBodyHandle)>::query();
 
         for (pos, phb) in update_positions_query.iter(world) {
             self.sync_physics_position_to_entity_position(&pos, *phb);
@@ -138,15 +138,12 @@ impl PhysicsEngine {
             let physics_body = self.physics_bodies.get(&phb).unwrap();
             self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
                 .set_velocity(*vel);
-
-            println!("{:?} {:?}", phb, self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
-            .velocity());
         }
     }
 
     pub(crate) fn sync_game_world_to_physics_world(&mut self, mut world: &mut legion::world::World) {
-        let sync_position_query = <(Write<Position>, Read<PhysicsBodyHandle>)>::query();
-        let sync_velocity_query = <(Write<Velocity>, Read<PhysicsBodyHandle>)>::query();
+        let mut sync_position_query = <(&mut Position, &PhysicsBodyHandle)>::query();
+        let mut sync_velocity_query = <(&mut Velocity, &PhysicsBodyHandle)>::query();
 
         for (mut pos, phb) in sync_position_query.iter_mut(world) {
             self.sync_entity_position_to_physics_position(pos, *phb);
@@ -164,7 +161,7 @@ impl PhysicsEngine {
     pub(crate) fn sync_game_entity_position_to_physics_body(&mut self,
             mut world: &mut legion::world::World,
             physics_body_handle: PhysicsBodyHandle) {
-        let sync_position_query = <(Write<Position>, Read<PhysicsBodyHandle>)>::query();
+        let mut sync_position_query = <(&mut Position, &PhysicsBodyHandle)>::query();
 
         for (mut pos, phb_comparison) in sync_position_query.iter_mut(world) {
             if physics_body_handle == *phb_comparison {
@@ -173,7 +170,7 @@ impl PhysicsEngine {
         }
     }
 
-    fn sync_entity_position_to_physics_position(&mut self, mut pos: legion::borrow::RefMut<Position>, phb: PhysicsBodyHandle) {
+    fn sync_entity_position_to_physics_position(&mut self, mut pos: &mut Position, phb: PhysicsBodyHandle) {
         let physics_body = self.physics_bodies.get(&phb).unwrap();
         let trans = self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
             .position().translation;

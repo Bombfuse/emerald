@@ -7,10 +7,10 @@ use nphysics2d::object::{RigidBodyDesc, ColliderDesc, DefaultColliderHandle};
 
 pub struct PhysicsHandler<'a> {
     physics_engine: &'a mut  PhysicsEngine,
-    world: &'a mut legion::prelude::World,
+    world: &'a mut legion::World,
 }
 impl<'a> PhysicsHandler<'a> {
-    pub fn new(physics_engine: &'a mut PhysicsEngine, world: &'a mut legion::prelude::World) -> Self {
+    pub fn new(physics_engine: &'a mut PhysicsEngine, world: &'a mut legion::World) -> Self {
         PhysicsHandler {
             world,
             physics_engine,

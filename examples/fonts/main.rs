@@ -17,12 +17,12 @@ impl Game for FontsExample {
                 );
         }
 
-        let font = emd.loader().font().unwrap();
-        let label = emd.loader().label("Emerald Game Engine", font).unwrap();
+        // let font = emd.loader().font().unwrap();
+        // let label = emd.loader().label("Emerald Game Engine", font).unwrap();
         let position = Position::new(15.0, 15.0);
 
-        emd.world().insert((), vec![(
-            sprite.clone(), position),
-            (label, Position::new(0.0, 0.0))]);
+        // emd.world().insert((), vec![(
+        //     sprite.clone(), position),
+        //     (label, Position::new(0.0, 0.0))]);
     }
 }
