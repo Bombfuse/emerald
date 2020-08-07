@@ -22,9 +22,6 @@ use nphysics2d::joint::DefaultJointConstraintSet;
 use nphysics2d::force_generator::DefaultForceGeneratorSet;
 use nphysics2d::nalgebra::{Isometry2, Translation2};
 
-
-use uuid::Uuid;
-
 use std::collections::HashMap;
 
 /// A physics engine unique to a game world. This handles the RigidBodies of the game.
@@ -37,6 +34,7 @@ pub struct PhysicsEngine {
     constraints: DefaultJointConstraintSet<f32>,
     forces: DefaultForceGeneratorSet<f32>,
     ground_handle: Option<DefaultBodyHandle>,
+    id_count: usize,
 }
 
 impl PhysicsEngine {
@@ -58,6 +56,7 @@ impl PhysicsEngine {
             bodies,
             physics_bodies,
             ground_handle: None,
+            id_count: 0,
         }
     }
 
@@ -80,9 +79,9 @@ impl PhysicsEngine {
 
     pub(crate) fn create_body(&mut self, desc: &RigidBodyDesc<f32>) -> PhysicsBodyHandle {
         let body_handle = self.bodies.insert(desc.build());
-        let uuid = Uuid::new_v4();
         let physics_body = PhysicsBody::new(body_handle);
-        let handle = PhysicsBodyHandle::new(uuid);
+        let handle = PhysicsBodyHandle::new(self.id_count);
+        self.id_count += 1;
         self.physics_bodies.insert(handle, physics_body);
 
         handle
