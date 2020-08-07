@@ -73,9 +73,9 @@ More detailed features can be found in the Legion documentation.
 
 ```rust
 
-let sprite_update_query = <(Read<Sprite>, Write<Position>)>::query();
+let mut sprite_update_query = <(&Sprite, &mut Position)>::query();
 
-for (sprite, mut position) in sprite_update_query.iter_mut(emd.world().queryable()) {
+for (sprite, mut position) in sprite_update_query.iter_mut(emd.world().inner()) {
     position.x += 10.0;
 }
 ```
@@ -90,8 +90,8 @@ let mut aseprite = emd.loader()
 
 aseprite.play("some_aseprite_animation");
 
-emd.world()
-    .insert((), Some((aseprite, Position::zero())));
+emd.world().inner()
+    .push((aseprite, Position::zero()));
 ```
 
 
@@ -129,7 +129,7 @@ fn initialize(&mut self, mut emd: Emerald) {
     let mut position = Position::new(0.0, 0.0);
 
     self.count = 1000;
-    emd.world().insert((),
+    emd.world().inner().extend(
         (0..1000).map(|_| {
             position.x += 6.0;
             position.y += 1.0;
