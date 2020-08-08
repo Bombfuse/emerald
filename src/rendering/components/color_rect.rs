@@ -27,7 +27,7 @@ impl Default for ColorRect {
             offset: Vector2::new(0.0, 0.0),
             width: 32,
             height: 32,
-            centered: false,
+            centered: true,
             rotation: 0.0,
             z_index: 0.0,
         }

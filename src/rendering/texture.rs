@@ -40,6 +40,8 @@ impl Texture {
         let img = image::load_from_memory(&bytes)
             .unwrap_or_else(|e| panic!(e))
             .to_rgba();
+        let img = image::imageops::flip_vertical(&img);
+
         let width = img.width() as u16;
         let height = img.height() as u16;
         let bytes = img.into_raw();
@@ -47,7 +49,7 @@ impl Texture {
         Self::from_rgba8(ctx, width, height, &bytes)
     }
     
-    pub fn from_rgba8(
+    pub(crate) fn from_rgba8(
         mut ctx: &mut Context,
         width: u16,
         height: u16,
@@ -58,7 +60,7 @@ impl Texture {
         Self::from_texture(&mut ctx, texture)
     }
 
-    pub fn from_texture(ctx: &mut miniquad::Context, texture: miniquad::Texture) -> Result<Self, EmeraldError> {
+    pub(crate) fn from_texture(ctx: &mut miniquad::Context, texture: miniquad::Texture) -> Result<Self, EmeraldError> {
         #[rustfmt::skip]
         let vertices: [Vertex; 4] = [
             Vertex { position: Vec2::new(0.0, 0.0) },
@@ -66,7 +68,6 @@ impl Texture {
             Vertex { position: Vec2::new(1.0, 1.0) },
             Vertex { position: Vec2::new(0.0, 1.0) },
         ];
-        
 
         let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
         let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];

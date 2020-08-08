@@ -21,8 +21,8 @@ impl Game for MyGame {
                 );
         }
 
-        let sprite = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
+        let mut sprite = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
 
-        emd.world().inner().push((sprite, Position::new(0.0, 0.0)));
+        emd.world().inner().push((sprite, Position::new(16.0, 16.0)));
     }
 }

@@ -106,12 +106,9 @@ impl RenderingEngine {
                         .map(|p| p.0);
 
                     if let Some(aabb) = aabb {
-                        let mut pos = Position::new(aabb.center().coords.x, aabb.center().coords.y);
+                        let pos = Position::new(aabb.center().coords.x, aabb.center().coords.y);
                         color_rect.width = aabb.half_extents().x as u32 * 2;
                         color_rect.height = aabb.half_extents().y as u32 * 2;
-
-                        pos.x -= (color_rect.width / 2) as f32;
-                        pos.y -= (color_rect.height / 2) as f32;
 
                         self.draw_color_rect(&mut ctx, &color_rect, &pos);
                     }
@@ -137,13 +134,20 @@ impl RenderingEngine {
     fn draw_color_rect(&mut self, mut ctx: &mut Context, color_rect: &ColorRect, position: &Position) {
         let (width, height) = (color_rect.width, color_rect.height);
 
+        let mut offset = color_rect.offset.clone();
+
+        if color_rect.centered {
+            offset.x -= (color_rect.width / 2) as f32;
+            offset.y -= (color_rect.height / 2) as f32;
+        }
+
         let real_scale = Vec2::new(
             width as f32,
             height as f32,
         );
         let real_position = Vec2::new(
-            position.x + color_rect.offset.x,
-            position.y + color_rect.offset.y,
+            position.x + offset.x,
+            position.y + offset.y,
         );
 
         self.draw_texture(
@@ -173,13 +177,25 @@ impl RenderingEngine {
             target = Rectangle::new(0.0, 0.0, 1.0, 1.0);
         }
 
+        let mut offset = sprite.offset.clone();
+        if sprite.centered {
+            if sprite.target.is_zero_sized() {
+                offset.x -= texture.width as f32 / 2.0;
+                offset.y -= texture.height as f32 / 2.0;
+            } else {
+                offset.x -= sprite.target.width / 2.0;
+                offset.y -= sprite.target.height / 2.0;
+            }
+        }
+        
+
         let real_scale = Vec2::new(
             sprite.scale.x * target.width * (f32::from(texture.width)),
             sprite.scale.y * target.height * (f32::from(texture.height)),
         );
         let real_position = Vec2::new(
-            position.x + sprite.offset.x,
-            position.y + sprite.offset.y,
+            position.x + offset.x,
+            position.y + offset.y,
         );
 
         self.draw_texture(&mut ctx,
@@ -205,13 +221,13 @@ impl RenderingEngine {
         source: Rectangle,
         color: Color,
     ) {
-        let mut texture = self.textures.get(&texture_key).unwrap();
+        let texture = self.textures.get(&texture_key).unwrap();
         let view_size = ctx.screen_size();
         let mut uniforms = Uniforms::default();
 
         let projection = match self.settings.scalar {
-            ScreenScalar::Keep => Mat4::orthographic_rh_gl(0.0, self.settings.resolution.0 as f32, self.settings.resolution.1 as f32, 0.0, -1.0, 1.0),
-            ScreenScalar::None => Mat4::orthographic_rh_gl(0.0, view_size.0, view_size.1, 0.0, -1.0, 1.0),
+            ScreenScalar::Keep => Mat4::orthographic_rh_gl(0.0, self.settings.resolution.0 as f32, 0.0,self.settings.resolution.1 as f32, -1.0, 1.0),
+            ScreenScalar::None => Mat4::orthographic_rh_gl(0.0, view_size.0, 0.0, view_size.1, -1.0, 1.0),
         };
 
         uniforms.projection = projection;
