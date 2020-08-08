@@ -25,7 +25,6 @@ pub struct RenderingEngine {
     textures: HashMap<TextureKey, Texture>,
     fonts: HashMap<FontKey, Font>,
     font_atlases: HashMap<FontKey, Texture>,
-    pub(crate) projection: Rectangle,
 }
 impl RenderingEngine {
     pub fn new(mut ctx: &mut Context, settings: RenderSettings) -> Self {
@@ -67,12 +66,6 @@ impl RenderingEngine {
             textures,
             fonts,
             font_atlases,
-            projection: Rectangle::new(
-                0.0,
-                0.0,
-                settings.window_size.0 as f32,
-                settings.window_size.1 as f32
-            )
         }
     }
 
@@ -217,7 +210,7 @@ impl RenderingEngine {
         let mut uniforms = Uniforms::default();
 
         let projection = match self.settings.scalar {
-            ScreenScalar::Keep => Mat4::orthographic_rh_gl(0.0, self.settings.window_size.0 as f32, self.settings.window_size.1 as f32, 0.0, -1.0, 1.0),
+            ScreenScalar::Keep => Mat4::orthographic_rh_gl(0.0, self.settings.resolution.0 as f32, self.settings.resolution.1 as f32, 0.0, -1.0, 1.0),
             ScreenScalar::None => Mat4::orthographic_rh_gl(0.0, view_size.0, view_size.1, 0.0, -1.0, 1.0),
         };
 

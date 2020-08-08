@@ -41,8 +41,8 @@ use miniquad::{conf, UserData};
 pub fn start(game: Box<dyn Game>, settings: GameSettings) {
     let mut config = conf::Conf::default();
     config.window_title = settings.title.clone();
-    config.window_width = settings.render_settings.window_size.0 as i32;
-    config.window_height = settings.render_settings.window_size.1 as i32;
+    config.window_width = settings.render_settings.resolution.0 as i32;
+    config.window_height = settings.render_settings.resolution.1 as i32;
     config.fullscreen = settings.render_settings.fullscreen;
 
     miniquad::start(config, move |mut ctx| {

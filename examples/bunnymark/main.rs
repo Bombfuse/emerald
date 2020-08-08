@@ -6,7 +6,7 @@ use emerald::*;
 
 pub fn main() {
     let mut settings = GameSettings::default();
-    settings.render_settings.window_size = (320, 180);
+    settings.render_settings.resolution = (320, 180);
     emerald::start(Box::new(BunnymarkGame { count: 0, }), settings)
 }
 

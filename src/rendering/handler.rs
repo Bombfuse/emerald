@@ -26,10 +26,6 @@ impl<'a> GraphicsHandler<'a> {
         self.rendering_engine.draw_colliders(&mut self.quad_ctx, self.world_engine.world(), color)
     }
 
-    pub fn set_projection(&mut self, projection: Rectangle) {
-        self.rendering_engine.projection = projection;
-    }
-
     /// Begin drawing to the screen
     pub fn begin(&mut self) {
         self.rendering_engine.begin(&mut self.quad_ctx);
