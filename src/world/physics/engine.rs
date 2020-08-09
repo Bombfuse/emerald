@@ -39,7 +39,7 @@ pub struct PhysicsEngine {
 
 impl PhysicsEngine {
     pub(crate) fn new() -> Self {
-        let mut mechanical_world = DefaultMechanicalWorld::new(Vector2::new(0.0, 0.0));
+        let mechanical_world = DefaultMechanicalWorld::new(Vector2::new(0.0, 0.0));
         let geometrical_world = DefaultGeometricalWorld::new();
         let bodies = DefaultBodySet::new();
         let colliders = DefaultColliderSet::new();
@@ -60,13 +60,13 @@ impl PhysicsEngine {
         }
     }
 
-    pub(crate) fn step(&mut self, mut world: &mut legion::World) {
-        let mut non_physics_bodies_query = <(&Velocity, &mut Position)>::query()
-            .filter(!component::<PhysicsBodyHandle>());
-        for (vel, mut pos) in non_physics_bodies_query.iter_mut(world) {
-            pos.x += vel.linear.x;
-            pos.y += vel.linear.y;
-        }
+    pub(crate) fn step(&mut self, world: &mut legion::World) {
+        // let mut non_physics_bodies_query = <(&Velocity, &mut Position)>::query()
+        //     .filter(!component::<PhysicsBodyHandle>());
+        // for (vel, mut pos) in non_physics_bodies_query.iter_mut(world) {
+        //     pos.x += vel.linear.x;
+        //     pos.y += vel.linear.y;
+        // }
 
         self.mechanical_world.step(
             &mut self.geometrical_world,
@@ -78,7 +78,8 @@ impl PhysicsEngine {
     }
 
     pub(crate) fn create_body(&mut self, desc: &RigidBodyDesc<f32>) -> PhysicsBodyHandle {
-        let body_handle = self.bodies.insert(desc.build());
+        let body = desc.build();
+        let body_handle = self.bodies.insert(body);
         let physics_body = PhysicsBody::new(body_handle);
         let handle = PhysicsBodyHandle::new(self.id_count);
         self.id_count += 1;
@@ -88,11 +89,8 @@ impl PhysicsEngine {
     }
 
     pub(crate) fn create_collider(&mut self, physics_handle: &mut PhysicsBodyHandle, desc: &ColliderDesc<f32>) -> DefaultColliderHandle {
-        let mut physics_body = self.physics_bodies.get_mut(physics_handle).unwrap();
-
-        let collider = desc.build(
-            BodyPartHandle(physics_body.body_handle, physics_body.body_part_count as usize)
-        );
+        let physics_body = self.physics_bodies.get_mut(physics_handle).unwrap();
+        let collider = desc.build(BodyPartHandle(physics_body.body_handle, 0));
         let handle = self.colliders.insert(collider);
         physics_body.add_collider(handle);
 
@@ -107,23 +105,6 @@ impl PhysicsEngine {
         let ground_handle = self.ground_handle.unwrap();
 
         self.colliders.insert(desc.build(BodyPartHandle(ground_handle, 0)))
-    }
-
-    pub(crate) fn move_and_collide(&mut self, phb: PhysicsBodyHandle, translation: Vector2<f32>) {}
-
-    pub(crate) fn move_and_slide(&mut self, phb: PhysicsBodyHandle, translation: Vector2<f32>) {
-        // let physics_body = self.physics_bodies.get_mut(&phb).unwrap();
-        // let pos = self.bodies.rigid_body_mut(physics_body.body_handle).unwrap().position().clone();
-
-
-        // self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
-        //     .set_position(Isometry2::new(
-        //         Vector2::new(
-        //             pos.translation.x + translation.x,
-        //             pos.translation.y + translation.y
-        //         ),
-        //         std::f32::consts::FRAC_PI_2
-        //     ))
     }
 
     pub(crate) fn sync_physics_world_to_game_world(&mut self, world: &legion::world::World) {
@@ -141,32 +122,20 @@ impl PhysicsEngine {
         }
     }
 
-    pub(crate) fn sync_game_world_to_physics_world(&mut self, mut world: &mut legion::world::World) {
+    pub(crate) fn sync_game_world_to_physics_world(&mut self, world: &mut legion::world::World) {
         let mut sync_position_query = <(&mut Position, &PhysicsBodyHandle)>::query();
         let mut sync_velocity_query = <(&mut Velocity, &PhysicsBodyHandle)>::query();
 
-        for (mut pos, phb) in sync_position_query.iter_mut(world) {
+        for (pos, phb) in sync_position_query.iter_mut(world) {
             self.sync_entity_position_to_physics_position(pos, *phb);
         }
 
-        for (mut entity_velocity, phb) in sync_velocity_query.iter_mut(world) {
+        for (entity_velocity, phb) in sync_velocity_query.iter_mut(world) {
             let physics_body = self.physics_bodies.get(&phb).unwrap();
             let velocity = self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
                 .velocity();
 
             *entity_velocity = velocity.clone();
-        }
-    }
-
-    pub(crate) fn sync_game_entity_position_to_physics_body(&mut self,
-            mut world: &mut legion::world::World,
-            physics_body_handle: PhysicsBodyHandle) {
-        let mut sync_position_query = <(&mut Position, &PhysicsBodyHandle)>::query();
-
-        for (mut pos, phb_comparison) in sync_position_query.iter_mut(world) {
-            if physics_body_handle == *phb_comparison {
-                self.sync_entity_position_to_physics_position(pos, physics_body_handle);
-            }
         }
     }
 
@@ -182,6 +151,6 @@ impl PhysicsEngine {
     fn sync_physics_position_to_entity_position(&mut self, pos: &Position, phb: PhysicsBodyHandle) {
         let physics_body = self.physics_bodies.get(&phb).unwrap();
         self.bodies.rigid_body_mut(physics_body.body_handle).unwrap()
-            .set_position(Isometry2::new(Vector2::new(pos.x, pos.y), std::f32::consts::FRAC_PI_2));
+            .set_position(Isometry2::translation(pos.x, pos.y));
     }
 }

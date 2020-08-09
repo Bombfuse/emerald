@@ -110,6 +110,8 @@ impl RenderingEngine {
                         color_rect.width = aabb.half_extents().x as u32 * 2;
                         color_rect.height = aabb.half_extents().y as u32 * 2;
 
+                        println!("(id, x, y): {:?}", (ph.id(), aabb.half_extents().x, aabb.half_extents().y));
+
                         self.draw_color_rect(&mut ctx, &color_rect, &pos);
                     }
                 }

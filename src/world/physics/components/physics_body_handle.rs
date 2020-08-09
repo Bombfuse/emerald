@@ -10,4 +10,8 @@ impl PhysicsBodyHandle {
             id,
         }
     }
+
+    pub fn id(&self) -> usize {
+        self.id
+    }
 }

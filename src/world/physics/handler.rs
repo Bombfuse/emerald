@@ -22,7 +22,22 @@ impl<'a> PhysicsHandler<'a> {
     }
 
     pub fn create_collider(&mut self, mut physics_body_handle: &mut PhysicsBodyHandle, desc: &ColliderDesc<f32>) -> DefaultColliderHandle {
-        self.physics_engine.create_collider(&mut physics_body_handle, &desc)
+        let handle = self.physics_engine.create_collider(&mut physics_body_handle, &desc);
+        self.step();
+
+        if let Some(collider) = self.physics_engine.colliders.get(handle.clone()) {
+            let bf = self.physics_engine.geometrical_world.broad_phase();
+            let aabb = collider
+                .proxy_handle()
+                .and_then(|h| bf.proxy(h))
+                .map(|p| p.0);
+
+            if let Some(aabb) = aabb {
+                println!("(x, y): {:?}", (aabb.half_extents().x, aabb.half_extents().y));
+            }
+        }
+
+        handle
     }
 
     pub fn create_ground_collider(&mut self, desc: &ColliderDesc<f32>) -> DefaultColliderHandle {
@@ -45,21 +60,10 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.sync_game_world_to_physics_world(&mut self.world);
 
         let end = Instant::now();
-        println!("Physics Step Duration: {:?}", end - start);
+        // println!("Physics Step Duration: {:?}", end - start);
     }
 
-    pub fn move_and_collide(&mut self, phb: PhysicsBodyHandle, distance: Vector2<f32>) {
-        self.physics_engine.move_and_collide(phb, distance);
-        self.physics_engine.sync_game_world_to_physics_world(&mut self.world);
-    }
-
-    pub fn move_and_slide(&mut self, phb: PhysicsBodyHandle, distance: Vector2<f32>) {
-        self.physics_engine.move_and_slide(phb, distance);
-
-        self.physics_engine.sync_game_entity_position_to_physics_body(&mut self.world, phb);
-    }
-
-    pub fn set_gravity(&mut self, gravity: Vector2<f32>) { }
+    // pub fn set_gravity(&mut self, gravity: Vector2<f32>) { }
 
     pub fn set_ccd_substeps(&mut self, substep_count: usize) {
         self.physics_engine

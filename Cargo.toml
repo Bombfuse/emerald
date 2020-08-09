@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Bombfuse <eiffeldud@gmail.com>"]
 edition = "2018"
 description = "A lite, fully featured 2D game engine."
-repository = "https://github.com/atkostudios/emerald"
+repository = "https://github.com/Bombfuse/emerald"
 license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -16,10 +16,10 @@ nanoserde = { git = "https://github.com/not-fl3/nanoserde", branch = "master" }
 paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
 fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
 legion = { git = "https://github.com/TomGillen/legion", default-features = false }
+nphysics2d = { git = "https://github.com/rustsim/nphysics", branch = "master", default-features = false, features = ["dim2"] }
 
 # Dependencies
 instant = { version = "0.1.5", features = [ "now" ] }
-nphysics2d = { version = "0.16.1", default-features = false, features = ["dim2"] }
 image = "0.23.4"
 glam = "0.8.7"
 log = "0.4.11"
