@@ -1,6 +1,7 @@
 use crate::*;
 use crate::world::*;
 use crate::rendering::*;
+use crate::rendering::components::{Camera};
 use crate::rendering::texture::{Texture};
 use crate::rendering::font::FontKey;
 use crate::physics::PhysicsBodyHandle;
@@ -71,15 +72,32 @@ impl RenderingEngine {
 
     #[inline]
     pub fn draw_world(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld) {
+        let screen_size = match self.settings.scalar {
+            ScreenScalar::Keep => (self.settings.resolution.0 as f32, self.settings.resolution.1 as f32),
+            ScreenScalar::None => ctx.screen_size(),
+        };
+        let camera = Camera::default(); // Get first active camera in world here, or default
         let mut sprite_query = <(&Sprite, &Position)>::query();
         let mut color_rect_query = <(&ColorRect, &Position)>::query();
 
+        let mut sprites = Vec::with_capacity(100);
+        // let mut color_rects = Vec::with_capacity(100);
+
         for (sprite, position) in sprite_query.iter(&world.inner) {
-            self.draw_sprite(&mut ctx, &sprite, &position);
+            if is_in_view(&sprite, &position, &camera, &screen_size) {
+                sprites.push((sprite.clone(), position.clone()));
+            }
         }
 
         for (color_rect, position) in color_rect_query.iter(&mut world.inner) {
             self.draw_color_rect(&mut ctx, &color_rect, &position);
+        }
+
+
+        sprites.sort_by(|a, b| a.0.z_index.partial_cmp(&b.0.z_index).unwrap() );
+
+        for (sprite, position) in sprites.iter() {
+            self.draw_sprite(&mut ctx, &sprite, &position);
         }
     }
 
@@ -240,7 +258,7 @@ impl RenderingEngine {
 
         uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
         uniforms.color = Vec4::new(color.0, color.1, color.2, color.3);
-        uniforms.z_index = z_index;
+        // uniforms.z_index = z_index;
         
         texture.inner.set_filter(&mut ctx, texture.filter);
 
@@ -325,4 +343,9 @@ impl RenderingEngine {
 
         Ok(key)
     }
+}
+
+#[inline]
+fn is_in_view(sprite: &Sprite, pos: &Position, camera: &Camera, screen_size: &(f32, f32)) -> bool {
+    true
 }
