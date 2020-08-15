@@ -1,4 +1,4 @@
-use crate::{RenderingEngine, WorldEngine, Rectangle};
+use crate::{RenderingEngine, WorldEngine, Rectangle, Sprite, Position};
 use miniquad::Context;
 
 pub struct GraphicsHandler<'a> {
@@ -24,6 +24,10 @@ impl<'a> GraphicsHandler<'a> {
 
     pub fn draw_colliders(&mut self, color: crate::Color) {
         self.rendering_engine.draw_colliders(&mut self.quad_ctx, self.world_engine.world(), color)
+    }
+
+    pub fn draw_sprite(&mut self, sprite: &Sprite, pos: &Position) {
+        self.rendering_engine.draw_sprite(&mut self.quad_ctx, sprite, pos)
     }
 
     /// Begin drawing to the screen

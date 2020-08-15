@@ -71,8 +71,6 @@ impl RenderingEngine {
 
     #[inline]
     pub fn draw_world(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld) {
-        ctx.apply_pipeline(&self.pipeline);
-
         let mut sprite_query = <(&Sprite, &Position)>::query();
         let mut color_rect_query = <(&ColorRect, &Position)>::query();
 
@@ -87,10 +85,7 @@ impl RenderingEngine {
 
     #[inline]
     pub fn draw_colliders(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld, collider_color: Color) {
-        let mut physics_body_query = <&PhysicsBodyHandle>::query();
-
-        ctx.apply_pipeline(&self.pipeline);
-        
+        let mut physics_body_query = <&PhysicsBodyHandle>::query();        
         let mut color_rect = ColorRect::default();
         color_rect.color = collider_color;
 
@@ -110,14 +105,11 @@ impl RenderingEngine {
                         color_rect.width = aabb.half_extents().x as u32 * 2;
                         color_rect.height = aabb.half_extents().y as u32 * 2;
 
-                        println!("(id, x, y): {:?}", (ph.id(), aabb.half_extents().x, aabb.half_extents().y));
-
                         self.draw_color_rect(&mut ctx, &color_rect, &pos);
                     }
                 }
             }
         }
-
     }
 
     #[inline]
@@ -133,7 +125,9 @@ impl RenderingEngine {
     }
 
     #[inline]
-    fn draw_color_rect(&mut self, mut ctx: &mut Context, color_rect: &ColorRect, position: &Position) {
+    pub(crate) fn draw_color_rect(&mut self, mut ctx: &mut Context, color_rect: &ColorRect, position: &Position) {
+        ctx.apply_pipeline(&self.pipeline);
+
         let (width, height) = (color_rect.width, color_rect.height);
 
         let mut offset = color_rect.offset.clone();
@@ -166,7 +160,9 @@ impl RenderingEngine {
     }
 
     #[inline]
-    fn draw_sprite(&mut self, mut ctx: &mut Context, sprite: &Sprite, position: &Position) {
+    pub(crate) fn draw_sprite(&mut self, mut ctx: &mut Context, sprite: &Sprite, position: &Position) {
+        ctx.apply_pipeline(&self.pipeline);
+
         let texture = self.textures.get(&sprite.texture_key).unwrap();
         let mut target = Rectangle::new(
             sprite.target.x / texture.width as f32,
