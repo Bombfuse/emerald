@@ -1,7 +1,8 @@
 use crate::*;
 use crate::world::*;
 use crate::rendering::*;
-use crate::rendering::components::{Camera};
+use crate::rendering::components::*;
+use crate::rendering::components::aseprite::types::*;
 use crate::rendering::texture::{Texture};
 use crate::rendering::font::FontKey;
 use crate::physics::PhysicsBodyHandle;
@@ -70,6 +71,14 @@ impl RenderingEngine {
         }
     }
 
+    pub fn update(&mut self, delta: f32, world: &mut legion::world::World) {
+        let mut aseprite_query = <&mut Aseprite>::query();
+        
+        for mut aseprite in aseprite_query.iter_mut(world) {
+            aseprite.add_delta(delta);
+        }
+    }
+
     #[inline]
     pub fn draw_world(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld) {
         let screen_size = match self.settings.scalar {
@@ -77,11 +86,21 @@ impl RenderingEngine {
             ScreenScalar::None => ctx.screen_size(),
         };
         let camera = Camera::default(); // Get first active camera in world here, or default
+        let mut aseprite_query = <(&mut Aseprite, &Position)>::query();
         let mut sprite_query = <(&Sprite, &Position)>::query();
         let mut color_rect_query = <(&ColorRect, &Position)>::query();
 
         let mut sprites = Vec::with_capacity(100);
         // let mut color_rects = Vec::with_capacity(100);
+
+        // This can all be threaded
+        for (mut aseprite, position) in aseprite_query.iter_mut(&mut world.inner) {
+            aseprite.update();
+
+            if is_in_view(&aseprite.sprite, &position, &camera, &screen_size) {
+                sprites.push((aseprite.sprite.clone(), position.clone()));
+            }
+        }
 
         for (sprite, position) in sprite_query.iter(&world.inner) {
             if is_in_view(&sprite, &position, &camera, &screen_size) {
@@ -92,7 +111,6 @@ impl RenderingEngine {
         for (color_rect, position) in color_rect_query.iter(&mut world.inner) {
             self.draw_color_rect(&mut ctx, &color_rect, &position);
         }
-
 
         sprites.sort_by(|a, b| a.0.z_index.partial_cmp(&b.0.z_index).unwrap() );
 

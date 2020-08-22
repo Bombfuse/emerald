@@ -83,6 +83,8 @@ impl EventHandler for GameEngine {
     fn update(&mut self, mut ctx: &mut Context) {
         let start_of_frame = Instant::now();
         let delta = start_of_frame - self.last_instant;
+        self.last_instant = start_of_frame;
+
         self.update_fps_tracker(delta.as_secs_f64());
         
         let emd = Emerald::new(
@@ -96,11 +98,10 @@ impl EventHandler for GameEngine {
             &mut self.rendering_engine);
 
         self.game.update(emd);
+        self.rendering_engine.update(delta.as_secs_f32(), self.world_engine.inner());
         self.audio_engine.frame();
         self.logging_engine.update();
         self.input_engine.rollover();
-
-        self.last_instant = Instant::now();
     }
 
     #[inline]
@@ -117,7 +118,7 @@ impl EventHandler for GameEngine {
     fn draw(&mut self, mut ctx: &mut Context) {
         let start_of_frame = Instant::now();
         let delta = start_of_frame - self.last_instant;
-
+        
         let emd = Emerald::new(
             delta,
             self.get_fps(),

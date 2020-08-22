@@ -94,6 +94,9 @@ emd.world().inner()
     .push((aseprite, Position::zero()));
 ```
 
+Export settings
+![Preferred export settings](./assets/aseprite_settings.png)
+
 
 
 ## [WASM](https://webassembly.org/)

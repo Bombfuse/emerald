@@ -16,6 +16,13 @@ impl std::fmt::Display for EmeraldError {
     }
 }
 
+impl std::convert::From<nanoserde::DeJsonErr> for EmeraldError {
+    fn from(e: nanoserde::DeJsonErr) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string(),
+        }
+    }
+}
 
 impl std::convert::From<std::io::Error> for EmeraldError {
     fn from(e: std::io::Error) -> EmeraldError {

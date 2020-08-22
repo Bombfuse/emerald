@@ -1,7 +1,7 @@
 mod sprite;
 mod label;
 mod color_rect;
-mod aseprite;
+pub mod aseprite;
 mod camera;
 
 pub use camera::*;
