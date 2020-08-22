@@ -51,6 +51,10 @@ impl Aseprite {
         Ok(aseprite)
     }
 
+    pub fn get_animation_name(&self) -> String {
+        self.current_tag.name.clone()
+    }
+
     pub fn play<T: Into<String>>(&mut self, new_animation: T) {
         // TODO(bombfuse): Should this reset the the animation or continue?
         self.is_looping = false;
@@ -82,6 +86,9 @@ impl Aseprite {
             return;
         }
 
+        self.elapsed_time = 0.0;
+        self.frame_counter = 0;
+        
         for tag in &self.data.meta.frame_tags {
             if tag.name == new_animation {
                 self.current_tag = tag.clone();
