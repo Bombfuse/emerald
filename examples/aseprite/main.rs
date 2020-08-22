@@ -12,7 +12,7 @@ pub struct MyGame;
 impl Game for MyGame {
     fn initialize(&mut self, mut emd: Emerald) {
         let mut aseprite = emd.loader()
-            .aseprite("./examples/assets/smiley.png", "./examples/assets/smiley.json")
+            .aseprite_with_animations("./examples/assets/smiley.png", "./examples/assets/smiley.json")
             .unwrap();
 
         aseprite.play_and_loop("smile");

@@ -26,14 +26,18 @@ impl<'a> AssetLoader<'a> {
         Ok(file)
     }
 
-    pub fn aseprite<T: Into<String>>(&mut self, path_to_texture: T, path_to_animations: T) -> Result<Aseprite, EmeraldError> {
+    /// Auto load the sprite sheet from the json
+    // pub fn aseprite<T: Into<String>>(&mut self, path_to_json: T) -> Result<Aseprite, EmeraldError> {
+    // }
+
+    pub fn aseprite_with_animations<T: Into<String>>(&mut self, path_to_texture: T, path_to_animations: T) -> Result<Aseprite, EmeraldError> {
         let texture_path = path_to_texture.into();
         let animation_path = path_to_animations.into();
 
         let texture_file = self.file(texture_path.clone())?;
         let animation_file = self.file(animation_path.clone())?;
 
-        self.rendering_engine.aseprite(&mut self.quad_ctx,
+        self.rendering_engine.aseprite_with_animations(&mut self.quad_ctx,
             texture_file,
             texture_path,
             animation_file,

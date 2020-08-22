@@ -291,7 +291,7 @@ impl RenderingEngine {
     // }
 
     #[inline]
-    pub fn aseprite<T: Into<String>>(&mut self,
+    pub fn aseprite_with_animations<T: Into<String>>(&mut self,
             mut ctx: &mut Context,
             texture_file: File,
             texture_file_path: T,

@@ -1,4 +1,4 @@
-use crate::{EmeraldError, Rectangle};
+use crate::{EmeraldError, Rectangle, Vector2};
 use crate::rendering::*;
 
 use nanoserde::{DeJson, SerJson};
@@ -21,13 +21,14 @@ impl Aseprite {
     /// Update the inner sprite to reflect the state of the Aseprite.
     /// This should be done before each time the Aseprite is drawn.
     pub(crate) fn update(&mut self) {
+        let sheet_size = &self.data.meta.size;
         let frame = self.get_frame();
         let target = &frame.frame;
-        println!("{:?}", self.elapsed_time);
+        let real_y = (sheet_size.h - target.y - target.h) as f32;
 
         self.sprite.target = Rectangle::new(
             target.x as f32,
-            target.y as f32,
+            real_y,
             target.w as f32,
             target.h as f32
         );
@@ -89,6 +90,9 @@ impl Aseprite {
         }
     }
 
+    pub fn set_offset(&mut self, offset: Vector2<f32>) { self.sprite.offset = offset }
+    pub fn set_z_index(&mut self, z: f32) { self.sprite.z_index = z }
+
     /// !!! WARNING !!!
     /// I have exposed this function to the user in case they choose to toy around with animation speed.
     /// Manually adding delta time may produce undesirable results. Or desirable results, up to you.
@@ -101,7 +105,7 @@ impl Aseprite {
             self.elapsed_time -= duration;
             self.frame_counter += 1;
 
-            if self.frame_counter as u32 >= (self.current_tag.to - self.current_tag.from) {
+            if self.frame_counter as u32 > (self.current_tag.to - self.current_tag.from) {
                 self.frame_counter = 0;
             }
         }
@@ -125,10 +129,9 @@ pub mod types {
 
     #[derive(Clone, Debug, DeJson)]
     pub struct AseSize {
-        w: u32,
-        h: u32,
+        pub(crate) w: u32,
+        pub(crate) h: u32,
     }
-
 
     #[derive(Clone, Debug, DeJson)]
     pub struct AsepriteData {
@@ -168,9 +171,8 @@ pub mod types {
 
     #[derive(Clone, Debug, DeJson)]
     pub struct AsepriteMeta {
-        image: String,
         format: String,
-        size: AseSize,
+        pub(crate) size: AseSize,
         scale: String,
         #[nserde(rename = "frameTags")]
         pub(crate) frame_tags: Vec<AsepriteTag>,
