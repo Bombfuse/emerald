@@ -1,8 +1,6 @@
 use crate::world::*;
 use crate::world::physics::*;
 
-use legion::*;
-
 pub struct WorldEngine {
     world_stack: Vec<EmeraldWorld>,
 }
@@ -21,8 +19,8 @@ impl WorldEngine {
     pub fn push_world(&mut self, world: EmeraldWorld) { self.world_stack.push(world) }
 
     /// Returns the inner legion world, exposing the real world API.
-    pub fn inner(&mut self) -> &mut legion::World { &mut self.world().inner }
-    pub fn inner_ref(&self) -> &legion::World { &self.world_ref().inner }
+    pub fn inner(&mut self) -> &mut hecs::World { &mut self.world().inner }
+    pub fn inner_ref(&self) -> &hecs::World { &self.world_ref().inner }
 
     /// Get a reference to the current active world.
     pub(crate) fn world_ref(&self) -> &EmeraldWorld {

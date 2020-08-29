@@ -7,6 +7,8 @@ use crate::audio::*;
 
 use std::time::Duration;
 
+use hecs::Entity;
+
 pub struct Emerald<'a> {
     delta: Duration,
     fps: f64,

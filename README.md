@@ -71,6 +71,8 @@ Emerald uses [Legion](https://github.com/TomGillen/legion) under the hood for ex
 
 More detailed features can be found in the Legion documentation.
 
+*Note: In order to use legion macros, you'll need to add a direct dependency on Legion in your project*
+
 ```rust
 
 let mut sprite_update_query = <(&Sprite, &mut Position)>::query();

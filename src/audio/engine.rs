@@ -12,6 +12,7 @@ use std::io::Read as ReadFile;
 
 pub(crate) struct AudioEngine {
     mixer: SoundMixer,
+    sound_ids: Vec<SoundId>,
 }
 impl AudioEngine {
     pub(crate) fn new() -> Self {
@@ -19,6 +20,7 @@ impl AudioEngine {
 
         AudioEngine {
             mixer,
+            sound_ids: Vec::new(),
         }
     }
 
@@ -34,8 +36,26 @@ impl AudioEngine {
         Ok(sound)
     }
 
-    pub(crate) fn play(&mut self, mut snd: Sound) {
-        self.mixer.play(snd);
+    pub(crate) fn play(&mut self, mut snd: Sound) -> SoundId {
+        let id = self.mixer.play(snd);
+
+        self.sound_ids.push(id);
+
+        id
+    }
+
+    pub(crate) fn clear(&mut self) {
+        let ids = self.sound_ids.clone();
+        self.sound_ids = Vec::new();
+
+
+        for id in ids {
+            self.stop(id);
+        }
+    }
+
+    pub(crate) fn stop(&mut self, id: SoundId) {
+        self.mixer.stop(id)
     }
 
     pub(crate) fn frame(&mut self) {

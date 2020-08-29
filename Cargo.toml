@@ -9,14 +9,17 @@ license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-# Nightly dependencies
+# Nightly
 miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
-quad-snd = { git = "https://github.com/not-fl3/quad-snd", branch = "master" }
+quad-snd = { path = "../quad-snd" }
+miniquad_text_fontdue = { git = "https://github.com/Bombfuse/miniquad_text_fontdue", branch = "master" }
 nanoserde = { git = "https://github.com/not-fl3/nanoserde", branch = "master" }
 paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
+rapier2d = { git = "https://github.com/dimforge/rapier", branch = "master", default-features = false, features = [ "dim2" ] }
+
+# Nightly no_std
 fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
-legion = { git = "https://github.com/TomGillen/legion", default-features = false }
-nphysics2d = { git = "https://github.com/rustsim/nphysics", branch = "master", default-features = false, features = ["dim2"] }
+hecs = { git = "https://github.com/Ralith/hecs", branch = "master" }
 
 # Dependencies
 instant = { version = "0.1.5", features = [ "now" ] }

@@ -4,6 +4,7 @@ use crate::audio::*;
 
 use std::fs::File;
 use std::ffi::OsStr;
+use std::io::prelude::Read as ReadFile;
 
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
@@ -26,9 +27,28 @@ impl<'a> AssetLoader<'a> {
         Ok(file)
     }
 
+    pub fn file_as_string<T: Into<String>>(&self, file_path: T) -> Result<String, EmeraldError> {
+        let mut file = self.file(file_path.into())?;
+        let mut file_string = String::new();
+        file.read_to_string(&mut file_string)?;
+
+        Ok(file_string)
+    }
+
+    pub fn file_as_bytes<T: Into<String>>(&self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
+        let mut file = self.file(file_path)?;
+        let mut data = Vec::new();
+        file.read_to_end(&mut data)?;
+
+        Ok(data)
+    }
+
     /// Auto load the sprite sheet from the json
     // pub fn aseprite<T: Into<String>>(&mut self, path_to_json: T) -> Result<Aseprite, EmeraldError> {
     // }
+
+    /// Automatically load the spritesheet from the aseprite json file
+    fn aseprite() {}
 
     pub fn aseprite_with_animations<T: Into<String>>(&mut self, path_to_texture: T, path_to_animations: T) -> Result<Aseprite, EmeraldError> {
         let texture_path = path_to_texture.into();
@@ -44,8 +64,9 @@ impl<'a> AssetLoader<'a> {
             animation_path)
     }
 
-    pub fn sprite(&mut self, path: &str) -> Result<Sprite, EmeraldError> {
-        let sprite_file = self.file(path)?;
+    pub fn sprite<T: Into<String>>(&mut self, path: T) -> Result<Sprite, EmeraldError> {
+        let path: String = path.into();
+        let sprite_file = self.file(path.clone())?;
         self.rendering_engine.sprite(&mut self.quad_ctx, sprite_file, path)
     }
 
@@ -63,18 +84,14 @@ impl<'a> AssetLoader<'a> {
     }
 
     pub fn label<T: Into<String>>(&mut self, text: T, font_key: FontKey) -> Result<Label, EmeraldError> {
-        let mut label = Label::default();
-
-        label.font = font_key;
-        label.text = text.into();
-
-        Ok(Label::default())
+        self.rendering_engine.label(&mut self.quad_ctx, text, font_key)
     }
 
-    pub fn font(&mut self, path: &str, font_size: u16) -> Result<FontKey, EmeraldError> {
-        let file = self.file(path)?;
+    pub fn font<T: Into<String>>(&mut self, path: T, font_size: u32) -> Result<FontKey, EmeraldError> {
+        let path: String = path.into();
+        let font_data = self.file_as_bytes(path.clone())?;
 
-        self.rendering_engine.font(&mut self.quad_ctx, file, path, font_size)
+        self.rendering_engine.font(&mut self.quad_ctx, font_data, path, font_size)
     }
 
     pub fn sound<T: Into<String>>(&mut self, path: T) -> Result<Sound, EmeraldError> {

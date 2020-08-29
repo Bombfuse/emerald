@@ -5,10 +5,12 @@ use crate::rendering::components::*;
 use crate::rendering::components::aseprite::types::*;
 use crate::rendering::texture::{Texture};
 use crate::rendering::font::FontKey;
-use crate::physics::PhysicsBodyHandle;
 
 use std::fs::File;
 use std::io::Read as StdIoRead;
+use std::rc::Rc;
+
+use miniquad_text_fontdue as quad_text;
 
 use miniquad::{
     BlendFactor, BlendState, BlendValue, Equation,
@@ -17,7 +19,6 @@ use miniquad::{
     Context, Buffer, VertexFormat,
     VertexAttribute, Shader};
 use glam::{Vec2, Vec4, Mat4};
-use legion::*;
 use std::collections::HashMap;
 use fontdue::{Font, FontSettings};
 
@@ -25,8 +26,10 @@ pub struct RenderingEngine {
     settings: RenderSettings,
     pipeline: Pipeline,
     textures: HashMap<TextureKey, Texture>,
-    fonts: HashMap<FontKey, Font>,
-    font_atlases: HashMap<FontKey, Texture>,
+    fonts: HashMap<FontKey, Rc<quad_text::FontTexture>>,
+    text_system: quad_text::TextSystem,
+    uid: usize,
+    text_displays: HashMap<TextDisplayKey, quad_text::TextDisplay<Rc<quad_text::FontTexture>>>,
 }
 impl RenderingEngine {
     pub fn new(mut ctx: &mut Context, settings: RenderSettings) -> Self {
@@ -55,9 +58,10 @@ impl RenderingEngine {
             params,
         );
 
+
         let mut textures: HashMap<TextureKey, Texture> = HashMap::new();
         let fonts = HashMap::new();
-        let font_atlases = HashMap::new();
+        let text_system = quad_text::TextSystem::new(&mut ctx);
 
         let default_texture = Texture::default(&mut ctx).unwrap();
         textures.insert(TextureKey::default(), default_texture);
@@ -67,14 +71,14 @@ impl RenderingEngine {
             pipeline,
             textures,
             fonts,
-            font_atlases,
+            text_system,
+            uid: 0,
+            text_displays: HashMap::new(),
         }
     }
 
-    pub fn update(&mut self, delta: f32, world: &mut legion::world::World) {
-        let mut aseprite_query = <&mut Aseprite>::query();
-        
-        for mut aseprite in aseprite_query.iter_mut(world) {
+    pub fn update(&mut self, delta: f32, world: &mut hecs::World) {
+        for (id, (aseprite)) in world.query::<&mut Aseprite>().iter() {
             aseprite.add_delta(delta);
         }
     }
@@ -86,15 +90,10 @@ impl RenderingEngine {
             ScreenScalar::None => ctx.screen_size(),
         };
         let camera = Camera::default(); // Get first active camera in world here, or default
-        let mut aseprite_query = <(&mut Aseprite, &Position)>::query();
-        let mut sprite_query = <(&Sprite, &Position)>::query();
-        let mut color_rect_query = <(&ColorRect, &Position)>::query();
 
         let mut sprites = Vec::with_capacity(100);
-        // let mut color_rects = Vec::with_capacity(100);
 
-        // This can all be threaded
-        for (mut aseprite, position) in aseprite_query.iter_mut(&mut world.inner) {
+        for (id, (aseprite, position)) in world.inner.query::<(&mut Aseprite, &Position)>().iter() {
             aseprite.update();
 
             if is_in_view(&aseprite.sprite, &position, &camera, &screen_size) {
@@ -102,13 +101,13 @@ impl RenderingEngine {
             }
         }
 
-        for (sprite, position) in sprite_query.iter(&world.inner) {
+        for (id, (sprite, position)) in world.inner.query::<(&Sprite, &Position)>().iter() {
             if is_in_view(&sprite, &position, &camera, &screen_size) {
                 sprites.push((sprite.clone(), position.clone()));
             }
         }
 
-        for (color_rect, position) in color_rect_query.iter(&mut world.inner) {
+        for (id, (color_rect, position)) in world.inner.query::<(&ColorRect, &Position)>().iter() {
             self.draw_color_rect(&mut ctx, &color_rect, &position);
         }
 
@@ -117,26 +116,25 @@ impl RenderingEngine {
         for (sprite, position) in sprites.iter() {
             self.draw_sprite(&mut ctx, &sprite, &position);
         }
+
+        ctx.end_render_pass();
+
+        for (id, (mut label, position)) in world.inner.query::<(&mut Label, &Position)>().iter() {
+            self.draw_label(&mut ctx, &mut label, &position);
+        }
     }
 
     #[inline]
     pub fn draw_colliders(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld, collider_color: Color) {
-        let mut physics_body_query = <&PhysicsBodyHandle>::query();        
         let mut color_rect = ColorRect::default();
         color_rect.color = collider_color;
 
-        for ph in physics_body_query.iter(&world.inner) {
-            let physics_body = world.physics_engine.physics_bodies.get(&ph).unwrap();
-
-            for collider_handle in &physics_body.collider_handles {
-                if let Some(collider) = world.physics_engine.colliders.get(collider_handle.clone()) {
-                    let bf = world.physics_engine.geometrical_world.broad_phase();
-                    let aabb = collider
-                        .proxy_handle()
-                        .and_then(|h| bf.proxy(h))
-                        .map(|p| p.0);
-
-                    if let Some(aabb) = aabb {
+        for (id, body_handle) in world.inner.query::<&RigidBodyHandle>().iter() {
+            if let Some(body) = world.physics_engine.bodies.get(*body_handle) {
+                for collider_handle in body.colliders() {
+                    if let Some(collider) = world.physics_engine.colliders.get(collider_handle.clone()) {
+                        let bf = &world.physics_engine.broad_phase;
+                        let aabb = collider.compute_aabb();
                         let pos = Position::new(aabb.center().coords.x, aabb.center().coords.y);
                         color_rect.width = aabb.half_extents().x as u32 * 2;
                         color_rect.height = aabb.half_extents().y as u32 * 2;
@@ -285,10 +283,36 @@ impl RenderingEngine {
         ctx.draw(0, 6, 1);
     }
 
-    // fn render_label(&mut self, ctx: &mut Context, label: &Label, position: &Position) {
-    //     // Get font texture here
-    //     // Render texture font at target characters in sequence
-    // }
+    pub fn draw_label(&mut self, mut ctx: &mut Context, mut label: &mut Label, position: &Position) {
+        let start = Instant::now();
+        let (w, h) = ctx.screen_size();
+
+        if let Some(mut text_display) = self.text_displays.get_mut(&label.text_display_key) {
+            let text_width = text_display.get_width();
+
+            if !label.is_text_up_to_date {
+                text_display.set_text(&mut ctx, &label.text);
+                label.is_text_up_to_date = true;
+            }
+    
+            #[rustfmt::skip]
+            // let matrix = crate::rendering::param_to_instance_transform(
+            //     0.0,
+            //     Vec2::new(1.0, 1.0),
+            //     Vec2::new(0.0, 0.0),
+            //     Vec2::new(position.x, position.y),
+            // ).to_cols_array_2d();
+            let matrix:[[f32; 4]; 4] = glam::Mat4::from_cols_array(&[
+                2.0 / text_width, 0.0, 0.0, 0.0,
+                0.0, 2.0 * (w as f32) / (h as f32) / text_width, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0,
+                -1.0, -1.0, 0.0, 1.0f32,
+            ]).to_cols_array_2d();
+    
+            quad_text::draw(ctx, &text_display, &self.text_system, matrix, (0.0, 0.0, 0.0, 1.0));
+            let end = Instant::now();
+        }
+    }
 
     #[inline]
     pub fn aseprite_with_animations<T: Into<String>>(&mut self,
@@ -308,6 +332,21 @@ impl RenderingEngine {
         let key = self.texture(&mut ctx, file, path)?;
 
         Ok(Sprite::from_texture(key))
+    }
+
+    #[inline]
+    pub fn label<T: Into<String>>(&mut self, mut ctx: &mut Context, text: T, font_key: FontKey) -> Result<Label, EmeraldError> {
+        if let Some(font) = self.fonts.get(&font_key) {
+            let mut display = quad_text::TextDisplay::new(&mut ctx, &self.text_system, font.clone(), &text.into());
+            let key = TextDisplayKey(self.uid);
+            self.text_displays.insert(key.clone(), display);
+            let mut label = Label::new(key);
+
+            return Ok(label);
+        }
+
+
+        Err(EmeraldError::new(format!("Unable to get font with {:?}", font_key)))
     }
 
     #[inline]
@@ -331,33 +370,24 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn font(&mut self, mut ctx: &mut Context, mut file: File, path: &str, font_size: u16) -> Result<FontKey, EmeraldError> {
-        let key = FontKey::new(path, font_size);
+    pub fn font<T: Into<String>>(&mut self, mut ctx: &mut Context, mut font_data: Vec<u8>, path: T, font_size: u32) -> Result<FontKey, EmeraldError> {
+        let path: String = path.into();
+        let key = FontKey::new(&path, font_size);
 
         if self.fonts.contains_key(&key) {
             return Ok(key);
         }
 
-        let mut font_data = Vec::new();
-        file.read_to_end(&mut font_data)?;
+        let font = quad_text::FontTexture::new(
+            &mut ctx,
+            font_data.as_slice(),
+            font_size,
+            quad_text::FontAtlas::ascii_character_list(),
+        ).unwrap();
 
-        let font = Font::from_bytes(font_data.as_slice(), FontSettings::default())?;
-        self.fonts.insert(key.clone(), font);
+        self.fonts.insert(key.clone(), Rc::new(font));
 
-        // Create texture here big enough for fuckin regular letters shit or something idk man
-        // Characters are hard
-        // Just do the 0..26 for now
-        // Just load texture to the engine textures, then point at it
-        let size: u16 = 128;
-        let mut bytes = Vec::with_capacity((size * size) as usize);
-
-        for _ in 0..(size * size) {
-            bytes.push(0xFF);
-        }
-
-        let font_texture = Texture::from_rgba8(&mut ctx, size, size, &bytes)?;
-        let texture_key = TextureKey::new(path);
-        self.textures.insert(texture_key, font_texture);
+        self.uid += 1;
 
         Ok(key)
     }

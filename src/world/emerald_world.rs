@@ -1,6 +1,5 @@
 use crate::world::physics::*;
-
-use legion::World;
+use hecs::World;
 
 pub struct EmeraldWorld {
     pub(crate) physics_engine: PhysicsEngine,

@@ -3,11 +3,12 @@ use miniquad::*;
 
 use std::collections::HashMap;
 
-pub struct InputEngine {
-    keys: HashMap<KeyCode, ButtonState>,
+#[derive(Clone, Debug)]
+pub(crate) struct InputEngine {
+    pub(crate) keys: HashMap<KeyCode, ButtonState>,
 }
 impl InputEngine {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         InputEngine {
             keys: HashMap::new(),
         }

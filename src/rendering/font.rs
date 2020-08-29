@@ -3,10 +3,10 @@
 pub(crate) const DEFAULT_FONT_TEXTURE_PATH: &str = "ghosty_spooky_mister_mime_dude";
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub struct FontKey(String, u16);
+pub struct FontKey(String, u32);
 impl FontKey {
-    pub fn new(font_path: &str, size: u16) -> Self {
-        FontKey(font_path.to_string(), size)
+    pub fn new<T: Into<String>>(font_path: T, size: u32) -> Self {
+        FontKey(font_path.into(), size)
     }
 }
 impl Default for FontKey {

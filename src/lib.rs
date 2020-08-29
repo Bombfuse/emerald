@@ -19,22 +19,19 @@ pub use logging::*;
 pub use audio::*;
 
 // physics/math/collision re-exports
-pub type Velocity = nphysics2d::math::Velocity<f32>;
-pub use nphysics2d::nalgebra::Vector2;
-pub use nphysics2d::object::{
-    RigidBody,
-    RigidBodyDesc,
-    ColliderDesc,
-    Collider,
-    BodyStatus,
-};
-pub use nphysics2d::ncollide2d::shape::{ShapeHandle, Ball, Cuboid};
+pub use rapier2d::dynamics::{RigidBodyBuilder, RigidBodyHandle, RigidBody};
+pub use rapier2d::geometry::{ColliderBuilder, ColliderHandle, Collider};
+pub use rapier2d::na::Vector2;
 //
 
 // General re-exports for compatibility
 pub use instant::Instant;
 pub use nanoserde;
-pub use nphysics2d;
+pub use rapier2d;
+pub use hecs;
+pub use rapier2d::na as nalgebra;
+
+pub use hecs::*;
 
 use miniquad::{conf, UserData};
 
