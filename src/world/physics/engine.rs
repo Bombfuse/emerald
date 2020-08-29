@@ -35,7 +35,7 @@ impl PhysicsEngine {
             narrow_phase,
             joints,
             pipeline,
-            gravity: Vector2::new(0.0, -9.81),
+            gravity: Vector2::new(0.0, 0.0),
             integration_parameters: IntegrationParameters::default(),
         }
     }

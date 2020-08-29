@@ -20,7 +20,6 @@ use miniquad::{
     VertexAttribute, Shader};
 use glam::{Vec2, Vec4, Mat4};
 use std::collections::HashMap;
-use fontdue::{Font, FontSettings};
 
 pub struct RenderingEngine {
     settings: RenderSettings,
