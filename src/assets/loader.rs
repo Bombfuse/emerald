@@ -40,9 +40,12 @@ impl<'a> AssetLoader<'a> {
         #[cfg(not(target_arch = "wasm32"))]
         {
             let file_path: String = file_path.into();
-            let file = File::open(file_path)?;
+            let mut file = File::open(file_path)?;
+            let mut bytes = Vec::new();
+
+            file.read_to_end(&mut bytes)?;
     
-            Ok(file.bytes())
+            Ok(bytes)
         }
     }
 
