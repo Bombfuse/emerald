@@ -14,11 +14,6 @@ pub struct LoggingEngine {
 }
 impl LoggingEngine {
     pub(crate) fn new() -> Self {
-        #[cfg(target_arch="wasm32")]
-        {
-            console_log::init_with_level(Level::Debug);
-        }
-
         LoggingEngine {
             logs: Vec::new(),
         }
@@ -26,16 +21,6 @@ impl LoggingEngine {
 
     pub fn update(&mut self) {
         for log in &self.logs {
-
-            #[cfg(target_arch="wasm32")]
-            {
-                match log {
-                    Log::Info(msg) => info!("{}", &msg),
-                    Log::Warning(msg) => warn!("{}", &msg),
-                    Log::Error(msg) => error!("{}", &msg),
-                }
-            }
-
             #[cfg(not(target_arch="wasm32"))]
             {
                 match log {

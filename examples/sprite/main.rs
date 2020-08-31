@@ -14,15 +14,17 @@ impl Game for MyGame {
         // Pack all game files into WASM binary
         #[cfg(target_arch = "wasm32")]
         {
-            emd.loader()
-                .pack_texture(
+            emd.loader().pack_texture(
                     "./examples/assets/bunny.png",
                     include_bytes!("../assets/bunny.png").to_vec()
-                );
+                ).unwrap()
         }
 
-        let sprite = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
-
-        emd.world().inner().push((sprite, Position::new(16.0, 16.0)));
+        match emd.loader().sprite("./examples/assets/bunny.png") {
+            Ok(sprite) =>  {
+                emd.world().inner().spawn((sprite, Position::new(16.0, 16.0)));
+            }
+            Err(e) => {},
+        };
     }
 }

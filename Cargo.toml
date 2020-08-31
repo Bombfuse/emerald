@@ -12,20 +12,16 @@ license = "MIT OR Apache-2.0"
 # Nightly
 miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
 quad-snd = { git = "https://github.com/Bombfuse/quad-snd", branch = "master" }
-miniquad_text_fontdue = { git = "https://github.com/Bombfuse/miniquad_text_fontdue", branch = "master" }
 nanoserde = { git = "https://github.com/not-fl3/nanoserde", branch = "master" }
 paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
-rapier2d = { git = "https://github.com/dimforge/rapier", branch = "master", default-features = false, features = [ "dim2" ] }
-hecs = { git = "https://github.com/Ralith/hecs", branch = "master" }
+hecs = { git = "https://github.com/Ralith/hecs", branch = "master", default-features = false }
+rapier2d = { git = "https://github.com/dimforge/rapier", default-features = false, features = [ "dim2" ] }
 
 # Dependencies
-instant = { version = "0.1.5", features = [ "now" ] }
+instant = { version = "0.1.5", default-features = false, features = [ "now" ] }
 image = "0.23.8"
 glam = "0.9.3"
 log = "0.4.11"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-console_log = { version = "0.2.0" }
 
 [lib]
 name = "emerald"

@@ -66,8 +66,15 @@ impl<'a> AssetLoader<'a> {
 
     pub fn sprite<T: Into<String>>(&mut self, path: T) -> Result<Sprite, EmeraldError> {
         let path: String = path.into();
-        let sprite_file = self.file(path.clone())?;
-        self.rendering_engine.sprite(&mut self.quad_ctx, sprite_file, path)
+
+        match self.rendering_engine.sprite(path.clone()) {
+            Ok(sprite) => Ok(sprite),
+            Err(e) => {
+                let sprite_file = self.file(path.clone())?;
+                self.rendering_engine.sprite_from_file(&mut self.quad_ctx, sprite_file, path)
+            }
+        }
+
     }
 
     /// Meant to be used for WASM. Packs the textures into the WASM so
@@ -79,7 +86,7 @@ impl<'a> AssetLoader<'a> {
     ///         include_bytes!("../static/assets/bunny.png").to_vec()
     ///     );
     /// 
-    pub fn pack_texture(&mut self, name: &str, bytes: Vec<u8>) {
+    pub fn pack_texture(&mut self, name: &str, bytes: Vec<u8>) -> Result<(), EmeraldError> {
         self.rendering_engine.pack_texture(&mut self.quad_ctx, name, bytes)
     }
 
