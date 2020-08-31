@@ -15,11 +15,8 @@ pub struct Texture {
     pub(crate) bindings: Bindings,
 }
 impl Texture {
-    pub(crate) fn new(mut ctx: &mut Context, mut file: File) -> Result<Self, EmeraldError> {
-        let mut bytes = vec![];
-        file.read_to_end(&mut bytes)?;
-
-        Self::from_png_bytes(&mut ctx, &bytes)
+    pub(crate) fn new(mut ctx: &mut Context, mut data: Vec<u8>) -> Result<Self, EmeraldError> {
+        Self::from_png_bytes(&mut ctx, &data)
     }
 
     pub fn default(mut ctx: &mut Context) -> Result<Self, EmeraldError> {

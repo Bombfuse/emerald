@@ -38,3 +38,11 @@ impl std::convert::From<&str> for EmeraldError {
         }
     }
 }
+
+impl std::convert::From<std::string::FromUtf8Error> for EmeraldError {
+    fn from(e: std::string::FromUtf8Error) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string()
+        }
+    }
+}

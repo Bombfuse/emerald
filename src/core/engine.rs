@@ -4,6 +4,7 @@ use crate::input::*;
 use crate::world::*;
 use crate::logging::*;
 use crate::audio::*;
+use crate::assets::*;
 
 use instant::Instant;
 use miniquad::*;
@@ -19,6 +20,7 @@ pub struct GameEngine {
     world_engine: WorldEngine,
     last_instant: Instant,
     fps_tracker: VecDeque<f64>,
+    cache: Cache,
 }
 impl GameEngine {
     pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
@@ -39,6 +41,8 @@ impl GameEngine {
         let mut fps_tracker = VecDeque::with_capacity(starting_amount);
         fps_tracker.resize(starting_amount, 1.0 / 60.0);
 
+        let mut cache = Cache::new();
+
         let emd = Emerald::new(
             delta,
             0.0,
@@ -47,7 +51,9 @@ impl GameEngine {
             &mut input_engine,
             &mut world_engine,
             &mut logging_engine,
-            &mut rendering_engine);
+            &mut rendering_engine,
+            &mut cache
+        );
 
         game.initialize(emd);
 
@@ -62,6 +68,7 @@ impl GameEngine {
             rendering_engine,
             world_engine,
             last_instant,
+            cache,
         }
     }
 
@@ -95,7 +102,9 @@ impl EventHandler for GameEngine {
             &mut self.input_engine,
             &mut self.world_engine,
             &mut self.logging_engine,
-            &mut self.rendering_engine);
+            &mut self.rendering_engine,
+            &mut self.cache
+        );
 
         self.game.update(emd);
         self.rendering_engine.update(delta.as_secs_f32(), self.world_engine.inner());
@@ -127,7 +136,9 @@ impl EventHandler for GameEngine {
             &mut self.input_engine,
             &mut self.world_engine,
             &mut self.logging_engine,
-            &mut self.rendering_engine);
+            &mut self.rendering_engine,
+            &mut self.cache
+        );
 
         self.game.draw(emd);
     }

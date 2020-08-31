@@ -18,6 +18,7 @@ pub struct Emerald<'a> {
     logging_engine: &'a mut LoggingEngine,
     input_engine: &'a mut InputEngine,
     world_engine: &'a mut WorldEngine,
+    cache: &'a mut Cache,
 }
 impl<'a> Emerald<'a> {
     #[inline]
@@ -29,7 +30,9 @@ impl<'a> Emerald<'a> {
         input_engine: &'a mut InputEngine,
         world_engine: &'a mut WorldEngine,
         logging_engine: &'a mut LoggingEngine,
-        rendering_engine: &'a mut RenderingEngine) -> Self {
+        rendering_engine: &'a mut RenderingEngine,
+        cache: &'a mut Cache
+    ) -> Self {
 
         Emerald {
             delta,
@@ -40,6 +43,7 @@ impl<'a> Emerald<'a> {
             input_engine,
             logging_engine,
             world_engine,
+            cache,
         }
     }
 
@@ -70,7 +74,7 @@ impl<'a> Emerald<'a> {
     /// Asset loading
     #[inline]
     pub fn loader(&mut self) -> AssetLoader {
-        AssetLoader::new(&mut self.quad_ctx, &mut self.rendering_engine, &mut self.audio_engine)
+        AssetLoader::new(&mut self.quad_ctx, &mut self.rendering_engine, &mut self.audio_engine, &mut self.cache)
     }
 
     #[inline]

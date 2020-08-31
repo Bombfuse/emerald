@@ -308,14 +308,14 @@ impl RenderingEngine {
     #[inline]
     pub fn aseprite_with_animations<T: Into<String>>(&mut self,
             mut ctx: &mut Context,
-            texture_file: File,
+            texture_data: Vec<u8>,
             texture_file_path: T,
-            animation_file: File,
+            animation_data: Vec<u8>,
             _animation_file_path: T
         ) -> Result<Aseprite, EmeraldError> {
-        let sprite = self.sprite_from_file(&mut ctx, texture_file, texture_file_path)?;
+        let sprite = self.sprite_from_data(&mut ctx, texture_data, texture_file_path)?;
 
-        Aseprite::new(sprite, animation_file)
+        Aseprite::new(sprite, animation_data)
     }
 
     #[inline]
@@ -326,8 +326,8 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn sprite_from_file<T: Into<String>>(&mut self, mut ctx: &mut Context, file: File, path: T) -> Result<Sprite, EmeraldError> {
-        let key = self.texture_from_file(&mut ctx, file, path)?;
+    pub fn sprite_from_data<T: Into<String>>(&mut self, mut ctx: &mut Context, data: Vec<u8>, path: T) -> Result<Sprite, EmeraldError> {
+        let key = self.texture_from_data(&mut ctx, data, path)?;
 
         Ok(Sprite::from_texture(key))
     }
@@ -350,12 +350,12 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn texture_from_file<T: Into<String>>(&mut self, mut ctx: &mut Context, file: File, path: T) -> Result<TextureKey, EmeraldError> {
+    pub fn texture_from_data<T: Into<String>>(&mut self, mut ctx: &mut Context, data: Vec<u8>, path: T) -> Result<TextureKey, EmeraldError> {
         let path: String = path.into();
         let key = TextureKey::new(path.clone());
 
         if !self.textures.contains_key(&key) {
-            let texture = Texture::new(&mut ctx, file)?;
+            let texture = Texture::new(&mut ctx, data)?;
             self.textures.insert(key.clone(), texture);
         }
 

@@ -1,46 +1,49 @@
 use crate::*;
 use crate::rendering::*;
 use crate::audio::*;
+use crate::assets::*;
 
 use std::fs::File;
 use std::ffi::OsStr;
-use std::io::prelude::Read as ReadFile;
+use std::io::prelude::*;
 
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
     rendering_engine: &'a mut RenderingEngine,
     audio_engine: &'a mut AudioEngine,
+    cache: &'a mut Cache,
 }
 impl<'a> AssetLoader<'a> {
-    pub(crate) fn new(quad_ctx: &'a mut miniquad::Context, rendering_engine: &'a mut RenderingEngine, audio_engine: &'a mut AudioEngine) -> Self {
+    pub(crate) fn new(
+        quad_ctx: &'a mut miniquad::Context,
+        rendering_engine: &'a mut RenderingEngine,
+        audio_engine: &'a mut AudioEngine,
+        cache: &'a mut Cache
+    ) -> Self {
         AssetLoader {
             rendering_engine,
             quad_ctx,
             audio_engine,
+            cache,
         }
     }
 
-    pub fn file<T: Into<String>>(&self, file_path: T) -> Result<File, EmeraldError> {
-        let file_path: String = file_path.into();
-        let file = File::open(file_path)?;
+    pub fn bytes<T: Into<String>>(&self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let name: String = file_path.into();
+            let bytes = self.cache.data.get(&name).unwrap();
+    
+            Ok(bytes.clone())
+        }
 
-        Ok(file)
-    }
-
-    pub fn file_as_string<T: Into<String>>(&self, file_path: T) -> Result<String, EmeraldError> {
-        let mut file = self.file(file_path.into())?;
-        let mut file_string = String::new();
-        file.read_to_string(&mut file_string)?;
-
-        Ok(file_string)
-    }
-
-    pub fn file_as_bytes<T: Into<String>>(&self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
-        let mut file = self.file(file_path)?;
-        let mut data = Vec::new();
-        file.read_to_end(&mut data)?;
-
-        Ok(data)
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let file_path: String = file_path.into();
+            let file = File::open(file_path)?;
+    
+            Ok(file.bytes())
+        }
     }
 
     /// Auto load the sprite sheet from the json
@@ -54,13 +57,13 @@ impl<'a> AssetLoader<'a> {
         let texture_path = path_to_texture.into();
         let animation_path = path_to_animations.into();
 
-        let texture_file = self.file(texture_path.clone())?;
-        let animation_file = self.file(animation_path.clone())?;
+        let texture_data = self.bytes(texture_path.clone())?;
+        let aseprite_data = self.bytes(animation_path.clone())?;
 
         self.rendering_engine.aseprite_with_animations(&mut self.quad_ctx,
-            texture_file,
+            texture_data,
             texture_path,
-            animation_file,
+            aseprite_data,
             animation_path)
     }
 
@@ -70,24 +73,11 @@ impl<'a> AssetLoader<'a> {
         match self.rendering_engine.sprite(path.clone()) {
             Ok(sprite) => Ok(sprite),
             Err(e) => {
-                let sprite_file = self.file(path.clone())?;
-                self.rendering_engine.sprite_from_file(&mut self.quad_ctx, sprite_file, path)
+                let sprite_data = self.bytes(path.clone())?;
+                self.rendering_engine.sprite_from_data(&mut self.quad_ctx, sprite_data, path)
             }
         }
 
-    }
-
-    /// Meant to be used for WASM. Packs the textures into the WASM so
-    /// that they can be loaded immediately without breaking the API.
-    /// 
-    /// emd.loader()
-    ///     .set_texture(
-    ///         "./assets/bunny.png",
-    ///         include_bytes!("../static/assets/bunny.png").to_vec()
-    ///     );
-    /// 
-    pub fn pack_texture(&mut self, name: &str, bytes: Vec<u8>) -> Result<(), EmeraldError> {
-        self.rendering_engine.pack_texture(&mut self.quad_ctx, name, bytes)
     }
 
     pub fn label<T: Into<String>>(&mut self, text: T, font_key: FontKey) -> Result<Label, EmeraldError> {
@@ -96,7 +86,7 @@ impl<'a> AssetLoader<'a> {
 
     pub fn font<T: Into<String>>(&mut self, path: T, font_size: u32) -> Result<FontKey, EmeraldError> {
         let path: String = path.into();
-        let font_data = self.file_as_bytes(path.clone())?;
+        let font_data = self.bytes(path.clone())?;
 
         self.rendering_engine.font(&mut self.quad_ctx, font_data, path, font_size)
     }
@@ -111,8 +101,15 @@ impl<'a> AssetLoader<'a> {
             _ => return Err(EmeraldError::new(format!("Unable to parse sound from {:?}", file_path))),
         };
 
-        let sound_file = self.file(path)?;
+        let sound_data = self.bytes(path)?;
 
-        self.audio_engine.load(sound_file, sound_format)
+        self.audio_engine.load(sound_data, sound_format)
+    }
+
+    /// WASM designed functions
+    pub fn pack_file(&mut self, name: &str, bytes: Vec<u8>) -> Result<(), EmeraldError> {
+        self.cache.data.insert(name.into(), bytes);
+
+        Ok(())
     }
 }

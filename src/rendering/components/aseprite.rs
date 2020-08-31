@@ -34,9 +34,8 @@ impl Aseprite {
         );
     }
 
-    pub fn new(sprite: Sprite, mut animation_file: File) -> Result<Aseprite, EmeraldError> {
-        let mut json = String::new();
-        animation_file.read_to_string(&mut json)?;
+    pub(crate) fn new(sprite: Sprite, mut animation_data: Vec<u8>) -> Result<Aseprite, EmeraldError> {
+        let mut json = String::from_utf8(animation_data)?;
         let data: AsepriteData = DeJson::deserialize_json(&json)?;
 
         let aseprite = Aseprite {

@@ -24,10 +24,7 @@ impl AudioEngine {
         }
     }
 
-    pub(crate) fn load(&mut self, mut sound_file: File, sound_format: SoundFormat) -> Result<Sound, EmeraldError> {
-        let mut sound_bytes = Vec::new();
-        sound_file.read_to_end(&mut sound_bytes)?;
-
+    pub(crate) fn load(&mut self, mut sound_bytes: Vec<u8>, sound_format: SoundFormat) -> Result<Sound, EmeraldError> {
         let sound = match sound_format {
             SoundFormat::Ogg => read_ogg(sound_bytes.as_slice()).unwrap(),
             SoundFormat::Wav => read_wav(sound_bytes.as_slice()).unwrap(),
