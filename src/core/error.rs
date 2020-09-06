@@ -46,3 +46,12 @@ impl std::convert::From<std::string::FromUtf8Error> for EmeraldError {
         }
     }
 }
+
+impl std::convert::From<crossbeam::channel::TryRecvError> for EmeraldError {
+    fn from(e: crossbeam::channel::TryRecvError) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string()
+        }
+    }
+}
+

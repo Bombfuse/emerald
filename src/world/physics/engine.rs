@@ -1,7 +1,8 @@
 use crate::*;
-use rapier2d::dynamics::{JointSet, RigidBodyBuilder, RigidBodySet, RigidBodyHandle, IntegrationParameters};
-use rapier2d::geometry::{BroadPhase, NarrowPhase, ColliderBuilder, ColliderSet, ColliderHandle};
+
 use rapier2d::na::Isometry2;
+use rapier2d::dynamics::{JointSet, RigidBodyBuilder, RigidBodySet, RigidBodyHandle, IntegrationParameters};
+use rapier2d::geometry::{BroadPhase, NarrowPhase, ColliderBuilder, ColliderSet, ColliderHandle, ContactEvent, ProximityEvent};
 use rapier2d::pipeline::{ChannelEventCollector, PhysicsPipeline};
 
 use std::collections::HashMap;
@@ -16,7 +17,9 @@ pub struct PhysicsEngine {
     pipeline: PhysicsPipeline,
     pub(crate) gravity: Vector2<f32>,
     pub(crate) integration_parameters: IntegrationParameters,
-    // pub(crate) event_handler: ChannelEventCollector,
+    pub(crate) event_handler: ChannelEventCollector,
+    pub(crate) contact_recv: crossbeam::channel::Receiver<ContactEvent>,
+    pub(crate) proximity_recv: crossbeam::channel::Receiver<ProximityEvent>,
 }
 
 impl PhysicsEngine {
@@ -27,6 +30,11 @@ impl PhysicsEngine {
         let pipeline = PhysicsPipeline::new();
         let broad_phase = BroadPhase::new();
         let narrow_phase = NarrowPhase::new();
+        
+        // Initialize the event collector.
+        let (contact_send, contact_recv) = crossbeam::channel::unbounded();
+        let (proximity_send, proximity_recv) = crossbeam::channel::unbounded();
+        let event_handler = ChannelEventCollector::new(proximity_send, contact_send);
 
         PhysicsEngine {
             colliders,
@@ -37,6 +45,9 @@ impl PhysicsEngine {
             pipeline,
             gravity: Vector2::new(0.0, 0.0),
             integration_parameters: IntegrationParameters::default(),
+            contact_recv,
+            proximity_recv,
+            event_handler,
         }
     }
 
@@ -49,9 +60,12 @@ impl PhysicsEngine {
             &mut self.bodies,
             &mut self.colliders,
             &mut self.joints,
-            &(),
+            &mut self.event_handler,
         )
     }
+
+    pub(crate) fn try_recv_proximity(&mut self) -> Result<ProximityEvent, EmeraldError> { Ok(self.proximity_recv.try_recv()?) }
+    pub(crate) fn try_recv_contact(&mut self) -> Result<ContactEvent, EmeraldError> { Ok(self.contact_recv.try_recv()?) }
 
     pub(crate) fn create_body(&mut self, builder: &RigidBodyBuilder) -> RigidBodyHandle {
         let body = builder.build();

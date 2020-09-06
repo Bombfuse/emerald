@@ -9,6 +9,7 @@ use crate::assets::*;
 use instant::Instant;
 use miniquad::*;
 use std::collections::VecDeque;
+use std::time::Duration;
 
 pub struct GameEngine {
     game: Box<dyn Game>,
@@ -57,7 +58,6 @@ impl GameEngine {
 
         game.initialize(emd);
 
-
         GameEngine {
             game,
             fps_tracker,
@@ -89,7 +89,14 @@ impl EventHandler for GameEngine {
     #[inline]
     fn update(&mut self, mut ctx: &mut Context) {
         let start_of_frame = Instant::now();
-        let delta = start_of_frame - self.last_instant;
+        let mut delta = start_of_frame - self.last_instant;
+
+        // Temporary time hack
+        #[cfg(target_arch = "wasm32")]
+        {
+            delta = Duration::from_secs_f32(0.016);
+        }
+
         self.last_instant = start_of_frame;
 
         self.update_fps_tracker(delta.as_secs_f64());

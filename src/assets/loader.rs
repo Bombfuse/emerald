@@ -32,9 +32,12 @@ impl<'a> AssetLoader<'a> {
         #[cfg(target_arch = "wasm32")]
         {
             let name: String = file_path.into();
-            let bytes = self.cache.data.get(&name).unwrap();
+
+            if let Some(bytes) = self.cache.data.get(&name) {
+                return Ok(bytes.clone());
+            }
     
-            Ok(bytes.clone())
+            Err(EmeraldError::new(format!("Unable to get bytes for {}", name)))
         }
 
         #[cfg(not(target_arch = "wasm32"))]

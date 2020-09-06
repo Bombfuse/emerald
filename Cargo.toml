@@ -7,6 +7,7 @@ description = "A lite, fully featured 2D game engine."
 repository = "https://github.com/Bombfuse/emerald"
 license = "MIT OR Apache-2.0"
 
+[features]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 # Nightly
@@ -15,13 +16,15 @@ quad-snd = { git = "https://github.com/Bombfuse/quad-snd", branch = "master" }
 nanoserde = { git = "https://github.com/not-fl3/nanoserde", branch = "master" }
 paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
 hecs = { git = "https://github.com/Ralith/hecs", branch = "master", default-features = false }
+fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
 rapier2d = { git = "https://github.com/dimforge/rapier", default-features = false, features = [ "dim2" ] }
 
 # Dependencies
-instant = { version = "0.1.5", default-features = false, features = [ "now" ] }
+instant = { version = "0.1.6", default-features = false, features = [ "now" ] }
 image = "0.23.8"
 glam = "0.9.3"
 log = "0.4.11"
+crossbeam = "0.7.3"
 
 [lib]
 name = "emerald"
