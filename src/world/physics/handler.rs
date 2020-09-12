@@ -30,6 +30,9 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.create_collider(body_handle, &desc)
     }
 
+    pub fn rigid_body(&mut self, body_handle: RigidBodyHandle) -> Option<&RigidBody> {
+        self.physics_engine.bodies.get(body_handle)
+    }
     pub fn rigid_body_mut(&mut self, body_handle: RigidBodyHandle) -> Option<RigidBodyMut> {
         self.physics_engine.bodies.get_mut(body_handle)
     }

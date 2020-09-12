@@ -52,10 +52,8 @@ impl<'a> AssetLoader<'a> {
         {
             let path = self.full_path(file_path)?;
             let file_path: String = path.into_os_string().into_string()?;
-            println!("{:?}", file_path);
             let mut file = File::open(file_path)?;
             let mut bytes = Vec::new();
-
             file.read_to_end(&mut bytes)?;
     
             Ok(bytes)
