@@ -14,17 +14,18 @@ license = "MIT OR Apache-2.0"
 miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
 quad-snd = { git = "https://github.com/Bombfuse/quad-snd", branch = "master" }
 nanoserde = { git = "https://github.com/not-fl3/nanoserde", branch = "master" }
-paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
 hecs = { git = "https://github.com/Ralith/hecs", branch = "master", default-features = false }
 fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
 rapier2d = { git = "https://github.com/dimforge/rapier", default-features = false, features = [ "dim2" ] }
 
 # Dependencies
+paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
 instant = { version = "0.1.6", default-features = false, features = [ "now" ] }
 image = "0.23.8"
 glam = "0.9.3"
 log = "0.4.11"
 crossbeam = "0.7.3"
+quad-rand = "0.1.1"
 
 [lib]
 name = "emerald"

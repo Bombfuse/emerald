@@ -29,6 +29,7 @@ pub use instant::Instant;
 pub use nanoserde;
 pub use rapier2d;
 pub use hecs;
+pub use quad_rand as random;
 pub use rapier2d::na as nalgebra;
 
 pub use hecs::*;

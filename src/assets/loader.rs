@@ -5,6 +5,7 @@ use crate::assets::*;
 
 use std::fs::File;
 use std::ffi::OsStr;
+use std::path::PathBuf;
 use std::io::prelude::*;
 
 pub struct AssetLoader<'a> {
@@ -28,21 +29,30 @@ impl<'a> AssetLoader<'a> {
         }
     }
 
+    fn full_path<T: Into<String>>(&self, file_path: T) -> Result<PathBuf, EmeraldError> {
+        let mut current_dir = std::env::current_dir()?;
+
+        Ok(current_dir.join(file_path.into()))
+    }
+
     pub fn bytes<T: Into<String>>(&self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
+
         #[cfg(target_arch = "wasm32")]
         {
-            let name: String = file_path.into();
+            let path: String = file_path.into();
 
-            if let Some(bytes) = self.cache.data.get(&name) {
+            if let Some(bytes) = self.cache.data.get(&path) {
                 return Ok(bytes.clone());
             }
     
-            Err(EmeraldError::new(format!("Unable to get bytes for {}", name)))
+            Err(EmeraldError::new(format!("Unable to get bytes for {}", path)))
         }
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let file_path: String = file_path.into();
+            let path = self.full_path(file_path)?;
+            let file_path: String = path.into_os_string().into_string()?;
+            println!("{:?}", file_path);
             let mut file = File::open(file_path)?;
             let mut bytes = Vec::new();
 
@@ -52,16 +62,13 @@ impl<'a> AssetLoader<'a> {
         }
     }
 
-    /// Auto load the sprite sheet from the json
-    // pub fn aseprite<T: Into<String>>(&mut self, path_to_json: T) -> Result<Aseprite, EmeraldError> {
-    // }
-
     /// Automatically load the spritesheet from the aseprite json file
     fn aseprite() {}
 
     pub fn aseprite_with_animations<T: Into<String>>(&mut self, path_to_texture: T, path_to_animations: T) -> Result<Aseprite, EmeraldError> {
-        let texture_path = path_to_texture.into();
-        let animation_path = path_to_animations.into();
+        let texture_path: String = path_to_texture.into();
+        let animation_path: String = path_to_animations.into();
+
 
         let texture_data = self.bytes(texture_path.clone())?;
         let aseprite_data = self.bytes(animation_path.clone())?;
@@ -112,8 +119,7 @@ impl<'a> AssetLoader<'a> {
         self.audio_engine.load(sound_data, sound_format)
     }
 
-    /// WASM designed functions
-    pub fn pack_file(&mut self, name: &str, bytes: Vec<u8>) -> Result<(), EmeraldError> {
+    pub fn pack_bytes(&mut self, name: &str, bytes: Vec<u8>) -> Result<(), EmeraldError> {
         self.cache.data.insert(name.into(), bytes);
 
         Ok(())
