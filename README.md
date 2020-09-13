@@ -146,6 +146,9 @@ fn initialize(&mut self, mut emd: Emerald) {
 ```
 
 
+## Dependencies
+* Random Number Generation - https://github.com/not-fl3/quad-rand
+
 ## Demos
 * Links
 * To
