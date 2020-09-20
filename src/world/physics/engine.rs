@@ -5,6 +5,7 @@ use rapier2d::dynamics::{JointSet, RigidBodyBuilder, RigidBodySet, RigidBodyHand
 use rapier2d::geometry::{BroadPhase, NarrowPhase, ColliderBuilder, ColliderSet, ColliderHandle, ContactEvent, ProximityEvent};
 use rapier2d::pipeline::{ChannelEventCollector, PhysicsPipeline};
 
+use hecs::{Entity, World};
 use std::collections::HashMap;
 
 /// A physics engine unique to a game world. This handles the RigidBodies of the game.
@@ -20,6 +21,7 @@ pub struct PhysicsEngine {
     pub(crate) event_handler: ChannelEventCollector,
     pub(crate) contact_recv: crossbeam::channel::Receiver<ContactEvent>,
     pub(crate) proximity_recv: crossbeam::channel::Receiver<ProximityEvent>,
+    pub(crate) entity_bodies: HashMap<Entity, RigidBodyHandle>,
 }
 
 impl PhysicsEngine {
@@ -48,6 +50,7 @@ impl PhysicsEngine {
             contact_recv,
             proximity_recv,
             event_handler,
+            entity_bodies: HashMap::new(),
         }
     }
 
@@ -67,28 +70,67 @@ impl PhysicsEngine {
     pub(crate) fn try_recv_proximity(&mut self) -> Result<ProximityEvent, EmeraldError> { Ok(self.proximity_recv.try_recv()?) }
     pub(crate) fn try_recv_contact(&mut self) -> Result<ContactEvent, EmeraldError> { Ok(self.contact_recv.try_recv()?) }
 
-    pub(crate) fn create_body(&mut self, builder: &RigidBodyBuilder) -> RigidBodyHandle {
+    pub(crate) fn build_body(&mut self, entity: Entity, builder: RigidBodyBuilder, world: &mut World) -> Result<RigidBodyHandle, EmeraldError> {
         let body = builder.build();
         let handle = self.bodies.insert(body);
 
-        handle
+        
+        match world.insert(entity, (handle,)) {
+            Ok(_) => {
+                self.entity_bodies.insert(entity.clone(), handle);
+                Ok(handle)
+            },
+            Err(_e) => {
+               Err(EmeraldError::new("Unable to insert rigid body into entity."))
+            }
+        }
+
     }
 
-    pub(crate) fn create_collider(&mut self, body_handle: RigidBodyHandle, builder: &ColliderBuilder) -> ColliderHandle {
+    pub(crate) fn build_collider(&mut self, body_handle: RigidBodyHandle, builder: ColliderBuilder) -> ColliderHandle {
         let collider = builder.build();
         let handle = self.colliders.insert(collider, body_handle, &mut self.bodies);
 
         handle
     }
 
+    pub(crate) fn remove_body(&mut self, entity: Entity) -> Option<RigidBody> {
+        if let Some(body_handle) = self.entity_bodies.get(&entity) {
+            if let Some(body) = self.pipeline.remove_rigid_body(
+                *body_handle,
+                &mut self.broad_phase,
+                &mut self.narrow_phase,
+                &mut self.bodies,
+                &mut self.colliders,
+                &mut self.joints
+            ) {
+                self.entity_bodies.remove(&entity);
+    
+                return Some(body);
+            }
+        }
+
+        None
+    }
+
+    pub(crate) fn remove_collider(&mut self, collider_handle: ColliderHandle) -> Option<Collider> {
+        self.pipeline.remove_collider(
+            collider_handle,
+            &mut self.broad_phase,
+            &mut self.narrow_phase,
+            &mut self.bodies,
+            &mut self.colliders
+        )
+    }
+
     pub(crate) fn sync_physics_world_to_game_world(&mut self, world: &mut hecs::World) {
-        for (id, (pos, rbh)) in world.query::<(&mut Position, &RigidBodyHandle)>().iter() {
+        for (_id, (pos, rbh)) in world.query::<(&mut Position, &RigidBodyHandle)>().iter() {
             self.sync_physics_position_to_entity_position(&pos, *rbh);
         }
     }
 
     pub(crate) fn sync_game_world_to_physics_world(&mut self, world: &mut hecs::World) {
-        for (id, (pos, rbh)) in world.query::<(&mut Position, &RigidBodyHandle)>().iter() {
+        for (_id, (pos, rbh)) in world.query::<(&mut Position, &RigidBodyHandle)>().iter() {
             self.sync_entity_position_to_physics_position(pos, *rbh);
         }
     }

@@ -9,7 +9,6 @@ use crate::assets::*;
 use instant::Instant;
 use miniquad::*;
 use std::collections::VecDeque;
-use std::time::Duration;
 
 pub struct GameEngine {
     game: Box<dyn Game>,
@@ -32,7 +31,7 @@ impl GameEngine {
         let mut logging_engine = LoggingEngine::new();
 
         let base_world = EmeraldWorld::new();
-        world_engine.push_world(base_world);
+        world_engine.push(base_world);
 
         let last_instant = Instant::now();
         let now = Instant::now();
@@ -89,13 +88,18 @@ impl EventHandler for GameEngine {
     #[inline]
     fn update(&mut self, mut ctx: &mut Context) {
         let start_of_frame = Instant::now();
-        let mut delta = start_of_frame - self.last_instant;
-
-        // Temporary time hack
-        #[cfg(target_arch = "wasm32")]
-        {
-            delta = Duration::from_secs_f32(0.016);
-        }
+        let delta = {
+            // TODO(bombfuse): Figure out why Instant::now() isn't work on WASM
+            // Temporary WASM time hack
+            #[cfg(target_arch = "wasm32")]
+            {
+                Duration::from_secs_f32(0.016)
+            }
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                start_of_frame - self.last_instant
+            }
+        };
 
         self.last_instant = start_of_frame;
 
@@ -114,7 +118,7 @@ impl EventHandler for GameEngine {
         );
 
         self.game.update(emd);
-        self.rendering_engine.update(delta.as_secs_f32(), self.world_engine.inner());
+        self.rendering_engine.update(delta.as_secs_f32(), &mut self.world_engine.world().inner);
         self.audio_engine.frame();
         self.logging_engine.update();
         self.input_engine.rollover();

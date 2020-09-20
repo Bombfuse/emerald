@@ -2,8 +2,6 @@ use crate::*;
 use crate::rendering::shaders::*;
 use miniquad::{Bindings, FilterMode, Context, BufferType, Buffer};
 
-use std::fs::File;
-use std::io::prelude::*;
 use glam::Vec2;
 
 #[derive(Clone, Debug)]
@@ -15,7 +13,7 @@ pub struct Texture {
     pub(crate) bindings: Bindings,
 }
 impl Texture {
-    pub(crate) fn new(mut ctx: &mut Context, mut data: Vec<u8>) -> Result<Self, EmeraldError> {
+    pub(crate) fn new(mut ctx: &mut Context, data: Vec<u8>) -> Result<Self, EmeraldError> {
         Self::from_png_bytes(&mut ctx, &data)
     }
 

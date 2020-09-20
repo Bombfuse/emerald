@@ -21,18 +21,18 @@ impl InputEngine {
         }
     }
 
-    #[inline]
-    pub fn get_key_state(&mut self, keycode: KeyCode) -> ButtonState {
-        if let Some(key) = self.keys.get(&keycode) {
-            return key.clone();
-        }
+    // #[inline]
+    // pub fn get_key_state(&mut self, keycode: KeyCode) -> ButtonState {
+    //     if let Some(key) = self.keys.get(&keycode) {
+    //         return key.clone();
+    //     }
         
-        self.keys.insert(keycode, ButtonState::new());
-        return self.get_key_state(keycode);
-    }
+    //     self.keys.insert(keycode, ButtonState::new());
+    //     return self.get_key_state(keycode);
+    // }
 
     #[inline]
-    pub fn set_key_down(&mut self, keycode: KeyCode, repeat: bool) {
+    pub fn set_key_down(&mut self, keycode: KeyCode, _repeat: bool) {
         self.set_key_pressed(keycode, true)
     }
 

@@ -71,32 +71,49 @@ impl<'a> Emerald<'a> {
         GraphicsHandler::new(&mut self.quad_ctx, &mut self.rendering_engine, self.world_engine)
     }
 
-    /// Asset loading
+    // ************* Asset API ************* //
     #[inline]
     pub fn loader(&mut self) -> AssetLoader {
         AssetLoader::new(&mut self.quad_ctx, &mut self.rendering_engine, &mut self.audio_engine, &mut self.cache)
     }
+    // ************************************* //
 
+    // ************* Audio API ************* //
     #[inline]
     pub fn audio(&mut self) -> AudioHandler {
         AudioHandler::new(&mut self.audio_engine)
     }
+    // ************************************* //
 
     /// Logging
+    // ************* Logging API ************* //
     #[inline]
     pub fn logger(&mut self) -> &mut LoggingEngine {
         &mut self.logging_engine
     }
+    // ************************************* //
 
-    /// Input
+    // ************* Input API ************* //
     #[inline]
     pub fn input(&mut self) -> InputHandler {
         InputHandler::new(&mut self.input_engine)
     }
+    // ************************************* //
 
-    /// World
+    // ************* World API ************* //
     #[inline]
-    pub fn world(&mut self) -> &mut WorldEngine {
-        &mut self.world_engine
+    pub fn world(&mut self) -> &mut EmeraldWorld {
+        self.world_engine.world()
     }
+
+    #[inline]
+    pub fn pop_world(&mut self) -> Option<EmeraldWorld> {
+        self.world_engine.pop()
+    }
+
+    #[inline]
+    pub fn push_world(&mut self, world: EmeraldWorld) {
+        self.world_engine.push(world)
+    }
+    // ************************************* //
 }

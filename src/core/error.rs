@@ -56,7 +56,7 @@ impl std::convert::From<crossbeam::channel::TryRecvError> for EmeraldError {
 }
 
 impl std::convert::From<std::ffi::OsString> for EmeraldError {
-    fn from(e: std::ffi::OsString) -> EmeraldError {
+    fn from(_e: std::ffi::OsString) -> EmeraldError {
         EmeraldError {
             message: String::from("Unable to parse string out of OsString")
         }

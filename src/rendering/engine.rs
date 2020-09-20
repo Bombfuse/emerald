@@ -2,20 +2,9 @@ use crate::*;
 use crate::world::*;
 use crate::rendering::*;
 use crate::rendering::components::*;
-use crate::rendering::components::aseprite::types::*;
 use crate::rendering::texture::{Texture};
-use crate::rendering::font::FontKey;
 
-use std::fs::File;
-use std::io::Read as StdIoRead;
-use std::rc::Rc;
-
-use miniquad::{
-    BlendFactor, BlendState, BlendValue, Equation,
-    Pipeline, PipelineParams,
-    Bindings, BufferType, BufferLayout,
-    Context, Buffer, VertexFormat,
-    VertexAttribute, Shader};
+use miniquad::*;
 use glam::{Vec2, Vec4, Mat4};
 use std::collections::HashMap;
 
@@ -23,7 +12,7 @@ use std::collections::HashMap;
 pub enum Drawable {
     Sprite { sprite: Sprite },
     ColorRect { color_rect: ColorRect },
-    Label { label: Label },
+    // Label { label: Label },
 }
 
 #[derive(Clone, Debug)]
@@ -37,7 +26,6 @@ pub struct RenderingEngine {
     settings: RenderSettings,
     pipeline: Pipeline,
     textures: HashMap<TextureKey, Texture>,
-    uid: usize,
 }
 impl RenderingEngine {
     pub fn new(mut ctx: &mut Context, settings: RenderSettings) -> Self {
@@ -76,12 +64,11 @@ impl RenderingEngine {
             settings,
             pipeline,
             textures,
-            uid: 0,
         }
     }
 
-    pub fn update(&mut self, delta: f32, world: &mut hecs::World) {
-        for (id, (aseprite)) in world.query::<&mut Aseprite>().iter() {
+    pub(crate) fn update(&mut self, delta: f32, world: &mut hecs::World) {
+        for (_id, aseprite) in world.query::<&mut Aseprite>().iter() {
             aseprite.add_delta(delta);
         }
     }
@@ -95,7 +82,7 @@ impl RenderingEngine {
         let camera = Camera::default(); // Get first active camera in world here, or default
         let mut draw_queue = Vec::new();
 
-        for (id, (aseprite, position)) in world.inner.query::<(&mut Aseprite, &Position)>().iter() {
+        for (_id, (aseprite, position)) in world.inner.query::<(&mut Aseprite, &Position)>().iter() {
             aseprite.update();
 
             if is_in_view(&aseprite.sprite, &position, &camera, &screen_size) {
@@ -109,7 +96,7 @@ impl RenderingEngine {
             }
         }
 
-        for (id, (sprite, position)) in world.inner.query::<(&Sprite, &Position)>().iter() {
+        for (_id, (sprite, position)) in world.inner.query::<(&Sprite, &Position)>().iter() {
             if is_in_view(&sprite, &position, &camera, &screen_size) {
                 let drawable = Drawable::Sprite { sprite: sprite.clone() };
                 
@@ -121,7 +108,7 @@ impl RenderingEngine {
             }
         }
 
-        for (id, (color_rect, position)) in world.inner.query::<(&ColorRect, &Position)>().iter() {
+        for (_id, (color_rect, position)) in world.inner.query::<(&ColorRect, &Position)>().iter() {
             let drawable = Drawable::ColorRect { color_rect: color_rect.clone() };
                 
             draw_queue.push(DrawCommand {
@@ -137,7 +124,7 @@ impl RenderingEngine {
             match draw_command.drawable {
                 Drawable::Sprite { sprite } => self.draw_sprite(&mut ctx, &sprite, &draw_command.position),
                 Drawable::ColorRect { color_rect } => self.draw_color_rect(&mut ctx, &color_rect, &draw_command.position),
-                Drawable::Label { label } => self.draw_label(&mut ctx, &label, &draw_command.position),
+                // Drawable::Label { label } => self.draw_label(&mut ctx, &label, &draw_command.position),
             }
         }
 
@@ -149,11 +136,10 @@ impl RenderingEngine {
         let mut color_rect = ColorRect::default();
         color_rect.color = collider_color;
 
-        for (id, body_handle) in world.inner.query::<&RigidBodyHandle>().iter() {
+        for (_id, body_handle) in world.inner.query::<&RigidBodyHandle>().iter() {
             if let Some(body) = world.physics_engine.bodies.get(*body_handle) {
                 for collider_handle in body.colliders() {
                     if let Some(collider) = world.physics_engine.colliders.get(collider_handle.clone()) {
-                        let bf = &world.physics_engine.broad_phase;
                         let aabb = collider.compute_aabb();
                         let pos = Position::new(aabb.center().coords.x, aabb.center().coords.y);
                         color_rect.width = aabb.half_extents().x as u32 * 2;
@@ -265,7 +251,7 @@ impl RenderingEngine {
     fn draw_texture(&mut self,
         mut ctx: &mut Context,
         texture_key: &TextureKey,
-        z_index: f32,
+        _z_index: f32,
         scale: Vec2,
         rotation: f32,
         offset: Vec2,
@@ -303,7 +289,7 @@ impl RenderingEngine {
         ctx.draw(0, 6, 1);
     }
 
-    pub fn draw_label(&mut self, mut ctx: &mut Context, label: &Label, position: &Position) {}
+    // pub fn draw_label(&mut self, mut ctx: &mut Context, label: &Label, position: &Position) {}
 
     #[inline]
     pub fn aseprite_with_animations<T: Into<String>>(&mut self,
@@ -332,10 +318,10 @@ impl RenderingEngine {
         Ok(Sprite::from_texture(key))
     }
 
-    #[inline]
-    pub fn label<T: Into<String>>(&mut self, mut ctx: &mut Context, text: T, font_key: FontKey) -> Result<Label, EmeraldError> {
-        Ok(Label::new())
-    }
+    // #[inline]
+    // pub fn label<T: Into<String>>(&mut self, mut ctx: &mut Context, text: T, font_key: FontKey) -> Result<Label, EmeraldError> {
+    //     Ok(Label::new())
+    // }
 
     #[inline]
     pub fn texture<T: Into<String>>(&mut self, path: T) -> Result<TextureKey, EmeraldError> {
@@ -371,16 +357,16 @@ impl RenderingEngine {
         Ok(())
     }
 
-    #[inline]
-    pub fn font<T: Into<String>>(&mut self, mut ctx: &mut Context, mut font_data: Vec<u8>, path: T, font_size: u32) -> Result<FontKey, EmeraldError> {
-        let path: String = path.into();
-        let key = FontKey::new(&path, font_size);
+    // #[inline]
+    // pub fn font<T: Into<String>>(&mut self, mut ctx: &mut Context, font_data: Vec<u8>, path: T, font_size: u32) -> Result<FontKey, EmeraldError> {
+    //     let path: String = path.into();
+    //     let key = FontKey::new(&path, font_size);
 
-        Ok(key)
-    }
+    //     Ok(key)
+    // }
 }
 
 #[inline]
-fn is_in_view(sprite: &Sprite, pos: &Position, camera: &Camera, screen_size: &(f32, f32)) -> bool {
+fn is_in_view(_sprite: &Sprite, _pos: &Position, _camera: &Camera, _screen_size: &(f32, f32)) -> bool {
     true
 }

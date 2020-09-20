@@ -1,4 +1,4 @@
-use crate::{RenderingEngine, WorldEngine, Rectangle, Sprite, Position};
+use crate::{RenderingEngine, WorldEngine, Sprite, Position};
 use miniquad::Context;
 
 pub struct GraphicsHandler<'a> {

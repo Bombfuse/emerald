@@ -6,10 +6,6 @@ use quad_snd::{
 use crate::{EmeraldError};
 use crate::audio::*;
 
-use std::fs::File;
-use std::collections::HashMap;
-use std::io::Read as ReadFile;
-
 pub(crate) struct AudioEngine {
     mixer: SoundMixer,
     sound_ids: Vec<SoundId>,
@@ -24,7 +20,7 @@ impl AudioEngine {
         }
     }
 
-    pub(crate) fn load(&mut self, mut sound_bytes: Vec<u8>, sound_format: SoundFormat) -> Result<Sound, EmeraldError> {
+    pub(crate) fn load(&mut self, sound_bytes: Vec<u8>, sound_format: SoundFormat) -> Result<Sound, EmeraldError> {
         let sound = match sound_format {
             SoundFormat::Ogg => read_ogg(sound_bytes.as_slice()).unwrap(),
             SoundFormat::Wav => read_wav(sound_bytes.as_slice()).unwrap(),
@@ -33,7 +29,7 @@ impl AudioEngine {
         Ok(sound)
     }
 
-    pub(crate) fn play(&mut self, mut snd: Sound) -> SoundId {
+    pub(crate) fn play(&mut self, snd: Sound) -> SoundId {
         let id = self.mixer.play(snd);
 
         self.sound_ids.push(id);

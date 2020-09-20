@@ -1,7 +1,3 @@
-use crate::logging::*;
-
-use log::{Level, info, warn, error};
-
 pub(crate) enum Log {
     Info(String),
     Warning(String),

@@ -17,9 +17,4 @@ impl<'a> AudioHandler<'a> {
     pub fn clear(&mut self) {
         self.audio_engine.clear();
     }
-
-    /// This will play a sound and continuously loop it.
-    pub fn play_and_loop(&mut self, snd: Sound) {
-
-    }
 }

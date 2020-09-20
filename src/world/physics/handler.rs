@@ -1,11 +1,10 @@
-use crate::world::*;
 use crate::physics::*;
-use crate::physics::components::*;
-use crate::{Instant, Vector2};
 use crate::EmeraldError;
 
 use rapier2d::geometry::{ColliderHandle, ColliderBuilder, Collider, ContactEvent, ProximityEvent};
 use rapier2d::dynamics::{RigidBodyHandle, RigidBodyBuilder, RigidBody, RigidBodyMut};
+
+use hecs::{Entity};
 
 pub struct PhysicsHandler<'a> {
     physics_engine: &'a mut  PhysicsEngine,
@@ -22,19 +21,33 @@ impl<'a> PhysicsHandler<'a> {
     pub fn try_recv_contact(&mut self) -> Result<ContactEvent, EmeraldError> { self.physics_engine.try_recv_contact() }
     pub fn try_recv_proximity(&mut self) -> Result<ProximityEvent, EmeraldError> { self.physics_engine.try_recv_proximity() }
 
-    pub fn create_body(&mut self, desc: &RigidBodyBuilder) -> RigidBodyHandle {
-        self.physics_engine.create_body(desc)
+    pub fn build_body(&mut self, entity: Entity, desc: RigidBodyBuilder) -> Result<RigidBodyHandle, EmeraldError> {
+        self.physics_engine.build_body(entity, desc, &mut self.world)
     }
 
-    pub fn create_collider(&mut self, body_handle: RigidBodyHandle, desc: &ColliderBuilder) -> ColliderHandle {
-        self.physics_engine.create_collider(body_handle, &desc)
+    pub fn build_collider(&mut self, body_handle: RigidBodyHandle, desc: ColliderBuilder) -> ColliderHandle {
+        self.physics_engine.build_collider(body_handle, desc)
+    }
+
+    /// Remove physics body attached to this entity.
+    pub fn remove_body(&mut self, entity: Entity) -> Option<RigidBody> {
+        self.physics_engine.remove_body(entity)
+    }
+
+    pub fn remove_collider(&mut self, collider_handle: ColliderHandle) -> Option<Collider> {
+        self.physics_engine.remove_collider(collider_handle)
     }
 
     pub fn rigid_body(&mut self, body_handle: RigidBodyHandle) -> Option<&RigidBody> {
         self.physics_engine.bodies.get(body_handle)
     }
+
     pub fn rigid_body_mut(&mut self, body_handle: RigidBodyHandle) -> Option<RigidBodyMut> {
         self.physics_engine.bodies.get_mut(body_handle)
+    }
+
+    pub fn body_count(&self) -> usize {
+        self.physics_engine.bodies.len()
     }
 
     pub fn step(&mut self) {
@@ -42,8 +55,6 @@ impl<'a> PhysicsHandler<'a> {
     }
 
     pub fn step_n(&mut self, n: u32) {
-        let start = Instant::now();
-
         self.physics_engine.sync_physics_world_to_game_world(&mut self.world);
         
         for _ in 0..n {
@@ -51,7 +62,5 @@ impl<'a> PhysicsHandler<'a> {
         }
 
         self.physics_engine.sync_game_world_to_physics_world(&mut self.world);
-
-        let end = Instant::now();
     }
 }

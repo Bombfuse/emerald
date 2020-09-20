@@ -1,10 +1,7 @@
 use crate::{EmeraldError, Rectangle, Vector2};
 use crate::rendering::*;
 
-use nanoserde::{DeJson, SerJson};
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::prelude::*;
+use nanoserde::{DeJson};
 
 use types::*;
 
@@ -34,8 +31,8 @@ impl Aseprite {
         );
     }
 
-    pub(crate) fn new(sprite: Sprite, mut animation_data: Vec<u8>) -> Result<Aseprite, EmeraldError> {
-        let mut json = String::from_utf8(animation_data)?;
+    pub(crate) fn new(sprite: Sprite, animation_data: Vec<u8>) -> Result<Aseprite, EmeraldError> {
+        let json = String::from_utf8(animation_data)?;
         let data: AsepriteData = DeJson::deserialize_json(&json)?;
 
         let aseprite = Aseprite {
@@ -105,7 +102,7 @@ impl Aseprite {
     pub fn add_delta(&mut self, delta: f32) {
         self.elapsed_time += delta;
         let frame = self.get_frame();
-        let duration = (frame.duration as f32 / 1000.0);
+        let duration = frame.duration as f32 / 1000.0;
 
         while self.elapsed_time >= duration {
             self.elapsed_time -= duration;
@@ -123,7 +120,7 @@ impl Aseprite {
 }
 
 pub mod types {
-    use nanoserde::{DeJson, SerJson};
+    use nanoserde::{DeJson};
 
     #[derive(Clone, Debug, DeJson)]
     pub struct AseRect {

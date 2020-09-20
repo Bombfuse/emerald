@@ -1,5 +1,5 @@
 mod loader;
 mod cache;
 
-pub use cache::*;
+pub(crate) use cache::*;
 pub use loader::*;

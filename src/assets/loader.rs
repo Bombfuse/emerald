@@ -30,7 +30,7 @@ impl<'a> AssetLoader<'a> {
     }
 
     fn full_path<T: Into<String>>(&self, file_path: T) -> Result<PathBuf, EmeraldError> {
-        let mut current_dir = std::env::current_dir()?;
+        let current_dir = std::env::current_dir()?;
 
         Ok(current_dir.join(file_path.into()))
     }
@@ -60,8 +60,8 @@ impl<'a> AssetLoader<'a> {
         }
     }
 
-    /// Automatically load the spritesheet from the aseprite json file
-    fn aseprite() {}
+    /// TODO(bombfuse): Automatically load the spritesheet from the aseprite json file
+    // fn aseprite() {}
 
     pub fn aseprite_with_animations<T: Into<String>>(&mut self, path_to_texture: T, path_to_animations: T) -> Result<Aseprite, EmeraldError> {
         let texture_path: String = path_to_texture.into();
@@ -83,7 +83,7 @@ impl<'a> AssetLoader<'a> {
 
         match self.rendering_engine.sprite(path.clone()) {
             Ok(sprite) => Ok(sprite),
-            Err(e) => {
+            Err(_e) => {
                 let sprite_data = self.bytes(path.clone())?;
                 self.rendering_engine.sprite_from_data(&mut self.quad_ctx, sprite_data, path)
             }
@@ -91,16 +91,16 @@ impl<'a> AssetLoader<'a> {
 
     }
 
-    pub fn label<T: Into<String>>(&mut self, text: T, font_key: FontKey) -> Result<Label, EmeraldError> {
-        self.rendering_engine.label(&mut self.quad_ctx, text, font_key)
-    }
+    // pub fn label<T: Into<String>>(&mut self, text: T, font_key: FontKey) -> Result<Label, EmeraldError> {
+    //     self.rendering_engine.label(&mut self.quad_ctx, text, font_key)
+    // }
 
-    pub fn font<T: Into<String>>(&mut self, path: T, font_size: u32) -> Result<FontKey, EmeraldError> {
-        let path: String = path.into();
-        let font_data = self.bytes(path.clone())?;
+    // pub fn font<T: Into<String>>(&mut self, path: T, font_size: u32) -> Result<FontKey, EmeraldError> {
+    //     let path: String = path.into();
+    //     let font_data = self.bytes(path.clone())?;
 
-        self.rendering_engine.font(&mut self.quad_ctx, font_data, path, font_size)
-    }
+    //     self.rendering_engine.font(&mut self.quad_ctx, font_data, path, font_size)
+    // }
 
     pub fn sound<T: Into<String>>(&mut self, path: T) -> Result<Sound, EmeraldError> {
         let path: String = path.into();
