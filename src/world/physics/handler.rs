@@ -1,5 +1,5 @@
 use crate::physics::*;
-use crate::EmeraldError;
+use crate::{Vector2, EmeraldError};
 
 use rapier2d::geometry::{ColliderHandle, ColliderBuilder, Collider, ContactEvent, ProximityEvent};
 use rapier2d::dynamics::{RigidBodyHandle, RigidBodyBuilder, RigidBody, RigidBodyMut};
@@ -62,5 +62,9 @@ impl<'a> PhysicsHandler<'a> {
         }
 
         self.physics_engine.sync_game_world_to_physics_world(&mut self.world);
+    }
+
+    pub fn set_gravity(&mut self, gravity: Vector2<f32>) {
+        self.physics_engine.gravity = gravity;
     }
 }
