@@ -1,6 +1,6 @@
 use crate::world::physics::*;
 
-use hecs::{World, DynamicBundle, NoSuchEntity, Entity};
+use hecs::{World, DynamicBundle, NoSuchEntity, Entity, Query, QueryBorrow};
 
 pub struct EmeraldWorld {
     pub(crate) physics_engine: PhysicsEngine,
@@ -22,6 +22,9 @@ impl EmeraldWorld {
         self.inner.despawn(entity)
     }
 
+    pub fn query<Q: Query>(&self) -> QueryBorrow<'_, Q> {
+        self.inner.query::<Q>()
+    }
 
     pub fn physics(&mut self) -> PhysicsHandler {
         PhysicsHandler::new(&mut self.physics_engine, &mut self.inner)

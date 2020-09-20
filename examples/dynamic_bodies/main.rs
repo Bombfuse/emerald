@@ -14,7 +14,7 @@ impl Game for MyGame {
         // Pack all game files into WASM binary
         #[cfg(target_arch = "wasm32")]
         {
-            emd.loader().pack_file(
+            emd.loader().pack_bytes(
                     "./examples/assets/bunny.png",
                     include_bytes!("../assets/bunny.png").to_vec()
                 ).unwrap();

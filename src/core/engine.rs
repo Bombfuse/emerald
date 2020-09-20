@@ -93,7 +93,7 @@ impl EventHandler for GameEngine {
             // Temporary WASM time hack
             #[cfg(target_arch = "wasm32")]
             {
-                Duration::from_secs_f32(0.016)
+                std::time::Duration::from_secs_f32(0.016)
             }
             #[cfg(not(target_arch = "wasm32"))]
             {
