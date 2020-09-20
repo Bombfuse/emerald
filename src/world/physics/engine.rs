@@ -70,18 +70,28 @@ impl PhysicsEngine {
     pub(crate) fn try_recv_proximity(&mut self) -> Result<ProximityEvent, EmeraldError> { Ok(self.proximity_recv.try_recv()?) }
     pub(crate) fn try_recv_contact(&mut self) -> Result<ContactEvent, EmeraldError> { Ok(self.contact_recv.try_recv()?) }
 
+    /// Builds the described rigid body for the given entity.
+    /// Fails if the entity does not have a position or if the handle is unable to be inserted into the ECS world.
     pub(crate) fn build_body(&mut self, entity: Entity, builder: RigidBodyBuilder, world: &mut World) -> Result<RigidBodyHandle, EmeraldError> {
-        let body = builder.build();
-        let handle = self.bodies.insert(body);
+        let handle: Result<RigidBodyHandle, EmeraldError> = {
+            let position = match world.get::<Position>(entity.clone()) {
+                Ok(pos) => Ok(pos),
+                Err(_e) => Err(EmeraldError::new("Unable to build a body for an entity without a position"))
+            }?;
 
-        
-        match world.insert(entity, (handle,)) {
-            Ok(_) => {
-                self.entity_bodies.insert(entity.clone(), handle);
-                Ok(handle)
-            },
+            let body = builder.translation(position.x, position.y).build();
+            let handle = self.bodies.insert(body);
+            self.entity_bodies.insert(entity.clone(), handle);
+            
+            Ok(handle)
+        };
+        let handle = handle?;
+
+        match world.insert(entity.clone(), (handle.clone(),)) {
+            Ok(_) => Ok(handle),
             Err(_e) => {
-               Err(EmeraldError::new("Unable to insert rigid body into entity."))
+                self.remove_body(entity);
+                Err(EmeraldError::new("Unable to insert rigid body into entity."))
             }
         }
 

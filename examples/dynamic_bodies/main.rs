@@ -20,11 +20,20 @@ impl Game for MyGame {
                 ).unwrap();
         }
 
-        match emd.loader().sprite("./examples/assets/bunny.png") {
-            Ok(sprite) =>  {
-                emd.world().inner().spawn((sprite, Position::new(16.0, 16.0)));
-            }
-            Err(e) => {},
-        };
+        let sprite = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
+        
+        let entity = emd.world().spawn((sprite, Position::new(32.0, 32.0)));
+        let body = emd.world().physics().build_body(
+            entity,
+            RigidBodyBuilder::new_dynamic()
+                .linvel(50.0, 50.0) // Fling it up and to the right
+                .can_sleep(false)
+        ).unwrap();
+        let collider = emd.world().physics().build_collider(body, ColliderBuilder::cuboid(4.0, 4.0));
+        emd.world().physics().set_gravity(Vector2::new(0.0, -20.0));
+    }
+
+    fn update(&mut self, mut emd: Emerald) {
+        emd.world().physics().step();
     }
 }
