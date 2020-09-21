@@ -26,7 +26,7 @@ impl EmeraldWorld {
     }
 
     pub fn despawn(&mut self, entity: Entity) -> Result<(), NoSuchEntity> {
-        // Do check for physics body here, and remove if exists
+        self.physics_engine.remove_body(entity);
         self.inner.despawn(entity)
     }
 
@@ -45,6 +45,7 @@ impl EmeraldWorld {
     pub fn get<T: Component>(&self, entity: Entity) -> Result<Ref<'_, T>, ComponentError> {
         self.inner.get::<T>(entity)
     }
+
     pub fn insert(
         &mut self,
         entity: Entity,
