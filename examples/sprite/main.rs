@@ -22,7 +22,7 @@ impl Game for MyGame {
 
         match emd.loader().sprite("./examples/assets/bunny.png") {
             Ok(sprite) =>  {
-                emd.world().inner().spawn((sprite, Position::new(16.0, 16.0)));
+                emd.world().spawn((sprite, Position::new(16.0, 16.0)));
             }
             Err(e) => {},
         };

@@ -29,6 +29,16 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.build_collider(body_handle, desc)
     }
 
+    /// Retrieves the entities with bodies that are touching the body of this entity.
+    pub fn get_colliding_bodies(&self, _entity: Entity) -> Vec<Entity> {
+        Vec::new()
+    }
+
+    /// Retrieves the entities with sensors that are touching this entity.
+    pub fn get_colliding_areas(&self, _entity: Entity) -> Vec<Entity> {
+        Vec::new()
+    }
+
     /// Remove physics body attached to this entity.
     pub fn remove_body(&mut self, entity: Entity) -> Option<RigidBody> {
         self.physics_engine.remove_body(entity)
