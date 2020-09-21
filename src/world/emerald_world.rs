@@ -17,9 +17,21 @@ impl EmeraldWorld {
     pub fn spawn(&mut self, components: impl DynamicBundle) -> Entity {
         self.inner.spawn(components)
     }
+    pub fn spawn_batch<I>(&mut self, iter: I) -> SpawnBatchIter<'_, I::IntoIter>
+    where
+        I: IntoIterator,
+        I::Item: Bundle,
+    {
+        self.inner.spawn_batch::<I>(iter)
+    }
 
     pub fn despawn(&mut self, entity: Entity) -> Result<(), NoSuchEntity> {
+        // Do check for physics body here, and remove if exists
         self.inner.despawn(entity)
+    }
+
+    pub fn clear(&mut self) {
+        self.inner.clear();
     }
 
     pub fn query<Q: Query>(&self) -> QueryBorrow<'_, Q> {
