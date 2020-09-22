@@ -79,11 +79,58 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn consume_contacts(&mut self) {
-        while let Ok(_contact_event) = self.contact_recv.try_recv() {
-            // match contact_event {
-            //     ContactEvent::Started(h1, h2)=> {},
-            //     ContactEvent::Stopped(h1, h2) => {},
-            // }
+        let mut started_contacts = Vec::new();
+        let mut stopped_contacts = Vec::new();
+
+        while let Ok(contact_event) = self.contact_recv.try_recv() {
+            match contact_event {
+                ContactEvent::Started(h1, h2) => {
+                    if let (
+                        Some(collider_one),
+                        Some(collider_two)
+                    ) = (
+                        self.colliders.get(h1),
+                        self.colliders.get(h2)
+                    ) {
+                        if let (
+                            Some(entity_one),
+                            Some(entity_two)
+                        ) = (
+                            self.body_entities.get(&collider_one.parent()),
+                            self.body_entities.get(&collider_two.parent())
+                        ) {
+                            started_contacts.push((*entity_one, *entity_two));
+                        }
+                    }
+                },
+                ContactEvent::Stopped(h1, h2) => {
+                    if let (
+                        Some(collider_one),
+                        Some(collider_two)
+                    ) = (
+                        self.colliders.get(h1),
+                        self.colliders.get(h2)
+                    ) {
+                        if let (
+                            Some(entity_one),
+                            Some(entity_two)
+                        ) = (
+                            self.body_entities.get(&collider_one.parent()),
+                            self.body_entities.get(&collider_two.parent())
+                        ) {
+                            stopped_contacts.push((*entity_one, *entity_two));
+                        }
+                    }
+                }
+            }
+        }
+
+        for started_contact in started_contacts {
+            self.add_body_contact(started_contact.0, started_contact.1);
+        }
+
+        for stopped_contact in stopped_contacts {
+            self.remove_body_contact(stopped_contact.0, stopped_contact.1);
         }
     }
 
@@ -145,6 +192,26 @@ impl PhysicsEngine {
         }
         
         if let Some(intersections) = self.entity_sensor_collisions.get_mut(&entity_two) {
+            intersections.retain(|&x| x != entity_one);
+        }
+    }
+
+    #[inline]
+    fn add_body_contact(&mut self, entity_one: Entity, entity_two: Entity) {
+        let entity_one_collisions = self.entity_body_collisions.entry(entity_one).or_insert(Vec::new());
+        entity_one_collisions.push(entity_two.clone());
+        
+        let entity_two_collisions = self.entity_body_collisions.entry(entity_two).or_insert(Vec::new());
+        entity_two_collisions.push(entity_one.clone());
+    }
+
+    #[inline]
+    fn remove_body_contact(&mut self, entity_one: Entity, entity_two: Entity) {
+        if let Some(intersections) = self.entity_body_collisions.get_mut(&entity_one) {
+            intersections.retain(|&x| x != entity_two);
+        }
+        
+        if let Some(intersections) = self.entity_body_collisions.get_mut(&entity_two) {
             intersections.retain(|&x| x != entity_one);
         }
     }
