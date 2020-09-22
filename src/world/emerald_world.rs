@@ -57,4 +57,8 @@ impl EmeraldWorld {
     pub fn physics(&mut self) -> PhysicsHandler {
         PhysicsHandler::new(&mut self.physics_engine, &mut self.inner)
     }
+
+    pub fn physics_ref(&self) -> PhysicsRefHandler {
+        PhysicsRefHandler::new(&self.physics_engine)
+    }
 }
