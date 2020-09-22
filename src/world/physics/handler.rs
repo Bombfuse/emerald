@@ -1,7 +1,7 @@
 use crate::physics::*;
 use crate::{Vector2, EmeraldError};
 
-use rapier2d::geometry::{ColliderHandle, ColliderBuilder, Collider, ContactEvent, ProximityEvent};
+use rapier2d::geometry::{ColliderHandle, ColliderBuilder, Collider};
 use rapier2d::dynamics::{RigidBodyHandle, RigidBodyBuilder, RigidBody, RigidBodyMut};
 
 use hecs::{Entity};
@@ -18,9 +18,6 @@ impl<'a> PhysicsHandler<'a> {
         }
     }
 
-    pub fn try_recv_contact(&mut self) -> Result<ContactEvent, EmeraldError> { self.physics_engine.try_recv_contact() }
-    pub fn try_recv_proximity(&mut self) -> Result<ProximityEvent, EmeraldError> { self.physics_engine.try_recv_proximity() }
-
     pub fn build_body(&mut self, entity: Entity, desc: RigidBodyBuilder) -> Result<RigidBodyHandle, EmeraldError> {
         self.physics_engine.build_body(entity, desc, &mut self.world)
     }
@@ -30,13 +27,13 @@ impl<'a> PhysicsHandler<'a> {
     }
 
     /// Retrieves the entities with bodies that are touching the body of this entity.
-    pub fn get_colliding_bodies(&self, _entity: Entity) -> Vec<Entity> {
-        Vec::new()
+    pub fn get_colliding_bodies(&self, entity: Entity) -> Vec<Entity> {
+        self.physics_engine.get_colliding_bodies(entity)
     }
 
     /// Retrieves the entities with sensors that are touching this entity.
-    pub fn get_colliding_areas(&self, _entity: Entity) -> Vec<Entity> {
-        Vec::new()
+    pub fn get_colliding_areas(&self, entity: Entity) -> Vec<Entity> {
+        self.physics_engine.get_colliding_areas(entity)
     }
 
     /// Remove physics body attached to this entity.
@@ -72,6 +69,9 @@ impl<'a> PhysicsHandler<'a> {
         }
 
         self.physics_engine.sync_game_world_to_physics_world(&mut self.world);
+        
+        self.physics_engine.consume_contacts();
+        self.physics_engine.consume_proximities();
     }
 
     pub fn set_gravity(&mut self, gravity: Vector2<f32>) {
