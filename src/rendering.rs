@@ -1,6 +1,6 @@
 mod engine;
 mod render_settings;
-mod components;
+pub mod components;
 mod texture;
 mod shaders;
 mod font;

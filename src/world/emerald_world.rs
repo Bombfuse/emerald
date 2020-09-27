@@ -1,4 +1,6 @@
 use crate::world::physics::*;
+use crate::rendering::components::Camera;
+use crate::EmeraldError;
 
 use hecs::*;
 
@@ -12,6 +14,18 @@ impl EmeraldWorld {
             physics_engine: PhysicsEngine::new(),
             inner: World::default(),
         }
+    }
+
+    pub fn make_active_camera(&mut self, entity: Entity) -> Result<(), EmeraldError> {
+        if let Ok(mut next_active_camera) = self.get_mut::<Camera>(entity.clone()) {
+            for (_, mut camera) in self.query::<&mut Camera>().iter() {
+                camera.is_active = false
+            }
+
+            next_active_camera.is_active = true;
+        }
+
+        Err(EmeraldError::new(format!("No camera found for entity {:?}", entity)))
     }
 
     pub fn spawn(&mut self, components: impl DynamicBundle) -> Entity {

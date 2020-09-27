@@ -79,7 +79,16 @@ impl RenderingEngine {
             ScreenScalar::Keep => (self.settings.resolution.0 as f32, self.settings.resolution.1 as f32),
             ScreenScalar::None => ctx.screen_size(),
         };
-        let camera = Camera::default(); // Get first active camera in world here, or default
+        let camera: Camera = {
+            let mut cam = Camera::default();
+
+            for (_, camera) in world.query::<&Camera>().iter() {
+                if camera.is_active {
+                    cam = camera.clone();
+                }
+            }
+            cam
+        };
         let mut draw_queue = Vec::new();
 
         for (_id, (aseprite, position)) in world.inner.query::<(&mut Aseprite, &Position)>().iter() {

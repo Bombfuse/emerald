@@ -30,8 +30,7 @@ impl GameEngine {
         let mut world_engine = WorldEngine::new();
         let mut logging_engine = LoggingEngine::new();
 
-        let base_world = EmeraldWorld::new();
-        world_engine.push(base_world);
+        world_engine.push(EmeraldWorld::new());
 
         let last_instant = Instant::now();
         let now = Instant::now();
