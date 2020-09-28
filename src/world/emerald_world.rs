@@ -68,6 +68,14 @@ impl EmeraldWorld {
         self.inner.insert(entity, components)
     }
 
+    pub fn remove<T: Bundle>(&mut self, entity: Entity) -> Result<T, ComponentError> {
+        self.inner.remove::<T>(entity)
+    }
+
+    pub fn remove_one<T: Component>(&mut self, entity: Entity) -> Result<T, ComponentError> {
+        self.inner.remove_one::<T>(entity)
+    }
+
     pub fn physics(&mut self) -> PhysicsHandler {
         PhysicsHandler::new(&mut self.physics_engine, &mut self.inner)
     }
