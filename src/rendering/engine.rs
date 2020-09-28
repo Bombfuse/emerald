@@ -210,6 +210,10 @@ impl RenderingEngine {
 
     #[inline]
     pub(crate) fn draw_sprite(&mut self, mut ctx: &mut Context, sprite: &Sprite, position: &Position) {
+        if !sprite.visible {
+            return;
+        }
+        
         ctx.apply_pipeline(&self.pipeline);
 
         let texture = self.textures.get(&sprite.texture_key).unwrap();

@@ -6,6 +6,7 @@ pub struct Sprite {
     pub rotation: f32,
     pub scale: Vector2<f32>,
     pub offset: Vector2<f32>,
+    pub visible: bool,
     pub color: Color,
     pub centered: bool,
     pub(crate) texture_key: TextureKey,
@@ -30,6 +31,7 @@ impl Default for Sprite {
             centered: true,
             texture_key: TextureKey::default(),
             z_index: 0.0,
+            visible: true,
         }
     }
 }
