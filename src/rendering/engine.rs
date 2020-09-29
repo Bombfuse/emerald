@@ -257,7 +257,7 @@ impl RenderingEngine {
             Vec2::new(0.0, 0.0),
             real_position,
             target,
-            WHITE)
+            sprite.color.clone())
     }
 
     #[inline]
