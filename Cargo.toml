@@ -19,7 +19,6 @@ fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
 rapier2d = { git = "https://github.com/dimforge/rapier", default-features = false, features = [ "dim2" ] }
 
 # Dependencies
-paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
 image = "0.23.8"
 glam = "0.9.3"
 log = "0.4.11"

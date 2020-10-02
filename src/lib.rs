@@ -1,3 +1,4 @@
+mod colors;
 mod core;
 mod rendering;
 mod input;
@@ -14,7 +15,7 @@ pub use crate::input::*;
 pub use crate::world::*;
 pub use crate::world::physics::*;
 pub use crate::types::*;
-pub use paintbrush::*;
+pub use crate::colors::*;
 pub use logging::*;
 pub use audio::*;
 
