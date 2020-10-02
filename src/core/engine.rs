@@ -6,7 +6,6 @@ use crate::logging::*;
 use crate::audio::*;
 use crate::assets::*;
 
-use instant::Instant;
 use miniquad::*;
 use std::collections::VecDeque;
 
@@ -18,7 +17,7 @@ pub struct GameEngine {
     logging_engine: LoggingEngine,
     rendering_engine: RenderingEngine,
     world_engine: WorldEngine,
-    last_instant: Instant,
+    last_instant: f64,
     fps_tracker: VecDeque<f64>,
     cache: Cache,
 }
@@ -32,15 +31,13 @@ impl GameEngine {
 
         world_engine.push(EmeraldWorld::new());
 
-        let last_instant = Instant::now();
-        let now = Instant::now();
-        let delta = now - last_instant;
+        let delta = 0.0;
 
         let starting_amount = 50;
         let mut fps_tracker = VecDeque::with_capacity(starting_amount);
         fps_tracker.resize(starting_amount, 1.0 / 60.0);
-
         let mut cache = Cache::new();
+        let last_instant = miniquad::date::now();
 
         let emd = Emerald::new(
             delta,
@@ -86,23 +83,11 @@ impl GameEngine {
 impl EventHandler for GameEngine {
     #[inline]
     fn update(&mut self, mut ctx: &mut Context) {
-        let start_of_frame = Instant::now();
-        let delta = {
-            // TODO(bombfuse): Figure out why Instant::now() isn't work on WASM
-            // Temporary WASM time hack
-            #[cfg(target_arch = "wasm32")]
-            {
-                std::time::Duration::from_secs_f32(0.016)
-            }
-            #[cfg(not(target_arch = "wasm32"))]
-            {
-                start_of_frame - self.last_instant
-            }
-        };
-
+        let start_of_frame = miniquad::date::now();
+        let delta = start_of_frame - self.last_instant;
         self.last_instant = start_of_frame;
 
-        self.update_fps_tracker(delta.as_secs_f64());
+        self.update_fps_tracker(delta);
         
         let emd = Emerald::new(
             delta,
@@ -117,7 +102,7 @@ impl EventHandler for GameEngine {
         );
 
         self.game.update(emd);
-        self.rendering_engine.update(delta.as_secs_f32(), &mut self.world_engine.world().inner);
+        self.rendering_engine.update(delta, &mut self.world_engine.world().inner);
         self.audio_engine.frame();
         self.logging_engine.update();
         self.input_engine.rollover();
@@ -135,7 +120,7 @@ impl EventHandler for GameEngine {
 
     #[inline]
     fn draw(&mut self, mut ctx: &mut Context) {
-        let start_of_frame = Instant::now();
+        let start_of_frame = miniquad::date::now();
         let delta = start_of_frame - self.last_instant;
         
         let emd = Emerald::new(

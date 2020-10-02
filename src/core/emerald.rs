@@ -5,12 +5,10 @@ use crate::input::*;
 use crate::logging::*;
 use crate::audio::*;
 
-use std::time::Duration;
-
 use hecs::Entity;
 
 pub struct Emerald<'a> {
-    delta: Duration,
+    delta: f64,
     fps: f64,
     audio_engine: &'a mut AudioEngine,
     quad_ctx: &'a mut miniquad::Context,
@@ -23,7 +21,7 @@ pub struct Emerald<'a> {
 impl<'a> Emerald<'a> {
     #[inline]
     pub(crate) fn new(
-        delta: Duration,
+        delta: f64,
         fps: f64,
         quad_ctx: &'a mut miniquad::Context,
         audio_engine: &'a mut AudioEngine,
@@ -47,10 +45,17 @@ impl<'a> Emerald<'a> {
         }
     }
 
-    /// General API
+    // ************* General API ***************
     #[inline]
-    pub fn delta(&self) -> f32 {
-        self.delta.as_secs_f32()
+    pub fn delta(&self) -> f64 {
+        self.delta
+    }
+
+
+    /// Time since Epoch
+    #[inline]
+    pub fn now(&self) -> f64 {
+        miniquad::date::now()
     }
 
     #[inline]
@@ -62,6 +67,9 @@ impl<'a> Emerald<'a> {
     pub fn fps(&self) -> f64 {
         self.fps
     }
+
+    pub fn quit(&self) { self.quad_ctx.quit() }
+    // *****************************************
 
     /// Disable all cameras then set the camera on the given entity as active.
     #[inline]

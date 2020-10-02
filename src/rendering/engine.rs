@@ -8,24 +8,12 @@ use miniquad::*;
 use glam::{Vec2, Vec4, Mat4};
 use std::collections::HashMap;
 
-#[derive(Clone, Debug)]
-pub enum Drawable {
-    Sprite { sprite: Sprite },
-    ColorRect { color_rect: ColorRect },
-    // Label { label: Label },
-}
-
-#[derive(Clone, Debug)]
-pub struct DrawCommand {
-    pub drawable: Drawable,
-    pub position: Position,
-    pub z_index: f32,
-}
 
 pub struct RenderingEngine {
     settings: RenderSettings,
     pipeline: Pipeline,
     textures: HashMap<TextureKey, Texture>,
+    render_target: Option<miniquad::Texture>,
 }
 impl RenderingEngine {
     pub fn new(mut ctx: &mut Context, settings: RenderSettings) -> Self {
@@ -64,12 +52,13 @@ impl RenderingEngine {
             settings,
             pipeline,
             textures,
+            render_target: None,
         }
     }
 
-    pub(crate) fn update(&mut self, delta: f32, world: &mut hecs::World) {
+    pub(crate) fn update(&mut self, delta: f64, world: &mut hecs::World) {
         for (_id, aseprite) in world.query::<&mut Aseprite>().iter() {
-            aseprite.add_delta(delta);
+            aseprite.add_delta(delta as f32);
         }
     }
 
@@ -133,7 +122,6 @@ impl RenderingEngine {
             match draw_command.drawable {
                 Drawable::Sprite { sprite } => self.draw_sprite(&mut ctx, &sprite, &draw_command.position),
                 Drawable::ColorRect { color_rect } => self.draw_color_rect(&mut ctx, &color_rect, &draw_command.position),
-                // Drawable::Label { label } => self.draw_label(&mut ctx, &label, &draw_command.position),
             }
         }
 
@@ -167,10 +155,37 @@ impl RenderingEngine {
         ctx.clear(Some(self.settings.background_color.percentage()), None, None);
     }
 
+    /// Begins the process of rendering to a texture the size of the screen.
+    #[inline]
+    pub(crate)fn begin_texture(&mut self, ctx: &mut Context) {
+        ctx.clear(Some(self.settings.background_color.percentage()), None, None);
+        let (w, h) = ctx.screen_size();
+
+        self.render_target = Some(miniquad::Texture::new_render_texture(
+                ctx,
+                TextureParams {
+                    width: w as _,
+                    height: h as _,
+                    format: TextureFormat::Depth,
+                    ..Default::default()
+                },
+            )
+        );
+    }
+
     #[inline]
     pub(crate) fn render(&mut self, ctx: &mut Context) {
         ctx.end_render_pass();
         ctx.commit_frame();
+    }
+
+    pub(crate) fn render_to_texture(&mut self, mut ctx: &mut Context) -> Result<Texture, EmeraldError> {
+        if let Some(texture) = self.render_target {
+            let texture = Texture::from_texture(&mut ctx, texture)?;
+            return Ok(texture);
+        }
+
+        Err(EmeraldError::new("No texture found. Did you begin this rendering pass with 'begin_texture()`?"))
     }
 
     #[inline]
@@ -239,7 +254,6 @@ impl RenderingEngine {
             }
         }
         
-
         let real_scale = Vec2::new(
             sprite.scale.x * target.width * (f32::from(texture.width)),
             sprite.scale.y * target.height * (f32::from(texture.height)),
@@ -293,7 +307,6 @@ impl RenderingEngine {
 
         uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
         uniforms.color = Vec4::new(color.0, color.1, color.2, color.3);
-        // uniforms.z_index = z_index;
         
         texture.inner.set_filter(&mut ctx, texture.filter);
 
@@ -301,8 +314,6 @@ impl RenderingEngine {
         ctx.apply_uniforms(&uniforms);
         ctx.draw(0, 6, 1);
     }
-
-    // pub fn draw_label(&mut self, mut ctx: &mut Context, label: &Label, position: &Position) {}
 
     #[inline]
     pub fn aseprite_with_animations<T: Into<String>>(&mut self,
@@ -330,11 +341,6 @@ impl RenderingEngine {
 
         Ok(Sprite::from_texture(key))
     }
-
-    // #[inline]
-    // pub fn label<T: Into<String>>(&mut self, mut ctx: &mut Context, text: T, font_key: FontKey) -> Result<Label, EmeraldError> {
-    //     Ok(Label::new())
-    // }
 
     #[inline]
     pub fn texture<T: Into<String>>(&mut self, path: T) -> Result<TextureKey, EmeraldError> {
@@ -369,17 +375,22 @@ impl RenderingEngine {
 
         Ok(())
     }
-
-    // #[inline]
-    // pub fn font<T: Into<String>>(&mut self, mut ctx: &mut Context, font_data: Vec<u8>, path: T, font_size: u32) -> Result<FontKey, EmeraldError> {
-    //     let path: String = path.into();
-    //     let key = FontKey::new(&path, font_size);
-
-    //     Ok(key)
-    // }
 }
 
 #[inline]
 fn is_in_view(_sprite: &Sprite, _pos: &Position, _camera: &Camera, _screen_size: &(f32, f32)) -> bool {
     true
+}
+
+#[derive(Clone, Debug)]
+enum Drawable {
+    Sprite { sprite: Sprite },
+    ColorRect { color_rect: ColorRect },
+}
+
+#[derive(Clone, Debug)]
+struct DrawCommand {
+    pub drawable: Drawable,
+    pub position: Position,
+    pub z_index: f32,
 }

@@ -1,4 +1,4 @@
-use crate::{RenderingEngine, WorldEngine, Sprite, Position};
+use crate::*;
 use miniquad::Context;
 
 pub struct GraphicsHandler<'a> {
@@ -35,8 +35,18 @@ impl<'a> GraphicsHandler<'a> {
         self.rendering_engine.begin(&mut self.quad_ctx);
     }
 
+    /// Render to a texture target this pass
+    pub fn begin_texture(&mut self) {
+        self.rendering_engine.begin_texture(&mut self.quad_ctx)
+    }
+
     /// Commit all drawings to the screen
     pub fn render(&mut self) {
         self.rendering_engine.render(&mut self.quad_ctx);
+    }
+
+    /// Finish rendering to a texture and hand it back to the user
+    pub fn render_texture(&mut self) -> Result<Texture, EmeraldError> {
+        self.rendering_engine.render_to_texture(&mut self.quad_ctx)
     }
 }

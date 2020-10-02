@@ -25,7 +25,6 @@ pub use rapier2d::na::Vector2;
 //
 
 // General re-exports for compatibility
-pub use instant::Instant;
 pub use nanoserde;
 pub use rapier2d;
 pub use hecs;

@@ -20,7 +20,6 @@ rapier2d = { git = "https://github.com/dimforge/rapier", default-features = fals
 
 # Dependencies
 paintbrush = { git = "https://github.com/Bombfuse/paintbrush", branch = "master" }
-instant = { version = "0.1.6", default-features = false, features = [ "now" ] }
 image = "0.23.8"
 glam = "0.9.3"
 log = "0.4.11"
