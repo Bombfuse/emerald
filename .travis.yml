@@ -12,8 +12,6 @@ jobs:
   fast_finish: true
 install:
   - rustup target add wasm32-unknown-unknown
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then rustup target add armv7-unknown-linux-gnueabihf; fi
 script:
   - cargo build
   - cargo build --target wasm32-unknown-unknown
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then cargo build --target armv7-unknown-linux-gnueabihf; fi

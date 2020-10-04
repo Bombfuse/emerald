@@ -3,11 +3,11 @@
 [![Build Status](https://travis-ci.com/Bombfuse/emerald.svg?branch=master)](https://travis-ci.com/Bombfuse/emerald)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-# Light and powerful
+# The Cross Platform Engine
 
-Emerald is designed to be as lightweight as possible, while remaining a fully-featured, cross-platform game engine.
+Emerald is designed to be as lightweight as possible, while remaining a fully-featured and cross-platform game engine.
 
-The API is simple and powerful, giving you direct access to physics, audio, graphics, game worlds, and asset loading.
+The Api is simple and powerful, giving you direct access to physics, audio, graphics, game worlds, and asset loading.
 
 # Portable
 
@@ -20,10 +20,13 @@ Built on top of [miniquad](https://github.com/not-fl3/miniquad) and other cross 
     <img alt="Windows" src="./assets/windows.svg" width=32>
     <img alt="RaspberryPi" src="./assets/raspberrypi.svg" width=32>
     <img alt="HTML5" src="./assets/webassembly.svg" width=32>
-    <img alt="Android" src="./assets/android.svg" width=32>
 </div>
 
-* Android WIP
+
+!!! Work in progress !!!
+<div>
+    <img alt="Android" src="./assets/android.svg" width=32>
+</div>
 
 
 
@@ -51,7 +54,7 @@ This makes it very easy to "pause" the game without needing to alter your physic
 
 ## Graphics
 
-Graphics are set to draw the current game world by default, however you can write your own `draw` function if you need to do more!
+The default method to draw the game is to draw all of the entities in the current world. However, you can write your own `draw` function if you need to do more!
 
 ```rust
 fn draw(&mut self, mut emd: Emerald) {
@@ -67,17 +70,12 @@ fn draw(&mut self, mut emd: Emerald) {
 
 Emerald uses the [Entity Component System](https://en.wikipedia.org/wiki/Entity_component_system) paradigm for creating, managing, and updating game entities.
 
-Emerald uses [Legion](https://github.com/TomGillen/legion) under the hood for extremely fast entity iteration, and a remarkably clean query API.
+Emerald uses [Hecs](https://github.com/Ralith/hecs) under the hood for extremely fast entity iteration, and a remarkably clean query Api.
 
-More detailed features can be found in the Legion documentation.
-
-*Note: In order to use legion macros, you'll need to add a direct dependency on Legion in your project*
+More detailed features can be found in the [Hecs documentation](https://docs.rs/hecs/).
 
 ```rust
-
-let mut sprite_update_query = <(&Sprite, &mut Position)>::query();
-
-for (sprite, mut position) in sprite_update_query.iter_mut(emd.world().inner()) {
+for (id, (sprite, mut position)) in emd.world().query::<(&Sprite, &mut Position)>().iter() {
     position.x += 10.0;
 }
 ```
@@ -111,22 +109,24 @@ Export settings
 
 In order to keep a clean, simple API, and avoid network requests for assets. Emerald takes the approach of packing all necessary assets into the WASM binary.
 
-Use the `pack_texture` function to load texture data into the engine.
+This same method can be used to pack all assets into the game binary regardless of which platform you target.
+
+Use the `pack_bytes` function to load data into the engine.
 
 ```rust
 fn initialize(&mut self, mut emd: Emerald) {
     /// Pack all game files into WASM binary with path references
-    /// so that regular file loading API is supported.
+    /// so that the regular file loading Api is supported.
     #[cfg(target_arch = "wasm32")]
     {
         emd.loader()
-            .pack_texture(
+            .pack_bytes(
                 "./static/assets/bunny.png",
                 include_bytes!("../static/assets/bunny.png").to_vec()
             );
     }
 
-    /// We can now load texture/sprites via the normal API,
+    /// We can now load texture/sprites via the normal Api,
     /// regardless of which platform we're targeting.
     let sprite = emd.loader()
         .sprite("./static/assets/bunny.png").unwrap();
@@ -144,10 +144,6 @@ fn initialize(&mut self, mut emd: Emerald) {
     );
 }
 ```
-
-
-## Dependencies
-* Random Number Generation - https://github.com/not-fl3/quad-rand
 
 ## Demos
 * Links
