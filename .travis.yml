@@ -12,6 +12,7 @@ jobs:
   fast_finish: true
 install:
   - rustup target add wasm32-unknown-unknown
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install libsdl2-dev; fi
+
 script:
   - cargo build
-  - cargo build --target wasm32-unknown-unknown
