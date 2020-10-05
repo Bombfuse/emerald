@@ -17,10 +17,9 @@ impl Game for MyGame {
 
         aseprite.play_and_loop("smile");
 
-        emd.world().inner()
-            .push((
-                aseprite, 
-                Position::new(64.0, 64.0)
-            ));
+        emd.world().spawn((
+            aseprite, 
+            Position::new(64.0, 64.0)
+        ));
     }
 }

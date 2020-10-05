@@ -1,9 +1,5 @@
 use emerald::*;
 
-///
-/// Basic Bunnymark
-/// 
-
 pub fn main() {
     let mut settings = GameSettings::default();
     settings.render_settings.resolution = (320, 180);

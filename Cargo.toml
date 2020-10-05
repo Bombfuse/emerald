@@ -19,8 +19,8 @@ fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
 rapier2d = { git = "https://github.com/dimforge/rapier", default-features = false, features = [ "dim2" ] }
 
 # Dependencies
-image = "0.23.8"
-glam = "0.9.3"
+image = "0.23.10"
+glam = "0.9.4"
 log = "0.4.11"
 crossbeam = "0.7.3"
 quad-rand = "0.1.1"
@@ -41,6 +41,3 @@ name = "sprite"
 
 [[example]]
 name = "color_rect"
-
-[target.armv7-unknown-linux-gnueabihf]
-linker = "arm-none-linux-gnueabihf-gcc"
