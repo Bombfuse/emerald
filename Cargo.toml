@@ -9,6 +9,7 @@ license = "MIT OR Apache-2.0"
 
 [features]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [dependencies]
 # Nightly
 miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
@@ -19,7 +20,7 @@ fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
 rapier2d = { git = "https://github.com/dimforge/rapier", default-features = false, features = [ "dim2" ] }
 
 # Dependencies
-image = "0.23.10"
+image = { version = "0.23.10", default-features = false, features = [ "png" ] }
 glam = "0.9.4"
 log = "0.4.11"
 crossbeam = "0.7.3"

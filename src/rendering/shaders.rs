@@ -61,18 +61,20 @@ void main() {
     gl_FragColor = texture2D(tex, uv) * color;
 }"#;
 
-pub const META: ShaderMeta = ShaderMeta {
-    images: &["tex"],
-    uniforms: UniformBlockLayout {
-        uniforms: &[
-            UniformDesc::new("Projection", UniformType::Mat4),
-            UniformDesc::new("Model", UniformType::Mat4),
-            UniformDesc::new("Source", UniformType::Float4),
-            UniformDesc::new("Color", UniformType::Float4),
-            UniformDesc::new("z_index", UniformType::Float1),
-        ],
-    },
-};
+pub fn meta() -> ShaderMeta {
+    ShaderMeta {
+        images: vec![String::from("tex")],
+        uniforms: UniformBlockLayout {
+            uniforms: vec![
+                UniformDesc::new("Projection", UniformType::Mat4),
+                UniformDesc::new("Model", UniformType::Mat4),
+                UniformDesc::new("Source", UniformType::Float4),
+                UniformDesc::new("Color", UniformType::Float4),
+                UniformDesc::new("z_index", UniformType::Float1),
+            ],
+        },
+    }
+}
 
 // Credit(https://github.com/not-fl3/good-web-game/blob/master/src/graphics/image.rs#L129)
 pub(crate) fn param_to_instance_transform(rotation: f32, scale: Vec2, offset: Vec2, dest: Vec2) -> Mat4 {

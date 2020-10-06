@@ -17,7 +17,7 @@ pub struct RenderingEngine {
 }
 impl RenderingEngine {
     pub fn new(mut ctx: &mut Context, settings: RenderSettings) -> Self {
-        let shader = Shader::new(ctx, VERTEX, FRAGMENT, META).unwrap();
+        let shader = Shader::new(ctx, VERTEX, FRAGMENT, shaders::meta()).unwrap();
 
         let mut params = PipelineParams::default();
         params.depth_write = true;

@@ -1,5 +1,19 @@
 use emerald::*;
 
+// Bunnymark is super disappointing right now, need to fix 
+// https://github.com/Bombfuse/emerald/issues/10
+
+#[derive(Clone, Debug)]
+struct Velocity {
+    pub x: f32,
+    pub y: f32,
+}
+impl Velocity {
+    pub fn new(x: f32, y: f32) -> Self {
+        Velocity { x, y }
+    }
+}
+
 pub fn main() {
     let mut settings = GameSettings::default();
     settings.render_settings.resolution = (320, 180);
@@ -21,19 +35,18 @@ impl Game for BunnymarkGame {
                 );
         }
 
-        let mut sprite = emd.loader()
+        let sprite = emd.loader()
             .sprite("./examples/assets/bunny.png").unwrap();
-        sprite.offset = Vector2::new(-10.0, 0.0);
         
         let mut position = Position::new(0.0, 0.0);
 
         self.count = 1000;
-        emd.world().inner().extend(
+        emd.world().spawn_batch(
             (0..1000).map(|_| {
                 position.x += 6.0;
                 position.y += 1.0;
                 let mut s = sprite.clone();
-                (position.clone(), s, Velocity::linear(5.0, 3.0))
+                (position.clone(), s, Velocity::new(5.0, 3.0))
             })
         );
     }
@@ -42,6 +55,7 @@ impl Game for BunnymarkGame {
     fn update(&mut self, mut emd: Emerald) {
         let (screen_width, screen_height) = emd.screen_size();
         let sprite_width = 32.0;
+        let delta = emd.delta() as f32;
 
         if emd.input().is_key_just_pressed(KeyCode::Space) {
             let mut sprite = emd.loader()
@@ -50,43 +64,42 @@ impl Game for BunnymarkGame {
             
             let mut position = Position::new(0.0, 0.0);
             self.count += 1000;
-            emd.world().inner().extend(
+            emd.world().spawn_batch(
                 (0..1000).map(|_| {
                     position.x += 6.0;
                     position.y += 1.0;
-                    let mut s = sprite.clone();
-                    (position.clone(), s, Velocity::linear(5.0, 3.0))
+
+                    (position.clone(), sprite.clone(), Velocity::new(5.0, 3.0))
                 })
             );
         }
 
-        let now = Instant::now();
-        let mut bunny_query = <(&Sprite, &mut Position, &mut Velocity)>::query();
-
-        for (_, mut position, mut vel) in bunny_query.iter_mut(emd.world().inner()) {
+        for (_, (sprite, mut position, mut vel)) in emd.world().query::<(&Sprite, &mut Position, &mut Velocity)>().iter() {
             if position.x >= screen_width - sprite_width / 2.0 {
                 position.x = screen_width - sprite_width / 2.0;
-                vel.linear.x *= -1.0;
+                vel.x *= -1.0;
             }
 
             if position.x <= 0.0 {
                 position.x = 0.0;
-                vel.linear.x *= -1.0;
+                vel.x *= -1.0;
             }
 
             if position.y >= screen_height - sprite_width {
                 position.y = screen_height - sprite_width;
-                vel.linear.y = -3.0;
+                vel.y = -3.0;
             }
 
             if position.y <= 0.0 {
                 position.y = 0.0;
-                vel.linear.y = 3.0;
+                vel.y = 3.0;
             }
 
+            position.x += vel.x;
+            position.y += vel.y;
         }
 
-        emd.world().physics().step();
+        // emd.world().physics().step();
         println!("{}, {}", self.count, emd.fps());
     }
 }
