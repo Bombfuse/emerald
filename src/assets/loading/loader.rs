@@ -35,8 +35,7 @@ impl<'a> AssetLoader<'a> {
         Ok(current_dir.join(file_path.into()))
     }
 
-    pub fn bytes<T: Into<String>>(&self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
-
+    pub fn bytes<T: Into<String>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
         #[cfg(target_arch = "wasm32")]
         {
             let path: String = file_path.into();
@@ -50,11 +49,19 @@ impl<'a> AssetLoader<'a> {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let path = self.full_path(file_path)?;
-            let file_path: String = path.into_os_string().into_string()?;
+            let path: String = file_path.into();
+            if let Some(bytes) = self.cache.data.get(&path) {
+                let bytes = bytes.clone();
+                return Ok(bytes);
+            }
+
+            let full_path = self.full_path(path.clone())?;
+            let file_path: String = full_path.into_os_string().into_string()?;
             let mut file = File::open(file_path)?;
             let mut bytes = Vec::new();
             file.read_to_end(&mut bytes)?;
+
+            self.cache.data.insert(String::from(path), bytes.clone());
     
             Ok(bytes)
         }
@@ -91,17 +98,6 @@ impl<'a> AssetLoader<'a> {
 
     }
 
-    // pub fn label<T: Into<String>>(&mut self, text: T, font_key: FontKey) -> Result<Label, EmeraldError> {
-    //     self.rendering_engine.label(&mut self.quad_ctx, text, font_key)
-    // }
-
-    // pub fn font<T: Into<String>>(&mut self, path: T, font_size: u32) -> Result<FontKey, EmeraldError> {
-    //     let path: String = path.into();
-    //     let font_data = self.bytes(path.clone())?;
-
-    //     self.rendering_engine.font(&mut self.quad_ctx, font_data, path, font_size)
-    // }
-
     pub fn sound<T: Into<String>>(&mut self, path: T) -> Result<Sound, EmeraldError> {
         let path: String = path.into();
         let file_path = std::path::Path::new(&path);
@@ -117,9 +113,27 @@ impl<'a> AssetLoader<'a> {
         self.audio_engine.load(sound_data, sound_format)
     }
 
+    pub fn world<T: Into<String>>(&mut self, path: T) -> Result<EmeraldWorld, EmeraldError> {
+        let bytes = self.bytes(path)?;
+        let json = std::str::from_utf8(&bytes).unwrap();
+
+        crate::assets::loading::deserialize_world_from_json(&String::from(json), self)
+    }
+
     pub fn pack_bytes(&mut self, name: &str, bytes: Vec<u8>) -> Result<(), EmeraldError> {
         self.cache.data.insert(name.into(), bytes);
 
         Ok(())
+    }
+
+    // TODO(bombfuse): This is a quick hack to get the texture into the cache. Make this not build a sprite.
+    pub fn preload_texture<T: Into<String>>(&mut self, name: T) -> Result<(), EmeraldError> {
+        let name: String = name.into();
+
+        if let Ok(sprite) = self.sprite(name.clone()) {
+            return Ok(());
+        }
+
+        Err(EmeraldError::new(format!("Unable to preload texture {}", name)))
     }
 }

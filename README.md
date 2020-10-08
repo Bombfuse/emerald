@@ -9,10 +9,7 @@ Emerald is designed to be as lightweight as possible, while remaining a fully-fe
 
 The Api is simple and powerful, giving you direct access to physics, audio, graphics, game worlds, and asset loading.
 
-# Portable
-
-Built on top of [miniquad](https://github.com/not-fl3/miniquad) and other cross platform libraries, Emerald is able to run almost anywhere.
-
+## Supported Platforms
 <div>
     <img alt="OpenGL" src="./assets/opengl.svg" width=32>
     <img alt="MacOS" src="./assets/apple.svg" width=32>
@@ -23,34 +20,56 @@ Built on top of [miniquad](https://github.com/not-fl3/miniquad) and other cross 
 </div>
 
 
-!!! Work in progress !!!
+--- Work in progress ---
 <div>
     <img alt="Android" src="./assets/android.svg" width=32>
 </div>
+--------------------------
 
 
 
 ## Asset Loading
 ```rust
 let my_sprite = emd.loader()
-    .sprite("./my_assets/my_sprite.png")
+    .sprite("./assets/my_sprite.png")
     .unwrap();
 
-let my_font = emd.loader()
-    .font("./my_assets/my_font.ttf")
+let my_audio = emd.loader()
+    .sound("./assets/my_sound.wav")
     .unwrap();
 ```
 
 
 ## Physics
-You decide when physics steps!
-This makes it very easy to "pause" the game without needing to alter your physics data.
+
+### Creating Bodies
+```rust
+    let entity = emd.world().spawn((Position::new(0.0, 0.0)));
+
+    let body_handle = emd.world().physics().build_body(
+        entity,
+        RigidBodyDesc::dynamic()
+    );
+
+    emd.world().physics().build_collider(
+        body_handle,
+        ColliderDesc::cuboid(6.0, 6.0)
+    );
+```
+
+Physics bodies are tied directly to entities, this is so that bodies can be cleaned up automatically when entities are despawned.
+
+### Physics Stepping
 
 ```rust
+
     emd.world()
         .physics()
         .step();
 ```
+
+You decide when physics steps!
+This makes it very easy to "pause" the game without needing to alter any data.
 
 ## Graphics
 
@@ -121,15 +140,15 @@ fn initialize(&mut self, mut emd: Emerald) {
     {
         emd.loader()
             .pack_bytes(
-                "./static/assets/bunny.png",
-                include_bytes!("../static/assets/bunny.png").to_vec()
+                "./assets/bunny.png",
+                include_bytes!("../assets/bunny.png").to_vec()
             );
     }
 
     /// We can now load texture/sprites via the normal Api,
     /// regardless of which platform we're targeting.
     let sprite = emd.loader()
-        .sprite("./static/assets/bunny.png").unwrap();
+        .sprite("./assets/bunny.png").unwrap();
     
     let mut position = Position::new(0.0, 0.0);
 

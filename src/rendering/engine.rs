@@ -29,8 +29,8 @@ impl RenderingEngine {
         params.alpha_blend = Some(BlendState::new(
             Equation::Add,
             BlendFactor::Zero,
-            BlendFactor::One)
-        );
+            BlendFactor::One
+        ));
 
         let pipeline = Pipeline::with_params(
             ctx,
@@ -42,9 +42,7 @@ impl RenderingEngine {
             params,
         );
 
-
         let mut textures: HashMap<TextureKey, Texture> = HashMap::new();
-
         let default_texture = Texture::default(&mut ctx).unwrap();
         textures.insert(TextureKey::default(), default_texture);
 
@@ -337,7 +335,11 @@ impl RenderingEngine {
 
     #[inline]
     pub fn sprite_from_data<T: Into<String>>(&mut self, mut ctx: &mut Context, data: Vec<u8>, path: T) -> Result<Sprite, EmeraldError> {
+        let start_time = std::time::Instant::now();
         let key = self.texture_from_data(&mut ctx, data, path)?;
+        let end = std::time::Instant::now();
+
+        println!("Texture load: {:?}", end - start_time);
 
         Ok(Sprite::from_texture(key))
     }

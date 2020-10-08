@@ -1,0 +1,8 @@
+{
+    "entities": [
+        [
+            { "Position": { "x": 80, "y": 80 } },
+            { "Sprite": { "path": "./examples/assets/bunny.png", "offset": { "x": 0, "y": 0 } } }
+        ]
+    ]
+}

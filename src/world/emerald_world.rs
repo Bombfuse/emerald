@@ -28,6 +28,11 @@ impl EmeraldWorld {
         Err(EmeraldError::new(format!("No camera found for entity {:?}", entity)))
     }
 
+    // TODO(bombfuse): Load an ecs world and physics world into this one.
+    pub fn merge(&mut self, world: EmeraldWorld) -> Result<(), EmeraldError> {
+        Ok(())
+    }
+
     pub fn spawn(&mut self, components: impl DynamicBundle) -> Entity {
         self.inner.spawn(components)
     }
@@ -59,6 +64,8 @@ impl EmeraldWorld {
     pub fn get<T: Component>(&self, entity: Entity) -> Result<Ref<'_, T>, ComponentError> {
         self.inner.get::<T>(entity)
     }
+
+    pub fn reserve_entity(&self) -> Entity { self.inner.reserve_entity() }
 
     pub fn insert(
         &mut self,
