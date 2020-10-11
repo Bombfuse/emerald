@@ -278,11 +278,8 @@ impl PhysicsEngine {
         if let Some(body_handle) = self.entity_bodies.get(&entity) {
             self.body_entities.remove(&body_handle);
 
-            if let Some(body) = self.pipeline.remove_rigid_body(
+            if let Some(body) = self.bodies.remove(
                 *body_handle,
-                &mut self.broad_phase,
-                &mut self.narrow_phase,
-                &mut self.bodies,
                 &mut self.colliders,
                 &mut self.joints
             ) {
@@ -295,12 +292,9 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn remove_collider(&mut self, collider_handle: ColliderHandle) -> Option<Collider> {
-        self.pipeline.remove_collider(
+        self.colliders.remove(
             collider_handle,
-            &mut self.broad_phase,
-            &mut self.narrow_phase,
             &mut self.bodies,
-            &mut self.colliders
         )
     }
 
