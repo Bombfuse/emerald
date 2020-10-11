@@ -66,15 +66,25 @@ impl RenderingEngine {
             ScreenScalar::Keep => (self.settings.resolution.0 as f32, self.settings.resolution.1 as f32),
             ScreenScalar::None => ctx.screen_size(),
         };
-        let camera: Camera = {
+        let (camera, camera_position): (Camera, Position) = {
             let mut cam = Camera::default();
+            let mut cam_position = Position::new(0.0, 0.0);
+            let mut entity_holding_camera: Option<Entity> = None;
 
-            for (_, camera) in world.query::<&Camera>().iter() {
+            for (id, camera) in world.query::<&Camera>().iter() {
                 if camera.is_active {
                     cam = camera.clone();
+                    entity_holding_camera = Some(id);
                 }
             }
-            cam
+            
+            if let Some(entity) = entity_holding_camera {
+                if let Ok(position) = world.get_mut::<Position>(entity) {
+                    cam_position = position.clone();
+                }
+            }
+            
+            (cam, cam_position)
         };
         let mut draw_queue = Vec::new();
 
@@ -117,9 +127,27 @@ impl RenderingEngine {
         draw_queue.sort_by(|a, b| a.z_index.partial_cmp(&b.z_index).unwrap() );
 
         for draw_command in draw_queue {
+            let position = {
+                let mut pos = draw_command.position.clone() - camera_position;
+
+                if camera.centered {
+                    pos = pos + Position::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
+                }
+
+                pos
+            };
+
             match draw_command.drawable {
-                Drawable::Sprite { sprite } => self.draw_sprite(&mut ctx, &sprite, &draw_command.position),
-                Drawable::ColorRect { color_rect } => self.draw_color_rect(&mut ctx, &color_rect, &draw_command.position),
+                Drawable::Sprite { sprite } => self.draw_sprite(
+                    &mut ctx,
+                    &sprite,
+                    &position
+                ),
+                Drawable::ColorRect { color_rect } => self.draw_color_rect(
+                    &mut ctx,
+                    &color_rect,
+                    &position
+                ),
             }
         }
 
@@ -335,11 +363,7 @@ impl RenderingEngine {
 
     #[inline]
     pub fn sprite_from_data<T: Into<String>>(&mut self, mut ctx: &mut Context, data: Vec<u8>, path: T) -> Result<Sprite, EmeraldError> {
-        let start_time = std::time::Instant::now();
         let key = self.texture_from_data(&mut ctx, data, path)?;
-        let end = std::time::Instant::now();
-
-        println!("Texture load: {:?}", end - start_time);
 
         Ok(Sprite::from_texture(key))
     }
@@ -376,6 +400,25 @@ impl RenderingEngine {
         self.textures.insert(key, texture);
 
         Ok(())
+    }
+
+    #[inline]
+    pub fn make_active_camera(&mut self, entity: Entity, world: &mut EmeraldWorld) -> Result<(), EmeraldError> {
+        let mut set_camera = false;
+        if let Ok(mut camera) = world.get_mut::<Camera>(entity.clone()) {
+            camera.is_active = true;
+            set_camera = true;
+        }
+
+        if set_camera {
+            for (id, mut camera_to_disable) in world.query::<&mut Camera>().iter() {
+                if id != entity {
+                    camera_to_disable.is_active = false;
+                }
+            }
+        }
+
+        Err(EmeraldError::new(format!("Entity {:?} either does not exist or does not hold a camera", entity)))
     }
 }
 

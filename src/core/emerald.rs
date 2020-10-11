@@ -4,6 +4,7 @@ use crate::rendering::*;
 use crate::input::*;
 use crate::logging::*;
 use crate::audio::*;
+use crate::{EmeraldError};
 
 use hecs::Entity;
 
@@ -72,8 +73,11 @@ impl<'a> Emerald<'a> {
     // *****************************************
 
     /// Disable all cameras then set the camera on the given entity as active.
+    /// Fails if the given entity does not exist, or does not have a camera.
     #[inline]
-    pub fn make_active_camera(_entity: &Entity) {}
+    pub fn make_active_camera(&mut self, entity: Entity) -> Result<(), EmeraldError> {
+        self.rendering_engine.make_active_camera(entity, self.world_engine.world())
+    }
 
     pub fn graphics(&mut self) -> GraphicsHandler {
         GraphicsHandler::new(&mut self.quad_ctx, &mut self.rendering_engine, self.world_engine)

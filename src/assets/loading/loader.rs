@@ -67,6 +67,14 @@ impl<'a> AssetLoader<'a> {
         }
     }
 
+    /// Loads bytes from given path as a string
+    pub fn string<T: Into<String>>(&mut self, file_path: T) -> Result<String, EmeraldError> {
+        let bytes = self.bytes(file_path)?;
+        let string = String::from_utf8(bytes)?;
+
+        Ok(string)
+    }
+
     /// TODO(bombfuse): Automatically load the spritesheet from the aseprite json file
     // fn aseprite() {}
 
