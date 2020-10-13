@@ -70,3 +70,9 @@ impl std::convert::From<hecs::NoSuchEntity> for EmeraldError {
         }
     }
 }
+
+impl std::convert::From<hecs::ComponentError> for EmeraldError {
+    fn from(e: hecs::ComponentError) -> EmeraldError {
+        EmeraldError { message: e.to_string() }
+    }
+}
