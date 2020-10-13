@@ -62,3 +62,11 @@ impl std::convert::From<std::ffi::OsString> for EmeraldError {
         }
     }
 }
+
+impl std::convert::From<hecs::NoSuchEntity> for EmeraldError {
+    fn from(e: hecs::NoSuchEntity) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string()
+        }
+    }
+}

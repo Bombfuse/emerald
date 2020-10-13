@@ -62,30 +62,9 @@ impl RenderingEngine {
 
     #[inline]
     pub fn draw_world(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld) {
-        let screen_size = match self.settings.scalar {
-            ScreenScalar::Keep => (self.settings.resolution.0 as f32, self.settings.resolution.1 as f32),
-            ScreenScalar::None => ctx.screen_size(),
-        };
-        let (camera, camera_position): (Camera, Position) = {
-            let mut cam = Camera::default();
-            let mut cam_position = Position::new(0.0, 0.0);
-            let mut entity_holding_camera: Option<Entity> = None;
+        let screen_size = self.get_screen_size(ctx);
+        let (camera, camera_position) = get_camera_and_camera_position(world);
 
-            for (id, camera) in world.query::<&Camera>().iter() {
-                if camera.is_active {
-                    cam = camera.clone();
-                    entity_holding_camera = Some(id);
-                }
-            }
-            
-            if let Some(entity) = entity_holding_camera {
-                if let Ok(position) = world.get_mut::<Position>(entity) {
-                    cam_position = position.clone();
-                }
-            }
-            
-            (cam, cam_position)
-        };
         let mut draw_queue = Vec::new();
 
         for (_id, (aseprite, position)) in world.inner.query::<(&mut Aseprite, &Position)>().iter() {
@@ -156,8 +135,10 @@ impl RenderingEngine {
 
     #[inline]
     pub fn draw_colliders(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld, collider_color: Color) {
+        let screen_size = self.get_screen_size(ctx);
         let mut color_rect = ColorRect::default();
         color_rect.color = collider_color;
+        let (camera, camera_position) = get_camera_and_camera_position(world);
 
         for (_id, body_handle) in world.inner.query::<&RigidBodyHandle>().iter() {
             if let Some(body) = world.physics_engine.bodies.get(*body_handle) {
@@ -168,7 +149,17 @@ impl RenderingEngine {
                         color_rect.width = aabb.half_extents().x as u32 * 2;
                         color_rect.height = aabb.half_extents().y as u32 * 2;
 
-                        self.draw_color_rect(&mut ctx, &color_rect, &pos);
+                        let position = {
+                            let mut pos = pos - camera_position;
+                
+                            if camera.centered {
+                                pos = pos + Position::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
+                            }
+                
+                            pos
+                        };
+
+                        self.draw_color_rect(&mut ctx, &color_rect, &position);
                     }
                 }
             }
@@ -420,11 +411,41 @@ impl RenderingEngine {
 
         Err(EmeraldError::new(format!("Entity {:?} either does not exist or does not hold a camera", entity)))
     }
+
+    #[inline]
+    fn get_screen_size(&self, ctx: &Context) -> (f32, f32) {
+        match self.settings.scalar {
+            ScreenScalar::Keep => (self.settings.resolution.0 as f32, self.settings.resolution.1 as f32),
+            ScreenScalar::None => ctx.screen_size(),
+        }
+    }
 }
 
 #[inline]
 fn is_in_view(_sprite: &Sprite, _pos: &Position, _camera: &Camera, _screen_size: &(f32, f32)) -> bool {
     true
+}
+
+#[inline]
+fn get_camera_and_camera_position(world: &EmeraldWorld) -> (Camera, Position) {
+    let mut cam = Camera::default();
+    let mut cam_position = Position::new(0.0, 0.0);
+    let mut entity_holding_camera: Option<Entity> = None;
+
+    for (id, camera) in world.query::<&Camera>().iter() {
+        if camera.is_active {
+            cam = camera.clone();
+            entity_holding_camera = Some(id);
+        }
+    }
+    
+    if let Some(entity) = entity_holding_camera {
+        if let Ok(position) = world.get_mut::<Position>(entity) {
+            cam_position = position.clone();
+        }
+    }
+    
+    (cam, cam_position)
 }
 
 #[derive(Clone, Debug)]
