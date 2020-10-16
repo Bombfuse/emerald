@@ -30,6 +30,10 @@ impl<'a> GraphicsHandler<'a> {
         self.rendering_engine.draw_sprite(&mut self.quad_ctx, sprite, pos)
     }
 
+    pub fn draw_color_rect(&mut self, color_rect: &ColorRect, pos: &Position) {
+        self.rendering_engine.draw_color_rect(&mut self.quad_ctx, color_rect, pos)
+    }
+
     /// Begin drawing to the screen
     pub fn begin(&mut self) {
         self.rendering_engine.begin(&mut self.quad_ctx);

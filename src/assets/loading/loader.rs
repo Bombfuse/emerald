@@ -138,7 +138,7 @@ impl<'a> AssetLoader<'a> {
     pub fn preload_texture<T: Into<String>>(&mut self, name: T) -> Result<(), EmeraldError> {
         let name: String = name.into();
 
-        if let Ok(sprite) = self.sprite(name.clone()) {
+        if let Ok(_sprite) = self.sprite(name.clone()) {
             return Ok(());
         }
 

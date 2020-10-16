@@ -22,7 +22,6 @@ pub fn deserialize_world_from_json(json: &String, loader: &mut AssetLoader) -> R
     let mut new_world = EmeraldWorld::new();
     let world_prefab: WorldPrefab = DeJson::deserialize_json(json)?;
     
-    let start = std::time::Instant::now();
     for entity_prefab in world_prefab.entities {
         let entity = new_world.spawn((Position::new(0.0, 0.0), ));
 
@@ -32,12 +31,11 @@ pub fn deserialize_world_from_json(json: &String, loader: &mut AssetLoader) -> R
                     let mut sprite = loader.sprite(path)?;
                     let offset = Vector2::new(offset.x, offset.y);
                     sprite.offset = offset;
-                    new_world.insert(entity.clone(), (sprite,));
+                    new_world.insert(entity.clone(), (sprite,))?;
                 },
                 ComponentPrefab::Position { x, y } => {
-                    new_world.insert(entity.clone(), (Position::new(x, y),));
+                    new_world.insert(entity.clone(), (Position::new(x, y),))?;
                 },
-                _ => {}
             }
         }
     }

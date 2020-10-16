@@ -29,7 +29,7 @@ impl EmeraldWorld {
     }
 
     // TODO(bombfuse): Load an ecs world and physics world into this one.
-    pub fn merge(&mut self, world: EmeraldWorld) -> Result<(), EmeraldError> {
+    pub fn merge(&mut self, _world: EmeraldWorld) -> Result<(), EmeraldError> {
         Ok(())
     }
 
