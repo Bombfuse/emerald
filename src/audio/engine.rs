@@ -1,22 +1,20 @@
 use quad_snd::{
     decoder::{read_ogg, read_wav},
-    mixer::{SoundMixer, Sound},
+    mixer::{Sound},
 };
 
 use crate::{EmeraldError};
 use crate::audio::*;
 
+use std::collections::HashMap;
+
 pub(crate) struct AudioEngine {
-    mixer: SoundMixer,
-    sound_ids: Vec<SoundId>,
+    mixers: HashMap<String, Mixer>,
 }
 impl AudioEngine {
     pub(crate) fn new() -> Self {
-        let mixer = SoundMixer::new();
-
         AudioEngine {
-            mixer,
-            sound_ids: Vec::new(),
+            mixers: HashMap::new(),
         }
     }
 
@@ -29,29 +27,27 @@ impl AudioEngine {
         Ok(sound)
     }
 
-    pub(crate) fn play(&mut self, snd: Sound) -> SoundId {
-        let id = self.mixer.play(snd);
+    pub(crate) fn mixer<T: Into<String>>(&mut self, mixer_name: T) -> Option<&mut Mixer> {
+        let mixer_name: String = mixer_name.into();
 
-        self.sound_ids.push(id);
+        if !self.mixers.contains_key(&mixer_name) {
+            self.mixers.insert(mixer_name.clone(), Mixer::new());
+        }
 
-        id
+        self.mixers.get_mut(&mixer_name)
     }
 
     pub(crate) fn clear(&mut self) {
-        let ids = self.sound_ids.clone();
-        self.sound_ids = Vec::new();
-
-
-        for id in ids {
-            self.stop(id);
+        for (_, mixer) in &mut self.mixers {
+            mixer.clear();
         }
-    }
 
-    pub(crate) fn stop(&mut self, id: SoundId) {
-        self.mixer.stop(id)
+        self.mixers = HashMap::new();
     }
 
     pub(crate) fn frame(&mut self) {
-        self.mixer.frame();
+        for (_, mixer) in &mut self.mixers {
+            mixer.frame();
+        }
     }
 }

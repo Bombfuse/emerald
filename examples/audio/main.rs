@@ -5,7 +5,7 @@ use emerald::*;
 pub fn main() {
     let mut settings = GameSettings::default();
     let mut render_settings = RenderSettings::default();
-    render_settings.window_size = (480, 320);
+    render_settings.resolution = (480, 320);
     settings.render_settings = render_settings;
     emerald::start(Box::new(Example { elapsed_time: 10.0, snd: None }), settings)
 }
@@ -20,16 +20,27 @@ impl Game for Example {
     }
 
     fn update(&mut self, mut emd: Emerald) {
-        self.elapsed_time += emd.delta();
+        let mut input = emd.input();
+        self.elapsed_time += emd.delta() as f32;
 
         if self.elapsed_time >= 10.0 {
             self.elapsed_time = 0.0;
 
             let snd = self.snd.take().unwrap();
             emd.audio()
+                .mixer("test").unwrap()
                 .play(snd.clone());
 
             self.snd = Some(snd);
+        }
+
+        let volume = emd.audio().mixer("test").unwrap().get_volume();
+        if input.is_key_just_pressed(KeyCode::A) {
+            emd.audio().mixer("test").unwrap()
+                .set_volume(volume - 0.1);
+        } else if input.is_key_just_pressed(KeyCode::D) {
+            emd.audio().mixer("test").unwrap()
+                .set_volume(volume + 0.1);
         }
     }
 }
