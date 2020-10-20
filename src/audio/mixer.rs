@@ -1,5 +1,5 @@
 use quad_snd::{
-    mixer::{SoundMixer, Sound, Volume},
+    mixer::{SoundMixer, Sound, Volume, PlaybackStyle},
 };
 
 use crate::audio::*;
@@ -21,6 +21,14 @@ impl Mixer {
     pub fn play(&mut self, snd: Sound) -> SoundId {
         let id = self.inner.play(snd);
 
+        self.sound_ids.push(id);
+
+        id
+    }
+
+    pub fn play_and_loop(&mut self, mut snd: Sound) -> SoundId {
+        snd.playback_style = PlaybackStyle::Looped;
+        let id = self.inner.play(snd);
         self.sound_ids.push(id);
 
         id

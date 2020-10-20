@@ -13,7 +13,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 # Nightly
 miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
-quad-snd = { git = "https://github.com/Bombfuse/quad-snd", branch = "master" }
+quad-snd = { git = "https://github.com/not-fl3/quad-snd", branch = "master" }
 nanoserde = { git = "https://github.com/not-fl3/nanoserde", branch = "master" }
 hecs = { git = "https://github.com/Ralith/hecs", branch = "master", default-features = false }
 fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
