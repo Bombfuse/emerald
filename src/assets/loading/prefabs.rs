@@ -18,12 +18,15 @@ struct Vec2Prefab {
     pub y: f32,
 }
 
-pub fn deserialize_world_from_json(json: &String, loader: &mut AssetLoader) -> Result<EmeraldWorld, EmeraldError> {
+pub fn deserialize_world_from_json(
+    json: &String,
+    loader: &mut AssetLoader,
+) -> Result<EmeraldWorld, EmeraldError> {
     let mut new_world = EmeraldWorld::new();
     let world_prefab: WorldPrefab = DeJson::deserialize_json(json)?;
-    
+
     for entity_prefab in world_prefab.entities {
-        let entity = new_world.spawn((Position::new(0.0, 0.0), ));
+        let entity = new_world.spawn((Position::new(0.0, 0.0),));
 
         for component_prefab in entity_prefab {
             match component_prefab {
@@ -32,10 +35,10 @@ pub fn deserialize_world_from_json(json: &String, loader: &mut AssetLoader) -> R
                     let offset = Vector2::new(offset.x, offset.y);
                     sprite.offset = offset;
                     new_world.insert(entity.clone(), (sprite,))?;
-                },
+                }
                 ComponentPrefab::Position { x, y } => {
                     new_world.insert(entity.clone(), (Position::new(x, y),))?;
-                },
+                }
             }
         }
     }

@@ -1,4 +1,3 @@
-
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct SoundKey(String, SoundFormat);
 impl SoundKey {
@@ -10,5 +9,5 @@ impl SoundKey {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum SoundFormat {
     Ogg,
-    Wav
+    Wav,
 }

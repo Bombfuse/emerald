@@ -1,6 +1,6 @@
-use crate::*;
 use crate::rendering::shaders::*;
-use miniquad::{Bindings, FilterMode, Context, BufferType, Buffer};
+use crate::*;
+use miniquad::{Bindings, Buffer, BufferType, Context, FilterMode};
 
 use glam::Vec2;
 
@@ -27,7 +27,7 @@ impl Texture {
         ];
 
         let texture = miniquad::Texture::from_rgba8(ctx, 4, 4, &pixels);
-        
+
         Self::from_texture(&mut ctx, texture)
     }
 
@@ -43,7 +43,7 @@ impl Texture {
 
         Self::from_rgba8(ctx, width, height, &bytes)
     }
-    
+
     pub(crate) fn from_rgba8(
         mut ctx: &mut Context,
         width: u16,
@@ -55,7 +55,10 @@ impl Texture {
         Self::from_texture(&mut ctx, texture)
     }
 
-    pub(crate) fn from_texture(ctx: &mut miniquad::Context, texture: miniquad::Texture) -> Result<Self, EmeraldError> {
+    pub(crate) fn from_texture(
+        ctx: &mut miniquad::Context,
+        texture: miniquad::Texture,
+    ) -> Result<Self, EmeraldError> {
         #[rustfmt::skip]
         let vertices: [Vertex; 4] = [
             Vertex { position: Vec2::new(0.0, 0.0) },

@@ -1,5 +1,3 @@
-
-
 pub(crate) const DEFAULT_FONT_TEXTURE_PATH: &str = "ghosty_spooky_mister_mime_dude";
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]

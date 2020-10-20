@@ -1,4 +1,4 @@
-use nanoserde::{DeJson};
+use nanoserde::DeJson;
 
 #[derive(Clone, Copy, Debug, DeJson)]
 pub struct Rectangle {
@@ -9,7 +9,12 @@ pub struct Rectangle {
 }
 impl Rectangle {
     pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
-        Rectangle { x, y, width, height }
+        Rectangle {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 
     // Zeroed out rectangle. When a sprite uses a zeroed out rect, it draws the whole sprite.
@@ -18,6 +23,6 @@ impl Rectangle {
     }
 
     pub fn is_zero_sized(self) -> bool {
-        return self.width == 0.0 && self.height == 0.0
+        return self.width == 0.0 && self.height == 0.0;
     }
 }

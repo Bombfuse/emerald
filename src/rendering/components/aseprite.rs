@@ -1,7 +1,7 @@
-use crate::{EmeraldError, Rectangle, Vector2};
 use crate::rendering::*;
+use crate::{EmeraldError, Rectangle, Vector2};
 
-use nanoserde::{DeJson};
+use nanoserde::DeJson;
 
 use types::*;
 
@@ -23,12 +23,8 @@ impl Aseprite {
         let target = &frame.frame;
         let real_y = (sheet_size.h - target.y - target.h) as f32;
 
-        self.sprite.target = Rectangle::new(
-            target.x as f32,
-            real_y,
-            target.w as f32,
-            target.h as f32
-        );
+        self.sprite.target =
+            Rectangle::new(target.x as f32, real_y, target.w as f32, target.h as f32);
     }
 
     pub(crate) fn new(sprite: Sprite, animation_data: Vec<u8>) -> Result<Aseprite, EmeraldError> {
@@ -67,9 +63,7 @@ impl Aseprite {
         }
 
         // TODO(bombfuse): Requested animation couldn't be found
-        if self.current_tag.name != new_animation {
-
-        }
+        if self.current_tag.name != new_animation {}
 
         self.elapsed_time = 0.0;
         self.frame_counter = 0;
@@ -84,7 +78,7 @@ impl Aseprite {
 
         self.elapsed_time = 0.0;
         self.frame_counter = 0;
-        
+
         for tag in &self.data.meta.frame_tags {
             if tag.name == new_animation {
                 self.current_tag = tag.clone();
@@ -93,8 +87,12 @@ impl Aseprite {
         }
     }
 
-    pub fn set_offset(&mut self, offset: Vector2<f32>) { self.sprite.offset = offset }
-    pub fn set_z_index(&mut self, z: f32) { self.sprite.z_index = z }
+    pub fn set_offset(&mut self, offset: Vector2<f32>) {
+        self.sprite.offset = offset
+    }
+    pub fn set_z_index(&mut self, z: f32) {
+        self.sprite.z_index = z
+    }
 
     /// !!! WARNING !!!
     /// I have exposed this function to the user in case they choose to toy around with animation speed.
@@ -120,7 +118,7 @@ impl Aseprite {
 }
 
 pub mod types {
-    use nanoserde::{DeJson};
+    use nanoserde::DeJson;
 
     #[derive(Clone, Debug, DeJson)]
     pub struct AseRect {

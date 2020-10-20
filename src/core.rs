@@ -1,13 +1,13 @@
+mod components;
 mod emerald;
 mod engine;
-mod game_settings;
-mod game;
 mod error;
-mod components;
+mod game;
+mod game_settings;
 
 pub use components::*;
-pub use error::*;
 pub use emerald::*;
-pub use engine::{GameEngine};
-pub use game_settings::*;
+pub use engine::GameEngine;
+pub use error::*;
 pub use game::*;
+pub use game_settings::*;

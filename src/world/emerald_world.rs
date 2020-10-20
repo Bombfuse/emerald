@@ -1,5 +1,5 @@
-use crate::world::physics::*;
 use crate::rendering::components::Camera;
+use crate::world::physics::*;
 use crate::EmeraldError;
 
 use hecs::*;
@@ -25,7 +25,10 @@ impl EmeraldWorld {
             next_active_camera.is_active = true;
         }
 
-        Err(EmeraldError::new(format!("No camera found for entity {:?}", entity)))
+        Err(EmeraldError::new(format!(
+            "No camera found for entity {:?}",
+            entity
+        )))
     }
 
     // TODO(bombfuse): Load an ecs world and physics world into this one.
@@ -65,7 +68,9 @@ impl EmeraldWorld {
         self.inner.get::<T>(entity)
     }
 
-    pub fn reserve_entity(&self) -> Entity { self.inner.reserve_entity() }
+    pub fn reserve_entity(&self) -> Entity {
+        self.inner.reserve_entity()
+    }
 
     pub fn insert(
         &mut self,

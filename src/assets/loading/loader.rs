@@ -1,12 +1,12 @@
-use crate::*;
-use crate::rendering::*;
-use crate::audio::*;
 use crate::assets::*;
+use crate::audio::*;
+use crate::rendering::*;
+use crate::*;
 
-use std::fs::File;
 use std::ffi::OsStr;
-use std::path::PathBuf;
+use std::fs::File;
 use std::io::prelude::*;
+use std::path::PathBuf;
 
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
@@ -19,7 +19,7 @@ impl<'a> AssetLoader<'a> {
         quad_ctx: &'a mut miniquad::Context,
         rendering_engine: &'a mut RenderingEngine,
         audio_engine: &'a mut AudioEngine,
-        cache: &'a mut Cache
+        cache: &'a mut Cache,
     ) -> Self {
         AssetLoader {
             rendering_engine,
@@ -43,8 +43,11 @@ impl<'a> AssetLoader<'a> {
             if let Some(bytes) = self.cache.data.get(&path) {
                 return Ok(bytes.clone());
             }
-    
-            Err(EmeraldError::new(format!("Unable to get bytes for {}", path)))
+
+            Err(EmeraldError::new(format!(
+                "Unable to get bytes for {}",
+                path
+            )))
         }
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -62,7 +65,7 @@ impl<'a> AssetLoader<'a> {
             file.read_to_end(&mut bytes)?;
 
             self.cache.data.insert(String::from(path), bytes.clone());
-    
+
             Ok(bytes)
         }
     }
@@ -78,19 +81,24 @@ impl<'a> AssetLoader<'a> {
     /// TODO(bombfuse): Automatically load the spritesheet from the aseprite json file
     // fn aseprite() {}
 
-    pub fn aseprite_with_animations<T: Into<String>>(&mut self, path_to_texture: T, path_to_animations: T) -> Result<Aseprite, EmeraldError> {
+    pub fn aseprite_with_animations<T: Into<String>>(
+        &mut self,
+        path_to_texture: T,
+        path_to_animations: T,
+    ) -> Result<Aseprite, EmeraldError> {
         let texture_path: String = path_to_texture.into();
         let animation_path: String = path_to_animations.into();
-
 
         let texture_data = self.bytes(texture_path.clone())?;
         let aseprite_data = self.bytes(animation_path.clone())?;
 
-        self.rendering_engine.aseprite_with_animations(&mut self.quad_ctx,
+        self.rendering_engine.aseprite_with_animations(
+            &mut self.quad_ctx,
             texture_data,
             texture_path,
             aseprite_data,
-            animation_path)
+            animation_path,
+        )
     }
 
     pub fn sprite<T: Into<String>>(&mut self, path: T) -> Result<Sprite, EmeraldError> {
@@ -100,10 +108,10 @@ impl<'a> AssetLoader<'a> {
             Ok(sprite) => Ok(sprite),
             Err(_e) => {
                 let sprite_data = self.bytes(path.clone())?;
-                self.rendering_engine.sprite_from_data(&mut self.quad_ctx, sprite_data, path)
+                self.rendering_engine
+                    .sprite_from_data(&mut self.quad_ctx, sprite_data, path)
             }
         }
-
     }
 
     pub fn sound<T: Into<String>>(&mut self, path: T) -> Result<Sound, EmeraldError> {
@@ -113,7 +121,12 @@ impl<'a> AssetLoader<'a> {
         let sound_format = match file_path.extension().and_then(OsStr::to_str) {
             Some("wav") => SoundFormat::Wav,
             Some("ogg") => SoundFormat::Ogg,
-            _ => return Err(EmeraldError::new(format!("Unable to parse sound from {:?}", file_path))),
+            _ => {
+                return Err(EmeraldError::new(format!(
+                    "Unable to parse sound from {:?}",
+                    file_path
+                )))
+            }
         };
 
         let sound_data = self.bytes(path)?;
@@ -142,6 +155,9 @@ impl<'a> AssetLoader<'a> {
             return Ok(());
         }
 
-        Err(EmeraldError::new(format!("Unable to preload texture {}", name)))
+        Err(EmeraldError::new(format!(
+            "Unable to preload texture {}",
+            name
+        )))
     }
 }

@@ -1,11 +1,11 @@
-mod handler;
 mod engine;
-mod sound;
+mod handler;
 mod mixer;
+mod sound;
 
-pub use handler::*;
 pub(crate) use engine::*;
-pub use sound::*;
+pub use handler::*;
 pub use mixer::*;
+pub use sound::*;
 
 pub use quad_snd::mixer::{Sound, SoundId};

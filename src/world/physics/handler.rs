@@ -1,13 +1,13 @@
 use crate::physics::*;
-use crate::{Vector2, EmeraldError};
+use crate::{EmeraldError, Vector2};
 
-use rapier2d::geometry::{ColliderHandle, ColliderBuilder, Collider};
-use rapier2d::dynamics::{RigidBodyHandle, RigidBodyBuilder, RigidBody, RigidBodyMut};
+use rapier2d::dynamics::{RigidBody, RigidBodyBuilder, RigidBodyHandle, RigidBodyMut};
+use rapier2d::geometry::{Collider, ColliderBuilder, ColliderHandle};
 
-use hecs::{Entity};
+use hecs::Entity;
 
 pub struct PhysicsHandler<'a> {
-    physics_engine: &'a mut  PhysicsEngine,
+    physics_engine: &'a mut PhysicsEngine,
     world: &'a mut hecs::World,
 }
 impl<'a> PhysicsHandler<'a> {
@@ -18,11 +18,20 @@ impl<'a> PhysicsHandler<'a> {
         }
     }
 
-    pub fn build_body(&mut self, entity: Entity, desc: RigidBodyBuilder) -> Result<RigidBodyHandle, EmeraldError> {
-        self.physics_engine.build_body(entity, desc, &mut self.world)
+    pub fn build_body(
+        &mut self,
+        entity: Entity,
+        desc: RigidBodyBuilder,
+    ) -> Result<RigidBodyHandle, EmeraldError> {
+        self.physics_engine
+            .build_body(entity, desc, &mut self.world)
     }
 
-    pub fn build_collider(&mut self, body_handle: RigidBodyHandle, desc: ColliderBuilder) -> ColliderHandle {
+    pub fn build_collider(
+        &mut self,
+        body_handle: RigidBodyHandle,
+        desc: ColliderBuilder,
+    ) -> ColliderHandle {
         self.physics_engine.build_collider(body_handle, desc)
     }
 
@@ -62,14 +71,16 @@ impl<'a> PhysicsHandler<'a> {
     }
 
     pub fn step_n(&mut self, n: u32) {
-        self.physics_engine.sync_physics_world_to_game_world(&mut self.world);
-        
+        self.physics_engine
+            .sync_physics_world_to_game_world(&mut self.world);
+
         for _ in 0..n {
             self.physics_engine.step();
         }
 
-        self.physics_engine.sync_game_world_to_physics_world(&mut self.world);
-        
+        self.physics_engine
+            .sync_game_world_to_physics_world(&mut self.world);
+
         self.physics_engine.consume_contacts();
         self.physics_engine.consume_proximities();
     }

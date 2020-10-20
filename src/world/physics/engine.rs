@@ -1,10 +1,16 @@
 use crate::*;
 
+use rapier2d::dynamics::{
+    IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet,
+};
+use rapier2d::geometry::{
+    BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, ContactEvent, NarrowPhase, Proximity,
+    ProximityEvent,
+};
 use rapier2d::na::Isometry2;
-use rapier2d::dynamics::{JointSet, RigidBodyBuilder, RigidBodySet, RigidBodyHandle, IntegrationParameters};
-use rapier2d::geometry::{BroadPhase, NarrowPhase, ColliderBuilder, ColliderSet, ColliderHandle, ContactEvent, ProximityEvent, Proximity};
 use rapier2d::pipeline::{ChannelEventCollector, PhysicsPipeline};
 
+use crate::crossbeam;
 use hecs::{Entity, World};
 use std::collections::HashMap;
 
@@ -22,7 +28,6 @@ pub struct PhysicsEngine {
     pub(crate) contact_recv: crossbeam::channel::Receiver<ContactEvent>,
     pub(crate) proximity_recv: crossbeam::channel::Receiver<ProximityEvent>,
 
-
     entity_bodies: HashMap<Entity, RigidBodyHandle>,
     body_entities: HashMap<RigidBodyHandle, Entity>,
     entity_body_collisions: HashMap<Entity, Vec<Entity>>,
@@ -37,7 +42,7 @@ impl PhysicsEngine {
         let pipeline = PhysicsPipeline::new();
         let broad_phase = BroadPhase::new();
         let narrow_phase = NarrowPhase::new();
-        
+
         // Initialize the event collector.
         let (contact_send, contact_recv) = crossbeam::channel::unbounded();
         let (proximity_send, proximity_recv) = crossbeam::channel::unbounded();
@@ -85,38 +90,24 @@ impl PhysicsEngine {
         while let Ok(contact_event) = self.contact_recv.try_recv() {
             match contact_event {
                 ContactEvent::Started(h1, h2) => {
-                    if let (
-                        Some(collider_one),
-                        Some(collider_two)
-                    ) = (
-                        self.colliders.get(h1),
-                        self.colliders.get(h2)
-                    ) {
-                        if let (
-                            Some(entity_one),
-                            Some(entity_two)
-                        ) = (
+                    if let (Some(collider_one), Some(collider_two)) =
+                        (self.colliders.get(h1), self.colliders.get(h2))
+                    {
+                        if let (Some(entity_one), Some(entity_two)) = (
                             self.body_entities.get(&collider_one.parent()),
-                            self.body_entities.get(&collider_two.parent())
+                            self.body_entities.get(&collider_two.parent()),
                         ) {
                             started_contacts.push((*entity_one, *entity_two));
                         }
                     }
-                },
+                }
                 ContactEvent::Stopped(h1, h2) => {
-                    if let (
-                        Some(collider_one),
-                        Some(collider_two)
-                    ) = (
-                        self.colliders.get(h1),
-                        self.colliders.get(h2)
-                    ) {
-                        if let (
-                            Some(entity_one),
-                            Some(entity_two)
-                        ) = (
+                    if let (Some(collider_one), Some(collider_two)) =
+                        (self.colliders.get(h1), self.colliders.get(h2))
+                    {
+                        if let (Some(entity_one), Some(entity_two)) = (
                             self.body_entities.get(&collider_one.parent()),
-                            self.body_entities.get(&collider_two.parent())
+                            self.body_entities.get(&collider_two.parent()),
                         ) {
                             stopped_contacts.push((*entity_one, *entity_two));
                         }
@@ -135,33 +126,27 @@ impl PhysicsEngine {
     }
 
     #[inline]
-    pub (crate) fn consume_proximities(&mut self) {
+    pub(crate) fn consume_proximities(&mut self) {
         let mut intersections = Vec::new();
         let mut disjoints = Vec::new();
 
         while let Ok(proximity_event) = self.proximity_recv.try_recv() {
-            if let (
-                Some(collider_one),
-                Some(collider_two)
-            ) = (
+            if let (Some(collider_one), Some(collider_two)) = (
                 self.colliders.get(proximity_event.collider1),
-                self.colliders.get(proximity_event.collider2)
+                self.colliders.get(proximity_event.collider2),
             ) {
-                if let (
-                    Some(entity_one),
-                    Some(entity_two)
-                ) = (
+                if let (Some(entity_one), Some(entity_two)) = (
                     self.body_entities.get(&collider_one.parent()),
-                    self.body_entities.get(&collider_two.parent())
+                    self.body_entities.get(&collider_two.parent()),
                 ) {
                     match proximity_event.new_status {
                         Proximity::Intersecting => {
                             intersections.push((*entity_one, *entity_two));
-                        },
-                        Proximity::WithinMargin => {},
+                        }
+                        Proximity::WithinMargin => {}
                         Proximity::Disjoint => {
                             disjoints.push((*entity_one, *entity_two));
-                        },
+                        }
                     }
                 }
             }
@@ -178,10 +163,16 @@ impl PhysicsEngine {
 
     #[inline]
     fn add_sensor_intersection(&mut self, entity_one: Entity, entity_two: Entity) {
-        let entity_one_collisions = self.entity_sensor_collisions.entry(entity_one).or_insert(Vec::new());
+        let entity_one_collisions = self
+            .entity_sensor_collisions
+            .entry(entity_one)
+            .or_insert(Vec::new());
         entity_one_collisions.push(entity_two.clone());
-        
-        let entity_two_collisions = self.entity_sensor_collisions.entry(entity_two).or_insert(Vec::new());
+
+        let entity_two_collisions = self
+            .entity_sensor_collisions
+            .entry(entity_two)
+            .or_insert(Vec::new());
         entity_two_collisions.push(entity_one.clone());
     }
 
@@ -190,7 +181,7 @@ impl PhysicsEngine {
         if let Some(intersections) = self.entity_sensor_collisions.get_mut(&entity_one) {
             intersections.retain(|&x| x != entity_two);
         }
-        
+
         if let Some(intersections) = self.entity_sensor_collisions.get_mut(&entity_two) {
             intersections.retain(|&x| x != entity_one);
         }
@@ -198,10 +189,16 @@ impl PhysicsEngine {
 
     #[inline]
     fn add_body_contact(&mut self, entity_one: Entity, entity_two: Entity) {
-        let entity_one_collisions = self.entity_body_collisions.entry(entity_one).or_insert(Vec::new());
+        let entity_one_collisions = self
+            .entity_body_collisions
+            .entry(entity_one)
+            .or_insert(Vec::new());
         entity_one_collisions.push(entity_two.clone());
-        
-        let entity_two_collisions = self.entity_body_collisions.entry(entity_two).or_insert(Vec::new());
+
+        let entity_two_collisions = self
+            .entity_body_collisions
+            .entry(entity_two)
+            .or_insert(Vec::new());
         entity_two_collisions.push(entity_one.clone());
     }
 
@@ -210,7 +207,7 @@ impl PhysicsEngine {
         if let Some(intersections) = self.entity_body_collisions.get_mut(&entity_one) {
             intersections.retain(|&x| x != entity_two);
         }
-        
+
         if let Some(intersections) = self.entity_body_collisions.get_mut(&entity_two) {
             intersections.retain(|&x| x != entity_one);
         }
@@ -219,7 +216,7 @@ impl PhysicsEngine {
     #[inline]
     pub(crate) fn get_colliding_areas(&self, entity: Entity) -> Vec<Entity> {
         if let Some(colliding_areas) = self.entity_sensor_collisions.get(&entity) {
-            return colliding_areas.clone()
+            return colliding_areas.clone();
         }
 
         Vec::new()
@@ -228,7 +225,7 @@ impl PhysicsEngine {
     #[inline]
     pub(crate) fn get_colliding_bodies(&self, entity: Entity) -> Vec<Entity> {
         if let Some(colliding_bodies) = self.entity_body_collisions.get(&entity) {
-            return colliding_bodies.clone()
+            return colliding_bodies.clone();
         }
 
         Vec::new()
@@ -237,18 +234,25 @@ impl PhysicsEngine {
     /// Builds the described rigid body for the given entity.
     /// Fails if the entity does not have a position or if the handle is unable to be inserted into the ECS world.
     #[inline]
-    pub(crate) fn build_body(&mut self, entity: Entity, builder: RigidBodyBuilder, world: &mut World) -> Result<RigidBodyHandle, EmeraldError> {
+    pub(crate) fn build_body(
+        &mut self,
+        entity: Entity,
+        builder: RigidBodyBuilder,
+        world: &mut World,
+    ) -> Result<RigidBodyHandle, EmeraldError> {
         let handle: Result<RigidBodyHandle, EmeraldError> = {
             let position = match world.get::<Position>(entity.clone()) {
                 Ok(pos) => Ok(pos),
-                Err(_e) => Err(EmeraldError::new("Unable to build a body for an entity without a position"))
+                Err(_e) => Err(EmeraldError::new(
+                    "Unable to build a body for an entity without a position",
+                )),
             }?;
 
             let body = builder.translation(position.x, position.y).build();
             let handle = self.bodies.insert(body);
             self.entity_bodies.insert(entity.clone(), handle);
             self.body_entities.insert(handle, entity);
-            
+
             Ok(handle)
         };
         let handle = handle?;
@@ -257,16 +261,23 @@ impl PhysicsEngine {
             Ok(_) => Ok(handle),
             Err(_e) => {
                 self.remove_body(entity);
-                Err(EmeraldError::new("Unable to insert rigid body into entity."))
+                Err(EmeraldError::new(
+                    "Unable to insert rigid body into entity.",
+                ))
             }
         }
-
     }
 
     #[inline]
-    pub(crate) fn build_collider(&mut self, body_handle: RigidBodyHandle, builder: ColliderBuilder) -> ColliderHandle {
+    pub(crate) fn build_collider(
+        &mut self,
+        body_handle: RigidBodyHandle,
+        builder: ColliderBuilder,
+    ) -> ColliderHandle {
         let collider = builder.build();
-        let handle = self.colliders.insert(collider, body_handle, &mut self.bodies);
+        let handle = self
+            .colliders
+            .insert(collider, body_handle, &mut self.bodies);
 
         handle
     }
@@ -278,11 +289,10 @@ impl PhysicsEngine {
         if let Some(body_handle) = self.entity_bodies.get(&entity) {
             self.body_entities.remove(&body_handle);
 
-            if let Some(body) = self.bodies.remove(
-                *body_handle,
-                &mut self.colliders,
-                &mut self.joints
-            ) {
+            if let Some(body) =
+                self.bodies
+                    .remove(*body_handle, &mut self.colliders, &mut self.joints)
+            {
                 return Some(body);
             }
         }
@@ -292,10 +302,7 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn remove_collider(&mut self, collider_handle: ColliderHandle) -> Option<Collider> {
-        self.colliders.remove(
-            collider_handle,
-            &mut self.bodies,
-        )
+        self.colliders.remove(collider_handle, &mut self.bodies)
     }
 
     #[inline]
@@ -313,17 +320,28 @@ impl PhysicsEngine {
     }
 
     #[inline]
-    fn sync_entity_position_to_physics_position(&mut self, mut pos: &mut Position, body_handle: RigidBodyHandle) {
-        let trans = self.bodies.get_mut(body_handle).unwrap()
-            .position.translation;
+    fn sync_entity_position_to_physics_position(
+        &mut self,
+        mut pos: &mut Position,
+        body_handle: RigidBodyHandle,
+    ) {
+        let trans = self
+            .bodies
+            .get_mut(body_handle)
+            .unwrap()
+            .position
+            .translation;
 
         pos.x = trans.x;
         pos.y = trans.y;
     }
 
     #[inline]
-    fn sync_physics_position_to_entity_position(&mut self, pos: &Position, body_handle: RigidBodyHandle) {
-        self.bodies.get_mut(body_handle).unwrap()
-            .position = Isometry2::translation(pos.x, pos.y);
+    fn sync_physics_position_to_entity_position(
+        &mut self,
+        pos: &Position,
+        body_handle: RigidBodyHandle,
+    ) {
+        self.bodies.get_mut(body_handle).unwrap().position = Isometry2::translation(pos.x, pos.y);
     }
 }

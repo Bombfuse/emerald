@@ -1,6 +1,4 @@
-use quad_snd::{
-    mixer::{SoundMixer, Sound, Volume, PlaybackStyle},
-};
+use quad_snd::mixer::{PlaybackStyle, Sound, SoundMixer, Volume};
 
 use crate::audio::*;
 
@@ -17,7 +15,7 @@ impl Mixer {
             volume: 1.0,
         }
     }
-    
+
     pub fn play(&mut self, snd: Sound) -> SoundId {
         let id = self.inner.play(snd);
 
@@ -34,7 +32,9 @@ impl Mixer {
         id
     }
 
-    pub fn get_volume(&self) -> f32 { self.volume }
+    pub fn get_volume(&self) -> f32 {
+        self.volume
+    }
 
     pub fn set_volume(&mut self, volume: f32) {
         self.volume = volume;

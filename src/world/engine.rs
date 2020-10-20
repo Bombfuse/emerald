@@ -1,4 +1,4 @@
-use crate::world::{EmeraldWorld};
+use crate::world::EmeraldWorld;
 
 pub struct WorldEngine {
     world_stack: Vec<EmeraldWorld>,
@@ -10,9 +10,13 @@ impl WorldEngine {
         }
     }
 
-    pub(crate) fn pop(&mut self) -> Option<EmeraldWorld> { self.world_stack.pop() }
+    pub(crate) fn pop(&mut self) -> Option<EmeraldWorld> {
+        self.world_stack.pop()
+    }
 
-    pub(crate) fn push(&mut self, world: EmeraldWorld) { self.world_stack.push(world) }
+    pub(crate) fn push(&mut self, world: EmeraldWorld) {
+        self.world_stack.push(world)
+    }
 
     // pub(crate) fn world_ref(&self) -> &EmeraldWorld {
     //     if self.world_stack.len() == 0 {

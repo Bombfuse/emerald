@@ -5,7 +5,7 @@ pub fn main() {
     let mut render_settings = RenderSettings::default();
     render_settings.resolution = (320, 180);
     settings.render_settings = render_settings;
-    emerald::start(Box::new(MyGame { }), settings)
+    emerald::start(Box::new(MyGame {}), settings)
 }
 
 pub struct MyGame;
@@ -14,17 +14,19 @@ impl Game for MyGame {
         // Pack all game files into WASM binary
         #[cfg(target_arch = "wasm32")]
         {
-            emd.loader().pack_file(
+            emd.loader()
+                .pack_file(
                     "./examples/assets/bunny.png",
-                    include_bytes!("../assets/bunny.png").to_vec()
-                ).unwrap();
+                    include_bytes!("../assets/bunny.png").to_vec(),
+                )
+                .unwrap();
         }
 
         match emd.loader().sprite("./examples/assets/bunny.png") {
-            Ok(sprite) =>  {
+            Ok(sprite) => {
                 emd.world().spawn((sprite, Position::new(16.0, 16.0)));
             }
-            Err(e) => {},
+            Err(e) => {}
         };
     }
 }

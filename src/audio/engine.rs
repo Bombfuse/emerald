@@ -1,10 +1,10 @@
 use quad_snd::{
     decoder::{read_ogg, read_wav},
-    mixer::{Sound},
+    mixer::Sound,
 };
 
-use crate::{EmeraldError};
 use crate::audio::*;
+use crate::EmeraldError;
 
 use std::collections::HashMap;
 
@@ -18,7 +18,11 @@ impl AudioEngine {
         }
     }
 
-    pub(crate) fn load(&mut self, sound_bytes: Vec<u8>, sound_format: SoundFormat) -> Result<Sound, EmeraldError> {
+    pub(crate) fn load(
+        &mut self,
+        sound_bytes: Vec<u8>,
+        sound_format: SoundFormat,
+    ) -> Result<Sound, EmeraldError> {
         let sound = match sound_format {
             SoundFormat::Ogg => read_ogg(sound_bytes.as_slice()).unwrap(),
             SoundFormat::Wav => read_wav(sound_bytes.as_slice()).unwrap(),

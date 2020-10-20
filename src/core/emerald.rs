@@ -1,10 +1,10 @@
-use crate::world::*;
 use crate::assets::*;
-use crate::rendering::*;
+use crate::audio::*;
 use crate::input::*;
 use crate::logging::*;
-use crate::audio::*;
-use crate::{EmeraldError};
+use crate::rendering::*;
+use crate::world::*;
+use crate::EmeraldError;
 
 use hecs::Entity;
 
@@ -30,9 +30,8 @@ impl<'a> Emerald<'a> {
         world_engine: &'a mut WorldEngine,
         logging_engine: &'a mut LoggingEngine,
         rendering_engine: &'a mut RenderingEngine,
-        cache: &'a mut Cache
+        cache: &'a mut Cache,
     ) -> Self {
-
         Emerald {
             delta,
             fps,
@@ -52,7 +51,6 @@ impl<'a> Emerald<'a> {
         self.delta
     }
 
-
     /// Time since Epoch
     #[inline]
     pub fn now(&self) -> f64 {
@@ -69,24 +67,36 @@ impl<'a> Emerald<'a> {
         self.fps
     }
 
-    pub fn quit(&self) { self.quad_ctx.quit() }
+    pub fn quit(&self) {
+        self.quad_ctx.quit()
+    }
     // *****************************************
 
     /// Disable all cameras then set the camera on the given entity as active.
     /// Fails if the given entity does not exist, or does not have a camera.
     #[inline]
     pub fn make_active_camera(&mut self, entity: Entity) -> Result<(), EmeraldError> {
-        self.rendering_engine.make_active_camera(entity, self.world_engine.world())
+        self.rendering_engine
+            .make_active_camera(entity, self.world_engine.world())
     }
 
     pub fn graphics(&mut self) -> GraphicsHandler {
-        GraphicsHandler::new(&mut self.quad_ctx, &mut self.rendering_engine, self.world_engine)
+        GraphicsHandler::new(
+            &mut self.quad_ctx,
+            &mut self.rendering_engine,
+            self.world_engine,
+        )
     }
 
     // ************* Asset API ************* //
     #[inline]
     pub fn loader(&mut self) -> AssetLoader {
-        AssetLoader::new(&mut self.quad_ctx, &mut self.rendering_engine, &mut self.audio_engine, &mut self.cache)
+        AssetLoader::new(
+            &mut self.quad_ctx,
+            &mut self.rendering_engine,
+            &mut self.audio_engine,
+            &mut self.cache,
+        )
     }
     // ************************************* //
 

@@ -1,5 +1,5 @@
-use miniquad::*;
 use glam::{Mat4, Vec2, Vec4};
+use miniquad::*;
 
 #[repr(C)]
 pub struct Vertex {
@@ -77,7 +77,12 @@ pub fn meta() -> ShaderMeta {
 }
 
 // Credit(https://github.com/not-fl3/good-web-game/blob/master/src/graphics/image.rs#L129)
-pub(crate) fn param_to_instance_transform(rotation: f32, scale: Vec2, offset: Vec2, dest: Vec2) -> Mat4 {
+pub(crate) fn param_to_instance_transform(
+    rotation: f32,
+    scale: Vec2,
+    offset: Vec2,
+    dest: Vec2,
+) -> Mat4 {
     let cosr = rotation.cos();
     let sinr = rotation.sin();
     let m00 = cosr * scale.x();

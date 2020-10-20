@@ -1,37 +1,38 @@
+mod assets;
+mod audio;
 mod colors;
 mod core;
-mod rendering;
 mod input;
-mod world;
-mod types;
-mod assets;
 mod logging;
-mod audio;
+mod rendering;
+mod types;
+mod world;
 
 pub use crate::assets::*;
-pub use crate::core::*;
-pub use crate::rendering::*;
-pub use crate::input::*;
-pub use crate::world::*;
-pub use crate::world::physics::*;
-pub use crate::types::*;
 pub use crate::colors::*;
-pub use logging::*;
+pub use crate::core::*;
+pub use crate::input::*;
+pub use crate::rendering::*;
+pub use crate::types::*;
+pub use crate::world::physics::*;
+pub use crate::world::*;
 pub use audio::*;
+pub use logging::*;
 
 // physics/math/collision re-exports
-pub use rapier2d::dynamics::{RigidBodyBuilder, RigidBodyHandle, RigidBody};
-pub use rapier2d::geometry::{ColliderBuilder, ColliderHandle, Collider};
+pub use rapier2d::dynamics::{RigidBody, RigidBodyBuilder, RigidBodyHandle};
+pub use rapier2d::geometry::{Collider, ColliderBuilder, ColliderHandle};
 pub use rapier2d::na::Vector2;
 //
 
 // General re-exports for compatibility
-pub use nanoserde;
-pub use rapier2d;
 pub use hecs;
+pub use nanoserde;
 pub use quad_rand as random;
-pub use rapier2d::na as nalgebra;
 pub use quad_rand as rand;
+pub use rapier2d;
+pub use rapier2d::crossbeam;
+pub use rapier2d::na as nalgebra;
 
 pub use hecs::*;
 

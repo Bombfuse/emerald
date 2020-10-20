@@ -4,20 +4,17 @@ pub(crate) enum Log {
     Error(String),
 }
 
-
 pub struct LoggingEngine {
     logs: Vec<Log>,
 }
 impl LoggingEngine {
     pub(crate) fn new() -> Self {
-        LoggingEngine {
-            logs: Vec::new(),
-        }
+        LoggingEngine { logs: Vec::new() }
     }
 
     pub fn update(&mut self) {
         for log in &self.logs {
-            #[cfg(not(target_arch="wasm32"))]
+            #[cfg(not(target_arch = "wasm32"))]
             {
                 match log {
                     Log::Info(msg) => println!("{}", msg),
@@ -36,19 +33,19 @@ impl LoggingEngine {
 
     pub fn info<T: Into<String>>(&mut self, msg: T) {
         let log = Log::Info(msg.into());
-        
+
         self.log(log);
     }
 
     pub fn warning<T: Into<String>>(&mut self, msg: T) {
         let log = Log::Warning(msg.into());
-        
+
         self.log(log);
     }
 
     pub fn error<T: Into<String>>(&mut self, msg: T) {
         let log = Log::Error(msg.into());
-        
+
         self.log(log);
     }
 }

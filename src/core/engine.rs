@@ -1,10 +1,10 @@
-use crate::core::*;
-use crate::rendering::*;
-use crate::input::*;
-use crate::world::*;
-use crate::logging::*;
-use crate::audio::*;
 use crate::assets::*;
+use crate::audio::*;
+use crate::core::*;
+use crate::input::*;
+use crate::logging::*;
+use crate::rendering::*;
+use crate::world::*;
 
 use miniquad::*;
 use std::collections::VecDeque;
@@ -48,7 +48,7 @@ impl GameEngine {
             &mut world_engine,
             &mut logging_engine,
             &mut rendering_engine,
-            &mut cache
+            &mut cache,
         );
 
         game.initialize(emd);
@@ -73,7 +73,7 @@ impl GameEngine {
     pub fn get_fps(&self) -> f64 {
         1.0 / (self.fps_tracker.iter().sum::<f64>() / self.fps_tracker.len() as f64)
     }
-    
+
     #[inline]
     fn update_fps_tracker(&mut self, delta: f64) {
         self.fps_tracker.pop_front();
@@ -88,7 +88,7 @@ impl EventHandler for GameEngine {
         self.last_instant = start_of_frame;
 
         self.update_fps_tracker(delta);
-        
+
         let emd = Emerald::new(
             delta,
             self.get_fps(),
@@ -98,18 +98,25 @@ impl EventHandler for GameEngine {
             &mut self.world_engine,
             &mut self.logging_engine,
             &mut self.rendering_engine,
-            &mut self.cache
+            &mut self.cache,
         );
 
         self.game.update(emd);
-        self.rendering_engine.update(delta, &mut self.world_engine.world().inner);
+        self.rendering_engine
+            .update(delta, &mut self.world_engine.world().inner);
         self.audio_engine.frame();
         self.logging_engine.update();
         self.input_engine.rollover();
     }
 
     #[inline]
-    fn key_down_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _keymods: KeyMods, repeat: bool) {
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: KeyCode,
+        _keymods: KeyMods,
+        repeat: bool,
+    ) {
         self.input_engine.set_key_down(keycode, repeat);
     }
 
@@ -122,7 +129,7 @@ impl EventHandler for GameEngine {
     fn draw(&mut self, mut ctx: &mut Context) {
         let start_of_frame = miniquad::date::now();
         let delta = start_of_frame - self.last_instant;
-        
+
         let emd = Emerald::new(
             delta,
             self.get_fps(),
@@ -132,7 +139,7 @@ impl EventHandler for GameEngine {
             &mut self.world_engine,
             &mut self.logging_engine,
             &mut self.rendering_engine,
-            &mut self.cache
+            &mut self.cache,
         );
 
         self.game.draw(emd);
