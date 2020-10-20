@@ -85,11 +85,18 @@ fn draw(&mut self, mut emd: Emerald) {
 }
 ```
 
+## Audio
+```rust
+let my_sound = emd.loader().sound("./assets/sounds/my_song.ogg")?;
+
+emd.audio().mixer("background_music")?.play_and_loop(my_sound);
+```
+
 ## ECS
 
 Emerald uses the [Entity Component System](https://en.wikipedia.org/wiki/Entity_component_system) paradigm for creating, managing, and updating game entities.
 
-Emerald uses [Hecs](https://github.com/Ralith/hecs) under the hood for extremely fast entity iteration, and a remarkably clean query Api.
+Emerald uses [Hecs](https://github.com/Ralith/hecs) under the hood for  fast entity iteration, and a remarkably clean query Api.
 
 More detailed features can be found in the [Hecs documentation](https://docs.rs/hecs/).
 
