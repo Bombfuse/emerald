@@ -1,11 +1,20 @@
 use emerald::*;
 
+const RES_WIDTH: f32 = 640.0;
+const RES_HEIGHT: f32 = 480.0;
+
 pub fn main() {
     let mut settings = GameSettings::default();
     let mut render_settings = RenderSettings::default();
-    render_settings.resolution = (320, 180);
+    render_settings.resolution = (RES_WIDTH as u32, RES_HEIGHT as u32);
     settings.render_settings = render_settings;
-    emerald::start(Box::new(MyGame { elapsed_time: 0.0 }), settings)
+    emerald::start(
+        Box::new(MyGame {
+            elapsed_time_cube: 0.0,
+            elapsed_time_round: 0.0,
+        }),
+        settings,
+    )
 }
 
 #[derive(Clone, Debug)]
@@ -15,26 +24,40 @@ pub struct Velocity {
 }
 
 pub struct MyGame {
-    elapsed_time: f32,
+    elapsed_time_cube: f32,
+    elapsed_time_round: f32,
 }
 impl MyGame {
-    fn spawn_bunny(&mut self, position: Position, mut emd: &mut Emerald) {
+    fn spawn_bunny_cube(&mut self, position: Position, mut emd: &mut Emerald) {
+        self.spawn_bunny(position, emd, ColliderBuilder::cuboid(4.0, 4.0), Velocity { dx: 75.0, dy: 50.0 });
+    }
+
+    fn spawn_bunny_round(&mut self, position: Position, mut emd: &mut Emerald) {
+        self.spawn_bunny(position, emd, ColliderBuilder::ball(4.0), Velocity { dx: -75.0, dy: 50.0 });
+    }
+
+    fn spawn_bunny(
+        &mut self,
+        position: Position,
+        mut emd: &mut Emerald,
+        collider_builder: ColliderBuilder,
+        velocity: Velocity,
+    ) {
         let sprite = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
-        let entity = emd.world().spawn((sprite, position, Velocity { dx: 75.0, dy: 50.0 }));
+        let entity = emd
+            .world()
+            .spawn((sprite, position));
         let body = emd
             .world()
             .physics()
             .build_body(
                 entity,
                 RigidBodyBuilder::new_dynamic()
-                    .linvel(50.0, 50.0) // Fling it up and to the right
+                    .linvel(velocity.dx, velocity.dy) // Fling it up and to the right
                     .can_sleep(false),
             )
             .unwrap();
-        let collider = emd
-            .world()
-            .physics()
-            .build_collider(body, ColliderBuilder::cuboid(4.0, 4.0));
+        let collider = emd.world().physics().build_collider(body, collider_builder);
     }
 }
 impl Game for MyGame {
@@ -51,10 +74,16 @@ impl Game for MyGame {
         }
 
         let borders = vec![
-            (Position::new(0.0, 90.0), (160.0, 3.0)),
-            (Position::new(0.0, -90.0), (160.0, 3.0)),
-            (Position::new(160.0, 0.0), (3.0, 90.0)),
-            (Position::new(-160.0, 0.0), (3.0, 90.0)),
+            (
+                Position::new(0.0, RES_HEIGHT / -2.0),
+                (RES_WIDTH / 2.0, 3.0),
+            ),
+            (Position::new(0.0, RES_HEIGHT / 2.0), (RES_WIDTH / 2.0, 3.0)),
+            (Position::new(RES_WIDTH / 2.0, 0.0), (3.0, RES_HEIGHT / 2.0)),
+            (
+                Position::new(RES_WIDTH / -2.0, 0.0),
+                (3.0, RES_HEIGHT / 2.0),
+            ),
         ];
 
         for border in borders {
@@ -71,17 +100,23 @@ impl Game for MyGame {
             );
         }
         emd.world().physics().set_gravity(Vector2::new(0.0, -98.0));
-        
-        self.spawn_bunny(Position::new(0.0, 0.0), &mut emd);
+
+        self.spawn_bunny_cube(Position::new(0.0, 0.0), &mut emd);
     }
 
     fn update(&mut self, mut emd: Emerald) {
         let start = emd.now();
-        self.elapsed_time += emd.delta() as f32;
+        self.elapsed_time_cube += emd.delta() as f32;
+        self.elapsed_time_round += emd.delta() as f32;
 
-        if self.elapsed_time > 0.5 {
-            self.elapsed_time = 0.0;
-            self.spawn_bunny(Position::new(0.0, 0.0), &mut emd);
+        if self.elapsed_time_cube > 0.3 {
+            self.elapsed_time_cube = 0.0;
+            self.spawn_bunny_cube(Position::new(0.0, 0.0), &mut emd);
+        }
+
+        if self.elapsed_time_round > 0.1 {
+            self.elapsed_time_round = 0.0;
+            self.spawn_bunny_round(Position::new(0.0, 0.0), &mut emd);
         }
 
         emd.world().physics().step();
@@ -94,7 +129,7 @@ impl Game for MyGame {
     fn draw(&mut self, mut emd: Emerald) {
         emd.graphics().begin();
         emd.graphics().draw_world();
-        emd.graphics().draw_colliders(Color::new(255, 0, 0, 130));
+        // emd.graphics().draw_colliders(Color::new(255, 0, 0, 130));
         emd.graphics().render();
     }
 }

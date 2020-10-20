@@ -224,7 +224,6 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn get_colliding_bodies(&self, entity: Entity) -> Vec<Entity> {
-
         if let Some(colliding_bodies) = self.entity_body_collisions.get(&entity) {
             return colliding_bodies.clone();
         }
