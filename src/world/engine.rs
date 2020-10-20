@@ -18,13 +18,14 @@ impl WorldEngine {
         self.world_stack.push(world)
     }
 
-    // pub(crate) fn world_ref(&self) -> &EmeraldWorld {
-    //     if self.world_stack.len() == 0 {
-    //         panic!("There are no worlds available to process.");
-    //     }
+    pub(crate) fn world_ref(&self) -> &EmeraldWorld {
+        if self.world_stack.len() == 0 {
+            panic!("There are no worlds available to process.");
+        }
 
-    //     &self.world_stack[self.world_stack.len() - 1]
-    // }
+        let i = self.world_stack.len() - 1;
+        self.world_stack.get(i).unwrap()
+    }
 
     pub(crate) fn world(&mut self) -> &mut EmeraldWorld {
         if self.world_stack.len() == 0 {

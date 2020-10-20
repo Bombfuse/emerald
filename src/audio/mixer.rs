@@ -18,7 +18,6 @@ impl Mixer {
 
     pub fn play(&mut self, snd: Sound) -> SoundId {
         let id = self.inner.play(snd);
-
         self.sound_ids.push(id);
 
         id
@@ -47,7 +46,6 @@ impl Mixer {
 
     pub fn clear(&mut self) {
         let ids = self.sound_ids.clone();
-
         for id in ids {
             self.stop(id);
         }

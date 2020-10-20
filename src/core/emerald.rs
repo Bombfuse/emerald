@@ -129,6 +129,11 @@ impl<'a> Emerald<'a> {
     }
 
     #[inline]
+    pub fn world_ref(&self) -> &EmeraldWorld {
+        self.world_engine.world_ref()
+    }
+
+    #[inline]
     pub fn pop_world(&mut self) -> Option<EmeraldWorld> {
         self.world_engine.pop()
     }

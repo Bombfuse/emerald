@@ -27,14 +27,14 @@ pub use rapier2d::na::Vector2;
 
 // General re-exports for compatibility
 pub use hecs;
+pub use hecs::*;
+
 pub use nanoserde;
 pub use quad_rand as random;
 pub use quad_rand as rand;
 pub use rapier2d;
 pub use rapier2d::crossbeam;
 pub use rapier2d::na as nalgebra;
-
-pub use hecs::*;
 
 use miniquad::{conf, UserData};
 

@@ -3,6 +3,7 @@ use crate::world::physics::*;
 use crate::EmeraldError;
 
 use hecs::*;
+use rapier2d::dynamics::*;
 
 pub struct EmeraldWorld {
     pub(crate) physics_engine: PhysicsEngine,
@@ -39,6 +40,18 @@ impl EmeraldWorld {
     pub fn spawn(&mut self, components: impl DynamicBundle) -> Entity {
         self.inner.spawn(components)
     }
+
+    pub fn spawn_with_body(
+        &mut self,
+        components: impl DynamicBundle,
+        body_builder: RigidBodyBuilder,
+    ) -> Result<(Entity, RigidBodyHandle), EmeraldError> {
+        let entity = self.spawn(components);
+        let rbh = self.physics().build_body(entity.clone(), body_builder)?;
+
+        Ok((entity, rbh))
+    }
+
     pub fn spawn_batch<I>(&mut self, iter: I) -> SpawnBatchIter<'_, I::IntoIter>
     where
         I: IntoIterator,
