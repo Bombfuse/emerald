@@ -10,7 +10,7 @@ impl Color {
         Color { r, g, b, a }
     }
 
-    pub fn percentage(&self) -> (f32, f32, f32, f32) {
+    pub fn to_percentage(&self) -> (f32, f32, f32, f32) {
         let r = self.r as f32 / 255.0;
         let g = self.g as f32 / 255.0;
         let b = self.b as f32 / 255.0;

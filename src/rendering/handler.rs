@@ -19,6 +19,10 @@ impl<'a> GraphicsHandler<'a> {
         }
     }
 
+    pub fn set_resolution(&mut self, width: u32, height: u32) {
+        self.rendering_engine.settings.resolution = (width, height);
+    }
+
     pub fn draw_world(&mut self) {
         self.rendering_engine
             .draw_world(&mut self.quad_ctx, self.world_engine.world())
@@ -34,6 +38,11 @@ impl<'a> GraphicsHandler<'a> {
             .draw_sprite(&mut self.quad_ctx, sprite, pos)
     }
 
+    pub fn draw_label(&mut self, label: &Label, pos: &Position) {
+        self.rendering_engine
+            .draw_label(&mut self.quad_ctx, label, pos)
+    }
+
     pub fn draw_color_rect(&mut self, color_rect: &ColorRect, pos: &Position) {
         self.rendering_engine
             .draw_color_rect(&mut self.quad_ctx, color_rect, pos)
@@ -44,8 +53,8 @@ impl<'a> GraphicsHandler<'a> {
         self.rendering_engine.begin(&mut self.quad_ctx);
     }
 
-    /// Render to a texture target this pass
-    pub fn begin_texture(&mut self) {
+    /// Render to a sprite this pass
+    pub fn begin_sprite(&mut self) {
         self.rendering_engine.begin_texture(&mut self.quad_ctx)
     }
 

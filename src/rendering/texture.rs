@@ -1,5 +1,6 @@
-use crate::rendering::shaders::*;
 use crate::*;
+use crate::rendering::shaders::*;
+use crate::rendering::font::*;
 use miniquad::{Bindings, Buffer, BufferType, Context, FilterMode};
 
 use glam::Vec2;
@@ -83,6 +84,13 @@ impl Texture {
             bindings,
             filter: FilterMode::Nearest,
         })
+    }
+
+    pub(crate) fn update(&mut self, ctx: &mut miniquad::Context, font_image: &FontImage) {
+        assert_eq!(self.inner.width, font_image.width as u32);
+        assert_eq!(self.inner.height, font_image.height as u32);
+
+        self.inner.update(ctx, &font_image.bytes);
     }
 }
 

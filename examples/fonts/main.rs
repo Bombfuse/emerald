@@ -11,7 +11,7 @@ impl Game for FontsExample {
             .loader()
             .font("./examples/assets/Roboto-Light.ttf")
             .unwrap();
-        let label = emd.loader().label("Emerald Game Engine", font).unwrap();
+        let label = Label::new("Emerald Game Engine", font);
         let position = Position::new(100.0, 100.0);
 
         emd.world().spawn((position, label));

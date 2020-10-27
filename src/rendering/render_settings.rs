@@ -4,6 +4,7 @@ use crate::*;
 pub enum ScreenScalar {
     None,
     Keep,
+    Stretch,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -12,6 +13,7 @@ pub struct RenderSettings {
     pub fullscreen: bool,
     pub resolution: (u32, u32),
     pub scalar: ScreenScalar,
+    pub high_dpi: bool,
 }
 impl Default for RenderSettings {
     fn default() -> RenderSettings {
@@ -19,7 +21,8 @@ impl Default for RenderSettings {
             background_color: CORNFLOWER_BLUE,
             fullscreen: false,
             resolution: (800, 600),
-            scalar: ScreenScalar::Keep,
+            scalar: ScreenScalar::Stretch,
+            high_dpi: false,
         }
     }
 }

@@ -7,7 +7,7 @@
 
 Emerald is designed to be as lightweight as possible, while remaining a fully-featured and cross-platform game engine.
 
-The Api is simple and powerful, giving you direct access to physics, audio, graphics, game worlds, and asset loading.
+The api is simple and powerful, giving you direct access to physics, audio, graphics, game worlds, and asset loading.
 
 ## Supported Platforms
 <div>
@@ -48,16 +48,22 @@ let my_audio = emd.loader()
 
     let body_handle = emd.world().physics().build_body(
         entity,
-        RigidBodyDesc::dynamic()
+        RigidBodyBuilder::dynamic()
     );
+
 
     emd.world().physics().build_collider(
         body_handle,
         ColliderDesc::cuboid(6.0, 6.0)
     );
-```
 
-Physics bodies are tied directly to entities, this is so that bodies can be cleaned up automatically when entities are despawned.
+    // You can alternatively build both the entity and body at once.
+    let (entity, body_handle) = emd.world()
+        .spawn_with_body(
+            (Position::new(0.0, 0.0)),
+            RigidBodyBuilder::dynamic()
+        )?;
+```
 
 ### Physics Stepping
 
@@ -155,12 +161,13 @@ fn initialize(&mut self, mut emd: Emerald) {
     /// We can now load texture/sprites via the normal Api,
     /// regardless of which platform we're targeting.
     let sprite = emd.loader()
-        .sprite("./assets/bunny.png").unwrap();
+        .sprite("./assets/bunny.png")
+        .unwrap();
     
     let mut position = Position::new(0.0, 0.0);
 
     self.count = 1000;
-    emd.world().inner().extend(
+    emd.world().spawn_batch(
         (0..1000).map(|_| {
             position.x += 6.0;
             position.y += 1.0;

@@ -284,14 +284,12 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn remove_body(&mut self, entity: Entity) -> Option<RigidBody> {
-        self.entity_bodies.remove(&entity);
-
-        if let Some(body_handle) = self.entity_bodies.get(&entity) {
+        if let Some(body_handle) = self.entity_bodies.remove(&entity) {
             self.body_entities.remove(&body_handle);
 
             if let Some(body) =
                 self.bodies
-                    .remove(*body_handle, &mut self.colliders, &mut self.joints)
+                    .remove(body_handle, &mut self.colliders, &mut self.joints)
             {
                 return Some(body);
             }
@@ -325,15 +323,11 @@ impl PhysicsEngine {
         mut pos: &mut Position,
         body_handle: RigidBodyHandle,
     ) {
-        let trans = self
-            .bodies
-            .get_mut(body_handle)
-            .unwrap()
-            .position
-            .translation;
-
-        pos.x = trans.x;
-        pos.y = trans.y;
+        if let Some(transform) = self.bodies.get(body_handle) {
+            let translation = transform.position.translation;
+            pos.x = translation.x;
+            pos.y = translation.y;
+        }
     }
 
     #[inline]
@@ -342,6 +336,8 @@ impl PhysicsEngine {
         pos: &Position,
         body_handle: RigidBodyHandle,
     ) {
-        self.bodies.get_mut(body_handle).unwrap().position = Isometry2::translation(pos.x, pos.y);
+        if let Some(mut body) = self.bodies.get_mut(body_handle) {
+            body.position = Isometry2::translation(pos.x, pos.y);
+        }
     }
 }

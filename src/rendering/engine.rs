@@ -9,9 +9,10 @@ use miniquad::*;
 use std::collections::HashMap;
 
 pub struct RenderingEngine {
-    settings: RenderSettings,
+    pub(crate) settings: RenderSettings,
     pipeline: Pipeline,
-    textures: HashMap<TextureKey, Texture>,
+    pub(crate) textures: HashMap<TextureKey, Texture>,
+    pub(crate) fonts: HashMap<FontKey, Font>,
     render_target: Option<miniquad::Texture>,
 }
 impl RenderingEngine {
@@ -39,14 +40,17 @@ impl RenderingEngine {
             params,
         );
 
-        let mut textures: HashMap<TextureKey, Texture> = HashMap::new();
+        let mut textures = HashMap::new();
         let default_texture = Texture::default(&mut ctx).unwrap();
         textures.insert(TextureKey::default(), default_texture);
+
+        let mut fonts = HashMap::new();
 
         RenderingEngine {
             settings,
             pipeline,
             textures,
+            fonts,
             render_target: None,
         }
     }
@@ -175,7 +179,7 @@ impl RenderingEngine {
     pub(crate) fn begin(&mut self, ctx: &mut Context) {
         ctx.begin_default_pass(Default::default());
         ctx.clear(
-            Some(self.settings.background_color.percentage()),
+            Some(self.settings.background_color.to_percentage()),
             None,
             None,
         );
@@ -185,7 +189,7 @@ impl RenderingEngine {
     #[inline]
     pub(crate) fn begin_texture(&mut self, ctx: &mut Context) {
         ctx.clear(
-            Some(self.settings.background_color.percentage()),
+            Some(self.settings.background_color.to_percentage()),
             None,
             None,
         );
@@ -220,6 +224,15 @@ impl RenderingEngine {
         Err(EmeraldError::new(
             "No texture found. Did you begin this rendering pass with 'begin_texture()`?",
         ))
+    }
+
+    pub(crate) fn draw_label(
+        &mut self,
+        mut ctx: &mut Context,
+        label: &Label,
+        position: &Position,
+    ) {
+        
     }
 
     #[inline]
@@ -329,16 +342,28 @@ impl RenderingEngine {
         let mut uniforms = Uniforms::default();
 
         let projection = match self.settings.scalar {
-            ScreenScalar::Keep => Mat4::orthographic_rh_gl(
-                0.0,
-                self.settings.resolution.0 as f32,
-                0.0,
-                self.settings.resolution.1 as f32,
-                -1.0,
-                1.0,
-            ),
+            ScreenScalar::Stretch => {
+                Mat4::orthographic_rh_gl(
+                    0.0,
+                    self.settings.resolution.0 as f32,
+                    0.0,
+                    self.settings.resolution.1 as f32,
+                    -1.0,
+                    1.0,
+                )
+            },
             ScreenScalar::None => {
                 Mat4::orthographic_rh_gl(0.0, view_size.0, 0.0, view_size.1, -1.0, 1.0)
+            },
+            ScreenScalar::Keep => {
+                Mat4::orthographic_rh_gl(
+                    0.0,
+                    self.settings.resolution.0 as f32,
+                    0.0,
+                    self.settings.resolution.1 as f32,
+                    -1.0,
+                    1.0,
+                )
             }
         };
 
@@ -346,7 +371,7 @@ impl RenderingEngine {
         uniforms.model =
             crate::rendering::param_to_instance_transform(rotation, scale, offset, position);
 
-        let color = color.percentage();
+        let color = color.to_percentage();
 
         uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
         uniforms.color = Vec4::new(color.0, color.1, color.2, color.3);
@@ -402,6 +427,17 @@ impl RenderingEngine {
                 path
             )));
         }
+
+        Ok(key)
+    }
+
+    #[inline]
+    pub fn font<T: Into<String>>(&mut self, ctx: &mut Context, path: T, font_data: Vec<u8>) -> Result<FontKey, EmeraldError> {
+        let font_path: String = path.into();
+        let key = FontKey::new(font_path.clone());
+        let font = Font::from_bytes(ctx, font_data.as_slice())?;
+        self.fonts.insert(key.clone(), font);
+        self.populate_font_cache(ctx, &key, &ascii_character_list(), 24)?;
 
         Ok(key)
     }
@@ -467,13 +503,29 @@ impl RenderingEngine {
     #[inline]
     fn get_screen_size(&self, ctx: &Context) -> (f32, f32) {
         match self.settings.scalar {
-            ScreenScalar::Keep => (
+            ScreenScalar::None => ctx.screen_size(),
+            _ => (
                 self.settings.resolution.0 as f32,
                 self.settings.resolution.1 as f32,
             ),
-            ScreenScalar::None => ctx.screen_size(),
         }
     }
+
+    #[inline]
+    pub fn populate_font_cache(&mut self, ctx: &mut Context, key: &FontKey, characters: &[char], size: u16) -> Result<(), EmeraldError> {
+        if let Some(font) = self.fonts.get_mut(key) {
+            for character in characters {
+                font.cache_glyph(ctx, *character, size)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[inline]
+pub fn ascii_character_list() -> Vec<char> {
+    (0..255).filter_map(::std::char::from_u32).collect()
 }
 
 #[inline]
