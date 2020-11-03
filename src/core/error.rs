@@ -2,7 +2,7 @@ use crate::*;
 
 #[derive(Debug, Clone)]
 pub struct EmeraldError {
-    message: String,
+    pub message: String,
 }
 impl EmeraldError {
     pub fn new<T: Into<String>>(msg: T) -> Self {

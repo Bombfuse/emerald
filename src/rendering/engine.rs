@@ -44,7 +44,7 @@ impl RenderingEngine {
         let default_texture = Texture::default(&mut ctx).unwrap();
         textures.insert(TextureKey::default(), default_texture);
 
-        let mut fonts = HashMap::new();
+        let fonts = HashMap::new();
 
         RenderingEngine {
             settings,
@@ -111,6 +111,18 @@ impl RenderingEngine {
             });
         }
 
+        for (_, (label, position)) in world.query::<(&Label, &Position)>().iter() {
+            let drawable = Drawable::Label {
+                label: label.clone(),
+            };
+
+            draw_queue.push(DrawCommand {
+                drawable,
+                position: position.clone(),
+                z_index: label.z_index,
+            })
+        }
+
         draw_queue.sort_by(|a, b| a.z_index.partial_cmp(&b.z_index).unwrap());
 
         for draw_command in draw_queue {
@@ -129,6 +141,7 @@ impl RenderingEngine {
                 Drawable::ColorRect { color_rect } => {
                     self.draw_color_rect(&mut ctx, &color_rect, &position)
                 }
+                Drawable::Label { label } => self.draw_label(&mut ctx, &label, &position),
             }
         }
 
@@ -226,13 +239,87 @@ impl RenderingEngine {
         ))
     }
 
-    pub(crate) fn draw_label(
-        &mut self,
-        mut ctx: &mut Context,
-        label: &Label,
-        position: &Position,
-    ) {
-        
+    pub(crate) fn draw_label(&mut self, mut ctx: &mut Context, label: &Label, position: &Position) {
+        let mut width = 512;
+        let mut height = 512;
+        let mut color_rect = ColorRect::default();
+        color_rect.width = width;
+        color_rect.height = height;
+
+        self.draw_color_rect(&mut ctx, &color_rect, &position);
+
+        if let Some(font) = self.fonts.get_mut(&label.font_key) {
+            // println!("{:?}", (font.font_texture.width, font.font_texture.height));
+            let mut offset = label.offset.clone();
+
+            if label.centered {
+                offset.x -= font.font_texture.width as f32 / 2.0;
+                offset.y -= font.font_texture.height as f32 / 2.0;
+            }
+
+            let real_position = Vec2::new(position.x + offset.x, position.y - offset.y);
+            let real_scale = Vec2::new(
+                font.font_texture.width as f32,
+                font.font_texture.height as f32 * -1.0,
+            );
+
+            let mut total_width = 0.0;
+            // for character in text.chars() {
+            //     if font.characters.contains_key(&(character, font.font_size)) == false {
+            //         font.cache_glyph(character, font.font_size);
+            //     }
+            //     let font_data = &font.characters[&(character, font.font_size)];
+            //     {
+            //         let left_coord = font_data.offset_x as f32 * params.font_scale + total_width;
+            //         let top_coord = params.font_size as f32 * params.font_scale
+            //             - font_data.glyph_h as f32 * params.font_scale
+            //             - font_data.offset_y as f32 * params.font_scale;
+
+            //         total_width += font_data.advance * params.font_scale;
+
+            //         let dest = Rect::new(
+            //             left_coord + x,
+            //             top_coord + y,
+            //             font_data.glyph_w as f32 * params.font_scale,
+            //             font_data.glyph_h as f32 * params.font_scale,
+            //         );
+
+            //         let source = Rect::new(
+            //             font_data.glyph_x as f32,
+            //             font_data.glyph_y as f32,
+            //             font_data.glyph_w as f32,
+            //             font_data.glyph_h as f32,
+            //         );
+
+            //         crate::texture::draw_texture_ex(
+            //             font.font_texture,
+            //             dest.x,
+            //             dest.y,
+            //             params.color,
+            //             crate::texture::DrawTextureParams {
+            //                 dest_size: Some(vec2(dest.w, dest.h)),
+            //                 source: Some(source),
+            //                 ..Default::default()
+            //             },
+            //         );
+            //     }
+            // }
+
+            ctx.apply_pipeline(&self.pipeline);
+
+            draw_texture(
+                &self.settings,
+                &mut ctx,
+                &font.font_texture,
+                label.z_index,
+                real_scale,
+                0.0,
+                Vec2::new(0.0, 0.0),
+                real_position,
+                Rectangle::new(0.0, 0.0, 1.0, 1.0),
+                BLACK,
+            );
+        }
     }
 
     #[inline]
@@ -245,7 +332,6 @@ impl RenderingEngine {
         ctx.apply_pipeline(&self.pipeline);
 
         let (width, height) = (color_rect.width, color_rect.height);
-
         let mut offset = color_rect.offset.clone();
 
         if color_rect.centered {
@@ -255,10 +341,12 @@ impl RenderingEngine {
 
         let real_scale = Vec2::new(width as f32, height as f32);
         let real_position = Vec2::new(position.x + offset.x, position.y + offset.y);
+        let texture = self.textures.get(&TextureKey::default()).unwrap();
 
-        self.draw_texture(
+        draw_texture(
+            &self.settings,
             &mut ctx,
-            &TextureKey::default(),
+            texture,
             color_rect.z_index,
             real_scale,
             color_rect.rotation,
@@ -310,10 +398,12 @@ impl RenderingEngine {
             sprite.scale.y * target.height * (f32::from(texture.height)),
         );
         let real_position = Vec2::new(position.x + offset.x, position.y + offset.y);
+        let texture = self.textures.get(&sprite.texture_key).unwrap();
 
-        self.draw_texture(
+        draw_texture(
+            &self.settings,
             &mut ctx,
-            &sprite.texture_key,
+            texture,
             sprite.z_index,
             real_scale,
             sprite.rotation,
@@ -322,65 +412,6 @@ impl RenderingEngine {
             target,
             sprite.color.clone(),
         )
-    }
-
-    #[inline]
-    fn draw_texture(
-        &mut self,
-        mut ctx: &mut Context,
-        texture_key: &TextureKey,
-        _z_index: f32,
-        scale: Vec2,
-        rotation: f32,
-        offset: Vec2,
-        position: Vec2,
-        source: Rectangle,
-        color: Color,
-    ) {
-        let texture = self.textures.get(&texture_key).unwrap();
-        let view_size = ctx.screen_size();
-        let mut uniforms = Uniforms::default();
-
-        let projection = match self.settings.scalar {
-            ScreenScalar::Stretch => {
-                Mat4::orthographic_rh_gl(
-                    0.0,
-                    self.settings.resolution.0 as f32,
-                    0.0,
-                    self.settings.resolution.1 as f32,
-                    -1.0,
-                    1.0,
-                )
-            },
-            ScreenScalar::None => {
-                Mat4::orthographic_rh_gl(0.0, view_size.0, 0.0, view_size.1, -1.0, 1.0)
-            },
-            ScreenScalar::Keep => {
-                Mat4::orthographic_rh_gl(
-                    0.0,
-                    self.settings.resolution.0 as f32,
-                    0.0,
-                    self.settings.resolution.1 as f32,
-                    -1.0,
-                    1.0,
-                )
-            }
-        };
-
-        uniforms.projection = projection;
-        uniforms.model =
-            crate::rendering::param_to_instance_transform(rotation, scale, offset, position);
-
-        let color = color.to_percentage();
-
-        uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
-        uniforms.color = Vec4::new(color.0, color.1, color.2, color.3);
-
-        texture.inner.set_filter(&mut ctx, texture.filter);
-
-        ctx.apply_bindings(&texture.bindings);
-        ctx.apply_uniforms(&uniforms);
-        ctx.draw(0, 6, 1);
     }
 
     #[inline]
@@ -432,7 +463,12 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn font<T: Into<String>>(&mut self, ctx: &mut Context, path: T, font_data: Vec<u8>) -> Result<FontKey, EmeraldError> {
+    pub fn font<T: Into<String>>(
+        &mut self,
+        ctx: &mut Context,
+        path: T,
+        font_data: Vec<u8>,
+    ) -> Result<FontKey, EmeraldError> {
         let font_path: String = path.into();
         let key = FontKey::new(font_path.clone());
         let font = Font::from_bytes(ctx, font_data.as_slice())?;
@@ -512,7 +548,13 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn populate_font_cache(&mut self, ctx: &mut Context, key: &FontKey, characters: &[char], size: u16) -> Result<(), EmeraldError> {
+    pub fn populate_font_cache(
+        &mut self,
+        ctx: &mut Context,
+        key: &FontKey,
+        characters: &[char],
+        size: u16,
+    ) -> Result<(), EmeraldError> {
         if let Some(font) = self.fonts.get_mut(key) {
             for character in characters {
                 font.cache_glyph(ctx, *character, size)?;
@@ -521,6 +563,59 @@ impl RenderingEngine {
 
         Ok(())
     }
+}
+
+#[inline]
+fn draw_texture(
+    settings: &RenderSettings,
+    mut ctx: &mut Context,
+    texture: &Texture,
+    _z_index: f32,
+    scale: Vec2,
+    rotation: f32,
+    offset: Vec2,
+    position: Vec2,
+    source: Rectangle,
+    color: Color,
+) {
+    let view_size = ctx.screen_size();
+    let mut uniforms = Uniforms::default();
+
+    let projection = match settings.scalar {
+        ScreenScalar::Stretch => Mat4::orthographic_rh_gl(
+            0.0,
+            settings.resolution.0 as f32,
+            0.0,
+            settings.resolution.1 as f32,
+            -1.0,
+            1.0,
+        ),
+        ScreenScalar::None => {
+            Mat4::orthographic_rh_gl(0.0, view_size.0, 0.0, view_size.1, -1.0, 1.0)
+        }
+        ScreenScalar::Keep => Mat4::orthographic_rh_gl(
+            0.0,
+            settings.resolution.0 as f32,
+            0.0,
+            settings.resolution.1 as f32,
+            -1.0,
+            1.0,
+        ),
+    };
+
+    uniforms.projection = projection;
+    uniforms.model =
+        crate::rendering::param_to_instance_transform(rotation, scale, offset, position);
+
+    let color = color.to_percentage();
+
+    uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
+    uniforms.color = Vec4::new(color.0, color.1, color.2, color.3);
+    texture.inner.set_filter(&mut ctx, texture.filter);
+
+    ctx.apply_bindings(&texture.bindings);
+    ctx.apply_uniforms(&uniforms);
+    ctx.draw(0, 6, 1);
 }
 
 #[inline]
@@ -564,6 +659,7 @@ fn get_camera_and_camera_position(world: &EmeraldWorld) -> (Camera, Position) {
 enum Drawable {
     Sprite { sprite: Sprite },
     ColorRect { color_rect: ColorRect },
+    Label { label: Label },
 }
 
 #[derive(Clone, Debug)]

@@ -1,13 +1,11 @@
 // Credit to not-fl3/macroquad text: https://github.com/not-fl3/macroquad/blob/0.3/src/text.rs
-use crate::{EmeraldError, Color};
 use crate::rendering::*;
+use crate::{Color, EmeraldError};
 
-use miniquad::{Context};
-
+use miniquad::Context;
 use std::collections::HashMap;
 
 pub(crate) const DEFAULT_FONT_TEXTURE_PATH: &str = "ghosty_spooky_mister_mime_dude";
-
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct FontKey(String);
@@ -22,7 +20,7 @@ impl Default for FontKey {
     }
 }
 
-struct CharacterInfo {
+pub(crate) struct CharacterInfo {
     offset_x: i32,
     offset_y: i32,
     advance: f32,
@@ -75,13 +73,13 @@ impl FontImage {
 }
 
 pub(crate) struct Font {
-    inner: fontdue::Font,
-    characters: HashMap<(char, u16), CharacterInfo>,
-    font_texture: Texture,
-    font_image: FontImage,
-    cursor_x: u16,
-    cursor_y: u16,
-    max_line_height: u16,
+    pub inner: fontdue::Font,
+    pub characters: HashMap<(char, u16), CharacterInfo>,
+    pub font_texture: Texture,
+    pub font_image: FontImage,
+    pub cursor_x: u16,
+    pub cursor_y: u16,
+    pub max_line_height: u16,
 }
 impl Font {
     const GAP: u16 = 2;
@@ -102,7 +100,12 @@ impl Font {
         })
     }
 
-    pub fn cache_glyph(&mut self, mut ctx: &mut Context, character: char, size: u16) -> Result<(), EmeraldError> {
+    pub fn cache_glyph(
+        &mut self,
+        mut ctx: &mut Context,
+        character: char,
+        size: u16,
+    ) -> Result<(), EmeraldError> {
         let (metrics, bitmap) = self.inner.rasterize(character, size as f32);
 
         if metrics.advance_height != 0.0 {
@@ -112,7 +115,7 @@ impl Font {
         let (width, height) = (metrics.width, metrics.height);
         let advance = metrics.advance_width;
         let (offset_x, offset_y) = (metrics.xmin, metrics.ymin);
-        
+
         let x = if self.cursor_x + (width as u16) < self.font_image.width {
             if height as u16 > self.max_line_height {
                 self.max_line_height = height as u16;

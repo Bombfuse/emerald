@@ -23,16 +23,14 @@ pub struct GameEngine {
 }
 impl GameEngine {
     pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
+        let mut logging_engine = LoggingEngine::new();
         let mut audio_engine = AudioEngine::new();
         let mut input_engine = InputEngine::new();
         let mut rendering_engine = RenderingEngine::new(&mut ctx, settings.render_settings.clone());
         let mut world_engine = WorldEngine::new();
-        let mut logging_engine = LoggingEngine::new();
-
         world_engine.push(EmeraldWorld::new());
 
         let delta = 0.0;
-
         let starting_amount = 50;
         let mut fps_tracker = VecDeque::with_capacity(starting_amount);
         fps_tracker.resize(starting_amount, 1.0 / 60.0);
@@ -67,7 +65,7 @@ impl GameEngine {
         }
     }
 
-    /// Return frame rate averaged out over last 600 frames
+    /// Return frame rate averaged out over last N frames
     /// https://github.com/17cupsofcoffee/tetra/blob/master/src/time.rs
     #[inline]
     pub fn get_fps(&self) -> f64 {
@@ -105,7 +103,7 @@ impl EventHandler for GameEngine {
         self.rendering_engine
             .update(delta, &mut self.world_engine.world().inner);
         self.audio_engine.frame();
-        self.logging_engine.update();
+        self.logging_engine.update().unwrap();
         self.input_engine.rollover();
     }
 

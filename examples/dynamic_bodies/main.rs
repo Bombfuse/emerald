@@ -29,11 +29,24 @@ pub struct MyGame {
 }
 impl MyGame {
     fn spawn_bunny_cube(&mut self, position: Position, mut emd: &mut Emerald) {
-        self.spawn_bunny(position, emd, ColliderBuilder::cuboid(4.0, 4.0), Velocity { dx: 75.0, dy: 50.0 });
+        self.spawn_bunny(
+            position,
+            emd,
+            ColliderBuilder::cuboid(4.0, 4.0),
+            Velocity { dx: 75.0, dy: 50.0 },
+        );
     }
 
     fn spawn_bunny_round(&mut self, position: Position, mut emd: &mut Emerald) {
-        self.spawn_bunny(position, emd, ColliderBuilder::ball(4.0), Velocity { dx: -75.0, dy: 50.0 });
+        self.spawn_bunny(
+            position,
+            emd,
+            ColliderBuilder::ball(4.0),
+            Velocity {
+                dx: -75.0,
+                dy: 50.0,
+            },
+        );
     }
 
     fn spawn_bunny(
@@ -44,9 +57,7 @@ impl MyGame {
         velocity: Velocity,
     ) {
         let sprite = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
-        let entity = emd
-            .world()
-            .spawn((sprite, position));
+        let entity = emd.world().spawn((sprite, position));
         let body = emd
             .world()
             .physics()

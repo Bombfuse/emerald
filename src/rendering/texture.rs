@@ -1,6 +1,6 @@
-use crate::*;
-use crate::rendering::shaders::*;
 use crate::rendering::font::*;
+use crate::rendering::shaders::*;
+use crate::*;
 use miniquad::{Bindings, Buffer, BufferType, Context, FilterMode};
 
 use glam::Vec2;

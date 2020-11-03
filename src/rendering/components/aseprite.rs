@@ -94,7 +94,9 @@ impl Aseprite {
         self.sprite.z_index = z
     }
 
-    pub fn set_visible(&mut self, is_visible: bool) { self.sprite.visible = is_visible }
+    pub fn set_visible(&mut self, is_visible: bool) {
+        self.sprite.visible = is_visible
+    }
 
     /// !!! WARNING !!!
     /// I have exposed this function to the user in case they choose to toy around with animation speed.

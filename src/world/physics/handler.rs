@@ -71,16 +71,18 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.bodies.len()
     }
 
-    pub fn step(&mut self) {
-        self.step_n(1);
+    /// Steps the physics at 1/60 timestep
+    pub fn step(&mut self, delta: f32) {
+        self.step_n(1, delta);
     }
 
-    pub fn step_n(&mut self, n: u32) {
+    /// Steps the physics n-times at 1/60 timestep
+    pub fn step_n(&mut self, n: u32, delta: f32) {
         self.physics_engine
             .sync_physics_world_to_game_world(&mut self.world);
 
         for _ in 0..n {
-            self.physics_engine.step();
+            self.physics_engine.step(delta);
         }
 
         self.physics_engine

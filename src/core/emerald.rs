@@ -7,6 +7,7 @@ use crate::world::*;
 use crate::EmeraldError;
 
 use hecs::Entity;
+use std::time::Instant;
 
 pub struct Emerald<'a> {
     delta: f64,

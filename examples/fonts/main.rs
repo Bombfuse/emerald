@@ -14,6 +14,8 @@ impl Game for FontsExample {
         let label = Label::new("Emerald Game Engine", font);
         let position = Position::new(100.0, 100.0);
 
-        emd.world().spawn((position, label));
+        let e = emd.world().spawn((position, label, Camera::default()));
+
+        emd.make_active_camera(e);
     }
 }

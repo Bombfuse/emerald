@@ -89,7 +89,8 @@ impl<'a> AssetLoader<'a> {
 
         let font_data = self.bytes(file_path.clone())?;
 
-        self.rendering_engine.font(&mut self.quad_ctx, file_path, font_data)
+        self.rendering_engine
+            .font(&mut self.quad_ctx, file_path, font_data)
     }
 
     /// TODO(bombfuse): Automatically load the spritesheet from the aseprite json file

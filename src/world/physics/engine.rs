@@ -69,7 +69,10 @@ impl PhysicsEngine {
     }
 
     #[inline]
-    pub(crate) fn step(&mut self) {
+    pub(crate) fn step(&mut self, delta: f32) {
+        let dt = self.integration_parameters.dt();
+        self.integration_parameters.set_dt(delta);
+
         self.pipeline.step(
             &self.gravity,
             &self.integration_parameters,
@@ -79,7 +82,9 @@ impl PhysicsEngine {
             &mut self.colliders,
             &mut self.joints,
             &mut self.event_handler,
-        )
+        );
+
+        self.integration_parameters.set_dt(dt);
     }
 
     #[inline]

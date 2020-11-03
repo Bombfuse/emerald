@@ -10,4 +10,9 @@ impl Cache {
             data: HashMap::new(),
         }
     }
+
+    /// Delete all data from the cache
+    pub fn clear(&mut self) {
+        self.data = HashMap::new();
+    }
 }
