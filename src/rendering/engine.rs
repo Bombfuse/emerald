@@ -271,8 +271,8 @@ impl RenderingEngine {
                     let target = Rectangle::new(
                         (font_data.glyph_x as f32) / font.font_texture.width as f32,
                         (font_data.glyph_y as f32) / font.font_texture.height as f32,
-                        ((font_data.glyph_w as f32) / font.font_texture.width as f32) * label.scale,
-                        ((font_data.glyph_h as f32) / font.font_texture.height as f32) * label.scale,
+                        (font_data.glyph_w as f32) / font.font_texture.width as f32,
+                        (font_data.glyph_h as f32) / font.font_texture.height as f32,
                     );
 
                     let real_scale = Vec2::new(

@@ -15,7 +15,7 @@ impl Game for FontsExample {
             .font("./examples/assets/Roboto-Light.ttf")
             .unwrap();
         let mut label = Label::new("Emerald Game Engine", font);
-        label.font_size = 24;
+        label.font_size = 12;
         let position = Position::new(0.0, 0.0);
 
         let e = emd.world().spawn((position, label));
@@ -30,6 +30,12 @@ impl Game for FontsExample {
                 position.y += 50.0 * delta;
             } else if input.is_key_pressed(KeyCode::Down) {
                 position.y -= 50.0 * delta;
+            }
+
+            if input.is_key_just_pressed(KeyCode::J) {
+                label.scale *= 0.5;
+            } else if input.is_key_just_pressed(KeyCode::L) {
+                label.scale *= 2.0;
             }
         }
     }
