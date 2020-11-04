@@ -62,7 +62,7 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn draw_world(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld) {
+    pub fn draw_world(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld) -> Result<(), EmeraldError> {
         let screen_size = self.get_screen_size(ctx);
         let (camera, camera_position) = get_camera_and_camera_position(world);
 
@@ -141,11 +141,13 @@ impl RenderingEngine {
                 Drawable::ColorRect { color_rect } => {
                     self.draw_color_rect(&mut ctx, &color_rect, &position)
                 }
-                Drawable::Label { label } => self.draw_label(&mut ctx, &label, &position),
+                Drawable::Label { label } => self.draw_label(&mut ctx, &label, &position)?,
             }
         }
 
         ctx.end_render_pass();
+
+        Ok(())
     }
 
     #[inline]
@@ -239,87 +241,79 @@ impl RenderingEngine {
         ))
     }
 
-    pub(crate) fn draw_label(&mut self, mut ctx: &mut Context, label: &Label, position: &Position) {
-        let mut width = 512;
-        let mut height = 512;
-        let mut color_rect = ColorRect::default();
-        color_rect.width = width;
-        color_rect.height = height;
-
-        self.draw_color_rect(&mut ctx, &color_rect, &position);
-
+    pub(crate) fn draw_label(&mut self, mut ctx: &mut Context, label: &Label, position: &Position) -> Result<(), EmeraldError> {
         if let Some(font) = self.fonts.get_mut(&label.font_key) {
-            // println!("{:?}", (font.font_texture.width, font.font_texture.height));
-            let mut offset = label.offset.clone();
-
-            if label.centered {
-                offset.x -= font.font_texture.width as f32 / 2.0;
-                offset.y -= font.font_texture.height as f32 / 2.0;
-            }
-
-            let real_position = Vec2::new(position.x + offset.x, position.y - offset.y);
-            let real_scale = Vec2::new(
-                font.font_texture.width as f32,
-                font.font_texture.height as f32 * -1.0,
-            );
-
-            let mut total_width = 0.0;
-            // for character in text.chars() {
-            //     if font.characters.contains_key(&(character, font.font_size)) == false {
-            //         font.cache_glyph(character, font.font_size);
-            //     }
-            //     let font_data = &font.characters[&(character, font.font_size)];
-            //     {
-            //         let left_coord = font_data.offset_x as f32 * params.font_scale + total_width;
-            //         let top_coord = params.font_size as f32 * params.font_scale
-            //             - font_data.glyph_h as f32 * params.font_scale
-            //             - font_data.offset_y as f32 * params.font_scale;
-
-            //         total_width += font_data.advance * params.font_scale;
-
-            //         let dest = Rect::new(
-            //             left_coord + x,
-            //             top_coord + y,
-            //             font_data.glyph_w as f32 * params.font_scale,
-            //             font_data.glyph_h as f32 * params.font_scale,
-            //         );
-
-            //         let source = Rect::new(
-            //             font_data.glyph_x as f32,
-            //             font_data.glyph_y as f32,
-            //             font_data.glyph_w as f32,
-            //             font_data.glyph_h as f32,
-            //         );
-
-            //         crate::texture::draw_texture_ex(
-            //             font.font_texture,
-            //             dest.x,
-            //             dest.y,
-            //             params.color,
-            //             crate::texture::DrawTextureParams {
-            //                 dest_size: Some(vec2(dest.w, dest.h)),
-            //                 source: Some(source),
-            //                 ..Default::default()
-            //             },
-            //         );
-            //     }
-            // }
-
             ctx.apply_pipeline(&self.pipeline);
 
-            draw_texture(
-                &self.settings,
-                &mut ctx,
-                &font.font_texture,
-                label.z_index,
-                real_scale,
-                0.0,
-                Vec2::new(0.0, 0.0),
-                real_position,
-                Rectangle::new(0.0, 0.0, 1.0, 1.0),
-                BLACK,
-            );
+            let mut draw_calls: Vec<(
+                f32, // z_index
+                Vec2, // real_scale
+                Vec2, // real_position
+                Rectangle, // target
+                Color, // color
+            )> = Vec::new();
+
+            let mut total_width = 0.0;
+            for character in label.text.chars() {
+                if !font.characters.contains_key(&(character, label.font_size)) {
+                    font.cache_glyph(&mut ctx, character, label.font_size)?;
+                }
+
+                let font_data = &font.characters[&(character, label.font_size)];
+                {
+                    let left_coord = font_data.offset_x as f32 * label.scale + total_width;
+                    let top_coord = label.font_size as f32 * label.scale
+                        - font_data.glyph_h as f32 * label.scale
+                        - font_data.offset_y as f32 * label.scale;
+
+                    total_width += font_data.advance * label.scale;
+
+                    let target = Rectangle::new(
+                        (font_data.glyph_x as f32) / font.font_texture.width as f32,
+                        (font_data.glyph_y as f32) / font.font_texture.height as f32,
+                        ((font_data.glyph_w as f32) / font.font_texture.width as f32) * label.scale,
+                        ((font_data.glyph_h as f32) / font.font_texture.height as f32) * label.scale,
+                    );
+
+                    let real_scale = Vec2::new(
+                        label.scale * target.width * font.font_texture.width as f32,
+                        label.scale * target.height * font.font_texture.height as f32 * -1.0,
+                    );
+                    let real_position = Vec2::new(position.x + label.offset.x + left_coord, position.y - label.offset.y - top_coord);
+
+                    draw_calls.push((
+                        label.z_index,
+                        real_scale,
+                        real_position,
+                        target,
+                        BLACK,
+                    ));
+                }
+            }
+
+            for draw_call in draw_calls {
+                let (z_index, real_scale, mut real_position, target, color) = draw_call;
+
+                if label.centered {
+                    real_position.set_x(real_position.x() - total_width / 2.0);
+                }
+
+                draw_texture(
+                    &self.settings,
+                    &mut ctx,
+                    &font.font_texture,
+                    z_index,
+                    real_scale,
+                    0.0,
+                    Vec2::new(0.0, 0.0),
+                    real_position,
+                    target,
+                    color,
+                );
+            }
         }
+        
+        Ok(())
     }
 
     #[inline]

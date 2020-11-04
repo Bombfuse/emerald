@@ -5,7 +5,7 @@ use crate::*;
 pub struct Label {
     pub text: String,
     pub offset: Vector2<f32>,
-    pub scale: Vector2<f32>,
+    pub scale: f32,
     pub font_key: FontKey,
     pub font_size: u16,
     pub z_index: f32,
@@ -26,7 +26,7 @@ impl Default for Label {
             text: String::from(""),
             offset: Vector2::new(0.0, 0.0),
             font_key: FontKey::default(),
-            scale: Vector2::new(1.0, 1.0),
+            scale: 1.0,
             font_size: 12,
             z_index: 0.0,
             centered: true,

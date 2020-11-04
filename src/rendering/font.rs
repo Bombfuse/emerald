@@ -21,14 +21,14 @@ impl Default for FontKey {
 }
 
 pub(crate) struct CharacterInfo {
-    offset_x: i32,
-    offset_y: i32,
-    advance: f32,
+    pub offset_x: i32,
+    pub offset_y: i32,
+    pub advance: f32,
 
-    glyph_x: u32,
-    glyph_y: u32,
-    glyph_w: u32,
-    glyph_h: u32,
+    pub glyph_x: u32,
+    pub glyph_y: u32,
+    pub glyph_w: u32,
+    pub glyph_h: u32,
 }
 
 pub(crate) struct FontImage {

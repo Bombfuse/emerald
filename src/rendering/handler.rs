@@ -23,7 +23,7 @@ impl<'a> GraphicsHandler<'a> {
         self.rendering_engine.settings.resolution = (width, height);
     }
 
-    pub fn draw_world(&mut self) {
+    pub fn draw_world(&mut self) -> Result<(), EmeraldError> {
         self.rendering_engine
             .draw_world(&mut self.quad_ctx, self.world_engine.world())
     }
@@ -38,7 +38,7 @@ impl<'a> GraphicsHandler<'a> {
             .draw_sprite(&mut self.quad_ctx, sprite, pos)
     }
 
-    pub fn draw_label(&mut self, label: &Label, pos: &Position) {
+    pub fn draw_label(&mut self, label: &Label, pos: &Position) -> Result<(), EmeraldError> {
         self.rendering_engine
             .draw_label(&mut self.quad_ctx, label, pos)
     }
