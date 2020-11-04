@@ -14,8 +14,7 @@ impl Game for FontsExample {
             .loader()
             .font("./examples/assets/Roboto-Light.ttf")
             .unwrap();
-        let mut label = Label::new("Emerald Game Engine", font);
-        label.font_size = 12;
+        let mut label = Label::new("@Emerald Game Engine", font, 12);
         let position = Position::new(0.0, 0.0);
 
         let e = emd.world().spawn((position, label));

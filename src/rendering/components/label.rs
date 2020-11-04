@@ -9,13 +9,16 @@ pub struct Label {
     pub font_key: FontKey,
     pub font_size: u16,
     pub z_index: f32,
+    pub color: Color,
     pub centered: bool,
+    pub visible: bool,
 }
 impl Label {
-    pub fn new<T: Into<String>>(text: T, font_key: FontKey) -> Self {
+    pub fn new<T: Into<String>>(text: T, font_key: FontKey, font_size: u16) -> Self {
         let mut label = Label::default();
         label.font_key = font_key;
         label.text = text.into();
+        label.font_size = font_size;
 
         label
     }
@@ -30,6 +33,8 @@ impl Default for Label {
             font_size: 12,
             z_index: 0.0,
             centered: true,
+            color: WHITE,
+            visible: true,
         }
     }
 }

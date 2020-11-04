@@ -14,10 +14,13 @@ const DEFAULT_LOG_FILE_PATH: &str = "./emerald.log";
 pub struct LoggingEngine {
     logs: Vec<Log>,
     log_file_path: String,
+
+    #[cfg(not(target_arch = "wasm32"))]
     line_writer: LineWriter<File>,
 }
 impl LoggingEngine {
     pub(crate) fn new() -> Self {
+        #[cfg(not(target_arch = "wasm32"))]
         let file = OpenOptions::new()
             .write(true)
             .append(true)
@@ -28,6 +31,8 @@ impl LoggingEngine {
         LoggingEngine {
             logs: Vec::new(),
             log_file_path: String::from(DEFAULT_LOG_FILE_PATH),
+            
+            #[cfg(not(target_arch = "wasm32"))]
             line_writer: LineWriter::new(file),
         }
     }

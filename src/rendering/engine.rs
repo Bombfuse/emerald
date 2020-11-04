@@ -286,16 +286,20 @@ impl RenderingEngine {
                         real_scale,
                         real_position,
                         target,
-                        BLACK,
+                        label.color,
                     ));
                 }
             }
 
             for draw_call in draw_calls {
-                let (z_index, real_scale, mut real_position, target, color) = draw_call;
+                let (z_index, real_scale, mut real_position, target, mut color) = draw_call;
 
                 if label.centered {
                     real_position.set_x(real_position.x() - total_width / 2.0);
+                }
+
+                if !label.visible {
+                    color.a = 0;
                 }
 
                 draw_texture(
