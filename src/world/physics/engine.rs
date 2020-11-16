@@ -1,7 +1,7 @@
 use crate::*;
 
 use rapier2d::dynamics::{
-    IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet,
+    IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet, BodyStatus
 };
 use rapier2d::geometry::{
     BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, ContactEvent, NarrowPhase, Proximity,
@@ -60,7 +60,6 @@ impl PhysicsEngine {
             contact_recv,
             proximity_recv,
             event_handler,
-
             entity_bodies: HashMap::new(),
             body_entities: HashMap::new(),
             entity_body_collisions: HashMap::new(),
@@ -289,6 +288,23 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn remove_body(&mut self, entity: Entity) -> Option<RigidBody> {
+        let mut body_entities = Vec::new();
+        for (e, entities) in &self.entity_body_collisions {
+            body_entities.push(e.clone());
+        }
+
+        for body_entity in body_entities {
+            self.remove_body_contact(body_entity, entity.clone());
+        }
+
+        let mut sensor_entities = Vec::new();
+        for (e, entities) in &self.entity_sensor_collisions {
+            sensor_entities.push(e.clone());
+        }
+        for sensor_entity in sensor_entities {
+            self.remove_sensor_intersection(entity.clone(), sensor_entity);
+        }
+
         if let Some(body_handle) = self.entity_bodies.remove(&entity) {
             self.body_entities.remove(&body_handle);
 
@@ -342,7 +358,10 @@ impl PhysicsEngine {
         body_handle: RigidBodyHandle,
     ) {
         if let Some(mut body) = self.bodies.get_mut(body_handle) {
-            body.position = Isometry2::translation(pos.x, pos.y);
+            match body.body_status {
+                BodyStatus::Kinematic => body.set_next_kinematic_position(Isometry2::translation(pos.x, pos.y)),
+                _ => body.set_position(Isometry2::translation(pos.x, pos.y)),
+            }
         }
     }
 }

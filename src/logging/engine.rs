@@ -16,11 +16,13 @@ pub struct LoggingEngine {
     log_file_path: String,
 
     #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(target_feature = "logging")]
     line_writer: LineWriter<File>,
 }
 impl LoggingEngine {
     pub(crate) fn new() -> Self {
         #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(target_feature = "logging")]
         let file = OpenOptions::new()
             .write(true)
             .append(true)
@@ -33,17 +35,18 @@ impl LoggingEngine {
             log_file_path: String::from(DEFAULT_LOG_FILE_PATH),
             
             #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(target_feature = "logging")]
             line_writer: LineWriter::new(file),
         }
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn update(&mut self) -> Result<(), EmeraldError> {
+    pub(crate) fn update(&mut self) -> Result<(), EmeraldError> {
         Ok(())
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn update(&mut self) -> Result<(), EmeraldError> {
+    pub(crate) fn update(&mut self) -> Result<(), EmeraldError> {
         #[cfg(not(debug_assertions))]
         {
             for log in &self.logs {
@@ -77,6 +80,7 @@ impl LoggingEngine {
         self.logs.push(log);
     }
 
+    #[cfg(target_feature = "logging")]
     pub fn info<T: Into<String>>(&mut self, msg: T) -> Result<(), EmeraldError> {
         let log = Log::Info(msg.into());
 
@@ -86,6 +90,7 @@ impl LoggingEngine {
         Ok(())
     }
 
+    #[cfg(target_feature = "logging")]
     pub fn warning<T: Into<String>>(&mut self, msg: T) -> Result<(), EmeraldError> {
         let log = Log::Warning(msg.into());
 
@@ -95,6 +100,7 @@ impl LoggingEngine {
         Ok(())
     }
 
+    #[cfg(target_feature = "logging")]
     pub fn error<T: Into<String>>(&mut self, msg: T) -> Result<(), EmeraldError> {
         let log = Log::Error(msg.into());
 
@@ -103,4 +109,13 @@ impl LoggingEngine {
 
         Ok(())
     }
+
+    #[cfg(not(target_feature = "logging"))]
+    pub fn info<T: Into<String>>(&mut self, msg: T) -> Result<(), EmeraldError> { Ok(()) }
+
+    #[cfg(not(target_feature = "logging"))]
+    pub fn warning<T: Into<String>>(&mut self, msg: T) -> Result<(), EmeraldError> { Ok(()) }
+
+    #[cfg(not(target_feature = "logging"))]
+    pub fn error<T: Into<String>>(&mut self, msg: T) -> Result<(), EmeraldError> { Ok(()) }
 }

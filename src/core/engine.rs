@@ -7,6 +7,7 @@ use crate::rendering::*;
 use crate::world::*;
 
 use miniquad::*;
+use gamepad::GamepadEngine;
 use std::collections::VecDeque;
 
 pub struct GameEngine {
@@ -25,9 +26,10 @@ impl GameEngine {
     pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
         let mut logging_engine = LoggingEngine::new();
         let mut audio_engine = AudioEngine::new();
-        let mut input_engine = InputEngine::new();
+        let mut input_engine = InputEngine::new(GamepadEngine::new());
         let mut rendering_engine = RenderingEngine::new(&mut ctx, settings.render_settings.clone());
         let mut world_engine = WorldEngine::new();
+
         world_engine.push(EmeraldWorld::new());
 
         let delta = 0.0;
@@ -88,7 +90,7 @@ impl EventHandler for GameEngine {
         self.update_fps_tracker(delta);
 
         let emd = Emerald::new(
-            delta,
+            delta as f32,
             self.get_fps(),
             &mut ctx,
             &mut self.audio_engine,
@@ -104,7 +106,7 @@ impl EventHandler for GameEngine {
             .update(delta, &mut self.world_engine.world().inner);
         self.audio_engine.frame();
         self.logging_engine.update().unwrap();
-        self.input_engine.rollover();
+        self.input_engine.update_and_rollover();
     }
 
     #[inline]
@@ -129,7 +131,7 @@ impl EventHandler for GameEngine {
         let delta = start_of_frame - self.last_instant;
 
         let emd = Emerald::new(
-            delta,
+            delta as f32,
             self.get_fps(),
             &mut ctx,
             &mut self.audio_engine,

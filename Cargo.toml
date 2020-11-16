@@ -9,22 +9,22 @@ license = "MIT OR Apache-2.0"
 
 [features]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-no-font = []
-no-physics = []
-no-sound = []
+logging = []
+headless = []
 
 [dependencies]
 # Nightly
-miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master" }
+miniquad = { path = "../miniquad" }
 quad-snd = { git = "https://github.com/not-fl3/quad-snd", branch = "master" }
 nanoserde = { git = "https://github.com/not-fl3/nanoserde", branch = "master" }
 hecs = { git = "https://github.com/Ralith/hecs", branch = "master", default-features = false }
 fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
 rapier2d = { git = "https://github.com/Bombfuse/rapier", default-features = false, features = [ "dim2" ] }
+gamepad = { git = "https://github.com/Bombfuse/gamepad", branch = "master" }
 
 # Dependencies
 image = { version = "0.23.10", default-features = false, features = [ "png" ] }
-glam = "0.9.5"
+glam = "0.10.0"
 log = "0.4.11"
 quad-rand = "0.1.1"
 

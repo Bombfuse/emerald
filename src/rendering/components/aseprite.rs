@@ -98,6 +98,10 @@ impl Aseprite {
         self.sprite.visible = is_visible
     }
 
+    pub fn get_visible(&self) -> bool {
+        self.sprite.visible
+    }
+
     /// !!! WARNING !!!
     /// I have exposed this function to the user in case they choose to toy around with animation speed.
     /// Manually adding delta time may produce undesirable results. Or desirable results, up to you.

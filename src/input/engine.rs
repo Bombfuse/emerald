@@ -1,35 +1,32 @@
 use crate::input::*;
 use miniquad::*;
+use gamepad::{GamepadEngine, GamepadState};
 
 use std::collections::HashMap;
 
-#[derive(Clone, Debug)]
 pub(crate) struct InputEngine {
+    gamepad_engine: GamepadEngine,
     pub(crate) keys: HashMap<KeyCode, ButtonState>,
+    pub(crate) gamepads: Vec<GamepadState>,
 }
 impl InputEngine {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(gamepad_engine: GamepadEngine) -> Self {
         InputEngine {
+            gamepad_engine,
             keys: HashMap::new(),
+            gamepads: Vec::new(),
         }
     }
 
     #[inline]
-    pub fn rollover(&mut self) {
+    pub fn update_and_rollover(&mut self) {
+        self.gamepad_engine.update();
+        self.gamepads = self.gamepad_engine.gamepads().clone();
+
         for (_key, state) in &mut self.keys {
             state.rollover();
         }
     }
-
-    // #[inline]
-    // pub fn get_key_state(&mut self, keycode: KeyCode) -> ButtonState {
-    //     if let Some(key) = self.keys.get(&keycode) {
-    //         return key.clone();
-    //     }
-
-    //     self.keys.insert(keycode, ButtonState::new());
-    //     return self.get_key_state(keycode);
-    // }
 
     #[inline]
     pub fn set_key_down(&mut self, keycode: KeyCode, _repeat: bool) {

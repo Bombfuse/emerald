@@ -35,6 +35,9 @@ pub use rapier2d;
 pub use rapier2d::crossbeam;
 pub use rapier2d::na as nalgebra;
 
+pub use gamepad;
+pub use gamepad::{Button, Joystick};
+
 use miniquad::{conf, UserData};
 
 pub fn start(game: Box<dyn Game>, settings: GameSettings) {

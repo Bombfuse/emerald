@@ -10,7 +10,7 @@ use hecs::Entity;
 use std::time::Instant;
 
 pub struct Emerald<'a> {
-    delta: f64,
+    delta: f32,
     fps: f64,
     audio_engine: &'a mut AudioEngine,
     quad_ctx: &'a mut miniquad::Context,
@@ -23,7 +23,7 @@ pub struct Emerald<'a> {
 impl<'a> Emerald<'a> {
     #[inline]
     pub(crate) fn new(
-        delta: f64,
+        delta: f32,
         fps: f64,
         quad_ctx: &'a mut miniquad::Context,
         audio_engine: &'a mut AudioEngine,
@@ -48,7 +48,7 @@ impl<'a> Emerald<'a> {
 
     // ************* General API ***************
     #[inline]
-    pub fn delta(&self) -> f64 {
+    pub fn delta(&self) -> f32 {
         self.delta
     }
 
@@ -68,7 +68,8 @@ impl<'a> Emerald<'a> {
         self.fps
     }
 
-    pub fn quit(&self) {
+    pub fn quit(&mut self) {
+        self.audio_engine.clear();
         self.quad_ctx.quit()
     }
     // *****************************************

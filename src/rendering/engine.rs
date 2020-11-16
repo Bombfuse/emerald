@@ -383,11 +383,11 @@ impl RenderingEngine {
         let mut offset = sprite.offset.clone();
         if sprite.centered {
             if sprite.target.is_zero_sized() {
-                offset.x -= texture.width as f32 / 2.0;
-                offset.y -= texture.height as f32 / 2.0;
+                offset.x -= sprite.scale.x * texture.width as f32 / 2.0;
+                offset.y -= sprite.scale.y * texture.height as f32 / 2.0;
             } else {
-                offset.x -= sprite.target.width / 2.0;
-                offset.y -= sprite.target.height / 2.0;
+                offset.x -= sprite.scale.x * sprite.target.width / 2.0;
+                offset.y -= sprite.scale.y * sprite.target.height / 2.0;
             }
         }
 

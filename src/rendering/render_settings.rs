@@ -21,7 +21,7 @@ impl Default for RenderSettings {
             background_color: CORNFLOWER_BLUE,
             fullscreen: false,
             resolution: (800, 600),
-            scalar: ScreenScalar::Stretch,
+            scalar: ScreenScalar::None,
             high_dpi: false,
         }
     }
