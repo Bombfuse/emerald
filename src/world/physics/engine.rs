@@ -80,6 +80,8 @@ impl PhysicsEngine {
             &mut self.bodies,
             &mut self.colliders,
             &mut self.joints,
+            None,
+            None,
             &mut self.event_handler,
         );
 
@@ -289,7 +291,7 @@ impl PhysicsEngine {
     #[inline]
     pub(crate) fn remove_body(&mut self, entity: Entity) -> Option<RigidBody> {
         let mut body_entities = Vec::new();
-        for (e, entities) in &self.entity_body_collisions {
+        for (e, _) in &self.entity_body_collisions {
             body_entities.push(e.clone());
         }
 
@@ -298,7 +300,7 @@ impl PhysicsEngine {
         }
 
         let mut sensor_entities = Vec::new();
-        for (e, entities) in &self.entity_sensor_collisions {
+        for (e, _) in &self.entity_sensor_collisions {
             sensor_entities.push(e.clone());
         }
         for sensor_entity in sensor_entities {

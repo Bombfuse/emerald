@@ -67,6 +67,7 @@ impl EmeraldWorld {
 
     pub fn clear(&mut self) {
         self.inner.clear();
+        self.physics_engine = PhysicsEngine::new();
     }
 
     pub fn query<Q: Query>(&self) -> QueryBorrow<'_, Q> {

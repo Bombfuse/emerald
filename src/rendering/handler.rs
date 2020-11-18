@@ -18,11 +18,7 @@ impl<'a> GraphicsHandler<'a> {
             world_engine,
         }
     }
-
-    pub fn set_screen_size(&mut self, width: u32, height: u32) {
-        self.quad_ctx.set_window_size(width, height);
-    }
-
+    
     pub fn draw_world(&mut self) -> Result<(), EmeraldError> {
         self.rendering_engine
             .draw_world(&mut self.quad_ctx, self.world_engine.world())

@@ -67,7 +67,7 @@ impl Game for BunnymarkGame {
             }));
         }
 
-        for (_, (sprite, mut position, mut vel)) in emd
+        for (_, (_, mut position, mut vel)) in emd
             .world()
             .query::<(&Sprite, &mut Position, &mut Velocity)>()
             .iter()

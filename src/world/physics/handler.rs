@@ -48,8 +48,9 @@ impl<'a> PhysicsHandler<'a> {
     /// Remove physics body attached to this entity.
     pub fn remove_body(&mut self, entity: Entity) -> Option<RigidBody> {
         if let Some(body) = self.physics_engine.remove_body(entity.clone()) {
-            self.world.remove_one::<RigidBodyHandle>(entity);
-            return Some(body);
+            if let Ok(_) = self.world.remove_one::<RigidBodyHandle>(entity) {
+                return Some(body);
+            }
         }
 
         None

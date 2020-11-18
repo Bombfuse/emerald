@@ -106,7 +106,7 @@ impl EventHandler for GameEngine {
             .update(delta, &mut self.world_engine.world().inner);
         self.audio_engine.frame();
         self.logging_engine.update().unwrap();
-        self.input_engine.update_and_rollover();
+        self.input_engine.update_and_rollover().unwrap();
     }
 
     #[inline]

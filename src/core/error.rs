@@ -79,3 +79,11 @@ impl std::convert::From<hecs::ComponentError> for EmeraldError {
         }
     }
 }
+
+impl std::convert::From<gamepad::GamepadError> for EmeraldError {
+    fn from(e: gamepad::GamepadError) -> EmeraldError {
+        EmeraldError {
+            message: e.msg,
+        }
+    }
+}

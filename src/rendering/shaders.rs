@@ -85,12 +85,12 @@ pub(crate) fn param_to_instance_transform(
 ) -> Mat4 {
     let cosr = rotation.cos();
     let sinr = rotation.sin();
-    let m00 = cosr * scale.x();
-    let m01 = -sinr * scale.y();
-    let m10 = sinr * scale.x();
-    let m11 = cosr * scale.y();
-    let m03 = offset.x() * (1.0 - m00) - offset.y() * m01 + dest.x();
-    let m13 = offset.y() * (1.0 - m11) - offset.x() * m10 + dest.y();
+    let m00 = cosr * scale.x;
+    let m01 = -sinr * scale.y;
+    let m10 = sinr * scale.x;
+    let m11 = cosr * scale.y;
+    let m03 = offset.x * (1.0 - m00) - offset.y * m01 + dest.x;
+    let m13 = offset.y * (1.0 - m11) - offset.x * m10 + dest.y;
 
     Mat4::from_cols(
         Vec4::new(m00, m10, 0.0, 0.0),

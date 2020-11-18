@@ -1,4 +1,8 @@
-use crate::input::*;
+use crate::{
+    EmeraldError,
+    input::*,
+};
+
 use miniquad::*;
 use gamepad::{GamepadEngine, GamepadState};
 
@@ -19,13 +23,15 @@ impl InputEngine {
     }
 
     #[inline]
-    pub fn update_and_rollover(&mut self) {
-        self.gamepad_engine.update();
+    pub fn update_and_rollover(&mut self) -> Result<(), EmeraldError> {
+        self.gamepad_engine.update()?;
         self.gamepads = self.gamepad_engine.gamepads().clone();
 
         for (_key, state) in &mut self.keys {
             state.rollover();
         }
+
+        Ok(())
     }
 
     #[inline]
