@@ -78,10 +78,10 @@ impl<'a> AssetLoader<'a> {
         Ok(string)
     }
 
-    pub fn font<T: Into<String>>(&mut self, file_path: T) -> Result<FontKey, EmeraldError> {
+    pub fn font<T: Into<String>>(&mut self, file_path: T, font_size: u32) -> Result<FontKey, EmeraldError> {
         let file_path: String = file_path.into();
 
-        let key = FontKey::new(file_path.clone());
+        let key = FontKey::new(file_path.clone(), font_size);
 
         if self.rendering_engine.fonts.contains_key(&key) {
             return Ok(key);
@@ -90,7 +90,7 @@ impl<'a> AssetLoader<'a> {
         let font_data = self.bytes(file_path.clone())?;
 
         self.rendering_engine
-            .font(&mut self.quad_ctx, file_path, font_data)
+            .font(&mut self.quad_ctx, file_path, font_data, font_size)
     }
 
     /// TODO(bombfuse): Automatically load the spritesheet from the aseprite json file

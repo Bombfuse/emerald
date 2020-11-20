@@ -14,12 +14,7 @@ headless = []
 
 [dependencies]
 # Nightly
-# miniquad = { path = "../miniquad" }
 quad-snd = { git = "https://github.com/not-fl3/quad-snd", branch = "master" }
-# nanoserde = { git = "https://github.com/not-fl3/nanoserde", branch = "master" }
-# hecs = { git = "https://github.com/Ralith/hecs", branch = "master", default-features = false }
-# fontdue = { git = "https://github.com/mooman219/fontdue", branch = "master" }
-# rapier2d = { git = "https://github.com/Bombfuse/rapier", default-features = false, features = [ "dim2" ] }
 
 # Dependencies
 image = { version = "0.23.10", default-features = false, features = [ "png" ] }

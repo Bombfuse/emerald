@@ -8,15 +8,15 @@ use std::collections::HashMap;
 pub(crate) const DEFAULT_FONT_TEXTURE_PATH: &str = "ghosty_spooky_mister_mime_dude";
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub struct FontKey(String);
+pub struct FontKey(String, u32);
 impl FontKey {
-    pub fn new<T: Into<String>>(font_path: T) -> Self {
-        FontKey(font_path.into())
+    pub fn new<T: Into<String>>(font_path: T, font_size: u32) -> Self {
+        FontKey(font_path.into(), font_size)
     }
 }
 impl Default for FontKey {
     fn default() -> FontKey {
-        FontKey::new(DEFAULT_FONT_TEXTURE_PATH)
+        FontKey::new(DEFAULT_FONT_TEXTURE_PATH, 40)
     }
 }
 
@@ -84,13 +84,16 @@ pub(crate) struct Font {
 impl Font {
     const GAP: u16 = 2;
 
-    pub fn from_bytes(ctx: &mut miniquad::Context, bytes: &[u8]) -> Result<Font, EmeraldError> {
+    pub fn from_bytes(ctx: &mut miniquad::Context, bytes: &[u8], font_size: u32) -> Result<Font, EmeraldError> {
         let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
         let font_texture =
             Texture::from_rgba8(ctx, font_image.width, font_image.height, &font_image.bytes)?;
 
+        let mut font_settings = fontdue::FontSettings::default();
+        font_settings.scale = font_size as f32;
+
         Ok(Font {
-            inner: fontdue::Font::from_bytes(bytes, fontdue::FontSettings::default())?,
+            inner: fontdue::Font::from_bytes(bytes, font_settings)?,
             font_image,
             font_texture,
             characters: HashMap::new(),
