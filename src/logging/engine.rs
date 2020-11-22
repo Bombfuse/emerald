@@ -1,6 +1,9 @@
 use crate::EmeraldError;
 
 
+#[cfg(target_arch = "wasm32")]
+use miniquad::log::*;
+
 #[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
 use std::{
     fs::{File, OpenOptions},
@@ -62,6 +65,17 @@ impl LoggingEngine {
                 self.line_writer.write_all("\n".as_bytes())?;
             }
             self.line_writer.flush()?;
+        }
+
+        #[cfg(all(not(debug_assertions), target_arch="wasm32"))]
+        {
+            for log in &self.logs {
+                match log {
+                    Log::Info(msg) => info!(msg),
+                    Log::Warning(msg) => warning!(msg),
+                    Log::Error(msg) => error!(msg),
+                };
+            }
         }
 
         #[cfg(debug_assertions)]

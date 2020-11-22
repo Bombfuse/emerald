@@ -27,6 +27,11 @@ rapier2d = { version = "0.3.2", default-features = false, features = [ "dim2" ] 
 fontdue = "0.4.0"
 nanoserde = "0.1.20"
 hecs = { version = "0.3.1", default-features = false }
+
+[target.'cfg(target_arch="wasm32")'.dependencies]
+miniquad = { version = "0.3.0-alpha.22", features = [ "log-impl" ] }
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
 miniquad = "0.3.0-alpha.22"
 
 [lib]
