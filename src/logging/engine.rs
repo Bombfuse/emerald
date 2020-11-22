@@ -50,7 +50,7 @@ impl LoggingEngine {
 
     #[cfg(feature = "logging")]
     pub(crate) fn update(&mut self) -> Result<(), EmeraldError> {
-        #[cfg(not(debug_assertions))]
+        #[cfg(all(not(debug_assertions), not(target_arch="wasm32")))]
         {
             for log in &self.logs {
                 match log {
