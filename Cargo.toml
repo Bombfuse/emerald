@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 [features]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 default = ["logging"]
-logging = []
+logging = ["miniquad/log-impl"]
 headless = []
 
 [dependencies]

@@ -2,7 +2,7 @@ use crate::EmeraldError;
 
 
 #[cfg(target_arch = "wasm32")]
-use miniquad::log::*;
+use miniquad::{error, warn, info};
 
 #[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
 use std::{
@@ -71,9 +71,9 @@ impl LoggingEngine {
         {
             for log in &self.logs {
                 match log {
-                    Log::Info(msg) => info!(msg),
-                    Log::Warning(msg) => warning!(msg),
-                    Log::Error(msg) => error!(msg),
+                    Log::Info(msg) => info!("{}", msg),
+                    Log::Warning(msg) => warn!("{}", msg),
+                    Log::Error(msg) => error!("{}", msg),
                 };
             }
         }
