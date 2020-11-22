@@ -2,9 +2,7 @@
 use emerald::*;
 
 pub fn main() {
-    let mut settings = GameSettings::default();
-    settings.render_settings = render_settings;
-    emerald::start(Box::new(GamepadExample {}), settings)
+    emerald::start(Box::new(GamepadExample {}), GameSettings::default())
 }
 
 pub struct GamepadExample;
@@ -27,5 +25,17 @@ impl Game for GamepadExample {
         emd.world().spawn((Position::new(0.0, -160.0), Label::new("Emerald Engine", font.clone(), 80)));
         emd.world().spawn((Position::new(0.0, 0.0), Label::new("Emerald Engine", font.clone(), 120)));
         emd.world().spawn((Position::new(0.0, 160.0), Label::new("Emerald Engine", font, 160)));
+    }
+
+    fn update(&mut self, mut emd: Emerald) {
+        let mut input = emd.input();
+
+        for (_, label) in emd.world().query::<&mut Label>().iter() {
+            if input.is_key_just_pressed(KeyCode::A) {
+                label.scale *= 0.5;
+            } else if input.is_key_just_pressed(KeyCode::D) {
+                label.scale *= 2.0;
+            }
+        }
     }
 }

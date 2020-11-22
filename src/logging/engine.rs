@@ -1,32 +1,32 @@
 use crate::EmeraldError;
 
 
-#[cfg(all(target_feature = "logging", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
 use std::{
     fs::{File, OpenOptions},
     io::{ prelude::*, LineWriter }
 };
 
-#[cfg(target_feature = "logging")]
+#[cfg(feature = "logging")]
 pub(crate) enum Log {
     Info(String),
     Warning(String),
     Error(String),
 }
 
-#[cfg(all(target_feature = "logging", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
 const DEFAULT_LOG_FILE_PATH: &str = "./emerald.log";
 
 pub struct LoggingEngine {
-    #[cfg(target_feature = "logging")]
+    #[cfg(feature = "logging")]
     logs: Vec<Log>,
 
-    #[cfg(all(target_feature = "logging", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
     line_writer: LineWriter<File>,
 }
 impl LoggingEngine {
     pub(crate) fn new() -> Self {
-        #[cfg(all(target_feature = "logging", not(target_arch = "wasm32")))]
+        #[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
         let file = OpenOptions::new()
             .write(true)
             .append(true)
@@ -35,23 +35,20 @@ impl LoggingEngine {
             .unwrap();
 
         LoggingEngine {
-            #[cfg(target_feature = "logging")]
+            #[cfg(feature = "logging")]
             logs: Vec::new(),
 
-            #[cfg(all(target_feature = "logging", not(target_arch = "wasm32")))]
+            #[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
             line_writer: LineWriter::new(file),
         }
     }
 
-    #[cfg(any(
-        all(target_feature = "logging", target_arch = "wasm32"),
-        not(target_feature = "logging")
-    ))]
+    #[cfg(not(feature = "logging"))]
     pub(crate) fn update(&mut self) -> Result<(), EmeraldError> {
         Ok(())
     }
 
-    #[cfg(all(target_feature = "logging", not(target_arch = "wasm32")))]
+    #[cfg(feature = "logging")]
     pub(crate) fn update(&mut self) -> Result<(), EmeraldError> {
         #[cfg(not(debug_assertions))]
         {
@@ -82,12 +79,12 @@ impl LoggingEngine {
         Ok(())
     }
 
-    #[cfg(target_feature = "logging")]
+    #[cfg(feature = "logging")]
     fn log(&mut self, log: Log) {
         self.logs.push(log);
     }
 
-    #[cfg(target_feature = "logging")]
+    #[cfg(feature = "logging")]
     pub fn info<T: Into<String>>(&mut self, msg: T) -> Result<(), EmeraldError> {
         let log = Log::Info(msg.into());
 
@@ -97,7 +94,7 @@ impl LoggingEngine {
         Ok(())
     }
 
-    #[cfg(target_feature = "logging")]
+    #[cfg(feature = "logging")]
     pub fn warning<T: Into<String>>(&mut self, msg: T) -> Result<(), EmeraldError> {
         let log = Log::Warning(msg.into());
 
@@ -107,7 +104,7 @@ impl LoggingEngine {
         Ok(())
     }
 
-    #[cfg(target_feature = "logging")]
+    #[cfg(feature = "logging")]
     pub fn error<T: Into<String>>(&mut self, msg: T) -> Result<(), EmeraldError> {
         let log = Log::Error(msg.into());
 
@@ -117,12 +114,12 @@ impl LoggingEngine {
         Ok(())
     }
 
-    #[cfg(not(target_feature = "logging"))]
+    #[cfg(not(feature = "logging"))]
     pub fn info<T: Into<String>>(&mut self, _msg: T) -> Result<(), EmeraldError> { Ok(()) }
 
-    #[cfg(not(target_feature = "logging"))]
+    #[cfg(not(feature = "logging"))]
     pub fn warning<T: Into<String>>(&mut self, _msg: T) -> Result<(), EmeraldError> { Ok(()) }
 
-    #[cfg(not(target_feature = "logging"))]
+    #[cfg(not(feature = "logging"))]
     pub fn error<T: Into<String>>(&mut self, _msg: T) -> Result<(), EmeraldError> { Ok(()) }
 }

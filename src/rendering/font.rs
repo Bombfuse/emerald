@@ -178,7 +178,6 @@ impl Font {
             for j in 0..height {
                 for i in 0..width {
                     let coverage = bitmap[j * width + i];
-
                     self.font_image.set_pixel(
                         x as u32 + i as u32,
                         y as u32 + j as u32,
