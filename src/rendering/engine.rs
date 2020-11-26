@@ -87,7 +87,7 @@ impl RenderingEngine {
                 draw_queue.push(DrawCommand {
                     drawable,
                     position: position.clone(),
-                    z_index: aseprite.sprite.z_index,
+                    z_index: aseprite.z_index,
                 });
             }
         }
