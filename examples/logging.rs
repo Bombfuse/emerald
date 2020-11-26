@@ -1,4 +1,3 @@
-
 use emerald::*;
 
 pub fn main() {

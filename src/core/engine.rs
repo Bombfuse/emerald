@@ -6,8 +6,8 @@ use crate::logging::*;
 use crate::rendering::*;
 use crate::world::*;
 
-use miniquad::*;
 use gamepad::GamepadEngine;
+use miniquad::*;
 use std::collections::VecDeque;
 
 pub struct GameEngine {

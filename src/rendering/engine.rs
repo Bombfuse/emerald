@@ -73,8 +73,15 @@ impl RenderingEngine {
             aseprite.update();
 
             if is_in_view(&aseprite.sprite, &position, &camera, &screen_size) {
-                let drawable = Drawable::Sprite {
+                let drawable = Drawable::Aseprite {
                     sprite: aseprite.sprite.clone(),
+                    offset: aseprite.offset.clone(),
+                    scale: aseprite.scale.clone(),
+                    centered: aseprite.centered,
+                    color: aseprite.color.clone(),
+                    rotation: aseprite.rotation,
+                    z_index: aseprite.z_index,
+                    visible: aseprite.visible,
                 };
 
                 draw_queue.push(DrawCommand {
@@ -137,6 +144,18 @@ impl RenderingEngine {
             };
 
             match draw_command.drawable {
+                Drawable::Aseprite { sprite, rotation, offset, centered, visible, scale, color, z_index } => self.draw_aseprite(
+                    &mut ctx,
+                    &sprite,
+                    rotation,
+                    &offset,
+                    centered,
+                    visible,
+                    &scale,
+                    &color,
+                    z_index,
+                    &position
+                ),
                 Drawable::Sprite { sprite } => self.draw_sprite(&mut ctx, &sprite, &position),
                 Drawable::ColorRect { color_rect } => {
                     self.draw_color_rect(&mut ctx, &color_rect, &position)
@@ -352,6 +371,69 @@ impl RenderingEngine {
             real_position,
             Rectangle::new(0.0, 0.0, 1.0, 1.0),
             color_rect.color,
+        )
+    }
+
+    #[inline]
+    pub(crate) fn draw_aseprite(
+        &mut self,
+        mut ctx: &mut Context,
+        sprite: &Sprite,
+        rotation: f32,
+        offset: &Vector2<f32>,
+        centered: bool,
+        visible: bool,
+        scale: &Vector2<f32>,
+        color: &Color,
+        z_index: f32,
+        position: &Position,
+    ) {
+        if !visible {
+            return;
+        }
+
+        ctx.apply_pipeline(&self.pipeline);
+        let texture = self.textures.get(&sprite.texture_key).unwrap();
+        let mut target = Rectangle::new(
+            sprite.target.x / texture.width as f32,
+            sprite.target.y / texture.height as f32,
+            sprite.target.width / texture.width as f32,
+            sprite.target.height / texture.height as f32,
+        );
+
+        if sprite.target.is_zero_sized() {
+            target = Rectangle::new(0.0, 0.0, 1.0, 1.0);
+        }
+
+        let mut offset = offset.clone();
+        if centered {
+            if sprite.target.is_zero_sized() {
+                offset.x -= scale.x * texture.width as f32 / 2.0;
+                offset.y -= scale.y * texture.height as f32 / 2.0;
+            } else {
+                offset.x -= scale.x * sprite.target.width / 2.0;
+                offset.y -= scale.y * sprite.target.height / 2.0;
+            }
+        }
+
+        let real_scale = Vec2::new(
+            scale.x * target.width * (f32::from(texture.width)),
+            scale.y * target.height * (f32::from(texture.height)),
+        );
+        let real_position = Vec2::new(position.x + offset.x, position.y + offset.y);
+        let texture = self.textures.get(&sprite.texture_key).unwrap();
+
+        draw_texture(
+            &self.settings,
+            &mut ctx,
+            texture,
+            z_index,
+            real_scale,
+            rotation,
+            Vec2::new(0.0, 0.0),
+            real_position,
+            target,
+            color.clone(),
         )
     }
 
@@ -656,6 +738,16 @@ fn get_camera_and_camera_position(world: &EmeraldWorld) -> (Camera, Position) {
 
 #[derive(Clone, Debug)]
 enum Drawable {
+    Aseprite {
+        sprite: Sprite,
+        rotation: f32,
+        color: Color,
+        centered: bool,
+        scale: Vector2<f32>,
+        offset: Vector2<f32>,
+        z_index: f32,
+        visible: bool,
+    },
     Sprite { sprite: Sprite },
     ColorRect { color_rect: ColorRect },
     Label { label: Label },

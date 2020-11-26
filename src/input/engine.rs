@@ -1,10 +1,7 @@
-use crate::{
-    EmeraldError,
-    input::*,
-};
+use crate::{input::*, EmeraldError};
 
-use miniquad::*;
 use gamepad::{GamepadEngine, GamepadState};
+use miniquad::*;
 
 use std::collections::HashMap;
 

@@ -18,7 +18,7 @@ impl<'a> GraphicsHandler<'a> {
             world_engine,
         }
     }
-    
+
     pub fn draw_world(&mut self) -> Result<(), EmeraldError> {
         self.rendering_engine
             .draw_world(&mut self.quad_ctx, self.world_engine.world())

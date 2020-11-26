@@ -1,4 +1,3 @@
-
 use emerald::*;
 
 pub fn main() {
@@ -38,7 +37,6 @@ impl Game for GamepadExample {
         let speed = 500.0;
 
         let mut direction = input.joystick(Joystick::Left);
-
 
         if input.is_button_pressed(Button::DPadNorth) {
             direction.1 = 1.0;

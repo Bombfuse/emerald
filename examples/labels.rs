@@ -1,4 +1,3 @@
-
 use emerald::*;
 
 pub fn main() {
@@ -19,12 +18,27 @@ impl Game for GamepadExample {
                 .unwrap();
         }
 
-        let font = emd.loader().font("./examples/assets/Roboto-Light.ttf", 40).unwrap();
+        let font = emd
+            .loader()
+            .font("./examples/assets/Roboto-Light.ttf", 40)
+            .unwrap();
 
-        emd.world().spawn((Position::new(0.0, -320.0), Label::new("Emerald Engine", font.clone(), 40)));
-        emd.world().spawn((Position::new(0.0, -160.0), Label::new("Emerald Engine", font.clone(), 80)));
-        emd.world().spawn((Position::new(0.0, 0.0), Label::new("Emerald Engine", font.clone(), 120)));
-        emd.world().spawn((Position::new(0.0, 160.0), Label::new("Emerald Engine", font, 160)));
+        emd.world().spawn((
+            Position::new(0.0, -320.0),
+            Label::new("Emerald Engine", font.clone(), 40),
+        ));
+        emd.world().spawn((
+            Position::new(0.0, -160.0),
+            Label::new("Emerald Engine", font.clone(), 80),
+        ));
+        emd.world().spawn((
+            Position::new(0.0, 0.0),
+            Label::new("Emerald Engine", font.clone(), 120),
+        ));
+        emd.world().spawn((
+            Position::new(0.0, 160.0),
+            Label::new("Emerald Engine", font, 160),
+        ));
     }
 
     fn update(&mut self, mut emd: Emerald) {
