@@ -24,8 +24,7 @@ pub struct Velocity {
 }
 
 #[derive(Clone, Debug)]
-pub struct Controller {
-}
+pub struct Controller {}
 
 pub struct MyGame {
     elapsed_time_cube: f32,
@@ -67,8 +66,7 @@ impl MyGame {
             .physics()
             .build_body(
                 entity,
-                RigidBodyBuilder::new_dynamic()
-                    .linvel(velocity.dx, velocity.dy) // Fling it up and to the right
+                RigidBodyBuilder::new_dynamic().linvel(velocity.dx, velocity.dy), // Fling it up and to the right
             )
             .unwrap();
         let collider = emd.world().physics().build_collider(body, collider_builder);
@@ -119,13 +117,22 @@ impl Game for MyGame {
         let mut color_rect = ColorRect::new(WHITE, size.x as u32, size.y as u32);
         color_rect.z_index = 10.0;
 
-        let (_, body_handle) = emd.world().spawn_with_body((
-            Controller {},
-            Velocity { dx: 0.0, dy: 0.0 },
-            Position::new(0.0, 0.0),
-            color_rect,
-        ), RigidBodyBuilder::new_kinematic().can_sleep(false)).unwrap();
-        emd.world().physics().build_collider(body_handle, ColliderBuilder::cuboid(size.x / 2.0, size.y / 2.0));
+        let (_, body_handle) = emd
+            .world()
+            .spawn_with_body(
+                (
+                    Controller {},
+                    Velocity { dx: 0.0, dy: 0.0 },
+                    Position::new(0.0, 0.0),
+                    color_rect,
+                ),
+                RigidBodyBuilder::new_kinematic().can_sleep(false),
+            )
+            .unwrap();
+        emd.world().physics().build_collider(
+            body_handle,
+            ColliderBuilder::cuboid(size.x / 2.0, size.y / 2.0),
+        );
     }
 
     fn update(&mut self, mut emd: Emerald) {
@@ -135,7 +142,7 @@ impl Game for MyGame {
         self.elapsed_time_round += emd.delta() as f32;
         let mut input = emd.input();
 
-        for (_, (position, _,)) in emd.world().query::<(&mut Position, &Controller)>().iter() {
+        for (_, (position, _)) in emd.world().query::<(&mut Position, &Controller)>().iter() {
             if input.is_key_pressed(KeyCode::Up) {
                 position.y += delta * 80.0;
             } else if input.is_key_pressed(KeyCode::Down) {

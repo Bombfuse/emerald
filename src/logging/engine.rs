@@ -1,13 +1,12 @@
 use crate::EmeraldError;
 
-
 #[cfg(target_arch = "wasm32")]
-use miniquad::{error, warn, info};
+use miniquad::{error, info, warn};
 
 #[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
 use std::{
     fs::{File, OpenOptions},
-    io::{ prelude::*, LineWriter }
+    io::{prelude::*, LineWriter},
 };
 
 #[cfg(feature = "logging")]
@@ -53,7 +52,7 @@ impl LoggingEngine {
 
     #[cfg(feature = "logging")]
     pub(crate) fn update(&mut self) -> Result<(), EmeraldError> {
-        #[cfg(all(not(debug_assertions), not(target_arch="wasm32")))]
+        #[cfg(all(not(debug_assertions), not(target_arch = "wasm32")))]
         {
             for log in &self.logs {
                 match log {
@@ -67,7 +66,7 @@ impl LoggingEngine {
             self.line_writer.flush()?;
         }
 
-        #[cfg(all(not(debug_assertions), target_arch="wasm32"))]
+        #[cfg(all(not(debug_assertions), target_arch = "wasm32"))]
         {
             for log in &self.logs {
                 match log {
@@ -129,11 +128,17 @@ impl LoggingEngine {
     }
 
     #[cfg(not(feature = "logging"))]
-    pub fn info<T: Into<String>>(&mut self, _msg: T) -> Result<(), EmeraldError> { Ok(()) }
+    pub fn info<T: Into<String>>(&mut self, _msg: T) -> Result<(), EmeraldError> {
+        Ok(())
+    }
 
     #[cfg(not(feature = "logging"))]
-    pub fn warning<T: Into<String>>(&mut self, _msg: T) -> Result<(), EmeraldError> { Ok(()) }
+    pub fn warning<T: Into<String>>(&mut self, _msg: T) -> Result<(), EmeraldError> {
+        Ok(())
+    }
 
     #[cfg(not(feature = "logging"))]
-    pub fn error<T: Into<String>>(&mut self, _msg: T) -> Result<(), EmeraldError> { Ok(()) }
+    pub fn error<T: Into<String>>(&mut self, _msg: T) -> Result<(), EmeraldError> {
+        Ok(())
+    }
 }

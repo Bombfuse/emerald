@@ -1,7 +1,7 @@
 use crate::input::*;
+use gamepad::{Button, GamepadState, Joystick};
 use miniquad::*;
 use std::collections::HashMap;
-use gamepad::{Button, GamepadState, Joystick};
 
 #[derive(Clone, Debug)]
 pub struct InputHandler {

@@ -1,7 +1,7 @@
 use crate::*;
 
 use rapier2d::dynamics::{
-    IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet, BodyStatus
+    BodyStatus, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet,
 };
 use rapier2d::geometry::{
     BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, ContactEvent, NarrowPhase, Proximity,
@@ -361,7 +361,9 @@ impl PhysicsEngine {
     ) {
         if let Some(mut body) = self.bodies.get_mut(body_handle) {
             match body.body_status {
-                BodyStatus::Kinematic => body.set_next_kinematic_position(Isometry2::translation(pos.x, pos.y)),
+                BodyStatus::Kinematic => {
+                    body.set_next_kinematic_position(Isometry2::translation(pos.x, pos.y))
+                }
                 _ => body.set_position(Isometry2::translation(pos.x, pos.y)),
             }
         }

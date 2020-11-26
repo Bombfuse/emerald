@@ -1,5 +1,5 @@
 use crate::rendering::*;
-use crate::{EmeraldError, Rectangle, Vector2};
+use crate::{EmeraldError, Rectangle, Vector2, WHITE, Color};
 
 use nanoserde::DeJson;
 
@@ -13,6 +13,14 @@ pub struct Aseprite {
     pub(crate) elapsed_time: f32,
     pub(crate) is_looping: bool,
     frame_counter: usize,
+
+    pub rotation: f32,
+    pub scale: Vector2<f32>,
+    pub offset: Vector2<f32>,
+    pub visible: bool,
+    pub color: Color,
+    pub centered: bool,
+    pub z_index: f32,
 }
 impl Aseprite {
     /// Update the inner sprite to reflect the state of the Aseprite.
@@ -38,6 +46,13 @@ impl Aseprite {
             current_tag: AsepriteTag::default(),
             sprite,
             is_looping: false,
+            rotation: 0.0,
+            scale: Vector2::new(1.0, 1.0),
+            offset: Vector2::new(0.0, 0.0),
+            color: WHITE,
+            centered: true,
+            z_index: 0.0,
+            visible: true,
         };
 
         Ok(aseprite)
@@ -85,21 +100,6 @@ impl Aseprite {
                 return;
             }
         }
-    }
-
-    pub fn set_offset(&mut self, offset: Vector2<f32>) {
-        self.sprite.offset = offset
-    }
-    pub fn set_z_index(&mut self, z: f32) {
-        self.sprite.z_index = z
-    }
-
-    pub fn set_visible(&mut self, is_visible: bool) {
-        self.sprite.visible = is_visible
-    }
-
-    pub fn get_visible(&self) -> bool {
-        self.sprite.visible
     }
 
     /// !!! WARNING !!!

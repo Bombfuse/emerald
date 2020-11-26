@@ -2,7 +2,7 @@
 use crate::rendering::*;
 use crate::{Color, EmeraldError};
 
-use miniquad::{Context};
+use miniquad::Context;
 use std::collections::HashMap;
 
 pub(crate) const DEFAULT_FONT_TEXTURE_PATH: &str = "ghosty_spooky_mister_mime_dude";
@@ -84,7 +84,11 @@ pub(crate) struct Font {
 impl Font {
     const GAP: u16 = 2;
 
-    pub fn from_bytes(ctx: &mut miniquad::Context, bytes: &[u8], font_size: u32) -> Result<Font, EmeraldError> {
+    pub fn from_bytes(
+        ctx: &mut miniquad::Context,
+        bytes: &[u8],
+        font_size: u32,
+    ) -> Result<Font, EmeraldError> {
         let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
         let font_texture =
             Texture::from_rgba8(ctx, font_image.width, font_image.height, &font_image.bytes)?;

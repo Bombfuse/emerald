@@ -78,7 +78,11 @@ impl<'a> AssetLoader<'a> {
         Ok(string)
     }
 
-    pub fn font<T: Into<String>>(&mut self, file_path: T, font_size: u32) -> Result<FontKey, EmeraldError> {
+    pub fn font<T: Into<String>>(
+        &mut self,
+        file_path: T,
+        font_size: u32,
+    ) -> Result<FontKey, EmeraldError> {
         let file_path: String = file_path.into();
 
         let key = FontKey::new(file_path.clone(), font_size);
