@@ -9,8 +9,10 @@ license = "MIT OR Apache-2.0"
 
 [features]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-default = ["logging"]
+default = ["logging", "gamepads", "physics"]
 logging = ["miniquad/log-impl"]
+physics = ["rapier2d"]
+gamepads = ["gamepad"]
 headless = []
 
 [dependencies]
@@ -19,14 +21,15 @@ quad-snd = { git = "https://github.com/Bombfuse/quad-snd", branch = "master" }
 
 # Dependencies
 image = { version = "0.23.10", default-features = false, features = [ "png" ] }
-glam = "0.10.2"
+glam = "0.11.0"
 log = "0.4.11"
 quad-rand = "0.1.1"
-gamepad = "0.1.1"
-rapier2d = { version = "0.3.2", default-features = false, features = [ "dim2" ] }
 fontdue = "0.4.0"
 nanoserde = "0.1.20"
 hecs = { version = "0.3.1", default-features = false }
+gamepad = { version = "0.1.1", optional = true }
+rapier2d = { version = "0.3.2", default-features = false, features = [ "dim2" ], optional = true  }
+nalgebra =  { version = "0.23.*" }
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
 miniquad = { version = "0.3.0-alpha.22", features = [ "log-impl" ] }

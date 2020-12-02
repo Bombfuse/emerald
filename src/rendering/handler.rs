@@ -24,6 +24,7 @@ impl<'a> GraphicsHandler<'a> {
             .draw_world(&mut self.quad_ctx, self.world_engine.world())
     }
 
+    #[cfg(feature = "physics")]
     pub fn draw_colliders(&mut self, color: crate::Color) {
         self.rendering_engine
             .draw_colliders(&mut self.quad_ctx, self.world_engine.world(), color)

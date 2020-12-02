@@ -1,17 +1,21 @@
 use crate::input::*;
-use gamepad::{Button, GamepadState, Joystick};
 use miniquad::*;
 use std::collections::HashMap;
+
+#[cfg(feature = "gamepads")]
+use gamepad::{Button, GamepadState, Joystick};
 
 #[derive(Clone, Debug)]
 pub struct InputHandler {
     keys: HashMap<KeyCode, ButtonState>,
+    #[cfg(feature = "gamepads")]
     gamepads: Vec<GamepadState>,
 }
 impl InputHandler {
     pub(crate) fn new(engine: &InputEngine) -> Self {
         InputHandler {
             keys: engine.keys.clone(),
+            #[cfg(feature = "gamepads")]
             gamepads: engine.gamepads.clone(),
         }
     }
@@ -42,6 +46,7 @@ impl InputHandler {
 
     /// Gets the value of the button from the first gamepad available, or defaults to false.
     #[inline]
+    #[cfg(feature = "gamepads")]
     pub fn is_button_pressed(&mut self, button: Button) -> bool {
         if let Some(gamepad) = self.gamepads.get(0) {
             return gamepad.is_pressed(button);
@@ -52,6 +57,7 @@ impl InputHandler {
 
     /// Gets the value of the button from the first gamepad available, or defaults to false.
     #[inline]
+    #[cfg(feature = "gamepads")]
     pub fn is_button_just_pressed(&mut self, button: Button) -> bool {
         if let Some(gamepad) = self.gamepads.get(0) {
             return gamepad.is_just_pressed(button);
@@ -62,6 +68,7 @@ impl InputHandler {
 
     /// Gets joystick value assuming first gamepad, defaulting to (0.0, 0.0).
     #[inline]
+    #[cfg(feature = "gamepads")]
     pub fn joystick(&mut self, joystick: Joystick) -> (f32, f32) {
         if let Some(gamepad) = self.gamepads.get(0) {
             return gamepad.joystick(joystick);
@@ -72,6 +79,7 @@ impl InputHandler {
 
     /// Gets joystick value assuming first gamepad, defaulting to (0, 0)
     #[inline]
+    #[cfg(feature = "gamepads")]
     pub fn joystick_raw(&mut self, joystick: Joystick) -> (i16, i16) {
         if let Some(gamepad) = self.gamepads.get(0) {
             return gamepad.joystick_raw(joystick);

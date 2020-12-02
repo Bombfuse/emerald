@@ -6,7 +6,6 @@ use crate::logging::*;
 use crate::rendering::*;
 use crate::world::*;
 
-use gamepad::GamepadEngine;
 use miniquad::*;
 use std::collections::VecDeque;
 
@@ -26,7 +25,7 @@ impl GameEngine {
     pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
         let mut logging_engine = LoggingEngine::new();
         let mut audio_engine = AudioEngine::new();
-        let mut input_engine = InputEngine::new(GamepadEngine::new());
+        let mut input_engine = InputEngine::new();
         let mut rendering_engine = RenderingEngine::new(&mut ctx, settings.render_settings.clone());
         let mut world_engine = WorldEngine::new();
 

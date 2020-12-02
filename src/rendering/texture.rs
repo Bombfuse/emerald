@@ -35,7 +35,7 @@ impl Texture {
     pub fn from_png_bytes(ctx: &mut Context, bytes: &[u8]) -> Result<Self, EmeraldError> {
         let img = image::load_from_memory(&bytes)
             .unwrap_or_else(|e| panic!(e))
-            .to_rgba();
+            .to_rgba8();
         let img = image::imageops::flip_vertical(&img);
 
         let width = img.width() as u16;
