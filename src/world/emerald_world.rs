@@ -1,17 +1,22 @@
 use crate::rendering::components::Camera;
-use crate::world::physics::*;
 use crate::EmeraldError;
 
 use hecs::*;
+
+#[cfg(feature = "physics")]
 use rapier2d::dynamics::*;
+#[cfg(feature = "physics")]
+use crate::world::physics::*;
 
 pub struct EmeraldWorld {
+    #[cfg(feature = "physics")]
     pub(crate) physics_engine: PhysicsEngine,
     pub(crate) inner: World,
 }
 impl EmeraldWorld {
     pub fn new() -> Self {
         EmeraldWorld {
+            #[cfg(feature = "physics")]
             physics_engine: PhysicsEngine::new(),
             inner: World::default(),
         }
@@ -41,6 +46,7 @@ impl EmeraldWorld {
         self.inner.spawn(components)
     }
 
+    #[cfg(feature = "physics")]
     pub fn spawn_with_body(
         &mut self,
         components: impl DynamicBundle,
@@ -61,13 +67,19 @@ impl EmeraldWorld {
     }
 
     pub fn despawn(&mut self, entity: Entity) -> Result<(), NoSuchEntity> {
+        #[cfg(feature = "physics")]
         self.physics_engine.remove_body(entity);
+
         self.inner.despawn(entity)
     }
 
     pub fn clear(&mut self) {
         self.inner.clear();
-        self.physics_engine = PhysicsEngine::new();
+
+        #[cfg(feature = "physics")]
+        {
+            self.physics_engine = PhysicsEngine::new();
+        }
     }
 
     pub fn query<Q: Query>(&self) -> QueryBorrow<'_, Q> {
@@ -102,10 +114,12 @@ impl EmeraldWorld {
         self.inner.remove_one::<T>(entity)
     }
 
+    #[cfg(feature = "physics")]
     pub fn physics(&mut self) -> PhysicsHandler {
         PhysicsHandler::new(&mut self.physics_engine, &mut self.inner)
     }
 
+    #[cfg(feature = "physics")]
     pub fn physics_ref(&self) -> PhysicsRefHandler {
         PhysicsRefHandler::new(&self.physics_engine)
     }

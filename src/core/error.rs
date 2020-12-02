@@ -48,6 +48,7 @@ impl std::convert::From<std::string::FromUtf8Error> for EmeraldError {
     }
 }
 
+#[cfg(feature = "physics")]
 impl std::convert::From<crossbeam::channel::TryRecvError> for EmeraldError {
     fn from(e: crossbeam::channel::TryRecvError) -> EmeraldError {
         EmeraldError {
@@ -80,6 +81,7 @@ impl std::convert::From<hecs::ComponentError> for EmeraldError {
     }
 }
 
+#[cfg(feature = "gamepads")]
 impl std::convert::From<gamepad::GamepadError> for EmeraldError {
     fn from(e: gamepad::GamepadError) -> EmeraldError {
         EmeraldError { message: e.msg }

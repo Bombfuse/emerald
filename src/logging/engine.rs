@@ -3,7 +3,7 @@ use crate::EmeraldError;
 #[cfg(target_arch = "wasm32")]
 use miniquad::{error, info, warn};
 
-#[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "logging", not(target_arch = "wasm32"), not(debug_assertions)))]
 use std::{
     fs::{File, OpenOptions},
     io::{prelude::*, LineWriter},
@@ -16,19 +16,19 @@ pub(crate) enum Log {
     Error(String),
 }
 
-#[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "logging", not(target_arch = "wasm32"), not(debug_assertions)))]
 const DEFAULT_LOG_FILE_PATH: &str = "./emerald.log";
 
 pub struct LoggingEngine {
     #[cfg(feature = "logging")]
     logs: Vec<Log>,
 
-    #[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "logging", not(target_arch = "wasm32"), not(debug_assertions)))]
     line_writer: LineWriter<File>,
 }
 impl LoggingEngine {
     pub(crate) fn new() -> Self {
-        #[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
+        #[cfg(all(feature = "logging", not(target_arch = "wasm32"), not(debug_assertions)))]
         let file = OpenOptions::new()
             .write(true)
             .append(true)
@@ -40,7 +40,7 @@ impl LoggingEngine {
             #[cfg(feature = "logging")]
             logs: Vec::new(),
 
-            #[cfg(all(feature = "logging", not(target_arch = "wasm32")))]
+            #[cfg(all(feature = "logging", not(target_arch = "wasm32"), not(debug_assertions)))]
             line_writer: LineWriter::new(file),
         }
     }

@@ -170,6 +170,7 @@ impl RenderingEngine {
     }
 
     #[inline]
+    #[cfg(feature = "physics")]
     pub fn draw_colliders(
         &mut self,
         mut ctx: &mut Context,
