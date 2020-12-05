@@ -323,7 +323,7 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn remove_collider(&mut self, collider_handle: ColliderHandle) -> Option<Collider> {
-        self.colliders.remove(collider_handle, &mut self.bodies)
+        self.colliders.remove(collider_handle, &mut self.bodies, false)
     }
 
     #[inline]
@@ -347,7 +347,7 @@ impl PhysicsEngine {
         body_handle: RigidBodyHandle,
     ) {
         if let Some(transform) = self.bodies.get(body_handle) {
-            let translation = transform.position.translation;
+            let translation = transform.position().translation;
             pos.x = translation.x;
             pos.y = translation.y;
         }
@@ -359,12 +359,12 @@ impl PhysicsEngine {
         pos: &Position,
         body_handle: RigidBodyHandle,
     ) {
-        if let Some(mut body) = self.bodies.get_mut(body_handle) {
+        if let Some(body) = self.bodies.get_mut(body_handle) {
             match body.body_status {
                 BodyStatus::Kinematic => {
                     body.set_next_kinematic_position(Isometry2::translation(pos.x, pos.y))
                 }
-                _ => body.set_position(Isometry2::translation(pos.x, pos.y)),
+                _ => body.set_position(Isometry2::translation(pos.x, pos.y), false),
             }
         }
     }

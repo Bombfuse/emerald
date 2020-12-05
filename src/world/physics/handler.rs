@@ -1,8 +1,10 @@
 use crate::physics::*;
 use crate::{EmeraldError, Vector2};
 
-use rapier2d::dynamics::{RigidBody, RigidBodyBuilder, RigidBodyHandle, RigidBodyMut};
-use rapier2d::geometry::{Collider, ColliderBuilder, ColliderHandle};
+use rapier2d::{
+    geometry::{Collider, ColliderBuilder, ColliderHandle},
+    dynamics::{RigidBody, RigidBodyBuilder, RigidBodyHandle},
+};
 
 use hecs::Entity;
 
@@ -64,7 +66,7 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.bodies.get(body_handle)
     }
 
-    pub fn rigid_body_mut(&mut self, body_handle: RigidBodyHandle) -> Option<RigidBodyMut> {
+    pub fn rigid_body_mut(&mut self, body_handle: RigidBodyHandle) -> Option<&mut RigidBody> {
         self.physics_engine.bodies.get_mut(body_handle)
     }
 
