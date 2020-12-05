@@ -31,7 +31,7 @@ pub struct MyGame {
     elapsed_time_round: f32,
 }
 impl MyGame {
-    fn spawn_bunny_cube(&mut self, position: Position, mut emd: &mut Emerald) {
+    fn spawn_bunny_cube(&mut self, position: Position, emd: &mut Emerald) {
         self.spawn_bunny(
             position,
             emd,
@@ -40,7 +40,7 @@ impl MyGame {
         );
     }
 
-    fn spawn_bunny_round(&mut self, position: Position, mut emd: &mut Emerald) {
+    fn spawn_bunny_round(&mut self, position: Position, emd: &mut Emerald) {
         self.spawn_bunny(
             position,
             emd,
@@ -55,7 +55,7 @@ impl MyGame {
     fn spawn_bunny(
         &mut self,
         position: Position,
-        mut emd: &mut Emerald,
+        emd: &mut Emerald,
         collider_builder: ColliderBuilder,
         velocity: Velocity,
     ) {
@@ -69,7 +69,7 @@ impl MyGame {
                 RigidBodyBuilder::new_dynamic().linvel(velocity.dx, velocity.dy), // Fling it up and to the right
             )
             .unwrap();
-        let collider = emd.world().physics().build_collider(body, collider_builder);
+        emd.world().physics().build_collider(body, collider_builder);
     }
 }
 impl Game for MyGame {
@@ -81,6 +81,12 @@ impl Game for MyGame {
                 .pack_bytes(
                     "./examples/assets/bunny.png",
                     include_bytes!("../assets/bunny.png").to_vec(),
+                )
+                .unwrap();
+            emd.loader()
+                .pack_file(
+                    "./examples/assets/Roboto-Light.ttf",
+                    include_bytes!("../assets/Roboto-Light.ttf").to_vec(),
                 )
                 .unwrap();
         }
@@ -136,7 +142,6 @@ impl Game for MyGame {
     }
 
     fn update(&mut self, mut emd: Emerald) {
-        let start = emd.now();
         let delta = emd.delta();
         self.elapsed_time_cube += emd.delta() as f32;
         self.elapsed_time_round += emd.delta() as f32;
@@ -167,15 +172,19 @@ impl Game for MyGame {
         }
 
         emd.world().physics().step(delta);
-
-        let end = emd.now();
-
-        println!("{:?}", emd.fps());
     }
 
     fn draw(&mut self, mut emd: Emerald) {
         emd.graphics().begin();
-        emd.graphics().draw_world();
+        emd.graphics().draw_world().unwrap();
+
+        {
+            let fps = emd.fps() as u8;
+            let font = emd.loader().font("./examples/assets/Roboto-Light.ttf", 48).unwrap();
+            let mut label = Label::new(format!("FPS: {}", fps), font, 24);
+            label.centered = false;
+            emd.graphics().draw_label(&label, &Position::new(24.0, RES_HEIGHT as f32 - 10.0));
+        }
         // emd.graphics().draw_colliders(Color::new(255, 0, 0, 130));
         emd.graphics().render();
     }
