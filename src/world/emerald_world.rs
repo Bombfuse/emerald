@@ -4,9 +4,9 @@ use crate::EmeraldError;
 use hecs::*;
 
 #[cfg(feature = "physics")]
-use rapier2d::dynamics::*;
-#[cfg(feature = "physics")]
 use crate::world::physics::*;
+#[cfg(feature = "physics")]
+use rapier2d::dynamics::*;
 
 pub struct EmeraldWorld {
     #[cfg(feature = "physics")]

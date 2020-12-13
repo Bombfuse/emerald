@@ -2,8 +2,8 @@ use crate::physics::*;
 use crate::{EmeraldError, Vector2};
 
 use rapier2d::{
-    geometry::{Collider, ColliderBuilder, ColliderHandle},
     dynamics::{RigidBody, RigidBodyBuilder, RigidBodyHandle},
+    geometry::{Collider, ColliderBuilder, ColliderHandle},
 };
 
 use hecs::Entity;

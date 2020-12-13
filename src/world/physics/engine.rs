@@ -323,7 +323,8 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn remove_collider(&mut self, collider_handle: ColliderHandle) -> Option<Collider> {
-        self.colliders.remove(collider_handle, &mut self.bodies, false)
+        self.colliders
+            .remove(collider_handle, &mut self.bodies, false)
     }
 
     #[inline]

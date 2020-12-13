@@ -28,10 +28,10 @@ pub use rapier2d;
 #[cfg(feature = "physics")]
 pub use rapier2d::{
     crossbeam,
-    na as nalgebra,
     dynamics::{RigidBody, RigidBodyBuilder, RigidBodyHandle},
-    geometry::{Collider, ColliderBuilder, ColliderHandle},
-    na::Vector2
+    geometry::{Collider, ColliderBuilder, ColliderHandle, InteractionGroups},
+    na as nalgebra,
+    na::Vector2,
 };
 //
 

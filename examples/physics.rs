@@ -180,10 +180,14 @@ impl Game for MyGame {
 
         {
             let fps = emd.fps() as u8;
-            let font = emd.loader().font("./examples/assets/Roboto-Light.ttf", 48).unwrap();
+            let font = emd
+                .loader()
+                .font("./examples/assets/Roboto-Light.ttf", 48)
+                .unwrap();
             let mut label = Label::new(format!("FPS: {}", fps), font, 24);
             label.centered = false;
-            emd.graphics().draw_label(&label, &Position::new(24.0, RES_HEIGHT as f32 - 10.0));
+            emd.graphics()
+                .draw_label(&label, &Position::new(24.0, RES_HEIGHT as f32 - 10.0));
         }
         // emd.graphics().draw_colliders(Color::new(255, 0, 0, 130));
         emd.graphics().render();

@@ -62,7 +62,11 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn draw_world(&mut self, mut ctx: &mut Context, world: &mut EmeraldWorld) -> Result<(), EmeraldError> {
+    pub fn draw_world(
+        &mut self,
+        mut ctx: &mut Context,
+        world: &mut EmeraldWorld,
+    ) -> Result<(), EmeraldError> {
         let screen_size = self.get_screen_size(ctx);
         let (camera, camera_position) = get_camera_and_camera_position(world);
 
@@ -144,17 +148,18 @@ impl RenderingEngine {
             };
 
             match draw_command.drawable {
-                Drawable::Aseprite { sprite, rotation, offset, centered, visible, scale, color, z_index } => self.draw_aseprite(
-                    &mut ctx,
-                    &sprite,
+                Drawable::Aseprite {
+                    sprite,
                     rotation,
-                    &offset,
+                    offset,
                     centered,
                     visible,
-                    &scale,
-                    &color,
+                    scale,
+                    color,
                     z_index,
-                    &position
+                } => self.draw_aseprite(
+                    &mut ctx, &sprite, rotation, &offset, centered, visible, &scale, &color,
+                    z_index, &position,
                 ),
                 Drawable::Sprite { sprite } => self.draw_sprite(&mut ctx, &sprite, &position),
                 Drawable::ColorRect { color_rect } => {
@@ -261,16 +266,21 @@ impl RenderingEngine {
         ))
     }
 
-    pub(crate) fn draw_label(&mut self, mut ctx: &mut Context, label: &Label, position: &Position) -> Result<(), EmeraldError> {
+    pub(crate) fn draw_label(
+        &mut self,
+        mut ctx: &mut Context,
+        label: &Label,
+        position: &Position,
+    ) -> Result<(), EmeraldError> {
         if let Some(font) = self.fonts.get_mut(&label.font_key) {
             ctx.apply_pipeline(&self.pipeline);
 
             let mut draw_calls: Vec<(
-                f32, // z_index
-                Vec2, // real_scale
-                Vec2, // real_position
+                f32,       // z_index
+                Vec2,      // real_scale
+                Vec2,      // real_position
                 Rectangle, // target
-                Color, // color
+                Color,     // color
             )> = Vec::new();
 
             let mut total_width = 0.0;
@@ -299,7 +309,10 @@ impl RenderingEngine {
                         label.scale * target.width * font.font_texture.width as f32,
                         label.scale * target.height * font.font_texture.height as f32 * -1.0,
                     );
-                    let real_position = Vec2::new(position.x + label.offset.x + left_coord, position.y - label.offset.y - top_coord);
+                    let real_position = Vec2::new(
+                        position.x + label.offset.x + left_coord,
+                        position.y - label.offset.y - top_coord,
+                    );
 
                     draw_calls.push((
                         label.z_index,
@@ -336,7 +349,7 @@ impl RenderingEngine {
                 );
             }
         }
-        
+
         Ok(())
     }
 
@@ -749,9 +762,15 @@ enum Drawable {
         z_index: f32,
         visible: bool,
     },
-    Sprite { sprite: Sprite },
-    ColorRect { color_rect: ColorRect },
-    Label { label: Label },
+    Sprite {
+        sprite: Sprite,
+    },
+    ColorRect {
+        color_rect: ColorRect,
+    },
+    Label {
+        label: Label,
+    },
 }
 
 #[derive(Clone, Debug)]
