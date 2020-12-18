@@ -1,4 +1,4 @@
-use crate::rendering::*;
+use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
 
 use nanoserde::DeJson;
@@ -122,6 +122,12 @@ impl Aseprite {
 
     fn get_frame(&self) -> &AsepriteFrame {
         &self.data.frames[self.current_tag.from as usize + self.frame_counter]
+    }
+}
+
+pub fn aseprite_update_system(world: EmeraldWorld, delta: f32) {
+    for (_, aseprite) in world.query::<&mut Aseprite>().iter() {
+        aseprite.add_delta(delta);
     }
 }
 
