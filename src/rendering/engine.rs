@@ -55,11 +55,7 @@ impl RenderingEngine {
         }
     }
 
-    pub(crate) fn update(&mut self, delta: f64, world: &mut hecs::World) {
-        for (_id, aseprite) in world.query::<&mut Aseprite>().iter() {
-            aseprite.add_delta(delta as f32);
-        }
-    }
+    pub(crate) fn update(&mut self, _delta: f64, _world: &mut hecs::World) {}
 
     #[inline]
     pub fn draw_world(
