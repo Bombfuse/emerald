@@ -144,6 +144,9 @@ impl RenderingEngine {
                     pos = pos + Position::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
                 }
 
+                pos.x += camera.offset.x;
+                pos.y += camera.offset.y;
+
                 pos
             };
 
