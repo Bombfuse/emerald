@@ -85,6 +85,19 @@ impl<'a> Emerald<'a> {
             .make_active_camera(entity, self.world_engine.world())
     }
 
+    #[inline]
+    pub fn get_active_camera(&self) -> Option<Entity> {
+        let mut cam = None;
+
+        for (id, camera) in self.world_ref().query::<&Camera>().iter() {
+            if camera.is_active {
+                cam = Some(id);
+            }
+        }
+
+        cam
+    }
+
     pub fn graphics(&mut self) -> GraphicsHandler {
         GraphicsHandler::new(
             &mut self.quad_ctx,
