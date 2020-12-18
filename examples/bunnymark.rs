@@ -42,8 +42,7 @@ impl Game for BunnymarkGame {
         emd.world().spawn_batch((0..1000).map(|_| {
             position.x += 6.0;
             position.y += 1.0;
-            let mut s = sprite.clone();
-            (position.clone(), s, Velocity::new(5.0, 3.0))
+            (position.clone(), sprite.clone(), Velocity::new(5.0, 3.0))
         }));
     }
 
@@ -51,7 +50,6 @@ impl Game for BunnymarkGame {
     fn update(&mut self, mut emd: Emerald) {
         let (screen_width, screen_height) = emd.screen_size();
         let sprite_width = 32.0;
-        let delta = emd.delta() as f32;
 
         if emd.input().is_key_just_pressed(KeyCode::Space) {
             let mut sprite = emd.loader().sprite("./examples/assets/bunny.png").unwrap();

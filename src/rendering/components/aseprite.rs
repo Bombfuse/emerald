@@ -1,5 +1,5 @@
 use crate::rendering::*;
-use crate::{EmeraldError, Rectangle, Vector2, WHITE, Color};
+use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
 
 use nanoserde::DeJson;
 
