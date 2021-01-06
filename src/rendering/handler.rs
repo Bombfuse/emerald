@@ -19,9 +19,8 @@ impl<'a> GraphicsHandler<'a> {
         }
     }
 
-    pub fn draw_world(&mut self) -> Result<(), EmeraldError> {
-        self.rendering_engine
-            .draw_world(&mut self.quad_ctx, self.world_engine.world())
+    pub fn draw_world(&mut self, world: &mut EmeraldWorld) -> Result<(), EmeraldError> {
+        self.rendering_engine.draw_world(&mut self.quad_ctx, world)
     }
 
     #[cfg(feature = "physics")]
