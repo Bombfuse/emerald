@@ -78,7 +78,6 @@ impl<'a> Emerald<'a> {
         GraphicsHandler::new(
             &mut self.quad_ctx,
             &mut self.rendering_engine,
-            self.world_engine,
         )
     }
 
