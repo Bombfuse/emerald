@@ -21,21 +21,45 @@ impl EmeraldWorld {
             inner: World::default(),
         }
     }
-
+    
+    /// Disable all cameras then set the camera on the given entity as active.
+    /// Fails if the given entity does not exist, or does not have a camera.
+    #[inline]
     pub fn make_active_camera(&mut self, entity: Entity) -> Result<(), EmeraldError> {
-        if let Ok(mut next_active_camera) = self.get_mut::<Camera>(entity.clone()) {
-            for (_, mut camera) in self.query::<&mut Camera>().iter() {
-                camera.is_active = false
-            }
+        let mut set_camera = false;
+        if let Ok(mut camera) = self.get_mut::<Camera>(entity.clone()) {
+            camera.is_active = true;
+            set_camera = true;
+        }
 
-            next_active_camera.is_active = true;
+        if set_camera {
+            for (id, mut camera_to_disable) in self.query::<&mut Camera>().iter() {
+                if id != entity {
+                    camera_to_disable.is_active = false;
+                }
+            }
         }
 
         Err(EmeraldError::new(format!(
-            "No camera found for entity {:?}",
+            "Entity {:?} either does not exist or does not hold a camera",
             entity
         )))
     }
+
+    #[inline]
+    pub fn get_active_camera(&self) -> Option<Entity> {
+        let mut cam = None;
+
+        for (id, camera) in self.query::<&Camera>().iter() {
+            if camera.is_active {
+                cam = Some(id);
+                break;
+            }
+        }
+
+        cam
+    }
+
 
     // TODO(bombfuse): Load an ecs world and physics world into this one.
     pub fn merge(&mut self, _world: EmeraldWorld) -> Result<(), EmeraldError> {

@@ -4,9 +4,6 @@ use crate::input::*;
 use crate::logging::*;
 use crate::rendering::*;
 use crate::world::*;
-use crate::EmeraldError;
-
-use hecs::Entity;
 
 pub struct Emerald<'a> {
     delta: f32,
@@ -76,27 +73,6 @@ impl<'a> Emerald<'a> {
         self.quad_ctx.quit()
     }
     // *****************************************
-
-    /// Disable all cameras then set the camera on the given entity as active.
-    /// Fails if the given entity does not exist, or does not have a camera.
-    #[inline]
-    pub fn make_active_camera(&mut self, entity: Entity) -> Result<(), EmeraldError> {
-        self.rendering_engine
-            .make_active_camera(entity, self.world_engine.world())
-    }
-
-    #[inline]
-    pub fn get_active_camera(&self) -> Option<Entity> {
-        let mut cam = None;
-
-        for (id, camera) in self.world_ref().query::<&Camera>().iter() {
-            if camera.is_active {
-                cam = Some(id);
-            }
-        }
-
-        cam
-    }
 
     pub fn graphics(&mut self) -> GraphicsHandler {
         GraphicsHandler::new(

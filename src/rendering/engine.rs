@@ -605,32 +605,6 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn make_active_camera(
-        &mut self,
-        entity: Entity,
-        world: &mut EmeraldWorld,
-    ) -> Result<(), EmeraldError> {
-        let mut set_camera = false;
-        if let Ok(mut camera) = world.get_mut::<Camera>(entity.clone()) {
-            camera.is_active = true;
-            set_camera = true;
-        }
-
-        if set_camera {
-            for (id, mut camera_to_disable) in world.query::<&mut Camera>().iter() {
-                if id != entity {
-                    camera_to_disable.is_active = false;
-                }
-            }
-        }
-
-        Err(EmeraldError::new(format!(
-            "Entity {:?} either does not exist or does not hold a camera",
-            entity
-        )))
-    }
-
-    #[inline]
     fn get_screen_size(&self, ctx: &Context) -> (f32, f32) {
         match self.settings.scalar {
             ScreenScalar::None => ctx.screen_size(),
