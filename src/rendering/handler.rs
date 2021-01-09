@@ -4,18 +4,15 @@ use miniquad::Context;
 pub struct GraphicsHandler<'a> {
     quad_ctx: &'a mut Context,
     rendering_engine: &'a mut RenderingEngine,
-    world_engine: &'a mut WorldEngine,
 }
 impl<'a> GraphicsHandler<'a> {
     pub fn new(
         quad_ctx: &'a mut Context,
         rendering_engine: &'a mut RenderingEngine,
-        world_engine: &'a mut WorldEngine,
     ) -> Self {
         GraphicsHandler {
             quad_ctx,
             rendering_engine,
-            world_engine,
         }
     }
 
@@ -24,9 +21,9 @@ impl<'a> GraphicsHandler<'a> {
     }
 
     #[cfg(feature = "physics")]
-    pub fn draw_colliders(&mut self, color: crate::Color) {
+    pub fn draw_colliders(&mut self, world: &mut EmeraldWorld, color: crate::Color) {
         self.rendering_engine
-            .draw_colliders(&mut self.quad_ctx, self.world_engine.world(), color)
+            .draw_colliders(&mut self.quad_ctx, world, color)
     }
 
     pub fn draw_sprite(&mut self, sprite: &Sprite, pos: &Position) {
