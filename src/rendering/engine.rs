@@ -216,12 +216,11 @@ impl RenderingEngine {
 
     #[inline]
     pub(crate) fn begin(&mut self, ctx: &mut Context) {
-        ctx.begin_default_pass(Default::default());
-        ctx.clear(
-            Some(self.settings.background_color.to_percentage()),
-            None,
-            None,
-        );
+        ctx.begin_default_pass(PassAction::Clear {
+            color: Some(self.settings.background_color.to_percentage()),
+            depth: None,
+            stencil: None,
+        });
     }
 
     /// Begins the process of rendering to a texture the size of the screen.
