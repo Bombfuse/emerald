@@ -566,7 +566,13 @@ impl RenderingEngine {
         let key = FontKey::new(font_path.clone(), font_size);
         let font = Font::from_bytes(ctx, font_data.as_slice(), font_size)?;
         self.fonts.insert(key.clone(), font);
-        self.populate_font_cache(ctx, &key, &ascii_character_list(), 24)?;
+
+        let mut default_cached_chars = ascii_character_list();
+        default_cached_chars.push('.');
+        default_cached_chars.push('!');
+        default_cached_chars.push('?');
+
+        self.populate_font_cache(ctx, &key, &default_cached_chars, font_size as u16)?;
 
         Ok(key)
     }
