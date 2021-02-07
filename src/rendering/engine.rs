@@ -13,7 +13,6 @@ pub struct RenderingEngine {
     pipeline: Pipeline,
     pub(crate) textures: HashMap<TextureKey, Texture>,
     pub(crate) fonts: HashMap<FontKey, Font>,
-    render_target: Option<miniquad::Texture>,
 }
 impl RenderingEngine {
     pub fn new(mut ctx: &mut Context, settings: RenderSettings) -> Self {
@@ -40,22 +39,18 @@ impl RenderingEngine {
             params,
         );
 
+        let fonts = HashMap::new();
         let mut textures = HashMap::new();
         let default_texture = Texture::default(&mut ctx).unwrap();
         textures.insert(TextureKey::default(), default_texture);
-
-        let fonts = HashMap::new();
 
         RenderingEngine {
             settings,
             pipeline,
             textures,
             fonts,
-            render_target: None,
         }
     }
-
-    pub(crate) fn update(&mut self, _delta: f64, _world: &mut hecs::World) {}
 
     #[inline]
     pub fn draw_world(
@@ -65,7 +60,6 @@ impl RenderingEngine {
     ) -> Result<(), EmeraldError> {
         let screen_size = self.get_screen_size(ctx);
         let (camera, camera_position) = get_camera_and_camera_position(world);
-
         let mut draw_queue = Vec::new();
 
         for (_id, (aseprite, position)) in world.inner.query::<(&mut Aseprite, &Position)>().iter()
@@ -223,45 +217,10 @@ impl RenderingEngine {
         });
     }
 
-    /// Begins the process of rendering to a texture the size of the screen.
-    #[inline]
-    pub(crate) fn begin_texture(&mut self, ctx: &mut Context) {
-        ctx.clear(
-            Some(self.settings.background_color.to_percentage()),
-            None,
-            None,
-        );
-        let (w, h) = ctx.screen_size();
-
-        self.render_target = Some(miniquad::Texture::new_render_texture(
-            ctx,
-            TextureParams {
-                width: w as _,
-                height: h as _,
-                format: TextureFormat::Depth,
-                ..Default::default()
-            },
-        ));
-    }
-
     #[inline]
     pub(crate) fn render(&mut self, ctx: &mut Context) {
         ctx.end_render_pass();
         ctx.commit_frame();
-    }
-
-    pub(crate) fn render_to_texture(
-        &mut self,
-        mut ctx: &mut Context,
-    ) -> Result<Texture, EmeraldError> {
-        if let Some(texture) = self.render_target {
-            let texture = Texture::from_texture(&mut ctx, texture)?;
-            return Ok(texture);
-        }
-
-        Err(EmeraldError::new(
-            "No texture found. Did you begin this rendering pass with 'begin_texture()`?",
-        ))
     }
 
     pub(crate) fn draw_label(
@@ -666,14 +625,35 @@ fn draw_texture(
         ScreenScalar::None => {
             Mat4::orthographic_rh_gl(0.0, view_size.0, 0.0, view_size.1, -1.0, 1.0)
         }
-        ScreenScalar::Keep => Mat4::orthographic_rh_gl(
-            0.0,
-            settings.resolution.0 as f32,
-            0.0,
-            settings.resolution.1 as f32,
-            -1.0,
-            1.0,
-        ),
+        ScreenScalar::Keep => {
+            let mut x_start = 0.0;
+            let mut y_start = 0.0;
+            let mut x_end = settings.resolution.0 as f32;
+            let mut y_end = settings.resolution.1 as f32;
+            // let keep_height = (view_size.0 * settings.resolution.1 as f32) > (view_size.1 * settings.resolution.0 as f32);
+
+            // if keep_height {
+            //     let scale = view_size.1 / settings.resolution.1 as f32;
+            //     let width = settings.resolution.0 as f32 * scale;
+            //     x_start = (view_size.0 - width) / 2.0;
+            //     x_end = (view_size.0 - width) + x_start;
+            //     println!("(x_start, x_end): {:?}", (x_start, x_end));
+            // } else {
+            //     let scale = view_size.0 / settings.resolution.0 as f32;
+            //     let height = settings.resolution.1 as f32 / scale;
+            //     y_start = (view_size.1 - height) / 2.0;
+            //     y_end = height;
+            // }
+
+            Mat4::orthographic_rh_gl(
+                -x_start,
+                x_end,
+                -y_start,
+                y_end,
+                -1.0,
+                1.0,
+            )
+        },
     };
 
     uniforms.projection = projection;

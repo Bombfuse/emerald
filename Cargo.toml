@@ -21,7 +21,7 @@ quad-snd = { git = "https://github.com/not-fl3/quad-snd", branch = "master" }
 
 # Dependencies
 image = { version = "0.23.12", default-features = false, features = [ "png" ] }
-glam = "0.11.0"
+glam = "0.12.0"
 log = "0.4.11"
 quad-rand = "0.1.1"
 fontdue = "0.4.0"
@@ -32,10 +32,10 @@ rapier2d = { version = "0.4.1", default-features = false, features = [ "dim2" ],
 nalgebra =  { version = "0.23.*" }
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
-miniquad = { version = "0.3.0-alpha.22", features = [ "log-impl" ] }
+miniquad = { version = "0.3.0-alpha.25", features = [ "log-impl" ] }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
-miniquad = "0.3.0-alpha.22"
+miniquad = "0.3.0-alpha.25"
 
 [lib]
 name = "emerald"
