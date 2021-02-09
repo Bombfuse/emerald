@@ -8,7 +8,14 @@ pub fn main() {
     let mut render_settings = RenderSettings::default();
     render_settings.resolution = (RES_WIDTH as u32, RES_HEIGHT as u32);
     settings.render_settings = render_settings;
-    emerald::start(Box::new(PhysicsGroupsExample { e1: None, e2: None, e3: None}), settings)
+    emerald::start(
+        Box::new(PhysicsGroupsExample {
+            e1: None,
+            e2: None,
+            e3: None,
+        }),
+        settings,
+    )
 }
 
 const GROUP_ONE: InteractionGroups = InteractionGroups::new(1, 1);
@@ -52,15 +59,17 @@ impl Game for PhysicsGroupsExample {
             )
             .unwrap();
 
-            emd.world().physics().build_collider(
-                body1,
-                ColliderBuilder::cuboid(16.0, 8.0).collision_groups(GROUP_ONE),
-            );
+        emd.world().physics().build_collider(
+            body1,
+            ColliderBuilder::cuboid(16.0, 8.0).collision_groups(GROUP_ONE),
+        );
 
-            emd.world().physics().build_collider(
-                body1,
-                ColliderBuilder::cuboid(16.0, 8.0).collision_groups(GROUP_ONE).sensor(true),
-            );
+        emd.world().physics().build_collider(
+            body1,
+            ColliderBuilder::cuboid(16.0, 8.0)
+                .collision_groups(GROUP_ONE)
+                .sensor(true),
+        );
 
         let (entity2, body2) = emd
             .world()

@@ -20,22 +20,22 @@ headless = []
 quad-snd = { git = "https://github.com/not-fl3/quad-snd", branch = "master" }
 
 # Dependencies
-image = { version = "0.23.12", default-features = false, features = [ "png" ] }
+image = { version = "0.23.13", default-features = false, features = [ "png" ] }
 glam = "0.12.0"
-log = "0.4.11"
-quad-rand = "0.1.1"
+log = "0.4.14"
+quad-rand = "0.2.0"
 fontdue = "0.4.0"
-nanoserde = "0.1.20"
+nanoserde = "0.1.22"
 hecs = { version = "0.3.1", default-features = false }
 gamepad = { version = "0.1.1", optional = true }
-rapier2d = { version = "0.4.1", default-features = false, features = [ "dim2" ], optional = true  }
-nalgebra =  { version = "0.23.*" }
+rapier2d = { version = "0.5.0", default-features = false, features = [ "dim2", "f32" ], optional = true  }
+nalgebra =  { version = "0.24.*" }
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
-miniquad = { version = "0.3.0-alpha.25", features = [ "log-impl" ] }
+miniquad = { version = "0.3.0-alpha.26", features = [ "log-impl" ] }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
-miniquad = "0.3.0-alpha.25"
+miniquad = "0.3.0-alpha.26"
 
 [lib]
 name = "emerald"

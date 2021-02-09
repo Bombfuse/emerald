@@ -6,10 +6,7 @@ pub struct GraphicsHandler<'a> {
     rendering_engine: &'a mut RenderingEngine,
 }
 impl<'a> GraphicsHandler<'a> {
-    pub fn new(
-        quad_ctx: &'a mut Context,
-        rendering_engine: &'a mut RenderingEngine,
-    ) -> Self {
+    pub fn new(quad_ctx: &'a mut Context, rendering_engine: &'a mut RenderingEngine) -> Self {
         GraphicsHandler {
             quad_ctx,
             rendering_engine,

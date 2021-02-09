@@ -626,10 +626,10 @@ fn draw_texture(
             Mat4::orthographic_rh_gl(0.0, view_size.0, 0.0, view_size.1, -1.0, 1.0)
         }
         ScreenScalar::Keep => {
-            let mut x_start = 0.0;
-            let mut y_start = 0.0;
-            let mut x_end = settings.resolution.0 as f32;
-            let mut y_end = settings.resolution.1 as f32;
+            let x_start = 0.0;
+            let y_start = 0.0;
+            let x_end = settings.resolution.0 as f32;
+            let y_end = settings.resolution.1 as f32;
             // let keep_height = (view_size.0 * settings.resolution.1 as f32) > (view_size.1 * settings.resolution.0 as f32);
 
             // if keep_height {
@@ -645,15 +645,8 @@ fn draw_texture(
             //     y_end = height;
             // }
 
-            Mat4::orthographic_rh_gl(
-                -x_start,
-                x_end,
-                -y_start,
-                y_end,
-                -1.0,
-                1.0,
-            )
-        },
+            Mat4::orthographic_rh_gl(-x_start, x_end, -y_start, y_end, -1.0, 1.0)
+        }
     };
 
     uniforms.projection = projection;

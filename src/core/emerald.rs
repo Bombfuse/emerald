@@ -75,10 +75,7 @@ impl<'a> Emerald<'a> {
     // *****************************************
 
     pub fn graphics(&mut self) -> GraphicsHandler {
-        GraphicsHandler::new(
-            &mut self.quad_ctx,
-            &mut self.rendering_engine,
-        )
+        GraphicsHandler::new(&mut self.quad_ctx, &mut self.rendering_engine)
     }
 
     // ************* Asset API ************* //

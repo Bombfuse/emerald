@@ -21,7 +21,7 @@ impl EmeraldWorld {
             inner: World::default(),
         }
     }
-    
+
     /// Disable all cameras then set the camera on the given entity as active.
     /// Fails if the given entity does not exist, or does not have a camera.
     #[inline]
@@ -59,7 +59,6 @@ impl EmeraldWorld {
 
         cam
     }
-
 
     // TODO(bombfuse): Load an ecs world and physics world into this one.
     pub fn merge(&mut self, _world: EmeraldWorld) -> Result<(), EmeraldError> {
