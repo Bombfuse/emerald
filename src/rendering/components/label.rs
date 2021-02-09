@@ -12,6 +12,7 @@ pub struct Label {
     pub color: Color,
     pub centered: bool,
     pub visible: bool,
+    pub visible_characters: i64,
 }
 impl Label {
     pub fn new<T: Into<String>>(text: T, font_key: FontKey, font_size: u16) -> Self {
@@ -35,6 +36,7 @@ impl Default for Label {
             centered: true,
             color: WHITE,
             visible: true,
+            visible_characters: -1,
         }
     }
 }

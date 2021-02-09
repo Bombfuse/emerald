@@ -241,6 +241,12 @@ impl RenderingEngine {
             )> = Vec::new();
 
             let mut total_width = 0.0;
+            let mut remaining_char_count = label.visible_characters;
+
+            if label.visible_characters < 0 {
+                remaining_char_count = label.text.len() as i64;
+            }
+
             for character in label.text.chars() {
                 if !font.characters.contains_key(&(character, label.font_size)) {
                     font.cache_glyph(&mut ctx, character, label.font_size)?;
@@ -271,14 +277,19 @@ impl RenderingEngine {
                         position.y - label.offset.y - top_coord,
                     );
 
-                    draw_calls.push((
-                        label.z_index,
-                        real_scale,
-                        real_position,
-                        target,
-                        label.color,
-                    ));
+                    
+                    if remaining_char_count > 0 {
+                        draw_calls.push((
+                            label.z_index,
+                            real_scale,
+                            real_position,
+                            target,
+                            label.color,
+                        ));
+                    }
                 }
+
+                remaining_char_count -= 1;
             }
 
             for draw_call in draw_calls {
