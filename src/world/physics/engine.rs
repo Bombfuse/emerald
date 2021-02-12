@@ -4,8 +4,8 @@ use rapier2d::dynamics::{
     BodyStatus, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet,
 };
 use rapier2d::geometry::{
-    BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, ContactEvent, NarrowPhase, Proximity,
-    ProximityEvent,
+    BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, ContactEvent, IntersectionEvent,
+    NarrowPhase,
 };
 use rapier2d::na::Isometry2;
 use rapier2d::pipeline::{ChannelEventCollector, PhysicsPipeline};
@@ -26,12 +26,12 @@ pub struct PhysicsEngine {
     pub(crate) integration_parameters: IntegrationParameters,
     pub(crate) event_handler: ChannelEventCollector,
     pub(crate) contact_recv: crossbeam::channel::Receiver<ContactEvent>,
-    pub(crate) proximity_recv: crossbeam::channel::Receiver<ProximityEvent>,
+    pub(crate) intersection_recv: crossbeam::channel::Receiver<IntersectionEvent>,
 
     entity_bodies: HashMap<Entity, RigidBodyHandle>,
     body_entities: HashMap<RigidBodyHandle, Entity>,
-    entity_body_collisions: HashMap<Entity, Vec<Entity>>,
-    entity_sensor_collisions: HashMap<Entity, Vec<Entity>>,
+    entity_collisions: HashMap<Entity, Vec<Entity>>,
+    entity_intersections: HashMap<Entity, Vec<Entity>>,
 }
 
 impl PhysicsEngine {
@@ -45,8 +45,8 @@ impl PhysicsEngine {
 
         // Initialize the event collector.
         let (contact_send, contact_recv) = crossbeam::channel::unbounded();
-        let (proximity_send, proximity_recv) = crossbeam::channel::unbounded();
-        let event_handler = ChannelEventCollector::new(proximity_send, contact_send);
+        let (intersection_send, intersection_recv) = crossbeam::channel::unbounded();
+        let event_handler = ChannelEventCollector::new(intersection_send, contact_send);
 
         PhysicsEngine {
             colliders,
@@ -58,19 +58,19 @@ impl PhysicsEngine {
             gravity: Vector2::new(0.0, 0.0),
             integration_parameters: IntegrationParameters::default(),
             contact_recv,
-            proximity_recv,
+            intersection_recv,
             event_handler,
             entity_bodies: HashMap::new(),
             body_entities: HashMap::new(),
-            entity_body_collisions: HashMap::new(),
-            entity_sensor_collisions: HashMap::new(),
+            entity_collisions: HashMap::new(),
+            entity_intersections: HashMap::new(),
         }
     }
 
     #[inline]
     pub(crate) fn step(&mut self, delta: f32) {
-        let dt = self.integration_parameters.dt();
-        self.integration_parameters.set_dt(delta);
+        let dt = self.integration_parameters.dt;
+        self.integration_parameters.dt = delta;
 
         self.pipeline.step(
             &self.gravity,
@@ -85,7 +85,7 @@ impl PhysicsEngine {
             &mut self.event_handler,
         );
 
-        self.integration_parameters.set_dt(dt);
+        self.integration_parameters.dt = dt;
     }
 
     #[inline]
@@ -132,27 +132,23 @@ impl PhysicsEngine {
     }
 
     #[inline]
-    pub(crate) fn consume_proximities(&mut self) {
+    pub(crate) fn consume_intersections(&mut self) {
         let mut intersections = Vec::new();
         let mut disjoints = Vec::new();
 
-        while let Ok(proximity_event) = self.proximity_recv.try_recv() {
+        while let Ok(intersection_event) = self.intersection_recv.try_recv() {
             if let (Some(collider_one), Some(collider_two)) = (
-                self.colliders.get(proximity_event.collider1),
-                self.colliders.get(proximity_event.collider2),
+                self.colliders.get(intersection_event.collider1),
+                self.colliders.get(intersection_event.collider2),
             ) {
                 if let (Some(entity_one), Some(entity_two)) = (
                     self.body_entities.get(&collider_one.parent()),
                     self.body_entities.get(&collider_two.parent()),
                 ) {
-                    match proximity_event.new_status {
-                        Proximity::Intersecting => {
-                            intersections.push((*entity_one, *entity_two));
-                        }
-                        Proximity::WithinMargin => {}
-                        Proximity::Disjoint => {
-                            disjoints.push((*entity_one, *entity_two));
-                        }
+                    if intersection_event.intersecting {
+                        intersections.push((*entity_one, *entity_two));
+                    } else {
+                        disjoints.push((*entity_one, *entity_two));
                     }
                 }
             }
@@ -170,13 +166,13 @@ impl PhysicsEngine {
     #[inline]
     fn add_sensor_intersection(&mut self, entity_one: Entity, entity_two: Entity) {
         let entity_one_collisions = self
-            .entity_sensor_collisions
+            .entity_intersections
             .entry(entity_one)
             .or_insert(Vec::new());
         entity_one_collisions.push(entity_two.clone());
 
         let entity_two_collisions = self
-            .entity_sensor_collisions
+            .entity_intersections
             .entry(entity_two)
             .or_insert(Vec::new());
         entity_two_collisions.push(entity_one.clone());
@@ -184,11 +180,11 @@ impl PhysicsEngine {
 
     #[inline]
     fn remove_sensor_intersection(&mut self, entity_one: Entity, entity_two: Entity) {
-        if let Some(intersections) = self.entity_sensor_collisions.get_mut(&entity_one) {
+        if let Some(intersections) = self.entity_intersections.get_mut(&entity_one) {
             intersections.retain(|&x| x != entity_two);
         }
 
-        if let Some(intersections) = self.entity_sensor_collisions.get_mut(&entity_two) {
+        if let Some(intersections) = self.entity_intersections.get_mut(&entity_two) {
             intersections.retain(|&x| x != entity_one);
         }
     }
@@ -196,13 +192,13 @@ impl PhysicsEngine {
     #[inline]
     fn add_body_contact(&mut self, entity_one: Entity, entity_two: Entity) {
         let entity_one_collisions = self
-            .entity_body_collisions
+            .entity_collisions
             .entry(entity_one)
             .or_insert(Vec::new());
         entity_one_collisions.push(entity_two.clone());
 
         let entity_two_collisions = self
-            .entity_body_collisions
+            .entity_collisions
             .entry(entity_two)
             .or_insert(Vec::new());
         entity_two_collisions.push(entity_one.clone());
@@ -210,18 +206,18 @@ impl PhysicsEngine {
 
     #[inline]
     fn remove_body_contact(&mut self, entity_one: Entity, entity_two: Entity) {
-        if let Some(intersections) = self.entity_body_collisions.get_mut(&entity_one) {
+        if let Some(intersections) = self.entity_collisions.get_mut(&entity_one) {
             intersections.retain(|&x| x != entity_two);
         }
 
-        if let Some(intersections) = self.entity_body_collisions.get_mut(&entity_two) {
+        if let Some(intersections) = self.entity_collisions.get_mut(&entity_two) {
             intersections.retain(|&x| x != entity_one);
         }
     }
 
     #[inline]
     pub(crate) fn get_colliding_areas(&self, entity: Entity) -> Vec<Entity> {
-        if let Some(colliding_areas) = self.entity_sensor_collisions.get(&entity) {
+        if let Some(colliding_areas) = self.entity_intersections.get(&entity) {
             return colliding_areas.clone();
         }
 
@@ -230,7 +226,7 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn get_colliding_bodies(&self, entity: Entity) -> Vec<Entity> {
-        if let Some(colliding_bodies) = self.entity_body_collisions.get(&entity) {
+        if let Some(colliding_bodies) = self.entity_collisions.get(&entity) {
             return colliding_bodies.clone();
         }
 
@@ -291,7 +287,7 @@ impl PhysicsEngine {
     #[inline]
     pub(crate) fn remove_body(&mut self, entity: Entity) -> Option<RigidBody> {
         let mut body_entities = Vec::new();
-        for (e, _) in &self.entity_body_collisions {
+        for (e, _) in &self.entity_collisions {
             body_entities.push(e.clone());
         }
 
@@ -300,7 +296,7 @@ impl PhysicsEngine {
         }
 
         let mut sensor_entities = Vec::new();
-        for (e, _) in &self.entity_sensor_collisions {
+        for (e, _) in &self.entity_intersections {
             sensor_entities.push(e.clone());
         }
         for sensor_entity in sensor_entities {

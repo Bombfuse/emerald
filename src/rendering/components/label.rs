@@ -1,7 +1,9 @@
 use crate::rendering::*;
 use crate::*;
 
-#[derive(Clone, Debug)]
+use fontdue::layout::{HorizontalAlign, VerticalAlign, WrapStyle};
+
+#[derive(Clone)]
 pub struct Label {
     pub text: String,
     pub offset: Vector2<f32>,
@@ -12,6 +14,13 @@ pub struct Label {
     pub color: Color,
     pub centered: bool,
     pub visible: bool,
+    pub visible_characters: i64,
+
+    pub horizontal_align: HorizontalAlign,
+    pub vertical_align: VerticalAlign,
+    pub wrap_style: WrapStyle,
+    pub max_height: Option<f32>,
+    pub max_width: Option<f32>,
 }
 impl Label {
     pub fn new<T: Into<String>>(text: T, font_key: FontKey, font_size: u16) -> Self {
@@ -35,6 +44,13 @@ impl Default for Label {
             centered: true,
             color: WHITE,
             visible: true,
+            visible_characters: -1,
+
+            horizontal_align: HorizontalAlign::Left,
+            vertical_align: VerticalAlign::Top,
+            wrap_style: WrapStyle::Word,
+            max_height: None,
+            max_width: None,
         }
     }
 }

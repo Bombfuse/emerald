@@ -92,7 +92,7 @@ impl<'a> PhysicsHandler<'a> {
             .sync_game_world_to_physics_world(&mut self.world);
 
         self.physics_engine.consume_contacts();
-        self.physics_engine.consume_proximities();
+        self.physics_engine.consume_intersections();
     }
 
     pub fn set_gravity(&mut self, gravity: Vector2<f32>) {

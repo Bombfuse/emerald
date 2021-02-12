@@ -32,6 +32,7 @@ pub use rapier2d::{
     geometry::{Collider, ColliderBuilder, ColliderHandle, InteractionGroups},
     na as nalgebra,
     na::Vector2,
+    parry,
 };
 //
 

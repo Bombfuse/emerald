@@ -2,8 +2,13 @@ use crate::*;
 
 #[derive(Clone, Copy, Debug)]
 pub enum ScreenScalar {
+    /// Perform no automatic scaling
     None,
+
+    /// Keep the initial aspect ratio, providing black borders
     Keep,
+
+    /// Stretch to fill screen
     Stretch,
 }
 

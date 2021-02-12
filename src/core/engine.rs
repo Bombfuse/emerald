@@ -19,7 +19,7 @@ pub struct GameEngine {
     world_engine: WorldEngine,
     last_instant: f64,
     fps_tracker: VecDeque<f64>,
-    cache: Cache,
+    asset_store: AssetStore,
 }
 impl GameEngine {
     pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
@@ -35,7 +35,7 @@ impl GameEngine {
         let starting_amount = 50;
         let mut fps_tracker = VecDeque::with_capacity(starting_amount);
         fps_tracker.resize(starting_amount, 1.0 / 60.0);
-        let mut cache = Cache::new();
+        let mut asset_store = AssetStore::new(ctx);
         let last_instant = miniquad::date::now();
 
         let emd = Emerald::new(
@@ -47,7 +47,7 @@ impl GameEngine {
             &mut world_engine,
             &mut logging_engine,
             &mut rendering_engine,
-            &mut cache,
+            &mut asset_store,
         );
 
         game.initialize(emd);
@@ -62,7 +62,7 @@ impl GameEngine {
             rendering_engine,
             world_engine,
             last_instant,
-            cache,
+            asset_store,
         }
     }
 
@@ -97,12 +97,10 @@ impl EventHandler for GameEngine {
             &mut self.world_engine,
             &mut self.logging_engine,
             &mut self.rendering_engine,
-            &mut self.cache,
+            &mut self.asset_store,
         );
 
         self.game.update(emd);
-        self.rendering_engine
-            .update(delta, &mut self.world_engine.world().inner);
         self.audio_engine.frame();
         self.logging_engine.update().unwrap();
         self.input_engine.update_and_rollover().unwrap();
@@ -138,7 +136,7 @@ impl EventHandler for GameEngine {
             &mut self.world_engine,
             &mut self.logging_engine,
             &mut self.rendering_engine,
-            &mut self.cache,
+            &mut self.asset_store,
         );
 
         self.game.draw(emd);
