@@ -1,5 +1,5 @@
-mod cache;
-mod loading;
+mod asset_store;
+mod asset_loader;
 
-pub(crate) use cache::*;
-pub use loading::*;
+pub(crate) use asset_store::*;
+pub use asset_loader::*;

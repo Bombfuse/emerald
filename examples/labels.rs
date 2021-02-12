@@ -24,26 +24,10 @@ impl Game for GamepadExample {
             .loader()
             .font("./examples/assets/Roboto-Light.ttf", 40)
             .unwrap();
-
-        emd.world().spawn((
-            ElapsedTime(0.0),
-            Position::new(0.0, -320.0),
-            Label::new("Emerald Engine", font.clone(), 40),
-        ));
-        emd.world().spawn((
-            ElapsedTime(0.0),
-            Position::new(0.0, -160.0),
-            Label::new("Emerald Engine", font.clone(), 80),
-        ));
         emd.world().spawn((
             ElapsedTime(0.0),
             Position::new(0.0, 0.0),
-            Label::new("Emerald Engine", font.clone(), 120),
-        ));
-        emd.world().spawn((
-            ElapsedTime(0.0),
-            Position::new(0.0, 160.0),
-            Label::new("Emerald Engine", font, 160),
+            Label::new("Emerald Engine", font.clone(), 80),
         ));
     }
 
@@ -51,7 +35,9 @@ impl Game for GamepadExample {
         let mut input = emd.input();
         let delta = emd.delta();
 
-        for (_, (label, elapsed_time)) in emd.world().query::<(&mut Label, &mut ElapsedTime)>().iter() {
+        for (_, (label, elapsed_time)) in
+            emd.world().query::<(&mut Label, &mut ElapsedTime)>().iter()
+        {
             if input.is_key_just_pressed(KeyCode::A) {
                 label.scale *= 0.5;
             } else if input.is_key_just_pressed(KeyCode::D) {

@@ -7,6 +7,7 @@ use glam::Vec2;
 
 #[derive(Clone, Debug)]
 pub struct Texture {
+    pub(crate) key: TextureKey,
     pub(crate) inner: miniquad::Texture,
     pub(crate) width: u16,
     pub(crate) height: u16,
@@ -14,8 +15,12 @@ pub struct Texture {
     pub(crate) bindings: Bindings,
 }
 impl Texture {
-    pub(crate) fn new(mut ctx: &mut Context, data: Vec<u8>) -> Result<Self, EmeraldError> {
-        Self::from_png_bytes(&mut ctx, &data)
+    pub(crate) fn new(
+        mut ctx: &mut Context,
+        key: TextureKey,
+        data: Vec<u8>,
+    ) -> Result<Self, EmeraldError> {
+        Self::from_png_bytes(&mut ctx, key, &data)
     }
 
     pub fn default(mut ctx: &mut Context) -> Result<Self, EmeraldError> {
@@ -29,10 +34,14 @@ impl Texture {
 
         let texture = miniquad::Texture::from_rgba8(ctx, 4, 4, &pixels);
 
-        Self::from_texture(&mut ctx, texture)
+        Self::from_texture(&mut ctx, TextureKey::new("emerald_default_texture"), texture)
     }
 
-    pub fn from_png_bytes(ctx: &mut Context, bytes: &[u8]) -> Result<Self, EmeraldError> {
+    pub fn from_png_bytes(
+        ctx: &mut Context,
+        key: TextureKey,
+        bytes: &[u8],
+    ) -> Result<Self, EmeraldError> {
         let img = image::load_from_memory(&bytes)
             .unwrap_or_else(|e| panic!(e))
             .to_rgba8();
@@ -42,22 +51,24 @@ impl Texture {
         let height = img.height() as u16;
         let bytes = img.into_raw();
 
-        Self::from_rgba8(ctx, width, height, &bytes)
+        Self::from_rgba8(ctx, key, width, height, &bytes)
     }
 
     pub(crate) fn from_rgba8(
         mut ctx: &mut Context,
+        key: TextureKey,
         width: u16,
         height: u16,
         bytes: &[u8],
     ) -> Result<Self, EmeraldError> {
         let texture = miniquad::Texture::from_rgba8(&mut ctx, width, height, bytes);
 
-        Self::from_texture(&mut ctx, texture)
+        Self::from_texture(&mut ctx, key, texture)
     }
 
     pub(crate) fn from_texture(
         ctx: &mut miniquad::Context,
+        key: TextureKey,
         texture: miniquad::Texture,
     ) -> Result<Self, EmeraldError> {
         #[rustfmt::skip]
@@ -78,6 +89,7 @@ impl Texture {
         };
 
         Ok(Texture {
+            key,
             width: texture.width as u16,
             height: texture.height as u16,
             inner: texture,
@@ -95,7 +107,7 @@ impl Texture {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct TextureKey(String);
+pub struct TextureKey(pub(crate) String);
 impl TextureKey {
     pub fn new<T: Into<String>>(texture_path: T) -> Self {
         TextureKey(texture_path.into())

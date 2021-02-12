@@ -1,6 +1,6 @@
 // Credit to not-fl3/macroquad text: https://github.com/not-fl3/macroquad/blob/0.3/src/text.rs
 use crate::rendering::*;
-use crate::{Color, EmeraldError};
+use crate::{Color, EmeraldError, AssetStore};
 
 use miniquad::Context;
 use std::collections::HashMap;
@@ -8,7 +8,7 @@ use std::collections::HashMap;
 pub(crate) const DEFAULT_FONT_TEXTURE_PATH: &str = "ghosty_spooky_mister_mime_dude";
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub struct FontKey(String, u32);
+pub struct FontKey(pub(crate) String, pub(crate) u32);
 impl FontKey {
     pub fn new<T: Into<String>>(font_path: T, font_size: u32) -> Self {
         FontKey(font_path.into(), font_size)
@@ -73,126 +73,146 @@ impl FontImage {
 }
 
 pub(crate) struct Font {
-    pub inner: fontdue::Font,
+    pub font_key: FontKey,
     pub characters: HashMap<(char, u16), CharacterInfo>,
-    pub font_texture: Texture,
+    pub font_texture_key: TextureKey,
     pub font_image: FontImage,
     pub cursor_x: u16,
     pub cursor_y: u16,
     pub max_line_height: u16,
 }
 impl Font {
-    const GAP: u16 = 2;
+    pub const GAP: u16 = 2;
 
-    pub fn from_bytes(
-        ctx: &mut miniquad::Context,
-        bytes: &[u8],
-        font_size: u32,
-    ) -> Result<Font, EmeraldError> {
-        let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
-        let font_texture =
-            Texture::from_rgba8(ctx, font_image.width, font_image.height, &font_image.bytes)?;
-
-        let mut font_settings = fontdue::FontSettings::default();
-        font_settings.scale = font_size as f32;
-
+    pub fn new(font_key: FontKey, font_texture_key: TextureKey, font_image: FontImage) -> Result<Font, EmeraldError> {
         Ok(Font {
-            inner: fontdue::Font::from_bytes(bytes, font_settings)?,
             font_image,
-            font_texture,
+            font_key,
+            font_texture_key,
             characters: HashMap::new(),
             cursor_x: 0,
             cursor_y: 0,
             max_line_height: 0,
         })
     }
+}
 
-    pub fn cache_glyph(
-        &mut self,
-        mut ctx: &mut Context,
-        character: char,
-        size: u16,
-    ) -> Result<(), EmeraldError> {
-        let (metrics, bitmap) = self.inner.rasterize(character, size as f32);
 
-        if metrics.advance_height != 0.0 {
-            return Err(EmeraldError::new("Vertical fonts are not supported"));
-        }
+pub(crate) fn cache_glyph(
+    mut ctx: &mut Context,
+    asset_store: &mut AssetStore,
+    font_key: &FontKey,
+    character: char,
+    size: u16
+) -> Result<(), EmeraldError> {
+    let mut recache_characters = None;
+    let mut optional_new_font_texture = None;
+    let mut update_font_texture = false;
 
-        let (width, height) = (metrics.width, metrics.height);
-        let advance = metrics.advance_width;
-        let (offset_x, offset_y) = (metrics.xmin, metrics.ymin);
+    let mut optional_metrics = None;
+    let mut optional_bitmap = None;
 
-        let x = if self.cursor_x + (width as u16) < self.font_image.width {
-            if height as u16 > self.max_line_height {
-                self.max_line_height = height as u16;
-            }
-            let res = self.cursor_x;
-            self.cursor_x += width as u16 + Self::GAP;
-            res
-        } else {
-            self.cursor_y += self.max_line_height + Self::GAP;
-            self.cursor_x = width as u16 + Self::GAP;
-            self.max_line_height = height as u16;
-            Self::GAP
-        };
-
-        let y = self.cursor_y;
-
-        let character_info = CharacterInfo {
-            glyph_x: x as _,
-            glyph_y: y as _,
-            glyph_w: width as _,
-            glyph_h: height as _,
-
-            advance,
-            offset_x,
-            offset_y,
-        };
-
-        self.characters.insert((character, size), character_info);
-
-        // texture bounds exceeded
-        if self.cursor_y + height as u16 > self.font_image.height {
-            // reset glyph cache state
-            let characters = self.characters.drain().collect::<Vec<_>>();
-            self.cursor_x = 0;
-            self.cursor_y = 0;
-            self.max_line_height = 0;
-
-            // increase font texture size
-            self.font_image = FontImage::gen_image_color(
-                self.font_image.width * 2,
-                self.font_image.height * 2,
-                Color::new(0, 0, 0, 0),
-            );
-
-            self.font_texture = Texture::from_rgba8(
-                ctx,
-                self.font_image.width,
-                self.font_image.height,
-                &self.font_image.bytes[..],
-            )?;
-
-            // recache all previously cached symbols
-            for ((character, size), _) in characters {
-                self.cache_glyph(&mut ctx, character, size)?;
-            }
-        } else {
-            for j in 0..height {
-                for i in 0..width {
-                    let coverage = bitmap[j * width + i];
-                    self.font_image.set_pixel(
-                        x as u32 + i as u32,
-                        y as u32 + j as u32,
-                        Color::new(255, 255, 255, coverage),
-                    );
-                }
-            }
-
-            self.font_texture.update(&mut ctx, &self.font_image);
-        }
-
-        Ok(())
+    if let Some(font) = asset_store.get_fontdue_font(&font_key) {
+        let (metrics, bitmap) = font.rasterize(character, size as f32);
+        optional_metrics = Some(metrics);
+        optional_bitmap = Some(bitmap);
     }
+
+    if let (Some(metrics), Some(bitmap)) = (optional_metrics, optional_bitmap) {
+        if let Some(font) = asset_store.get_font_mut(&font_key) {
+            if metrics.advance_height != 0.0 {
+                return Err(EmeraldError::new("Vertical fonts are not supported"));
+            }
+    
+            let (width, height) = (metrics.width, metrics.height);
+            let advance = metrics.advance_width;
+            let (offset_x, offset_y) = (metrics.xmin, metrics.ymin);
+    
+            let x = if font.cursor_x + (width as u16) < font.font_image.width {
+                if height as u16 > font.max_line_height {
+                    font.max_line_height = height as u16;
+                }
+                let res = font.cursor_x;
+                font.cursor_x += width as u16 + Font::GAP;
+                res
+            } else {
+                font.cursor_y += font.max_line_height + Font::GAP;
+                font.cursor_x = width as u16 + Font::GAP;
+                font.max_line_height = height as u16;
+                Font::GAP
+            };
+    
+            let y = font.cursor_y;
+    
+            let character_info = CharacterInfo {
+                glyph_x: x as _,
+                glyph_y: y as _,
+                glyph_w: width as _,
+                glyph_h: height as _,
+    
+                advance,
+                offset_x,
+                offset_y,
+            };
+    
+            font.characters.insert((character, size), character_info);
+    
+            // texture bounds exceeded
+            if font.cursor_y + height as u16 > font.font_image.height {
+                // reset glyph asset_store state
+                let characters = font.characters.drain().collect::<Vec<_>>();
+                font.cursor_x = 0;
+                font.cursor_y = 0;
+                font.max_line_height = 0;
+    
+                // increase font texture size
+                font.font_image = FontImage::gen_image_color(
+                    font.font_image.width * 2,
+                    font.font_image.height * 2,
+                    Color::new(0, 0, 0, 0),
+                );
+    
+                let new_font_texture = Texture::from_rgba8(
+                    ctx,
+                    font.font_texture_key.clone(),
+                    font.font_image.width,
+                    font.font_image.height,
+                    &font.font_image.bytes[..],
+                )?;
+                
+                optional_new_font_texture = Some((font.font_texture_key.clone(), new_font_texture));
+                recache_characters = Some(characters);
+            } else {
+                for j in 0..height {
+                    for i in 0..width {
+                        let coverage = bitmap[j * width + i];
+                        font.font_image.set_pixel(
+                            x as u32 + i as u32,
+                            y as u32 + j as u32,
+                            Color::new(255, 255, 255, coverage),
+                        );
+                    }
+                }
+    
+                update_font_texture = true;
+            }
+        }
+    }
+    
+    if let Some((font_texture_key, new_font_texture)) = optional_new_font_texture {
+        asset_store.insert_texture(font_texture_key, new_font_texture);
+    }
+
+    if update_font_texture {
+        asset_store.update_font_texture(&mut ctx, &font_key);
+    }
+
+    if let Some(characters) = recache_characters {
+        // recache all previously asset_stored symbols
+        for ((character, size), _) in characters {
+            cache_glyph(&mut ctx, asset_store, &font_key, character, size)?;
+        }
+    }
+
+    Ok(())
 }
