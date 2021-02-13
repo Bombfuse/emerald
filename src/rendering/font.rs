@@ -2,6 +2,8 @@
 use crate::rendering::*;
 use crate::{Color, EmeraldError, AssetStore};
 
+pub use fontdue::layout::{VerticalAlign, HorizontalAlign, WrapStyle};
+
 use miniquad::Context;
 use std::collections::HashMap;
 

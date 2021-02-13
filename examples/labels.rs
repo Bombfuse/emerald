@@ -19,15 +19,34 @@ impl Game for GamepadExample {
                 )
                 .unwrap();
         }
-
         let font = emd
             .loader()
             .font("./examples/assets/Roboto-Light.ttf", 40)
             .unwrap();
+
+        let mut left_aligned_label = Label::new("Emerald Engine", font.clone(), 80);
+        left_aligned_label.max_width = Some(400.0);
+
+        let mut centered_label = left_aligned_label.clone();
+        centered_label.horizontal_align = HorizontalAlign::Center;
+
+        let mut right_label = left_aligned_label.clone();
+        right_label.horizontal_align = HorizontalAlign::Right;
+
         emd.world().spawn((
             ElapsedTime(0.0),
-            Position::new(0.0, 0.0),
-            Label::new("Emerald Engine", font.clone(), 80),
+            Position::new(-300.0, 0.0),
+            left_aligned_label,
+        ));
+        emd.world().spawn((
+            ElapsedTime(0.0),
+            Position::new(-300.0, 300.0),
+            centered_label,
+        ));
+        emd.world().spawn((
+            ElapsedTime(0.0),
+            Position::new(-300.0, -300.0),
+            right_label,
         ));
     }
 
@@ -42,6 +61,10 @@ impl Game for GamepadExample {
                 label.scale *= 0.5;
             } else if input.is_key_just_pressed(KeyCode::D) {
                 label.scale *= 2.0;
+            } else if input.is_key_just_pressed(KeyCode::E) {
+                label.max_width = Some(800.0);
+            } else if input.is_key_just_pressed(KeyCode::R) {
+                label.max_width = Some(400.0);
             }
 
             // elapsed_time.0 = elapsed_time.0 + delta;

@@ -3,7 +3,7 @@ use crate::rendering::*;
 use crate::world::*;
 use crate::*;
 
-use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings};
+use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
 use glam::{Mat4, Vec2, Vec4};
 use miniquad::*;
 
@@ -40,7 +40,7 @@ impl RenderingEngine {
         RenderingEngine {
             settings,
             pipeline,
-            layout: Layout::new(CoordinateSystem::PositiveYUp),
+            layout: Layout::new(CoordinateSystem::PositiveYDown),
         }
     }
 
@@ -233,6 +233,10 @@ impl RenderingEngine {
             ..LayoutSettings::default()
         });
 
+        if let Some(font) = asset_store.get_fontdue_font(&label.font_key) {
+            self.layout.append(&[font], &TextStyle::new(&label.text, label.font_size as f32, 0));
+        }
+
         let mut font_texture_width = 0;
         let mut font_texture_height = 0;
         let mut font_texture_key: Option<TextureKey> = None;
@@ -254,19 +258,21 @@ impl RenderingEngine {
             Vec2,      // real_position
             Rectangle, // target
             Color,     // color
-            bool,      // Centered
             bool,      // Visible
         )> = Vec::new();
 
         ctx.apply_pipeline(&self.pipeline);
 
-        let mut total_width = 0.0;
         let mut remaining_char_count = label.visible_characters;
         if label.visible_characters < 0 {
             remaining_char_count = label.text.len() as i64;
         }
 
-        for character in label.text.chars() {
+        for glyph in self.layout.glyphs() {
+            let character = glyph.key.c;
+            let x = glyph.x;
+            let y = glyph.y;
+
             let mut need_to_cache_glyph = false;
             if let Some(font) = asset_store.get_font(&label.font_key) {
                 need_to_cache_glyph = !font.characters.contains_key(&(character, label.font_size));
@@ -279,12 +285,8 @@ impl RenderingEngine {
             if let Some(font) = asset_store.get_font_mut(&label.font_key) {
                 let font_data = &font.characters[&(character, label.font_size)];
                 {
-                    let left_coord = font_data.offset_x as f32 * label.scale + total_width;
-                    let top_coord = label.font_size as f32 * label.scale
-                        - font_data.glyph_h as f32 * label.scale
-                        - font_data.offset_y as f32 * label.scale;
-
-                    total_width += font_data.advance * label.scale;
+                    let left_coord = (font_data.offset_x as f32 + x) * label.scale;
+                    let top_coord = y * label.scale;
 
                     let target = Rectangle::new(
                         (font_data.glyph_x as f32) / font_texture_width as f32,
@@ -309,7 +311,6 @@ impl RenderingEngine {
                             real_position,
                             target,
                             label.color,
-                            label.centered,
                             label.visible
                         ));
                     }
@@ -318,14 +319,10 @@ impl RenderingEngine {
                 remaining_char_count -= 1;
             }
         }
-        
+
         if let Some(font_texture_key) = font_texture_key {
             for draw_call in draw_calls {
-                let (z_index, real_scale, mut real_position, target, mut color, centered, visible) = draw_call;
-    
-                if centered {
-                    real_position.x -= total_width / 2.0;
-                }
+                let (z_index, real_scale, real_position, target, mut color, visible) = draw_call;
     
                 if !visible {
                     color.a = 0;
