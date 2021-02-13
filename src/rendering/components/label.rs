@@ -46,7 +46,7 @@ impl Default for Label {
             visible: true,
             visible_characters: -1,
 
-            horizontal_align: HorizontalAlign::Left,
+            horizontal_align: HorizontalAlign::Center,
             vertical_align: VerticalAlign::Middle,
             wrap_style: WrapStyle::Word,
             max_height: None,
