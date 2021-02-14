@@ -258,7 +258,9 @@ impl RenderingEngine {
             Vec2,      // real_position
             Rectangle, // target
             Color,     // color
+            bool,      // centered
             bool,      // Visible
+            Option<f32>, // max_width
         )> = Vec::new();
 
         ctx.apply_pipeline(&self.pipeline);
@@ -311,7 +313,9 @@ impl RenderingEngine {
                             real_position,
                             target,
                             label.color,
-                            label.visible
+                            label.centered,
+                            label.visible,
+                            label.max_width.clone(),
                         ));
                     }
                 }
@@ -322,8 +326,14 @@ impl RenderingEngine {
 
         if let Some(font_texture_key) = font_texture_key {
             for draw_call in draw_calls {
-                let (z_index, real_scale, real_position, target, mut color, visible) = draw_call;
+                let (z_index, real_scale, mut real_position, target, mut color, centered, visible, max_width) = draw_call;
     
+                if centered {
+                    if let Some(max_width) = max_width {
+                        real_position.x -= max_width / 2.0;
+                    }
+                }
+
                 if !visible {
                     color.a = 0;
                 }

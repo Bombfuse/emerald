@@ -35,17 +35,17 @@ impl Game for GamepadExample {
 
         emd.world().spawn((
             ElapsedTime(0.0),
-            Position::new(-300.0, 0.0),
+            Position::new(0.0, 0.0),
             left_aligned_label,
         ));
         emd.world().spawn((
             ElapsedTime(0.0),
-            Position::new(-300.0, 300.0),
+            Position::new(0.0, 300.0),
             centered_label,
         ));
         emd.world().spawn((
             ElapsedTime(0.0),
-            Position::new(-300.0, -300.0),
+            Position::new(0.0, -300.0),
             right_label,
         ));
     }
