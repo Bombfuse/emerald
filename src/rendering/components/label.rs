@@ -50,7 +50,7 @@ impl Default for Label {
             vertical_align: VerticalAlign::Middle,
             wrap_style: WrapStyle::Word,
             max_height: None,
-            max_width: None,
+            max_width: Some(300.0),
         }
     }
 }
