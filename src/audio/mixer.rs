@@ -40,8 +40,20 @@ impl Mixer {
         self.inner.set_volume_self(Volume(volume))
     }
 
+    pub fn sounds(&self) -> Vec<SoundId> {
+        self.sound_ids.clone()
+    }
+
     pub fn stop(&mut self, id: SoundId) {
-        self.inner.stop(id)
+        self.inner.stop(id);
+    }
+
+    pub fn pause(&mut self, id: SoundId) {
+        self.inner.pause(id);
+    }
+
+    pub fn resume(&mut self, id: SoundId) {
+        self.inner.resume(id);
     }
 
     pub fn clear(&mut self) {
