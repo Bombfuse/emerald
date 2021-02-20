@@ -52,9 +52,8 @@ impl Game for GamepadExample {
 
     fn update(&mut self, mut emd: Emerald) {
         let mut input = emd.input();
-        let delta = emd.delta();
 
-        for (_, (label, elapsed_time)) in
+        for (_, (label, _elapsed_time)) in
             emd.world().query::<(&mut Label, &mut ElapsedTime)>().iter()
         {
             if input.is_key_just_pressed(KeyCode::A) {
