@@ -98,6 +98,11 @@ impl<'a> Emerald<'a> {
             &mut self.asset_store,
         )
     }
+
+    #[inline]
+    pub fn writer(&mut self) -> Writer {
+        Writer::new()
+    }
     // ************************************* //
 
     // ************* Audio API ************* //

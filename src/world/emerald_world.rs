@@ -38,6 +38,8 @@ impl EmeraldWorld {
                     camera_to_disable.is_active = false;
                 }
             }
+
+            return Ok(());
         }
 
         Err(EmeraldError::new(format!(

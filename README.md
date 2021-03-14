@@ -1,4 +1,4 @@
-![Emerald](./banner_large.png)
+![Emerald](assets/banner_large.png)
 [![Crates.io](https://img.shields.io/crates/v/emerald.svg)](https://crates.io/crates/emerald)
 [![Build Status](https://travis-ci.com/Bombfuse/emerald.svg?branch=master)](https://travis-ci.com/Bombfuse/emerald)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
@@ -122,8 +122,7 @@ let mut aseprite = emd.loader()
 
 aseprite.play("some_aseprite_animation");
 
-emd.world().inner()
-    .push((aseprite, Position::zero()));
+emd.world().spawn((aseprite, Position::zero()));
 ```
 
 Export settings

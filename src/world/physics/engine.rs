@@ -30,6 +30,8 @@ pub struct PhysicsEngine {
 
     entity_bodies: HashMap<Entity, RigidBodyHandle>,
     body_entities: HashMap<RigidBodyHandle, Entity>,
+    body_colliders: HashMap<RigidBodyHandle, Vec<ColliderHandle>>,
+    collider_body: HashMap<ColliderHandle, RigidBodyHandle>,
     entity_collisions: HashMap<Entity, Vec<Entity>>,
     entity_intersections: HashMap<Entity, Vec<Entity>>,
 }
@@ -62,6 +64,8 @@ impl PhysicsEngine {
             event_handler,
             entity_bodies: HashMap::new(),
             body_entities: HashMap::new(),
+            body_colliders: HashMap::new(),
+            collider_body: HashMap::new(),
             entity_collisions: HashMap::new(),
             entity_intersections: HashMap::new(),
         }
@@ -233,6 +237,17 @@ impl PhysicsEngine {
         Vec::new()
     }
 
+    #[inline]
+    pub fn get_colliders(&self, entity: Entity) -> Vec<ColliderHandle> {
+        if let Some(rbh) = self.entity_bodies.get(&entity) {
+            if let Some(colliders) = self.body_colliders.get(&rbh) {
+                return colliders.clone();
+            }
+        }
+
+        Vec::new()
+    }
+
     /// Builds the described rigid body for the given entity.
     /// Fails if the entity does not have a position or if the handle is unable to be inserted into the ECS world.
     #[inline]
@@ -281,6 +296,14 @@ impl PhysicsEngine {
             .colliders
             .insert(collider, body_handle, &mut self.bodies);
 
+        self.collider_body.insert(handle, body_handle);
+        
+        if let Some(colliders) = self.body_colliders.get_mut(&body_handle) {
+            colliders.push(handle);
+        } else {
+            self.body_colliders.insert(body_handle, vec![handle]);
+        }
+
         handle
     }
 
@@ -305,6 +328,11 @@ impl PhysicsEngine {
 
         if let Some(body_handle) = self.entity_bodies.remove(&entity) {
             self.body_entities.remove(&body_handle);
+            if let Some(colliders) = self.body_colliders.remove(&body_handle) {
+                for collider in colliders {
+                    self.remove_collider(collider);
+                }
+            }
 
             if let Some(body) =
                 self.bodies
@@ -319,8 +347,31 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn remove_collider(&mut self, collider_handle: ColliderHandle) -> Option<Collider> {
-        self.colliders
-            .remove(collider_handle, &mut self.bodies, false)
+        if let Some(collider) = self.colliders.remove(collider_handle, &mut self.bodies, false) {
+            if let Some(rbh) = self.collider_body.remove(&collider_handle) {
+                if let Some(colliders) = self.body_colliders.get_mut(&rbh) {
+                    let mut i = 0;
+                    let mut found = false;
+
+                    for c in colliders.iter() {
+                        if *c == collider_handle {
+                            found = true;
+                            break;
+                        }
+
+                        i += 1;
+                    }
+
+                    if found {
+                        colliders.remove(i);
+                    }
+                }
+            }
+
+            return Some(collider);
+        }
+
+        None
     }
 
     #[inline]
