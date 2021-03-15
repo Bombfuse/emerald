@@ -76,6 +76,10 @@ impl AssetStore {
     }
 
     pub fn insert_texture(&mut self, key: TextureKey, texture: Texture) {
+        if let Some(_) = self.get_texture(&key) {
+            self.remove_texture(key.clone());
+        }
+
         self.textures.push(texture);
         self.texture_key_map.insert(key, self.textures.len() - 1);
     }
@@ -136,29 +140,20 @@ impl AssetStore {
         None
     }
 
-    // #[inline]
-    // fn update_texture_map(&mut self) {
-    //     self.texture_key_map = HashMap::new();
+    pub fn remove_texture(&mut self, key: TextureKey) -> Option<Texture> {
+        let mut i = -1;
 
-    //     for i in 0..self.textures.len() {
-    //         if let Some(texture) = self.textures.get(i) {
-    //             self.texture_key_map
-    //                 .insert(texture.key.clone(), i);
-    //         }
-    //     }
-    // }
+        if let Some(index) = self.texture_key_map.get(&key) {
+            i = *index as _;
+        }
 
-    // #[inline]
-    // fn update_font_map(&mut self) {
-    //     self.fontdue_key_map = HashMap::new();
+        if i >= 0 {
+            self.texture_key_map.remove(&key);
+            return Some(self.textures.remove(i as _));
+        }
 
-    //     for i in 0..self.fonts.len() {
-    //         if let Some(font) = self.fonts.get(i) {
-    //             self.fontdue_key_map
-    //                 .insert(font.font_key.clone(), i);
-    //         }
-    //     }
-    // }
+        None
+    }
 
     #[inline]
     pub fn update_font_texture(&mut self, mut ctx: &mut Context, key: &FontKey) {

@@ -10,6 +10,8 @@ use miniquad::*;
 pub(crate) struct RenderingEngine {
     pub(crate) settings: RenderSettings,
     pipeline: Pipeline,
+    offscreen_pass: Option<RenderPass>,
+    offscreen_pass_resolution: Option<(usize, usize)>,
     layout: Layout,
 }
 impl RenderingEngine {
@@ -41,6 +43,8 @@ impl RenderingEngine {
             settings,
             pipeline,
             layout: Layout::new(CoordinateSystem::PositiveYDown),
+            offscreen_pass: None,
+            offscreen_pass_resolution: None,
         }
     }
 
@@ -204,6 +208,9 @@ impl RenderingEngine {
 
     #[inline]
     pub(crate) fn begin(&mut self, ctx: &mut Context) {
+        self.offscreen_pass = None;
+        self.offscreen_pass_resolution = None;
+
         ctx.begin_default_pass(PassAction::Clear {
             color: Some(self.settings.background_color.to_percentage()),
             depth: None,
@@ -212,9 +219,64 @@ impl RenderingEngine {
     }
 
     #[inline]
+    pub(crate) fn begin_texture_new(&mut self, ctx: &mut Context, w: usize, h: usize, _asset_store: &mut AssetStore) {
+        let color_img = miniquad::Texture::new_render_texture(
+            ctx,
+            TextureParams {
+                width: w as _,
+                height: h as _,
+                format: TextureFormat::RGBA8,
+                ..Default::default()
+            },
+        );
+        let depth_img = miniquad::Texture::new_render_texture(
+            ctx,
+            TextureParams {
+                width: w as _,
+                height: h as _,
+                format: TextureFormat::Depth,
+                ..Default::default()
+            },
+        );
+
+        self.offscreen_pass = Some(RenderPass::new(ctx, color_img, depth_img));
+        self.offscreen_pass_resolution = Some((w, h));
+
+        ctx.begin_pass(
+            self.offscreen_pass,
+            PassAction::Clear {
+                color: Some(self.settings.background_color.to_percentage()),
+                depth: None,
+                stencil: None,
+            }
+        );
+    }
+
+    #[inline]
     pub(crate) fn render(&mut self, ctx: &mut Context) {
+        self.offscreen_pass = None;
+        self.offscreen_pass_resolution = None;
         ctx.end_render_pass();
         ctx.commit_frame();
+    }
+
+    #[inline]
+    pub(crate) fn render_texture(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<TextureKey, EmeraldError> {
+        let key = TextureKey::new("render_texture");
+        if let Some(render_pass) = &self.offscreen_pass {
+            let t = render_pass.texture(ctx);
+
+            if let Ok(texture) = crate::rendering::Texture::from_texture(ctx, key.clone(), t) {
+                asset_store.insert_texture(key.clone(), texture);
+                ctx.end_render_pass();
+
+                return Ok(key);
+            }
+        }
+
+        self.offscreen_pass = None;
+        self.offscreen_pass_resolution = None;
+        Err(EmeraldError::new("Unable to render to texture. Did you start this render pass with 'begin_texture'?"))
     }
 
     pub(crate) fn draw_label(
@@ -350,6 +412,7 @@ impl RenderingEngine {
                     real_position,
                     target,
                     color,
+                    self.offscreen_pass_resolution
                 );
             }
         }
@@ -390,6 +453,7 @@ impl RenderingEngine {
             real_position,
             Rectangle::new(0.0, 0.0, 1.0, 1.0),
             color_rect.color,
+            self.offscreen_pass_resolution
         )
     }
 
@@ -454,6 +518,7 @@ impl RenderingEngine {
             real_position,
             target,
             color.clone(),
+            self.offscreen_pass_resolution
         )
     }
 
@@ -511,11 +576,16 @@ impl RenderingEngine {
             real_position,
             target,
             sprite.color.clone(),
+            self.offscreen_pass_resolution
         )
     }
 
     #[inline]
     fn get_screen_size(&self, ctx: &Context) -> (f32, f32) {
+        if let Some(res) = self.offscreen_pass_resolution {
+            return (res.0 as f32, res.1 as f32);
+        }
+
         match self.settings.scalar {
             ScreenScalar::None => ctx.screen_size(),
             _ => (
@@ -539,27 +609,41 @@ fn draw_texture(
     position: Vec2,
     source: Rectangle,
     color: Color,
+    offscreen_pass_resolution: Option<(usize, usize)>,
 ) {
+    let mut resolution = (
+        settings.resolution.0 as f32,
+        settings.resolution.1 as f32
+    );
+
+    if let Some(res) = offscreen_pass_resolution {
+        resolution = (res.0 as f32, res.1 as f32);
+    }
+
     let view_size = ctx.screen_size();
     let mut uniforms = Uniforms::default();
 
     let projection = match settings.scalar {
         ScreenScalar::Stretch => Mat4::orthographic_rh_gl(
             0.0,
-            settings.resolution.0 as f32,
+            resolution.0,
             0.0,
-            settings.resolution.1 as f32,
+            resolution.1,
             -1.0,
             1.0,
         ),
         ScreenScalar::None => {
-            Mat4::orthographic_rh_gl(0.0, view_size.0, 0.0, view_size.1, -1.0, 1.0)
+            if offscreen_pass_resolution.is_some() {
+                Mat4::orthographic_rh_gl(0.0, resolution.0, 0.0, resolution.1, -1.0, 1.0)
+            } else {
+                Mat4::orthographic_rh_gl(0.0, view_size.0, 0.0, view_size.1, -1.0, 1.0)
+            }
         }
         ScreenScalar::Keep => {
             let x_start = 0.0;
             let y_start = 0.0;
-            let x_end = settings.resolution.0 as f32;
-            let y_end = settings.resolution.1 as f32;
+            let x_end = resolution.0;
+            let y_end = resolution.1;
             // let keep_height = (view_size.0 * settings.resolution.1 as f32) > (view_size.1 * settings.resolution.0 as f32);
 
             // if keep_height {
