@@ -50,8 +50,17 @@ impl<'a> GraphicsHandler<'a> {
         self.rendering_engine.begin(&mut self.quad_ctx);
     }
 
+    /// Begin drawing to the screen
+    pub fn begin_texture_new(&mut self, w: usize, h: usize) {
+        self.rendering_engine.begin_texture_new(&mut self.quad_ctx, w, h, &mut self.asset_store);
+    }
+
     /// Commit all drawings to the screen
     pub fn render(&mut self) {
         self.rendering_engine.render(&mut self.quad_ctx);
+    }
+    /// Commit all drawings to the screen
+    pub fn render_texture(&mut self) -> Result<TextureKey, EmeraldError> {
+        self.rendering_engine.render_texture(&mut self.quad_ctx, &mut self.asset_store)
     }
 }
