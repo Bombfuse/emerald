@@ -13,19 +13,15 @@ const INITIAL_FONT_STORAGE_CAPACITY: usize = 100;
 /// Assets can be loaded via the `AssetLoader` and inserted into the AssetStore.
 /// Assets can be manually removed from the store if memory management becomes a concern.
 pub(crate) struct AssetStore {
-    bytes: HashMap<String, Vec<u8>>,
+    pub bytes: HashMap<String, Vec<u8>>,
 
-    fonts: Vec<Font>,
-    fontdue_fonts: Vec<fontdue::Font>,
-    textures: Vec<Texture>,
+    pub fonts: Vec<Font>,
+    pub fontdue_fonts: Vec<fontdue::Font>,
+    pub textures: Vec<Texture>,
 
-    fontdue_key_map: HashMap<FontKey, usize>,
-    font_key_map: HashMap<FontKey, usize>,
-    texture_key_map: HashMap<TextureKey, usize>,
-
-    _should_reset_fontdue_font_key_map: bool,
-    _should_reset_font_key_map: bool,
-    _should_reset_texture_key_map: bool,
+    pub fontdue_key_map: HashMap<FontKey, usize>,
+    pub font_key_map: HashMap<FontKey, usize>,
+    pub texture_key_map: HashMap<TextureKey, usize>,
 }
 impl AssetStore {
     pub fn new(ctx: &mut Context) -> Self {
@@ -45,10 +41,6 @@ impl AssetStore {
             fontdue_key_map: HashMap::new(),
             font_key_map: HashMap::new(),
             texture_key_map,
-
-            _should_reset_fontdue_font_key_map: true,
-            _should_reset_font_key_map: true,
-            _should_reset_texture_key_map: true,
         }
     }
 
@@ -75,9 +67,9 @@ impl AssetStore {
         self.populate_font_cache(ctx, &key, &default_asset_stored_chars, key.1 as u16)
     }
 
-    pub fn insert_texture(&mut self, key: TextureKey, texture: Texture) {
+    pub fn insert_texture(&mut self, ctx: &mut Context, key: TextureKey, texture: Texture) {
         if let Some(_) = self.get_texture(&key) {
-            self.remove_texture(key.clone());
+            self.remove_texture(ctx, key.clone());
         }
 
         self.textures.push(texture);
@@ -140,19 +132,40 @@ impl AssetStore {
         None
     }
 
-    pub fn remove_texture(&mut self, key: TextureKey) -> Option<Texture> {
-        let mut i = -1;
+    pub fn remove_texture(&mut self, _ctx: &mut Context, key: TextureKey) -> Option<Texture> {
+        let mut i: i32 = -1;
 
         if let Some(index) = self.texture_key_map.get(&key) {
             i = *index as _;
         }
 
         if i >= 0 {
+            // No need to reset map if only the end texture is removed.
+            let reset_map = (i as usize) != self.textures.len();
             self.texture_key_map.remove(&key);
-            return Some(self.textures.remove(i as _));
+            let texture = self.textures.remove(i as _);
+            texture.inner.delete();
+
+            if reset_map {
+                self.update_texture_key_map();
+            }
+
+            return Some(texture);
         }
 
         None
+    }
+
+    #[inline]
+    pub fn update_texture_key_map(&mut self) {
+        self.texture_key_map = HashMap::with_capacity(self.textures.len());
+
+        let mut i = 0;
+        
+        for texture in &self.textures {
+            self.texture_key_map.insert(texture.key.clone(), i);
+            i += 1;
+        }
     }
 
     #[inline]

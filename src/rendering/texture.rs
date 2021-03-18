@@ -2,8 +2,10 @@ use crate::rendering::font::*;
 use crate::rendering::shaders::*;
 use crate::*;
 use miniquad::{Bindings, Buffer, BufferType, Context, FilterMode};
-
 use glam::Vec2;
+use std::sync::Arc;
+
+pub const EMERALD_DEFAULT_TEXTURE_NAME: &str = "emerald_default_texture";
 
 #[derive(Clone, Debug)]
 pub struct Texture {
@@ -34,7 +36,7 @@ impl Texture {
 
         let texture = miniquad::Texture::from_rgba8(ctx, 4, 4, &pixels);
 
-        Self::from_texture(&mut ctx, TextureKey::new("emerald_default_texture"), texture)
+        Self::from_texture(&mut ctx, TextureKey::new(EMERALD_DEFAULT_TEXTURE_NAME), texture)
     }
 
     pub fn from_png_bytes(
@@ -107,14 +109,18 @@ impl Texture {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct TextureKey(pub(crate) String);
+pub struct TextureKey(pub(crate) Arc<String>);
 impl TextureKey {
-    pub fn new<T: Into<String>>(texture_path: T) -> Self {
-        TextureKey(texture_path.into())
+    pub(crate) fn new<T: Into<String>>(texture_path: T) -> Self {
+        TextureKey(Arc::new(texture_path.into()))
+    }
+
+    pub fn get_name(&self) -> String {
+        self.0.as_ref().clone()
     }
 }
 impl Default for TextureKey {
     fn default() -> TextureKey {
-        TextureKey(String::from("emerald_default_texture"))
+        TextureKey(Arc::new(String::from(EMERALD_DEFAULT_TEXTURE_NAME)))
     }
 }
