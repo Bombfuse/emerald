@@ -13,15 +13,18 @@ use quad_snd::decoder::{read_ogg, read_wav};
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
     asset_store: &'a mut AssetStore,
+    rendering_engine: &'a mut RenderingEngine,
 }
 impl<'a> AssetLoader<'a> {
     pub(crate) fn new(
         quad_ctx: &'a mut miniquad::Context,
         asset_store: &'a mut AssetStore,
+        rendering_engine: &'a mut RenderingEngine,
     ) -> Self {
         AssetLoader {
             quad_ctx,
             asset_store,
+            rendering_engine,
         }
     }
 
@@ -101,7 +104,7 @@ impl<'a> AssetLoader<'a> {
         let inner_font = fontdue::Font::from_bytes(font_bytes, font_settings)?;
         let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
 
-        self.asset_store.insert_texture(font_texture_key, font_texture);
+        self.asset_store.insert_texture(&mut self.quad_ctx, font_texture_key, font_texture);
         self.asset_store.insert_fontdue_font(key.clone(), inner_font);
         self.asset_store.insert_font(&mut self.quad_ctx, key.clone(), font)?;
 
@@ -137,9 +140,17 @@ impl<'a> AssetLoader<'a> {
 
         let data = self.bytes(path.clone())?;
         let texture = Texture::new(&mut self.quad_ctx, key.clone(), data)?;
-        self.asset_store.insert_texture(key.clone(), texture);
+        self.asset_store.insert_texture(&mut self.quad_ctx, key.clone(), texture);
 
         Ok(key)
+    }
+
+
+    /// Creating render textures is slightly expensive and should be used conservatively.
+    /// Please re-use render textures you've created before if possible.
+    /// If you need a render texture with a new size, you should create a new render texture.
+    pub fn render_texture(&mut self, w: usize, h: usize) -> Result<TextureKey, EmeraldError> {
+        self.rendering_engine.create_render_texture(w, h, &mut self.quad_ctx, &mut self.asset_store)
     }
 
     pub fn sprite<T: Into<String>>(&mut self, path: T) -> Result<Sprite, EmeraldError> {

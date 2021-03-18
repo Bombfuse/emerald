@@ -6,18 +6,38 @@ use crate::*;
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
 use glam::{Mat4, Vec2, Vec4};
 use miniquad::*;
+use std::collections::HashMap;
+use std::sync::Arc;
+
+const EMERALD_TEXTURE_PIPELINE_NAME: &str = "emerald_default_texture_pipline";
+
+// The default "screen" pass.
+// Renders to a texture the size of the screen when rendering begins.
+const EMERALD_RENDER_PASS_NAME: &str = "emerald_default_render_pass";
+const EMERALD_DEFAULT_RENDER_TARGET: &str = "emerald_default_render_target";
+
+// When reference is 2 or less, the only reference remaining is by the engine itself. So it is safe to cleanup.
+// 1 reference is by the texture_key_map
+// 1 reference is held by the texture itself
+const MINIMUM_TEXTURE_REFERENCES: usize = 1;
 
 pub(crate) struct RenderingEngine {
     pub(crate) settings: RenderSettings,
-    pipeline: Pipeline,
-    offscreen_pass: Option<RenderPass>,
-    offscreen_pass_resolution: Option<(usize, usize)>,
+    pipelines: HashMap<String, Pipeline>,
+    render_pass: RenderPass,
     layout: Layout,
+    render_texture_counter: usize,
+    offscreen_pass_resolution: Option<(usize, usize)>,
+    last_screen_size: (usize, usize),
+    screen_texture_key: TextureKey,
+    current_render_texture_key: TextureKey,
 }
 impl RenderingEngine {
-    pub(crate) fn new(ctx: &mut Context, settings: RenderSettings) -> Self {
-        let shader = Shader::new(ctx, VERTEX, FRAGMENT, shaders::meta()).unwrap();
+    pub(crate) fn new(ctx: &mut Context, settings: RenderSettings, asset_store: &mut AssetStore) -> Self {
+        let mut pipelines = HashMap::new();
+        let mut render_passes = HashMap::new();        
 
+        let shader = Shader::new(ctx, VERTEX, FRAGMENT, shaders::meta()).unwrap();
         let mut params = PipelineParams::default();
         params.depth_write = true;
         params.color_blend = Some(BlendState::new(
@@ -31,7 +51,7 @@ impl RenderingEngine {
             BlendFactor::One,
         ));
 
-        let pipeline = Pipeline::with_params(
+        let texture_pipeline = Pipeline::with_params(
             ctx,
             &[BufferLayout::default()],
             &[VertexAttribute::new("position", VertexFormat::Float2)],
@@ -39,13 +59,84 @@ impl RenderingEngine {
             params,
         );
 
+        let (w, h) = settings.resolution;
+        pipelines.insert(EMERALD_TEXTURE_PIPELINE_NAME.to_string(), texture_pipeline);
+        render_passes.insert(EMERALD_RENDER_PASS_NAME.to_string(), build_default_pass(ctx, w as usize, h as usize));
+
+        let mut render_texture_counter = 0;
+        let key = TextureKey::new(String::from(EMERALD_DEFAULT_RENDER_TARGET));
+        let (w, h) = ctx.screen_size();
+        let screen_texture_key = create_render_texture(w as usize, h as usize, key, ctx, asset_store).unwrap();
+        render_texture_counter += 1;
+
+        let texture = asset_store.get_texture(&screen_texture_key).unwrap();
+        let render_pass = RenderPass::new(ctx, texture.inner, None);
+        let current_render_texture_key = screen_texture_key.clone();
+
         RenderingEngine {
             settings,
-            pipeline,
+            pipelines,
             layout: Layout::new(CoordinateSystem::PositiveYDown),
-            offscreen_pass: None,
+            render_texture_counter,
+            render_pass,
             offscreen_pass_resolution: None,
+            last_screen_size: (0, 0),
+            screen_texture_key,
+            current_render_texture_key,
         }
+    }
+
+    #[inline]
+    pub(crate) fn create_render_texture(&mut self, w: usize, h: usize, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<TextureKey, EmeraldError> {
+        self.render_texture_counter += 1;
+        let key = TextureKey::new(format!("emd_render_texture_{}", self.render_texture_counter));
+
+        create_render_texture(w, h, key, ctx, asset_store)
+    }
+
+    #[inline]
+    pub(crate) fn pre_draw(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+        let (w, h) = ctx.screen_size();
+        let (prev_w, prev_h) = self.last_screen_size;
+
+        if w as usize != prev_w || h as usize != prev_h {
+            self.update_screen_texture_size(ctx, w as usize, h as usize, asset_store)?;
+        }
+
+        Ok(())
+    }
+
+    #[inline]
+    fn update_screen_texture_size(&mut self, ctx: &mut Context, w: usize, h: usize, asset_store: &mut AssetStore) -> Result<TextureKey, EmeraldError> {
+        let key = TextureKey::new(String::from(EMERALD_DEFAULT_RENDER_TARGET));
+        let screen_texture_key = create_render_texture(w as usize, h as usize, key, ctx, asset_store)?;
+
+        Ok(screen_texture_key)
+    }
+
+    #[inline]
+    pub(crate) fn post_draw(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) {
+        let mut to_remove = Vec::new();
+        let default_texture_name = String::from(EMERALD_DEFAULT_TEXTURE_NAME);
+
+        for (key, _) in &asset_store.texture_key_map {
+            if key.get_name() == default_texture_name {
+                continue;
+            }
+
+            let i = Arc::strong_count(&key.0);
+
+            if i <= MINIMUM_TEXTURE_REFERENCES {
+                to_remove.push(key.clone());
+            }
+        }
+
+        for key in to_remove {
+            asset_store.remove_texture(ctx, key);
+        }
+
+        let (w, h) = ctx.screen_size();
+        self.last_screen_size = (w as usize, h as usize);
     }
 
     #[inline]
@@ -159,8 +250,6 @@ impl RenderingEngine {
             }
         }
 
-        ctx.end_render_pass();
-
         Ok(())
     }
 
@@ -207,76 +296,75 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub(crate) fn begin(&mut self, ctx: &mut Context) {
-        self.offscreen_pass = None;
+    pub(crate) fn begin(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
         self.offscreen_pass_resolution = None;
+        let res = self.get_screen_size(ctx);
+        self.offscreen_pass_resolution = Some((res.0 as usize, res.1 as usize));
+        self.current_render_texture_key = self.screen_texture_key.clone();
+        self.begin_texture_pass(ctx, asset_store, self.screen_texture_key.clone())?;
+
+        Ok(())
+    }
+
+    #[inline]
+    pub(crate) fn begin_texture(&mut self, ctx: &mut Context, texture_key: TextureKey, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+        self.current_render_texture_key = texture_key.clone();
+
+        if let Some(texture) = asset_store.get_texture(&self.current_render_texture_key) {
+            self.offscreen_pass_resolution = Some((texture.width as usize, texture.height as usize));
+        }
+
+        self.begin_texture_pass(ctx, asset_store, texture_key)?;
+
+        Ok(())
+    }
+
+    /// This will begin a rendering pass that will render to a WxH size texture
+    /// Call `render_to_texture` to retrieve the texture key for this pass.
+    #[inline]
+    fn begin_texture_pass(&mut self, ctx: &mut Context, asset_store: &mut AssetStore, texture_key: TextureKey) -> Result<(), EmeraldError> {
+        if let Some(texture) = asset_store.get_texture(&texture_key) {
+            self.render_pass = RenderPass::new(ctx, texture.inner, None);
+
+            ctx.begin_pass(
+                self.render_pass,
+                PassAction::Clear {
+                    color: Some(self.settings.background_color.to_percentage()),
+                    depth: None,
+                    stencil: None,
+                }
+            );
+
+            return Ok(())
+        }
+
+        Err(EmeraldError::new(format!("Unable to render to texture {:?}, does this texture exist?", texture_key)))
+    }
+
+    #[inline]
+    pub(crate) fn render(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+        let texture_key = self.render_texture(ctx, asset_store)?;
 
         ctx.begin_default_pass(PassAction::Clear {
             color: Some(self.settings.background_color.to_percentage()),
             depth: None,
             stencil: None,
         });
-    }
+        let sprite = Sprite::from_texture(texture_key);
 
-    #[inline]
-    pub(crate) fn begin_texture_new(&mut self, ctx: &mut Context, w: usize, h: usize, _asset_store: &mut AssetStore) {
-        let color_img = miniquad::Texture::new_render_texture(
-            ctx,
-            TextureParams {
-                width: w as _,
-                height: h as _,
-                format: TextureFormat::RGBA8,
-                ..Default::default()
-            },
-        );
-        let depth_img = miniquad::Texture::new_render_texture(
-            ctx,
-            TextureParams {
-                width: w as _,
-                height: h as _,
-                format: TextureFormat::Depth,
-                ..Default::default()
-            },
-        );
-
-        self.offscreen_pass = Some(RenderPass::new(ctx, color_img, depth_img));
-        self.offscreen_pass_resolution = Some((w, h));
-
-        ctx.begin_pass(
-            self.offscreen_pass,
-            PassAction::Clear {
-                color: Some(self.settings.background_color.to_percentage()),
-                depth: None,
-                stencil: None,
-            }
-        );
-    }
-
-    #[inline]
-    pub(crate) fn render(&mut self, ctx: &mut Context) {
-        self.offscreen_pass = None;
-        self.offscreen_pass_resolution = None;
+        let (w, h) = ctx.screen_size();
+        let position = Position::new(w as f32 / 2.0, h as f32 / 2.0);
+        self.draw_sprite(ctx, asset_store, &sprite, &position);
         ctx.end_render_pass();
-        ctx.commit_frame();
+
+        Ok(())
     }
 
     #[inline]
-    pub(crate) fn render_texture(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<TextureKey, EmeraldError> {
-        let key = TextureKey::new("render_texture");
-        if let Some(render_pass) = &self.offscreen_pass {
-            let t = render_pass.texture(ctx);
-
-            if let Ok(texture) = crate::rendering::Texture::from_texture(ctx, key.clone(), t) {
-                asset_store.insert_texture(key.clone(), texture);
-                ctx.end_render_pass();
-
-                return Ok(key);
-            }
-        }
-
-        self.offscreen_pass = None;
-        self.offscreen_pass_resolution = None;
-        Err(EmeraldError::new("Unable to render to texture. Did you start this render pass with 'begin_texture'?"))
+    pub(crate) fn render_texture(&mut self, ctx: &mut Context, _asset_store: &mut AssetStore) -> Result<TextureKey, EmeraldError> {
+        ctx.end_render_pass();
+        
+        Ok(self.current_render_texture_key.clone())
     }
 
     pub(crate) fn draw_label(
@@ -325,7 +413,7 @@ impl RenderingEngine {
             Option<f32>, // max_width
         )> = Vec::new();
 
-        ctx.apply_pipeline(&self.pipeline);
+        ctx.apply_pipeline(&self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
 
         let mut remaining_char_count = label.visible_characters;
         if label.visible_characters < 0 {
@@ -428,7 +516,7 @@ impl RenderingEngine {
         color_rect: &ColorRect,
         position: &Position,
     ) {
-        ctx.apply_pipeline(&self.pipeline);
+        ctx.apply_pipeline(&self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
 
         let (width, height) = (color_rect.width, color_rect.height);
         let mut offset = color_rect.offset.clone();
@@ -476,7 +564,7 @@ impl RenderingEngine {
             return;
         }
 
-        ctx.apply_pipeline(&self.pipeline);
+        ctx.apply_pipeline(&self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
         let texture = asset_store.get_texture(&sprite.texture_key).unwrap();
         let mut target = Rectangle::new(
             sprite.target.x / texture.width as f32,
@@ -534,7 +622,7 @@ impl RenderingEngine {
             return;
         }
 
-        ctx.apply_pipeline(&self.pipeline);
+        ctx.apply_pipeline(&self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
         let texture = asset_store.get_texture(&sprite.texture_key).unwrap();
         let mut target = Rectangle::new(
             sprite.target.x / texture.width as f32,
@@ -651,7 +739,6 @@ fn draw_texture(
             //     let width = settings.resolution.0 as f32 * scale;
             //     x_start = (view_size.0 - width) / 2.0;
             //     x_end = (view_size.0 - width) + x_start;
-            //     println!("(x_start, x_end): {:?}", (x_start, x_end));
             // } else {
             //     let scale = view_size.0 / settings.resolution.0 as f32;
             //     let height = settings.resolution.1 as f32 / scale;
@@ -745,4 +832,53 @@ struct DrawCommand {
     pub drawable: Drawable,
     pub position: Position,
     pub z_index: f32,
+}
+
+
+#[inline]
+fn build_default_pass(ctx: &mut Context, w: usize, h: usize) -> RenderPass {
+    let color_img = miniquad::Texture::new_render_texture(
+        ctx,
+        TextureParams {
+            width: w as _,
+            height: h as _,
+            format: TextureFormat::RGBA8,
+            wrap: TextureWrap::Clamp,
+            filter: FilterMode::Linear,
+        },
+    );
+    let depth_img = miniquad::Texture::new_render_texture(
+        ctx,
+        TextureParams {
+            width: w as _,
+            height: h as _,
+            format: TextureFormat::Depth,
+            wrap: TextureWrap::Clamp,
+            filter: FilterMode::Linear,
+        },
+    );
+
+    RenderPass::new(ctx, color_img, depth_img)
+}
+
+
+
+
+#[inline]
+pub(crate) fn create_render_texture(w: usize, h: usize, key: TextureKey, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<TextureKey, EmeraldError> {
+    let color_img = miniquad::Texture::new_render_texture(
+        ctx,
+        TextureParams {
+            width: w as _,
+            height: h as _,
+            format: TextureFormat::RGBA8,
+            wrap: TextureWrap::Clamp,
+            filter: FilterMode::Linear,
+        },
+    );
+
+    let texture = crate::rendering::Texture::from_texture(ctx, key.clone(), color_img)?;
+    asset_store.insert_texture(ctx, key.clone(), texture);
+
+    Ok(key)
 }

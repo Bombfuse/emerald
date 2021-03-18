@@ -18,7 +18,7 @@ impl<'a> GraphicsHandler<'a> {
             rendering_engine,
         }
     }
-
+    
     pub fn draw_world(&mut self, world: &mut EmeraldWorld) -> Result<(), EmeraldError> {
         self.rendering_engine
             .draw_world(&mut self.quad_ctx, &mut self.asset_store, world)
@@ -46,18 +46,18 @@ impl<'a> GraphicsHandler<'a> {
     }
 
     /// Begin drawing to the screen
-    pub fn begin(&mut self) {
-        self.rendering_engine.begin(&mut self.quad_ctx);
+    pub fn begin(&mut self) -> Result<(), EmeraldError> {
+        self.rendering_engine.begin(&mut self.quad_ctx, &mut self.asset_store)
     }
 
     /// Begin drawing to the screen
-    pub fn begin_texture_new(&mut self, w: usize, h: usize) {
-        self.rendering_engine.begin_texture_new(&mut self.quad_ctx, w, h, &mut self.asset_store);
+    pub fn begin_texture(&mut self, texture_key: TextureKey) -> Result<(), EmeraldError> {
+        self.rendering_engine.begin_texture(&mut self.quad_ctx, texture_key, &mut self.asset_store)
     }
 
     /// Commit all drawings to the screen
-    pub fn render(&mut self) {
-        self.rendering_engine.render(&mut self.quad_ctx);
+    pub fn render(&mut self) -> Result<(), EmeraldError> {
+        self.rendering_engine.render(&mut self.quad_ctx, &mut self.asset_store)
     }
     /// Commit all drawings to the screen
     pub fn render_texture(&mut self) -> Result<TextureKey, EmeraldError> {

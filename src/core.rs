@@ -96,6 +96,7 @@ impl<'a> Emerald<'a> {
         AssetLoader::new(
             &mut self.quad_ctx,
             &mut self.asset_store,
+            &mut self.rendering_engine,
         )
     }
 

@@ -23,10 +23,11 @@ pub struct GameEngine {
 }
 impl GameEngine {
     pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
+        let mut asset_store = AssetStore::new(ctx);
         let mut logging_engine = LoggingEngine::new();
         let mut audio_engine = AudioEngine::new();
         let mut input_engine = InputEngine::new();
-        let mut rendering_engine = RenderingEngine::new(&mut ctx, settings.render_settings.clone());
+        let mut rendering_engine = RenderingEngine::new(&mut ctx, settings.render_settings.clone(), &mut asset_store);
         let mut world_engine = WorldEngine::new();
 
         world_engine.push(EmeraldWorld::new());
@@ -35,7 +36,6 @@ impl GameEngine {
         let starting_amount = 50;
         let mut fps_tracker = VecDeque::with_capacity(starting_amount);
         fps_tracker.resize(starting_amount, 1.0 / 60.0);
-        let mut asset_store = AssetStore::new(ctx);
         let last_instant = miniquad::date::now();
 
         let emd = Emerald::new(
@@ -127,6 +127,7 @@ impl EventHandler for GameEngine {
         let start_of_frame = miniquad::date::now();
         let delta = start_of_frame - self.last_instant;
 
+        self.rendering_engine.pre_draw(ctx, &mut self.asset_store).unwrap();
         let emd = Emerald::new(
             delta as f32,
             self.get_fps(),
@@ -140,5 +141,8 @@ impl EventHandler for GameEngine {
         );
 
         self.game.draw(emd);
+        ctx.commit_frame();
+
+        self.rendering_engine.post_draw(ctx, &mut self.asset_store);
     }
 }
