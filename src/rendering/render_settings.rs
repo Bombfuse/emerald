@@ -17,7 +17,6 @@ pub struct RenderSettings {
     pub background_color: Color,
     pub fullscreen: bool,
     pub resolution: (u32, u32),
-    pub scalar: ScreenScalar,
     pub high_dpi: bool,
 }
 impl Default for RenderSettings {
@@ -26,7 +25,6 @@ impl Default for RenderSettings {
             background_color: CORNFLOWER_BLUE,
             fullscreen: false,
             resolution: (800, 600),
-            scalar: ScreenScalar::None,
             high_dpi: false,
         }
     }
