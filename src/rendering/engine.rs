@@ -328,7 +328,6 @@ impl RenderingEngine {
     fn begin_texture_pass(&mut self, ctx: &mut Context, asset_store: &mut AssetStore, texture_key: TextureKey) -> Result<(), EmeraldError> {
         if let Some(texture) = asset_store.get_texture(&texture_key) {
             self.render_pass = RenderPass::new(ctx, texture.inner, None);
-
             ctx.begin_pass(
                 self.render_pass,
                 PassAction::Clear {

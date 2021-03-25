@@ -1,8 +1,8 @@
 use crate::*;
 
-use rapier2d::dynamics::{
+use rapier2d::{dynamics::{
     BodyStatus, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet,
-};
+}, pipeline::{PhysicsHooks, PhysicsHooksFlags}};
 use rapier2d::geometry::{
     BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, ContactEvent, IntersectionEvent,
     NarrowPhase,
@@ -13,6 +13,13 @@ use rapier2d::pipeline::{ChannelEventCollector, PhysicsPipeline};
 use crate::crossbeam;
 use hecs::{Entity, World};
 use std::collections::HashMap;
+
+struct DefaultPhysicsHooks;
+impl PhysicsHooks for DefaultPhysicsHooks {
+    fn active_hooks(&self) -> PhysicsHooksFlags {
+        PhysicsHooksFlags::MODIFY_SOLVER_CONTACTS
+    }
+}
 
 /// A physics engine unique to a game world. This handles the RigidBodies of the game.
 pub struct PhysicsEngine {
@@ -34,6 +41,7 @@ pub struct PhysicsEngine {
     collider_body: HashMap<ColliderHandle, RigidBodyHandle>,
     entity_collisions: HashMap<Entity, Vec<Entity>>,
     entity_intersections: HashMap<Entity, Vec<Entity>>,
+    physics_hooks: Box<dyn PhysicsHooks>,
 }
 
 impl PhysicsEngine {
@@ -49,6 +57,7 @@ impl PhysicsEngine {
         let (contact_send, contact_recv) = crossbeam::channel::unbounded();
         let (intersection_send, intersection_recv) = crossbeam::channel::unbounded();
         let event_handler = ChannelEventCollector::new(intersection_send, contact_send);
+        let physics_hooks = Box::new(DefaultPhysicsHooks { });
 
         PhysicsEngine {
             colliders,
@@ -68,6 +77,7 @@ impl PhysicsEngine {
             collider_body: HashMap::new(),
             entity_collisions: HashMap::new(),
             entity_intersections: HashMap::new(),
+            physics_hooks,
         }
     }
 
@@ -84,9 +94,8 @@ impl PhysicsEngine {
             &mut self.bodies,
             &mut self.colliders,
             &mut self.joints,
-            None,
-            None,
-            &mut self.event_handler,
+            &(*self.physics_hooks),
+            &self.event_handler,
         );
 
         self.integration_parameters.dt = dt;
