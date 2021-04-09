@@ -680,11 +680,14 @@ fn draw_texture(
     scale: Vec2,
     rotation: f32,
     offset: Vec2,
-    position: Vec2,
+    mut position: Vec2,
     source: Rectangle,
     color: Color,
     resolution: (usize, usize),
 ) {
+    position.x = position.x.floor() + 0.375;
+    position.y = position.y.floor() + 0.375;
+
     let projection = Mat4::orthographic_rh_gl(
         0.0,
         resolution.0 as f32,
