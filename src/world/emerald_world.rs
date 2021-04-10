@@ -86,9 +86,10 @@ impl EmeraldWorld {
     pub fn spawn_batch<I>(&mut self, iter: I) -> SpawnBatchIter<'_, I::IntoIter>
     where
         I: IntoIterator,
-        I::Item: Bundle,
+        I::Item: Bundle + 'static,
     {
         self.inner.spawn_batch::<I>(iter)
+
     }
 
     pub fn despawn(&mut self, entity: Entity) -> Result<(), NoSuchEntity> {
@@ -131,7 +132,7 @@ impl EmeraldWorld {
         self.inner.insert(entity, components)
     }
 
-    pub fn remove<T: Bundle>(&mut self, entity: Entity) -> Result<T, ComponentError> {
+    pub fn remove<T: Bundle + 'static>(&mut self, entity: Entity) -> Result<T, ComponentError> {
         self.inner.remove::<T>(entity)
     }
 

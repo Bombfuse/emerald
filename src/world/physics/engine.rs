@@ -1,8 +1,6 @@
 use crate::*;
 
-use rapier2d::{dynamics::{
-    BodyStatus, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet,
-}, pipeline::{PhysicsHooks, PhysicsHooksFlags}};
+use rapier2d::{dynamics::{BodyStatus, CCDSolver, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet}, pipeline::{PhysicsHooks, PhysicsHooksFlags}};
 use rapier2d::geometry::{
     BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, ContactEvent, IntersectionEvent,
     NarrowPhase,
@@ -30,6 +28,7 @@ pub struct PhysicsEngine {
     pub(crate) joints: JointSet,
     pipeline: PhysicsPipeline,
     pub(crate) gravity: Vector2<f32>,
+    pub(crate) ccd_solver: CCDSolver,
     pub(crate) integration_parameters: IntegrationParameters,
     pub(crate) event_handler: ChannelEventCollector,
     pub(crate) contact_recv: crossbeam::channel::Receiver<ContactEvent>,
@@ -58,6 +57,7 @@ impl PhysicsEngine {
         let (intersection_send, intersection_recv) = crossbeam::channel::unbounded();
         let event_handler = ChannelEventCollector::new(intersection_send, contact_send);
         let physics_hooks = Box::new(DefaultPhysicsHooks { });
+        let ccd_solver = CCDSolver::new();
 
         PhysicsEngine {
             colliders,
@@ -67,6 +67,7 @@ impl PhysicsEngine {
             joints,
             pipeline,
             gravity: Vector2::new(0.0, 0.0),
+            ccd_solver,
             integration_parameters: IntegrationParameters::default(),
             contact_recv,
             intersection_recv,
@@ -94,6 +95,7 @@ impl PhysicsEngine {
             &mut self.bodies,
             &mut self.colliders,
             &mut self.joints,
+            &mut self.ccd_solver,
             &(*self.physics_hooks),
             &self.event_handler,
         );
@@ -417,7 +419,7 @@ impl PhysicsEngine {
         body_handle: RigidBodyHandle,
     ) {
         if let Some(body) = self.bodies.get_mut(body_handle) {
-            match body.body_status {
+            match body.body_status() {
                 BodyStatus::Kinematic => {
                     body.set_next_kinematic_position(Isometry2::translation(pos.x, pos.y))
                 }

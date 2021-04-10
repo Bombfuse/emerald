@@ -1,7 +1,8 @@
 ![Emerald](assets/banner_large.png)
 [![Crates.io](https://img.shields.io/crates/v/emerald.svg)](https://crates.io/crates/emerald)
-[![Build Status](https://travis-ci.com/Bombfuse/emerald.svg?branch=master)](https://travis-ci.com/Bombfuse/emerald)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Discord chat](https://img.shields.io/discord/829494628771168296.svg?label=discord%20chat)](https://discord.gg/NHsz38AhkD)
+
 
 # The Cross Platform Engine
 
