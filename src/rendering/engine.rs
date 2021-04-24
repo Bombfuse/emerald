@@ -454,7 +454,7 @@ impl RenderingEngine {
                     );
                     let real_position = Vec2::new(
                         position.x + label.offset.x + left_coord,
-                        position.y - label.offset.y - top_coord,
+                        position.y + label.offset.y - top_coord,
                     );
 
                     if remaining_char_count > 0 {
