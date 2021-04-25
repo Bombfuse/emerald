@@ -19,7 +19,7 @@ impl Default for Uniforms {
     fn default() -> Uniforms {
         Uniforms {
             projection: Mat4::orthographic_lh(0.0, 1.0, 0.0, 1.0, -100.0, 100.0),
-            model: Mat4::identity(),
+            model: Mat4::IDENTITY,
             source: Vec4::new(0.0, 0.0, 1.0, 1.0),
             color: Vec4::new(1.0, 1.0, 1.0, 1.0),
             z_index: 0.0,

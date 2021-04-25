@@ -17,6 +17,14 @@ impl std::fmt::Display for EmeraldError {
     }
 }
 
+impl std::convert::From<image::ImageError> for EmeraldError {
+    fn from(e: image::ImageError) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string(),
+        }
+    }
+}
+
 impl std::convert::From<nanoserde::DeJsonErr> for EmeraldError {
     fn from(e: nanoserde::DeJsonErr) -> EmeraldError {
         EmeraldError {

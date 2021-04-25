@@ -13,7 +13,6 @@ const EMERALD_TEXTURE_PIPELINE_NAME: &str = "emerald_default_texture_pipline";
 
 // The default "screen" pass.
 // Renders to a texture the size of the screen when rendering begins.
-const EMERALD_RENDER_PASS_NAME: &str = "emerald_default_render_pass";
 const EMERALD_DEFAULT_RENDER_TARGET: &str = "emerald_default_render_target";
 
 // When reference is 2 or less, the only reference remaining is by the engine itself. So it is safe to cleanup.
@@ -27,15 +26,14 @@ pub(crate) struct RenderingEngine {
     render_pass: RenderPass,
     layout: Layout,
     render_texture_counter: usize,
-    offscreen_pass_resolution: Option<(usize, usize)>,
     last_screen_size: (usize, usize),
     screen_texture_key: TextureKey,
     current_render_texture_key: TextureKey,
+    current_resolution: (usize, usize),
 }
 impl RenderingEngine {
     pub(crate) fn new(ctx: &mut Context, settings: RenderSettings, asset_store: &mut AssetStore) -> Self {
         let mut pipelines = HashMap::new();
-        let mut render_passes = HashMap::new();        
 
         let shader = Shader::new(ctx, VERTEX, FRAGMENT, shaders::meta()).unwrap();
         let mut params = PipelineParams::default();
@@ -59,9 +57,7 @@ impl RenderingEngine {
             params,
         );
 
-        let (w, h) = settings.resolution;
         pipelines.insert(EMERALD_TEXTURE_PIPELINE_NAME.to_string(), texture_pipeline);
-        render_passes.insert(EMERALD_RENDER_PASS_NAME.to_string(), build_default_pass(ctx, w as usize, h as usize));
 
         let mut render_texture_counter = 0;
         let key = TextureKey::new(String::from(EMERALD_DEFAULT_RENDER_TARGET));
@@ -72,6 +68,7 @@ impl RenderingEngine {
         let texture = asset_store.get_texture(&screen_texture_key).unwrap();
         let render_pass = RenderPass::new(ctx, texture.inner, None);
         let current_render_texture_key = screen_texture_key.clone();
+        let current_resolution = (w as usize, h as usize);
 
         RenderingEngine {
             settings,
@@ -79,10 +76,10 @@ impl RenderingEngine {
             layout: Layout::new(CoordinateSystem::PositiveYDown),
             render_texture_counter,
             render_pass,
-            offscreen_pass_resolution: None,
             last_screen_size: (0, 0),
             screen_texture_key,
             current_render_texture_key,
+            current_resolution,
         }
     }
 
@@ -146,7 +143,7 @@ impl RenderingEngine {
         asset_store: &mut AssetStore,
         world: &mut EmeraldWorld,
     ) -> Result<(), EmeraldError> {
-        let screen_size = self.get_screen_size(ctx);
+        let screen_size = (self.current_resolution.0 as f32, self.current_resolution.1 as f32);
         let (camera, camera_position) = get_camera_and_camera_position(world);
         let mut draw_queue = Vec::new();
 
@@ -262,7 +259,7 @@ impl RenderingEngine {
         world: &mut EmeraldWorld,
         collider_color: Color,
     ) {
-        let screen_size = self.get_screen_size(ctx);
+        let screen_size = (self.current_resolution.0 as f32, self.current_resolution.1 as f32);
         let mut color_rect = ColorRect::default();
         color_rect.color = collider_color;
         let (camera, camera_position) = get_camera_and_camera_position(world);
@@ -297,10 +294,14 @@ impl RenderingEngine {
 
     #[inline]
     pub(crate) fn begin(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
-        self.offscreen_pass_resolution = None;
-        let res = self.get_screen_size(ctx);
-        self.offscreen_pass_resolution = Some((res.0 as usize, res.1 as usize));
         self.current_render_texture_key = self.screen_texture_key.clone();
+
+        if let Some(texture) = asset_store.get_texture(&self.current_render_texture_key) {
+            self.current_resolution = (texture.width as usize, texture.height as usize);
+        } else {
+            return Err(EmeraldError::new("Unable to retrieve default rendering texture"));
+        }
+
         self.begin_texture_pass(ctx, asset_store, self.screen_texture_key.clone())?;
 
         Ok(())
@@ -311,7 +312,9 @@ impl RenderingEngine {
         self.current_render_texture_key = texture_key.clone();
 
         if let Some(texture) = asset_store.get_texture(&self.current_render_texture_key) {
-            self.offscreen_pass_resolution = Some((texture.width as usize, texture.height as usize));
+            self.current_resolution = (texture.width as usize, texture.height as usize);
+        } else {
+            return Err(EmeraldError::new(format!("Unable to retrieve texture for {:?}", texture_key)));
         }
 
         self.begin_texture_pass(ctx, asset_store, texture_key)?;
@@ -325,7 +328,6 @@ impl RenderingEngine {
     fn begin_texture_pass(&mut self, ctx: &mut Context, asset_store: &mut AssetStore, texture_key: TextureKey) -> Result<(), EmeraldError> {
         if let Some(texture) = asset_store.get_texture(&texture_key) {
             self.render_pass = RenderPass::new(ctx, texture.inner, None);
-
             ctx.begin_pass(
                 self.render_pass,
                 PassAction::Clear {
@@ -338,7 +340,7 @@ impl RenderingEngine {
             return Ok(())
         }
 
-        Err(EmeraldError::new(format!("Unable to render to texture {:?}, does this texture exist?", texture_key)))
+        Err(EmeraldError::new(format!("Unable to retrieve texture for {:?}", texture_key)))
     }
 
     #[inline]
@@ -351,7 +353,6 @@ impl RenderingEngine {
             stencil: None,
         });
         let sprite = Sprite::from_texture(texture_key);
-
         let (w, h) = ctx.screen_size();
         let position = Position::new(w as f32 / 2.0, h as f32 / 2.0);
         self.draw_sprite(ctx, asset_store, &sprite, &position);
@@ -453,7 +454,7 @@ impl RenderingEngine {
                     );
                     let real_position = Vec2::new(
                         position.x + label.offset.x + left_coord,
-                        position.y - label.offset.y - top_coord,
+                        position.y + label.offset.y - top_coord,
                     );
 
                     if remaining_char_count > 0 {
@@ -500,7 +501,7 @@ impl RenderingEngine {
                     real_position,
                     target,
                     color,
-                    self.offscreen_pass_resolution
+                    self.current_resolution
                 );
             }
         }
@@ -541,7 +542,7 @@ impl RenderingEngine {
             real_position,
             Rectangle::new(0.0, 0.0, 1.0, 1.0),
             color_rect.color,
-            self.offscreen_pass_resolution
+            self.current_resolution
         )
     }
 
@@ -606,7 +607,7 @@ impl RenderingEngine {
             real_position,
             target,
             color.clone(),
-            self.offscreen_pass_resolution
+            self.current_resolution
         )
     }
 
@@ -664,29 +665,14 @@ impl RenderingEngine {
             real_position,
             target,
             sprite.color.clone(),
-            self.offscreen_pass_resolution
+            self.current_resolution
         )
-    }
-
-    #[inline]
-    fn get_screen_size(&self, ctx: &Context) -> (f32, f32) {
-        if let Some(res) = self.offscreen_pass_resolution {
-            return (res.0 as f32, res.1 as f32);
-        }
-
-        match self.settings.scalar {
-            ScreenScalar::None => ctx.screen_size(),
-            _ => (
-                self.settings.resolution.0 as f32,
-                self.settings.resolution.1 as f32,
-            ),
-        }
     }
 }
 
 #[inline]
 fn draw_texture(
-    settings: &RenderSettings,
+    _settings: &RenderSettings,
     mut ctx: &mut Context,
     asset_store: &mut AssetStore,
     texture_key: &TextureKey,
@@ -694,68 +680,29 @@ fn draw_texture(
     scale: Vec2,
     rotation: f32,
     offset: Vec2,
-    position: Vec2,
+    mut position: Vec2,
     source: Rectangle,
     color: Color,
-    offscreen_pass_resolution: Option<(usize, usize)>,
+    resolution: (usize, usize),
 ) {
-    let mut resolution = (
-        settings.resolution.0 as f32,
-        settings.resolution.1 as f32
+    position.x = position.x.floor() + 0.375;
+    position.y = position.y.floor() + 0.375;
+
+    let projection = Mat4::orthographic_rh_gl(
+        0.0,
+        resolution.0 as f32,
+        0.0,
+        resolution.1 as f32,
+        -1.0,
+        1.0,
     );
 
-    if let Some(res) = offscreen_pass_resolution {
-        resolution = (res.0 as f32, res.1 as f32);
-    }
-
-    let view_size = ctx.screen_size();
     let mut uniforms = Uniforms::default();
-
-    let projection = match settings.scalar {
-        ScreenScalar::Stretch => Mat4::orthographic_rh_gl(
-            0.0,
-            resolution.0,
-            0.0,
-            resolution.1,
-            -1.0,
-            1.0,
-        ),
-        ScreenScalar::None => {
-            if offscreen_pass_resolution.is_some() {
-                Mat4::orthographic_rh_gl(0.0, resolution.0, 0.0, resolution.1, -1.0, 1.0)
-            } else {
-                Mat4::orthographic_rh_gl(0.0, view_size.0, 0.0, view_size.1, -1.0, 1.0)
-            }
-        }
-        ScreenScalar::Keep => {
-            let x_start = 0.0;
-            let y_start = 0.0;
-            let x_end = resolution.0;
-            let y_end = resolution.1;
-            // let keep_height = (view_size.0 * settings.resolution.1 as f32) > (view_size.1 * settings.resolution.0 as f32);
-
-            // if keep_height {
-            //     let scale = view_size.1 / settings.resolution.1 as f32;
-            //     let width = settings.resolution.0 as f32 * scale;
-            //     x_start = (view_size.0 - width) / 2.0;
-            //     x_end = (view_size.0 - width) + x_start;
-            // } else {
-            //     let scale = view_size.0 / settings.resolution.0 as f32;
-            //     let height = settings.resolution.1 as f32 / scale;
-            //     y_start = (view_size.1 - height) / 2.0;
-            //     y_end = height;
-            // }
-
-            Mat4::orthographic_rh_gl(-x_start, x_end, -y_start, y_end, -1.0, 1.0)
-        }
-    };
-
     uniforms.projection = projection;
     uniforms.model =
         crate::rendering::param_to_instance_transform(rotation, scale, offset, position);
 
     let color = color.to_percentage();
-
     uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
     uniforms.color = Vec4::new(color.0, color.1, color.2, color.3);
 
@@ -834,36 +781,6 @@ struct DrawCommand {
     pub z_index: f32,
 }
 
-
-#[inline]
-fn build_default_pass(ctx: &mut Context, w: usize, h: usize) -> RenderPass {
-    let color_img = miniquad::Texture::new_render_texture(
-        ctx,
-        TextureParams {
-            width: w as _,
-            height: h as _,
-            format: TextureFormat::RGBA8,
-            wrap: TextureWrap::Clamp,
-            filter: FilterMode::Linear,
-        },
-    );
-    let depth_img = miniquad::Texture::new_render_texture(
-        ctx,
-        TextureParams {
-            width: w as _,
-            height: h as _,
-            format: TextureFormat::Depth,
-            wrap: TextureWrap::Clamp,
-            filter: FilterMode::Linear,
-        },
-    );
-
-    RenderPass::new(ctx, color_img, depth_img)
-}
-
-
-
-
 #[inline]
 pub(crate) fn create_render_texture(w: usize, h: usize, key: TextureKey, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<TextureKey, EmeraldError> {
     let color_img = miniquad::Texture::new_render_texture(
@@ -873,7 +790,7 @@ pub(crate) fn create_render_texture(w: usize, h: usize, key: TextureKey, ctx: &m
             height: h as _,
             format: TextureFormat::RGBA8,
             wrap: TextureWrap::Clamp,
-            filter: FilterMode::Linear,
+            filter: FilterMode::Nearest,
         },
     );
 

@@ -44,9 +44,7 @@ impl Texture {
         key: TextureKey,
         bytes: &[u8],
     ) -> Result<Self, EmeraldError> {
-        let img = image::load_from_memory(&bytes)
-            .unwrap_or_else(|e| panic!(e))
-            .to_rgba8();
+        let img = image::load_from_memory(&bytes)?.to_rgba8();
         let img = image::imageops::flip_vertical(&img);
 
         let width = img.width() as u16;

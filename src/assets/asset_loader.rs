@@ -53,19 +53,22 @@ impl<'a> AssetLoader<'a> {
         {
             let path: String = file_path.into();
             if let Some(bytes) = self.asset_store.get_bytes(&path) {
-                let bytes = bytes.clone();
                 return Ok(bytes);
             }
 
             let full_path = self.full_path(path.clone())?;
             let file_path: String = full_path.into_os_string().into_string()?;
-            let mut file = File::open(file_path)?;
-            let mut bytes = Vec::new();
-            file.read_to_end(&mut bytes)?;
 
-            self.asset_store.insert_bytes(String::from(path), bytes.clone());
+            if let Ok(mut file) = File::open(file_path) {
+                let mut bytes = Vec::new();
+                file.read_to_end(&mut bytes)?;
+    
+                self.asset_store.insert_bytes(String::from(path), bytes.clone());
+    
+                return Ok(bytes);
+            }
 
-            Ok(bytes)
+            Err(EmeraldError::new(format!("Unable to open file at {:?}", path)))
         }
     }
 

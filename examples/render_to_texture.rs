@@ -7,7 +7,6 @@ pub fn main() {
     let mut settings = GameSettings::default();
     let mut render_settings = RenderSettings::default();
     render_settings.resolution = (320 * 2, 160 * 2);
-    // render_settings.scalar = ScreenScalar::Stretch;
     settings.render_settings = render_settings;
 
     emerald::start(Box::new(MyGame { pos: Position::new(320.0, 160.0), scale: 1.0, render_texture: None }), settings)
@@ -69,18 +68,18 @@ impl Game for MyGame {
 
         println!("texture render: {:?}", e - now);
 
-        let mut screen_sprite = Sprite::from_texture(texture_key);
-        screen_sprite.scale.x = self.scale;
-        screen_sprite.scale.y = self.scale;
-
         // println!("{:?}", screen_sprite);
         let now = std::time::Instant::now();
 
+        let e = std::time::Instant::now();
+        let mut screen_sprite = Sprite::from_texture(texture_key);
+        screen_sprite.centered = false;
+        screen_sprite.scale.x = self.scale;
+        screen_sprite.scale.y = self.scale;
+
         emd.graphics().begin();
         emd.graphics().draw_sprite(&screen_sprite, &self.pos);
-        println!("pos at render {:?}", self.pos);
         emd.graphics().render();
-        let e = std::time::Instant::now();
 
         println!("screen draw: {:?}", e - now);
     }
