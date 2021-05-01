@@ -16,10 +16,6 @@ gamepads = ["gamepad"]
 headless = []
 
 [dependencies]
-# Nightly
-quad-snd = { git = "https://github.com/not-fl3/quad-snd", branch = "master" }
-
-# Dependencies
 image = { version = "0.23.14", default-features = false, features = [ "png" ] }
 glam = "0.14.0"
 log = "0.4.14"
@@ -30,6 +26,7 @@ hecs = { version = "0.5.1", default-features = false }
 gamepad = { version = "0.1.1", optional = true }
 rapier2d = { version = "0.7.2", default-features = false, features = [ "dim2", "f32" ], optional = true  }
 nalgebra =  { version = "0.25.4" }
+kira = "0.5.2"
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
 miniquad = { version = "0.3.0-alpha.29", features = [ "log-impl" ] }

@@ -3,28 +3,31 @@ use crate::audio::*;
 use crate::rendering::*;
 use crate::*;
 
-use std::ffi::OsStr;
+use std::{ffi::OsStr, io::Cursor};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
-use quad_snd::decoder::{read_ogg, read_wav};
+use kira::sound::{Sound, SoundSettings, handle::SoundHandle};
 
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
     asset_store: &'a mut AssetStore,
     rendering_engine: &'a mut RenderingEngine,
+    audio_engine: &'a mut AudioEngine,
 }
 impl<'a> AssetLoader<'a> {
     pub(crate) fn new(
         quad_ctx: &'a mut miniquad::Context,
         asset_store: &'a mut AssetStore,
         rendering_engine: &'a mut RenderingEngine,
+        audio_engine: &'a mut AudioEngine,
     ) -> Self {
         AssetLoader {
             quad_ctx,
             asset_store,
             rendering_engine,
+            audio_engine,
         }
     }
 
@@ -163,6 +166,9 @@ impl<'a> AssetLoader<'a> {
         Ok(Sprite::from_texture(texture_key))
     }
 
+
+    /// Load the sound at the given path into the given mixer.
+    /// Returns the sound handle to play the sound with.
     pub fn sound<T: Into<String>>(&mut self, path: T) -> Result<Sound, EmeraldError> {
         let path: String = path.into();
         let file_path = std::path::Path::new(&path);
@@ -172,17 +178,19 @@ impl<'a> AssetLoader<'a> {
             Some("ogg") => SoundFormat::Ogg,
             _ => {
                 return Err(EmeraldError::new(format!(
-                    "Unable to parse sound from {:?}",
+                    "File must be .wav or .ogg: {:?}",
                     file_path
                 )))
             }
         };
 
         let sound_bytes = self.bytes(path)?;
+        let reader = Cursor::new(sound_bytes);
+
         let sound = match sound_format {
-            SoundFormat::Ogg => read_ogg(sound_bytes.as_slice()).unwrap(),
-            SoundFormat::Wav => read_wav(sound_bytes.as_slice()).unwrap(),
-        };
+            SoundFormat::Ogg => Sound::from_ogg_reader(reader, SoundSettings::default()),
+            SoundFormat::Wav => Sound::from_wav_reader(reader, SoundSettings::default()),
+        }?;
 
         Ok(sound)
     }

@@ -97,6 +97,7 @@ impl<'a> Emerald<'a> {
             &mut self.quad_ctx,
             &mut self.asset_store,
             &mut self.rendering_engine,
+            &mut self.audio_engine,
         )
     }
 

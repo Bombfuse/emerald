@@ -12,7 +12,7 @@ impl<'a> AudioHandler<'a> {
     pub fn mixer<T: Into<String>>(&mut self, mixer_name: T) -> Result<&mut Mixer, EmeraldError> {
         let mixer_name: String = mixer_name.into();
 
-        if let Some(mixer) = self.audio_engine.mixer(mixer_name.clone()) {
+        if let Ok(mixer) = self.audio_engine.mixer(mixer_name.clone()) {
             return Ok(mixer);
         }
 

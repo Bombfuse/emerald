@@ -8,4 +8,8 @@ pub use handler::*;
 pub use mixer::*;
 pub use sound::*;
 
-pub use quad_snd::mixer::{Sound, SoundId};
+
+pub use kira::{
+    sound::{Sound},
+    instance::{InstanceId},
+};

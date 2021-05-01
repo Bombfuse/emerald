@@ -1,4 +1,4 @@
-use crate::audio::*;
+use crate::{EmeraldError, audio::*};
 use std::collections::HashMap;
 
 pub(crate) struct AudioEngine {
@@ -11,14 +11,18 @@ impl AudioEngine {
         }
     }
     
-    pub(crate) fn mixer<T: Into<String>>(&mut self, mixer_name: T) -> Option<&mut Mixer> {
+    pub(crate) fn mixer<T: Into<String>>(&mut self, mixer_name: T) -> Result<&mut Mixer, EmeraldError> {
         let mixer_name: String = mixer_name.into();
 
         if !self.mixers.contains_key(&mixer_name) {
-            self.mixers.insert(mixer_name.clone(), Mixer::new());
+            self.mixers.insert(mixer_name.clone(), Mixer::new()?);
         }
 
-        self.mixers.get_mut(&mixer_name)
+        if let Some(mixer) = self.mixers.get_mut(&mixer_name) {
+            return Ok(mixer);
+        }
+
+        Err(EmeraldError::new(format!("Error creating and/or retrieving the mixer: {:?}", mixer_name)))
     }
 
     pub(crate) fn clear(&mut self) {
@@ -27,11 +31,5 @@ impl AudioEngine {
         }
 
         self.mixers = HashMap::new();
-    }
-
-    pub(crate) fn frame(&mut self) {
-        for (_, mixer) in &mut self.mixers {
-            mixer.frame();
-        }
     }
 }

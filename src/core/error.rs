@@ -1,3 +1,5 @@
+use kira::{CommandError, manager::error::{AddSoundError, SetupError}};
+
 use crate::*;
 
 #[derive(Debug, Clone)]
@@ -19,6 +21,35 @@ impl std::fmt::Display for EmeraldError {
 
 impl std::convert::From<image::ImageError> for EmeraldError {
     fn from(e: image::ImageError) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string(),
+        }
+    }
+}
+impl std::convert::From<CommandError> for EmeraldError {
+    fn from(e: CommandError) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string(),
+        }
+    }
+}
+impl std::convert::From<SetupError> for EmeraldError {
+    fn from(e: SetupError) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string(),
+        }
+    }
+}
+impl std::convert::From<AddSoundError> for EmeraldError {
+    fn from(e: AddSoundError) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string(),
+        }
+    }
+}
+
+impl std::convert::From<kira::sound::error::SoundFromFileError> for EmeraldError {
+    fn from(e: kira::sound::error::SoundFromFileError) -> EmeraldError {
         EmeraldError {
             message: e.to_string(),
         }
