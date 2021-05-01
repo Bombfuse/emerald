@@ -79,7 +79,7 @@ impl<'a> Emerald<'a> {
     pub fn quit(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.audio_engine.clear();
+            self.audio_engine.clear().unwrap();
         }
 
         self.quad_ctx.quit()

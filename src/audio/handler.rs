@@ -23,7 +23,9 @@ impl<'a> AudioHandler<'a> {
     }
 
     /// Deletes and clears all mixers
-    pub fn clear(&mut self) {
-        self.audio_engine.clear();
+    pub fn clear(&mut self) -> Result<(), EmeraldError> {
+        self.audio_engine.clear()?;
+
+        Ok(())
     }
 }

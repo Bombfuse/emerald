@@ -1,13 +1,17 @@
+use kira::sound::SoundId;
+
 use crate::{EmeraldError, audio::*};
 use std::collections::HashMap;
 
 pub(crate) struct AudioEngine {
     mixers: HashMap<String, Mixer>,
+    pub(crate) sound_id_map: HashMap<String, SoundId>,
 }
 impl AudioEngine {
     pub(crate) fn new() -> Self {
         AudioEngine {
             mixers: HashMap::new(),
+            sound_id_map: HashMap::new(),
         }
     }
     
@@ -25,11 +29,12 @@ impl AudioEngine {
         Err(EmeraldError::new(format!("Error creating and/or retrieving the mixer: {:?}", mixer_name)))
     }
 
-    pub(crate) fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) -> Result<(), EmeraldError> {
         for (_, mixer) in &mut self.mixers {
-            mixer.clear();
+            mixer.clear()?;
         }
 
         self.mixers = HashMap::new();
+        Ok(())
     }
 }

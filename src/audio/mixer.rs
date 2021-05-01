@@ -1,21 +1,21 @@
 use std::collections::HashMap;
 
-use kira::{instance::{self, InstanceId, InstanceSettings, handle::InstanceHandle}, manager::{AudioManager, error::SetupError}, sound::{Sound, SoundId, handle::SoundHandle}};
+use kira::{instance::{self, InstanceId, InstanceSettings, handle::InstanceHandle}, manager::{AudioManager}, sound::{Sound, SoundId, handle::SoundHandle}};
 
 use crate::{EmeraldError};
 
 pub struct Mixer {
     inner: AudioManager,
-    sounds: HashMap<SoundId, Sound>,
     instances: HashMap<InstanceId, InstanceHandle>,
+    sounds: HashMap<SoundId, SoundHandle>,
     volume: f64,
 }
 impl Mixer {
     pub fn new() -> Result<Self, EmeraldError> {
         Ok(Mixer {
             inner: AudioManager::new(Default::default())?,
-            sounds: HashMap::new(),
             instances: HashMap::new(),
+            sounds: HashMap::new(),
             volume: 1.0,
         })
     }
@@ -23,7 +23,17 @@ impl Mixer {
     /// Plays the given sound data once.
     /// Applies the volume of the mixer to the sound.
     pub fn play(&mut self, sound: Sound) -> Result<InstanceId, EmeraldError> {
-        let mut sound_handle = self.inner.add_sound(sound)?;
+        let id = sound.id();
+        
+        let mut sound_handle = if let Some(sound) = self.sounds.get_mut(&id) {
+            sound.clone()
+        } else {
+            let handle = self.inner.add_sound(sound)?;
+            self.sounds.insert(id, handle.clone());
+
+            handle
+        };
+
         let instance_handle = sound_handle.play(InstanceSettings::new()
             .volume(self.volume)    
         )?;
@@ -35,7 +45,17 @@ impl Mixer {
     }
 
     pub fn play_and_loop(&mut self, sound: Sound) -> Result<InstanceId, EmeraldError> {
-        let mut sound_handle = self.inner.add_sound(sound)?;
+        let id = sound.id();
+
+        let mut sound_handle = if let Some(sound) = self.sounds.get_mut(&id) {
+            sound.clone()
+        } else {
+            let handle = self.inner.add_sound(sound)?;
+            self.sounds.insert(id, handle.clone());
+
+            handle
+        };
+
         let instance_handle = sound_handle.play(InstanceSettings::new()
             .volume(self.volume)
             .loop_start(instance::InstanceLoopStart::Custom(0.0))
@@ -101,7 +121,7 @@ impl Mixer {
 
     /// Clears all sounds and instances from the mixer.
     pub fn clear(&mut self) -> Result<(), EmeraldError> {
-        for (key, instance) in &mut self.instances {
+        for (_, instance) in &mut self.instances {
             instance.stop(Default::default())?;
         }
 

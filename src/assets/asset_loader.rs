@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
-use kira::sound::{Sound, SoundSettings, handle::SoundHandle};
+use kira::sound::{Sound, SoundSettings};
 
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
@@ -166,7 +166,6 @@ impl<'a> AssetLoader<'a> {
         Ok(Sprite::from_texture(texture_key))
     }
 
-
     /// Load the sound at the given path into the given mixer.
     /// Returns the sound handle to play the sound with.
     pub fn sound<T: Into<String>>(&mut self, path: T) -> Result<Sound, EmeraldError> {
@@ -184,13 +183,22 @@ impl<'a> AssetLoader<'a> {
             }
         };
 
-        let sound_bytes = self.bytes(path)?;
+        let sound_bytes = self.bytes(path.clone())?;
         let reader = Cursor::new(sound_bytes);
+        let mut settings = SoundSettings::new();
+
+        if let Some(id) = self.audio_engine.sound_id_map.get(&path) {
+            settings = settings.id(id.clone());
+        }
 
         let sound = match sound_format {
-            SoundFormat::Ogg => Sound::from_ogg_reader(reader, SoundSettings::default()),
-            SoundFormat::Wav => Sound::from_wav_reader(reader, SoundSettings::default()),
+            SoundFormat::Ogg => Sound::from_ogg_reader(reader, settings),
+            SoundFormat::Wav => Sound::from_wav_reader(reader, settings),
         }?;
+
+        if !self.audio_engine.sound_id_map.contains_key(&path) {
+            self.audio_engine.sound_id_map.insert(path.clone(), sound.id());
+        }
 
         Ok(sound)
     }

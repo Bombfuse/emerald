@@ -16,13 +16,7 @@ pub fn main() {
 pub struct Example {
 }
 impl Game for Example {
-    fn initialize(&mut self, mut emd: Emerald) {
-        let snd = emd.loader()
-                .sound("./examples/assets/test_music.wav")
-                .unwrap();
-        emd.audio().mixer("test").unwrap().play_and_loop(snd.clone()).unwrap();
-
-    }
+    fn initialize(&mut self, mut emd: Emerald) {}
 
     fn update(&mut self, mut emd: Emerald) {
         let mut input = emd.input();
@@ -32,6 +26,22 @@ impl Game for Example {
             emd.audio().mixer("test").unwrap().set_volume(volume - 0.1);
         } else if input.is_key_just_pressed(KeyCode::D) {
             emd.audio().mixer("test").unwrap().set_volume(volume + 0.1);
+        }
+
+        if input.is_key_just_pressed(KeyCode::Space) {
+            let snd = emd.loader()
+                .sound("./examples/assets/test_music.wav")
+                .unwrap();
+            emd.audio().mixer("test").unwrap().play_and_loop(snd.clone()).unwrap();
+        }
+
+        if input.is_key_just_pressed(KeyCode::Z) {
+            for _ in 0..10 {
+                let snd = emd.loader()
+                    .sound("./examples/assets/test_sound.wav")
+                    .unwrap();
+                emd.audio().mixer("test").unwrap().play(snd.clone()).unwrap();
+            }
         }
     }
 
