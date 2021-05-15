@@ -63,4 +63,10 @@ impl<'a> GraphicsHandler<'a> {
     pub fn render_texture(&mut self) -> Result<TextureKey, EmeraldError> {
         self.rendering_engine.render_texture(&mut self.quad_ctx, &mut self.asset_store)
     }
+
+    pub fn set_fullscreen(&mut self, fs: bool) -> Result<(), EmeraldError> {
+        self.quad_ctx.set_fullscreen(fs);
+
+        Ok(())
+    }
 }

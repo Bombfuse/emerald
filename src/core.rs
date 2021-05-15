@@ -79,7 +79,9 @@ impl<'a> Emerald<'a> {
     pub fn quit(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.audio_engine.clear().unwrap();
+            if let Err(_) = self.audio_engine.clear() {
+                //ignore
+            }
         }
 
         self.quad_ctx.quit()

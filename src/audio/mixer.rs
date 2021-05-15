@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use kira::{instance::{self, InstanceId, InstanceSettings, handle::InstanceHandle}, manager::{AudioManager}, sound::{Sound, SoundId, handle::SoundHandle}};
+use kira::{instance::{self, InstanceId, InstanceSettings, handle::InstanceHandle}, manager::{AudioManager, AudioManagerSettings}, sound::{Sound, SoundId, handle::SoundHandle}};
 
 use crate::{EmeraldError};
 
@@ -13,7 +13,11 @@ pub struct Mixer {
 impl Mixer {
     pub fn new() -> Result<Self, EmeraldError> {
         Ok(Mixer {
-            inner: AudioManager::new(Default::default())?,
+            inner: AudioManager::new(AudioManagerSettings {
+                num_sounds: 1000,
+                num_instances: 1000,
+                ..Default::default()
+            })?,
             instances: HashMap::new(),
             sounds: HashMap::new(),
             volume: 1.0,
@@ -35,7 +39,7 @@ impl Mixer {
         };
 
         let instance_handle = sound_handle.play(InstanceSettings::new()
-            .volume(self.volume)    
+            .volume(self.volume)
         )?;
 
         let id = instance_handle.id();
