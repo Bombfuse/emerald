@@ -1,136 +1,54 @@
-use std::collections::HashMap;
+use crate::{AssetStore, EmeraldError, SoundKey, audio::sound::{SoundInstanceId}};
 
-use kira::{instance::{self, InstanceId, InstanceSettings, handle::InstanceHandle}, manager::{AudioManager, AudioManagerSettings}, sound::{Sound, SoundId, handle::SoundHandle}};
+#[cfg(feature = "audio")]
+mod kira_backend;
 
-use crate::{EmeraldError};
+#[cfg(feature = "audio")]
+use kira_backend::KiraMixer as BackendMixer;
 
-pub struct Mixer {
-    inner: AudioManager,
-    instances: HashMap<InstanceId, InstanceHandle>,
-    sounds: HashMap<SoundId, SoundHandle>,
-    volume: f64,
+#[cfg(not(feature = "audio"))]
+mod dummy;
+#[cfg(not(feature = "audio"))]
+use dummy::DummyMixer as BackendMixer;
+
+pub(crate) trait Mixer {
+    fn play(&mut self, sound: SoundKey, asset_store: &mut AssetStore) -> Result<SoundInstanceId, EmeraldError>;
+    fn play_and_loop(&mut self, sound: SoundKey, asset_store: &mut AssetStore) -> Result<SoundInstanceId, EmeraldError>;
+    fn get_volume(&self) -> Result<f32, EmeraldError>;
+    fn set_volume(&mut self, volume: f32) -> Result<(), EmeraldError>;
+    fn get_instances(&self) -> Result<Vec<SoundInstanceId>, EmeraldError>;
+    fn stop(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError>;
+    fn pause(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError>;
+    fn resume(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError>;
+    fn clear(&mut self) -> Result<(), EmeraldError>;
+    fn post_update(&mut self) -> Result<(), EmeraldError>;
 }
-impl Mixer {
-    pub fn new() -> Result<Self, EmeraldError> {
-        Ok(Mixer {
-            inner: AudioManager::new(AudioManagerSettings {
-                num_sounds: 1000,
-                num_instances: 1000,
-                ..Default::default()
-            })?,
-            instances: HashMap::new(),
-            sounds: HashMap::new(),
-            volume: 1.0,
-        })
+
+pub(crate) fn new_mixer() -> Result<Box<dyn Mixer>, EmeraldError> {
+    let mixer = BackendMixer::new()?;
+
+    Ok(mixer)
+}
+
+
+pub struct MixerHandler<'a> {
+    inner: &'a mut Box<dyn Mixer>,
+    asset_store: &'a mut AssetStore,
+}
+impl<'a> MixerHandler<'a> {
+    pub(crate) fn new(
+        inner: &'a mut Box<dyn Mixer>,
+        asset_store: &'a mut AssetStore) -> Self {
+        MixerHandler { inner, asset_store }
     }
 
-    /// Plays the given sound data once.
-    /// Applies the volume of the mixer to the sound.
-    pub fn play(&mut self, sound: Sound) -> Result<InstanceId, EmeraldError> {
-        let id = sound.id();
-        
-        let mut sound_handle = if let Some(sound) = self.sounds.get_mut(&id) {
-            sound.clone()
-        } else {
-            let handle = self.inner.add_sound(sound)?;
-            self.sounds.insert(id, handle.clone());
-
-            handle
-        };
-
-        let instance_handle = sound_handle.play(InstanceSettings::new()
-            .volume(self.volume)
-        )?;
-
-        let id = instance_handle.id();
-        self.instances.insert(id, instance_handle);
-
-        Ok(id)
-    }
-
-    pub fn play_and_loop(&mut self, sound: Sound) -> Result<InstanceId, EmeraldError> {
-        let id = sound.id();
-
-        let mut sound_handle = if let Some(sound) = self.sounds.get_mut(&id) {
-            sound.clone()
-        } else {
-            let handle = self.inner.add_sound(sound)?;
-            self.sounds.insert(id, handle.clone());
-
-            handle
-        };
-
-        let instance_handle = sound_handle.play(InstanceSettings::new()
-            .volume(self.volume)
-            .loop_start(instance::InstanceLoopStart::Custom(0.0))
-        )?;
-        
-        let id = instance_handle.id();
-        self.instances.insert(id, instance_handle);
-
-        Ok(id)
-    }
-
-    pub fn get_volume(&self) -> f64 {
-        self.volume
-    }
-
-    pub fn set_volume(&mut self, volume: f64) -> Result<(), EmeraldError> {
-        self.volume = volume;
-
-        for (_, instance) in &mut self.instances {
-            instance.set_volume(self.volume)?;
-        }
-
-        Ok(())
-    }
-
-    /// Get the ids of all instances in the mixer.
-    pub fn instances(&self) -> Vec<InstanceId> {
-        let mut instances = Vec::new();
-
-        for key in self.instances.keys() {
-            instances.push(*key);
-        }
-
-        instances
-    }
-
-    /// Stop a sound instance.
-    pub fn stop(&mut self, id: InstanceId) -> Result<(), EmeraldError> {
-        if let Some(mut instance_handle) = self.instances.remove(&id) {
-            instance_handle.stop(Default::default())?;
-        }
-
-        Ok(())
-    }
-
-    /// Pause a sound instance.
-    pub fn pause(&mut self, id: InstanceId) -> Result<(), EmeraldError> {
-        if let Some(instance_handle) = self.instances.get_mut(&id) {
-            instance_handle.pause(Default::default())?;
-        }
-
-        Ok(())
-    }
-
-    /// Resume a paused sound instance.
-    pub fn resume(&mut self, id: InstanceId) -> Result<(), EmeraldError> {
-        if let Some(instance_handle) = self.instances.get_mut(&id) {
-            instance_handle.resume(Default::default())?;
-        }
-
-        Ok(())
-    }
-
-    /// Clears all sounds and instances from the mixer.
-    pub fn clear(&mut self) -> Result<(), EmeraldError> {
-        for (_, instance) in &mut self.instances {
-            instance.stop(Default::default())?;
-        }
-
-        self.instances = HashMap::new();
-
-        Ok(())
-    }
+    pub fn play(&mut self, key: SoundKey) -> Result<SoundInstanceId, EmeraldError> { self.inner.play(key, &mut self.asset_store) }
+    pub fn play_and_loop(&mut self, key: SoundKey) -> Result<SoundInstanceId, EmeraldError> { self.inner.play_and_loop(key, &mut self.asset_store) }
+    pub fn get_volume(&self) -> Result<f32, EmeraldError> { self.inner.get_volume() }
+    pub fn set_volume(&mut self, volume: f32) -> Result<(), EmeraldError> { self.inner.set_volume(volume) }
+    pub fn get_instances(&self) -> Result<Vec<SoundInstanceId>, EmeraldError> { self.inner.get_instances() }
+    pub fn stop(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError> { self.inner.stop(snd_instance_id) }
+    pub fn pause(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError> { self.inner.pause(snd_instance_id) }
+    pub fn resume(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError> { self.inner.resume(snd_instance_id) }
+    pub fn clear(&mut self) -> Result<(), EmeraldError> { self.inner.clear() }
 }

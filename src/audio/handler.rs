@@ -1,19 +1,20 @@
-use crate::audio::*;
+use crate::{AssetStore, audio::*};
 use crate::EmeraldError;
 
 pub struct AudioHandler<'a> {
     audio_engine: &'a mut AudioEngine,
+    asset_store: &'a mut AssetStore,
 }
 impl<'a> AudioHandler<'a> {
-    pub(crate) fn new(audio_engine: &'a mut AudioEngine) -> Self {
-        AudioHandler { audio_engine }
+    pub(crate) fn new(audio_engine: &'a mut AudioEngine, asset_store: &'a mut AssetStore) -> Self {
+        AudioHandler { audio_engine, asset_store }
     }
 
-    pub fn mixer<T: Into<String>>(&mut self, mixer_name: T) -> Result<&mut Mixer, EmeraldError> {
+    pub fn mixer<T: Into<String>>(&mut self, mixer_name: T) -> Result<MixerHandler, EmeraldError> {
         let mixer_name: String = mixer_name.into();
 
         if let Ok(mixer) = self.audio_engine.mixer(mixer_name.clone()) {
-            return Ok(mixer);
+            return Ok(MixerHandler::new(mixer, &mut self.asset_store));
         }
 
         Err(EmeraldError::new(format!(

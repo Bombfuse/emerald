@@ -112,7 +112,7 @@ impl<'a> Emerald<'a> {
     // ************* Audio API ************* //
     #[inline]
     pub fn audio(&mut self) -> AudioHandler {
-        AudioHandler::new(&mut self.audio_engine)
+        AudioHandler::new(&mut self.audio_engine, &mut self.asset_store)
     }
     // ************************************* //
 

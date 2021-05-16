@@ -103,6 +103,7 @@ impl EventHandler for GameEngine {
         self.game.update(emd);
         self.logging_engine.update().unwrap();
         self.input_engine.update_and_rollover().unwrap();
+        self.audio_engine.post_update().unwrap();
     }
 
     #[inline]

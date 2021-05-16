@@ -3,31 +3,29 @@ use crate::audio::*;
 use crate::rendering::*;
 use crate::*;
 
-use std::{ffi::OsStr, io::Cursor};
+use std::{ffi::OsStr};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
-
-use kira::sound::{Sound, SoundSettings};
 
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
     asset_store: &'a mut AssetStore,
     rendering_engine: &'a mut RenderingEngine,
-    audio_engine: &'a mut AudioEngine,
+    _audio_engine: &'a mut AudioEngine,
 }
 impl<'a> AssetLoader<'a> {
     pub(crate) fn new(
         quad_ctx: &'a mut miniquad::Context,
         asset_store: &'a mut AssetStore,
         rendering_engine: &'a mut RenderingEngine,
-        audio_engine: &'a mut AudioEngine,
+        _audio_engine: &'a mut AudioEngine,
     ) -> Self {
         AssetLoader {
             quad_ctx,
             asset_store,
             rendering_engine,
-            audio_engine,
+            _audio_engine,
         }
     }
 
@@ -168,39 +166,33 @@ impl<'a> AssetLoader<'a> {
 
     /// Load the sound at the given path into the given mixer.
     /// Returns the sound handle to play the sound with.
-    pub fn sound<T: Into<String>>(&mut self, path: T) -> Result<Sound, EmeraldError> {
+    pub fn sound<T: Into<String>>(&mut self, path: T) -> Result<SoundKey, EmeraldError> {
         let path: String = path.into();
         let file_path = std::path::Path::new(&path);
-
         let sound_format = match file_path.extension().and_then(OsStr::to_str) {
             Some("wav") => SoundFormat::Wav,
             Some("ogg") => SoundFormat::Ogg,
             _ => {
                 return Err(EmeraldError::new(format!(
-                    "File must be .wav or .ogg: {:?}",
+                    "File must be wav or ogg. Found {:?}",
                     file_path
                 )))
             }
         };
 
+        let key = SoundKey::new(path.clone(), sound_format);
+        if self.asset_store.sound_map.contains_key(&key) {
+            return Ok(key);
+        }
+
         let sound_bytes = self.bytes(path.clone())?;
-        let reader = Cursor::new(sound_bytes);
-        let mut settings = SoundSettings::new();
+        let sound = Sound::new(sound_bytes, sound_format)?;
 
-        if let Some(id) = self.audio_engine.sound_id_map.get(&path) {
-            settings = settings.id(id.clone());
+        if !self.asset_store.sound_map.contains_key(&key) {
+            self.asset_store.sound_map.insert(key.clone(), sound);
         }
 
-        let sound = match sound_format {
-            SoundFormat::Ogg => Sound::from_ogg_reader(reader, settings),
-            SoundFormat::Wav => Sound::from_wav_reader(reader, settings),
-        }?;
-
-        if !self.audio_engine.sound_id_map.contains_key(&path) {
-            self.audio_engine.sound_id_map.insert(path.clone(), sound.id());
-        }
-
-        Ok(sound)
+        Ok(key)
     }
 
     pub fn pack_bytes(&mut self, name: &str, bytes: Vec<u8>) -> Result<(), EmeraldError> {
@@ -209,7 +201,6 @@ impl<'a> AssetLoader<'a> {
         Ok(())
     }
 
-    // TODO(bombfuse): This is a quick hack to get the texture into the asset_store. Make this not build a sprite.
     pub fn preload_texture<T: Into<String>>(&mut self, name: T) -> Result<(), EmeraldError> {
         let name: String = name.into();
 

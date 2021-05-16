@@ -21,7 +21,7 @@ impl Game for Example {
     fn update(&mut self, mut emd: Emerald) {
         let mut input = emd.input();
 
-        let volume = emd.audio().mixer("test").unwrap().get_volume();
+        let volume = emd.audio().mixer("test").unwrap().get_volume().unwrap();
         if input.is_key_just_pressed(KeyCode::A) {
             emd.audio().mixer("test").unwrap().set_volume(volume - 0.1);
         } else if input.is_key_just_pressed(KeyCode::D) {
@@ -48,7 +48,7 @@ impl Game for Example {
     fn draw(&mut self, mut emd: Emerald) {
         emd.graphics().begin();
         let font = emd.loader().font("./examples/assets/Roboto-Light.ttf", 48).unwrap();
-        let volume = emd.audio().mixer("test").unwrap().get_volume();
+        let volume = emd.audio().mixer("test").unwrap().get_volume().unwrap();
 
         let volume_label = Label::new(format!("Volume: {:05.2}", volume), font.clone(), 48);
         let instructions_a = Label::new("A = -0.1", font.clone(), 48);
