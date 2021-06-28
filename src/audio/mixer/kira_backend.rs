@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use kira::{instance::{InstanceSettings, handle::InstanceHandle}, manager::{AudioManager, AudioManagerSettings}, sound::{SoundId, handle::SoundHandle}};
+use kira::{instance::{InstanceSettings, InstanceState, handle::InstanceHandle}, manager::{AudioManager, AudioManagerSettings}, sound::{SoundId, handle::SoundHandle}};
 
 use crate::{AssetStore, EmeraldError, Mixer, SoundInstanceId, SoundKey};
 
@@ -153,6 +153,18 @@ impl Mixer for KiraMixer {
 
     fn post_update(&mut self) -> Result<(), EmeraldError> {
         self.inner.free_unused_resources();
+
+        let mut to_remove = Vec::new();
+
+        for (id, instance) in &self.instances {
+            if instance.state() == InstanceState::Stopped {
+                to_remove.push(id.clone());
+            }
+        }
+
+        for id in to_remove {
+            self.instances.remove(&id);
+        }
 
         Ok(())
     }
