@@ -39,6 +39,7 @@ kira = { version= "0.5.2", optional = true, default-features = false, features =
 miniquad = "0.3.0-alpha.37"
 kira = { version= "0.5.2", optional = true }
 
+
 [target.'cfg(target_os = "android")'.dependencies]
 sapp-android = "0.1.8"
 
