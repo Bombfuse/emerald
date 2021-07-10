@@ -5,7 +5,7 @@ use crate::*;
 
 use std::ffi::OsStr;
 
-#[cfg(target_arch = "wasm")]
+#[cfg(target_arch = "wasm32")]
 fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
     Err(EmeraldError::new(format!(
         "Unable to get bytes for {}",
