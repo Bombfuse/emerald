@@ -43,7 +43,7 @@ impl Game for PhysicsGroupsExample {
             emd.loader()
                 .pack_bytes(
                     "./examples/assets/bunny.png",
-                    include_bytes!("../assets/bunny.png").to_vec(),
+                    include_bytes!("./assets/bunny.png").to_vec(),
                 )
                 .unwrap();
         }
