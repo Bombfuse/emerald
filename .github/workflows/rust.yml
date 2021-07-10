@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     container: notfl3/cargo-apk
     steps:
-      - uses: actions/checkout@v2
+     - uses: actions/checkout@v2
       - name: setup
         run: |
           cargo install cargo-apk
