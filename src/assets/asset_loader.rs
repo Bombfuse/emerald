@@ -4,9 +4,6 @@ use crate::rendering::*;
 use crate::*;
 
 use std::ffi::OsStr;
-use std::path::PathBuf;
-
-use quad_snd::decoder::{read_ogg, read_wav};
 
 #[cfg(target_arch = "wasm")]
 fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
