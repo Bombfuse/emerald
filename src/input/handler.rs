@@ -1,4 +1,5 @@
 use crate::input::*;
+use crate::mouse_state::MouseState;
 use miniquad::*;
 use std::collections::HashMap;
 
@@ -8,6 +9,7 @@ use gamepad::{Button, GamepadState, Joystick};
 #[derive(Clone, Debug)]
 pub struct InputHandler {
     keys: HashMap<KeyCode, ButtonState>,
+    mouse: MouseState,
     #[cfg(feature = "gamepads")]
     gamepads: Vec<GamepadState>,
 }
@@ -15,6 +17,7 @@ impl InputHandler {
     pub(crate) fn new(engine: &InputEngine) -> Self {
         InputHandler {
             keys: engine.keys.clone(),
+            mouse: engine.mouse,
             #[cfg(feature = "gamepads")]
             gamepads: engine.gamepads.clone(),
         }
@@ -29,9 +32,7 @@ impl InputHandler {
 
     #[inline]
     pub fn is_key_just_pressed(&mut self, key: KeyCode) -> bool {
-        let key_state = self.get_key_state(key);
-
-        key_state.is_pressed && !key_state.was_pressed
+        self.get_key_state(key).is_just_pressed()
     }
 
     #[inline]
@@ -42,6 +43,11 @@ impl InputHandler {
 
         self.keys.insert(keycode, ButtonState::new());
         return self.get_key_state(keycode);
+    }
+
+    #[inline]
+    pub fn mouse(&self) -> MouseState {
+        self.mouse
     }
 
     /// Gets the value of the button from the first gamepad available, or defaults to false.
