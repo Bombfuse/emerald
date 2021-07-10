@@ -36,6 +36,9 @@ miniquad = { version = "0.3.0-alpha.30", features = [ "log-impl" ] }
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 miniquad = "0.3.0-alpha.30"
 
+[target.'cfg(target_os = "android")'.dependencies]
+sapp-android = "0.1.8"
+
 [lib]
 name = "emerald"
 path = "src/lib.rs"

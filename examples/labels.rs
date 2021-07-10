@@ -13,7 +13,7 @@ impl Game for GamepadExample {
         #[cfg(target_arch = "wasm32")]
         {
             emd.loader()
-                .pack_file(
+                .pack_bytes(
                     "./examples/assets/Roboto-Light.ttf",
                     include_bytes!("../assets/Roboto-Light.ttf").to_vec(),
                 )

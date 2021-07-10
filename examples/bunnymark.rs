@@ -28,7 +28,7 @@ impl Game for BunnymarkGame {
         // Pack all game files into WASM binary
         #[cfg(target_arch = "wasm32")]
         {
-            emd.loader().pack_texture(
+            emd.loader().pack_bytes(
                 "./examples/assets/bunny.png",
                 include_bytes!("../examples/assets/bunny.png").to_vec(),
             );
