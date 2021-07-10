@@ -1,4 +1,4 @@
-use crate::{EmeraldError};
+use crate::{EmeraldError, SoundKey, Sound,};
 use crate::rendering::*;
 
 use miniquad::Context;
@@ -22,6 +22,8 @@ pub(crate) struct AssetStore {
     pub fontdue_key_map: HashMap<FontKey, usize>,
     pub font_key_map: HashMap<FontKey, usize>,
     pub texture_key_map: HashMap<TextureKey, usize>,
+
+    pub sound_map: HashMap<SoundKey, Sound>
 }
 impl AssetStore {
     pub fn new(ctx: &mut Context) -> Self {
@@ -41,6 +43,8 @@ impl AssetStore {
             fontdue_key_map: HashMap::new(),
             font_key_map: HashMap::new(),
             texture_key_map,
+
+            sound_map: HashMap::new(),
         }
     }
 

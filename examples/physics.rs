@@ -75,21 +75,18 @@ impl MyGame {
 impl Game for MyGame {
     fn initialize(&mut self, mut emd: Emerald) {
         // Pack all game files into WASM binary
-        #[cfg(target_arch = "wasm32")]
-        {
-            emd.loader()
-                .pack_bytes(
-                    "./examples/assets/bunny.png",
-                    include_bytes!("../assets/bunny.png").to_vec(),
-                )
-                .unwrap();
-            emd.loader()
-                .pack_file(
-                    "./examples/assets/Roboto-Light.ttf",
-                    include_bytes!("../assets/Roboto-Light.ttf").to_vec(),
-                )
-                .unwrap();
-        }
+        emd.loader()
+            .pack_bytes(
+                "./examples/assets/bunny.png",
+                include_bytes!("./assets/bunny.png").to_vec(),
+            )
+            .unwrap();
+        emd.loader()
+            .pack_bytes(
+                "./examples/assets/Roboto-Light.ttf",
+                include_bytes!("./assets/Roboto-Light.ttf").to_vec(),
+            )
+            .unwrap();
 
         let borders = vec![
             (

@@ -65,6 +65,28 @@ impl InputHandler {
 
         false
     }
+    
+    /// Gets the value of the button from the first gamepad available, or defaults to false.
+    #[inline]
+    #[cfg(feature = "gamepads")]
+    pub fn is_button_pressed_for(&mut self, button: Button, index: usize) -> bool {
+        if let Some(gamepad) = self.gamepads.get(index) {
+            return gamepad.is_pressed(button);
+        }
+
+        false
+    }
+
+    /// Gets the value of the button from the first gamepad available, or defaults to false.
+    #[inline]
+    #[cfg(feature = "gamepads")]
+    pub fn is_button_just_pressed_for(&mut self, button: Button, index: usize) -> bool {
+        if let Some(gamepad) = self.gamepads.get(index) {
+            return gamepad.is_just_pressed(button);
+        }
+
+        false
+    }
 
     /// Gets joystick value assuming first gamepad, defaulting to (0.0, 0.0).
     #[inline]
@@ -76,12 +98,33 @@ impl InputHandler {
 
         (0.0, 0.0)
     }
+    /// Gets joystick value assuming first gamepad, defaulting to (0.0, 0.0).
+    #[inline]
+    #[cfg(feature = "gamepads")]
+    pub fn joystick_for(&mut self, joystick: Joystick, index: usize) -> (f32, f32) {
+        if let Some(gamepad) = self.gamepads.get(index) {
+            return gamepad.joystick(joystick);
+        }
+
+        (0.0, 0.0)
+    }
 
     /// Gets joystick value assuming first gamepad, defaulting to (0, 0)
     #[inline]
     #[cfg(feature = "gamepads")]
     pub fn joystick_raw(&mut self, joystick: Joystick) -> (i16, i16) {
         if let Some(gamepad) = self.gamepads.get(0) {
+            return gamepad.joystick_raw(joystick);
+        }
+
+        (0, 0)
+    }
+
+    /// Gets joystick value assuming first gamepad, defaulting to (0, 0)
+    #[inline]
+    #[cfg(feature = "gamepads")]
+    pub fn joystick_raw_for(&mut self, joystick: Joystick, index: usize) -> (i16, i16) {
+        if let Some(gamepad) = self.gamepads.get(index) {
             return gamepad.joystick_raw(joystick);
         }
 

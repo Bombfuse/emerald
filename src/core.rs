@@ -79,7 +79,9 @@ impl<'a> Emerald<'a> {
     pub fn quit(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.audio_engine.clear();
+            if let Err(_) = self.audio_engine.clear() {
+                //ignore
+            }
         }
 
         self.quad_ctx.quit()
@@ -97,6 +99,7 @@ impl<'a> Emerald<'a> {
             &mut self.quad_ctx,
             &mut self.asset_store,
             &mut self.rendering_engine,
+            &mut self.audio_engine,
         )
     }
 
@@ -109,7 +112,7 @@ impl<'a> Emerald<'a> {
     // ************* Audio API ************* //
     #[inline]
     pub fn audio(&mut self) -> AudioHandler {
-        AudioHandler::new(&mut self.audio_engine)
+        AudioHandler::new(&mut self.audio_engine, &mut self.asset_store)
     }
     // ************************************* //
 

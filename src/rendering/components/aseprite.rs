@@ -62,6 +62,31 @@ impl Aseprite {
         self.current_tag.name.clone()
     }
 
+    /// Returns the length of the animation given in seconds.
+    /// Returns 0.0 if the animation doesn't exist.
+    pub fn get_anim_length<T: Into<String>>(&self, name: T) -> f32 {
+        let name: String = name.into();
+
+        for tag in &self.data.meta.frame_tags {
+            if tag.name == name {
+                let mut total_time = 0;
+                let mut i = tag.from;
+
+                while i <= tag.to {
+                    if let Some(frame) = self.data.frames.get(i as usize) {
+                        total_time += frame.duration;
+                    }
+
+                    i += 1;
+                }
+
+                return total_time as f32 / 1000.0;
+            }
+        }
+
+        0.0
+    }
+
     pub fn play<T: Into<String>>(&mut self, new_animation: T) {
         // TODO(bombfuse): Should this reset the the animation or continue?
         self.is_looping = false;
@@ -115,7 +140,11 @@ impl Aseprite {
             self.frame_counter += 1;
 
             if self.frame_counter as u32 > (self.current_tag.to - self.current_tag.from) {
-                self.frame_counter = 0;
+                if self.is_looping {
+                    self.frame_counter = 0;
+                } else {
+                    self.frame_counter = (self.current_tag.to - self.current_tag.from) as usize;
+                }
             }
         }
     }

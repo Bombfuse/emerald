@@ -11,6 +11,50 @@ impl EmeraldError {
         }
     }
 }
+
+
+
+
+
+// Kira audio backend error translations
+#[cfg(feature = "audio")]
+impl std::convert::From<kira::CommandError> for EmeraldError {
+    fn from(e: kira::CommandError) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string(),
+        }
+    }
+}
+
+#[cfg(feature = "audio")]
+impl std::convert::From<kira::manager::error::SetupError> for EmeraldError {
+    fn from(e: kira::manager::error::SetupError) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string(),
+        }
+    }
+}
+#[cfg(feature = "audio")]
+impl std::convert::From<kira::manager::error::AddSoundError> for EmeraldError {
+    fn from(e: kira::manager::error::AddSoundError) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string(),
+        }
+    }
+}
+
+#[cfg(feature = "audio")]
+impl std::convert::From<kira::sound::error::SoundFromFileError> for EmeraldError {
+    fn from(e: kira::sound::error::SoundFromFileError) -> EmeraldError {
+        EmeraldError {
+            message: e.to_string(),
+        }
+    }
+}
+
+
+
+
 impl std::fmt::Display for EmeraldError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.message)

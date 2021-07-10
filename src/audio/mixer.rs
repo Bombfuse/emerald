@@ -1,71 +1,54 @@
-use quad_snd::mixer::{PlaybackStyle, Sound, SoundMixer, Volume};
+use crate::{AssetStore, EmeraldError, SoundKey, audio::sound::{SoundInstanceId}};
 
-use crate::audio::*;
+#[cfg(feature = "audio")]
+mod kira_backend;
 
-pub struct Mixer {
-    inner: SoundMixer,
-    sound_ids: Vec<SoundId>,
-    volume: f32,
+#[cfg(feature = "audio")]
+use kira_backend::KiraMixer as BackendMixer;
+
+#[cfg(not(feature = "audio"))]
+mod dummy;
+#[cfg(not(feature = "audio"))]
+use dummy::DummyMixer as BackendMixer;
+
+pub(crate) trait Mixer {
+    fn play(&mut self, sound: SoundKey, asset_store: &mut AssetStore) -> Result<SoundInstanceId, EmeraldError>;
+    fn play_and_loop(&mut self, sound: SoundKey, asset_store: &mut AssetStore) -> Result<SoundInstanceId, EmeraldError>;
+    fn get_volume(&self) -> Result<f32, EmeraldError>;
+    fn set_volume(&mut self, volume: f32) -> Result<(), EmeraldError>;
+    fn get_instances(&self) -> Result<Vec<SoundInstanceId>, EmeraldError>;
+    fn stop(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError>;
+    fn pause(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError>;
+    fn resume(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError>;
+    fn clear(&mut self) -> Result<(), EmeraldError>;
+    fn post_update(&mut self) -> Result<(), EmeraldError>;
 }
-impl Mixer {
-    pub fn new() -> Self {
-        Mixer {
-            inner: SoundMixer::new(),
-            sound_ids: Vec::new(),
-            volume: 1.0,
-        }
+
+pub(crate) fn new_mixer() -> Result<Box<dyn Mixer>, EmeraldError> {
+    let mixer = BackendMixer::new()?;
+
+    Ok(mixer)
+}
+
+
+pub struct MixerHandler<'a> {
+    inner: &'a mut Box<dyn Mixer>,
+    asset_store: &'a mut AssetStore,
+}
+impl<'a> MixerHandler<'a> {
+    pub(crate) fn new(
+        inner: &'a mut Box<dyn Mixer>,
+        asset_store: &'a mut AssetStore) -> Self {
+        MixerHandler { inner, asset_store }
     }
 
-    pub fn play(&mut self, snd: Sound) -> SoundId {
-        let id = self.inner.play(snd);
-        self.sound_ids.push(id);
-
-        id
-    }
-
-    pub fn play_and_loop(&mut self, mut snd: Sound) -> SoundId {
-        snd.playback_style = PlaybackStyle::Looped;
-        let id = self.inner.play(snd);
-        self.sound_ids.push(id);
-
-        id
-    }
-
-    pub fn get_volume(&self) -> f32 {
-        self.volume
-    }
-
-    pub fn set_volume(&mut self, volume: f32) {
-        self.volume = volume;
-        self.inner.set_volume_self(Volume(volume))
-    }
-
-    pub fn sounds(&self) -> Vec<SoundId> {
-        self.sound_ids.clone()
-    }
-
-    pub fn stop(&mut self, id: SoundId) {
-        self.inner.stop(id);
-    }
-
-    pub fn pause(&mut self, id: SoundId) {
-        self.inner.pause(id);
-    }
-
-    pub fn resume(&mut self, id: SoundId) {
-        self.inner.resume(id);
-    }
-
-    pub fn clear(&mut self) {
-        let ids = self.sound_ids.clone();
-        for id in ids {
-            self.stop(id);
-        }
-
-        self.sound_ids = Vec::new();
-    }
-
-    pub(crate) fn frame(&mut self) {
-        self.inner.frame()
-    }
+    pub fn play(&mut self, key: SoundKey) -> Result<SoundInstanceId, EmeraldError> { self.inner.play(key, &mut self.asset_store) }
+    pub fn play_and_loop(&mut self, key: SoundKey) -> Result<SoundInstanceId, EmeraldError> { self.inner.play_and_loop(key, &mut self.asset_store) }
+    pub fn get_volume(&self) -> Result<f32, EmeraldError> { self.inner.get_volume() }
+    pub fn set_volume(&mut self, volume: f32) -> Result<(), EmeraldError> { self.inner.set_volume(volume) }
+    pub fn get_instances(&self) -> Result<Vec<SoundInstanceId>, EmeraldError> { self.inner.get_instances() }
+    pub fn stop(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError> { self.inner.stop(snd_instance_id) }
+    pub fn pause(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError> { self.inner.pause(snd_instance_id) }
+    pub fn resume(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError> { self.inner.resume(snd_instance_id) }
+    pub fn clear(&mut self) -> Result<(), EmeraldError> { self.inner.clear() }
 }
