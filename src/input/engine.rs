@@ -1,4 +1,5 @@
-use crate::{input::*, EmeraldError};
+use crate::mouse_state::MouseState;
+use crate::{input::*, EmeraldError, Position};
 
 #[cfg(feature = "gamepads")]
 use gamepad::{GamepadEngine, GamepadState};
@@ -16,6 +17,7 @@ pub(crate) struct InputEngine {
     gamepad_engine: GamepadEngine,
     pub(crate) gamepads: Vec<GamepadState>,
     pub(crate) keys: HashMap<KeyCode, ButtonState>,
+    pub(crate) mouse: MouseState,
 }
 impl InputEngine {
     #[cfg(feature = "gamepads")]
@@ -24,6 +26,7 @@ impl InputEngine {
             gamepad_engine: GamepadEngine::new(),
             gamepads: Vec::new(),
             keys: HashMap::new(),
+            mouse: MouseState::new(),
         }
     }
 
@@ -43,6 +46,7 @@ impl InputEngine {
         for (_key, state) in &mut self.keys {
             state.rollover();
         }
+        self.mouse.rollover();
 
         Ok(())
     }
@@ -53,6 +57,7 @@ impl InputEngine {
         for (_key, state) in &mut self.keys {
             state.rollover();
         }
+        self.mouse.rollover();
 
         Ok(())
     }
@@ -75,5 +80,33 @@ impl InputEngine {
             self.keys.insert(keycode, ButtonState::new());
             self.set_key_pressed(keycode, is_pressed);
         }
+    }
+
+    #[inline]
+    pub fn set_mouse_position(&mut self, x: f32, y: f32) {
+        self.mouse.position = Position::new(x, y);
+    }
+
+    #[inline]
+    pub fn set_mouse_down(&mut self, button: MouseButton, x: f32, y: f32) {
+        self.set_mouse_position(x, y);
+        self.set_mouse_pressed(button, true);
+    }
+
+    #[inline]
+    pub fn set_mouse_up(&mut self, button: MouseButton, x: f32, y: f32) {
+        self.set_mouse_position(x, y);
+        self.set_mouse_pressed(button, false);
+    }
+
+    #[inline]
+    fn set_mouse_pressed(&mut self, button: MouseButton, is_pressed: bool) {
+        let state = match button {
+            MouseButton::Right => &mut self.mouse.right,
+            MouseButton::Left => &mut self.mouse.left,
+            MouseButton::Middle => &mut self.mouse.middle,
+            MouseButton::Unknown => return,
+        };
+        state.is_pressed = is_pressed;
     }
 }

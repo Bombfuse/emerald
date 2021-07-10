@@ -6,6 +6,7 @@ edition = "2018"
 description = "A lite, fully featured 2D game engine."
 repository = "https://github.com/Bombfuse/emerald"
 license = "MIT OR Apache-2.0"
+resolver = "2"
 
 [features]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -28,13 +29,15 @@ nalgebra =  { version = "0.27.1" }
 # Optionals
 rapier2d = { version = "0.9.2", optional = true  }
 gamepad = { version = "0.1.1", optional = true }
-kira = { version= "0.5.2", optional = true }
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
 miniquad = { version = "0.3.0-alpha.37", features = [ "log-impl" ] }
+# mp3 does not works on wasm :(
+kira = { version= "0.5.2", optional = true, default-features = false, features = ["ogg", "flac", "wav"] }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 miniquad = "0.3.0-alpha.37"
+kira = { version= "0.5.2", optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 sapp-android = "0.1.8"

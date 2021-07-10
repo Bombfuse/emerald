@@ -1,6 +1,6 @@
 use nanoserde::DeJson;
 
-#[derive(Clone, Copy, Debug, DeJson)]
+#[derive(Clone, Copy, Debug, DeJson, Default)]
 pub struct Position {
     pub x: f32,
     pub y: f32,

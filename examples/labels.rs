@@ -15,7 +15,7 @@ impl Game for GamepadExample {
             emd.loader()
                 .pack_bytes(
                     "./examples/assets/Roboto-Light.ttf",
-                    include_bytes!("../assets/Roboto-Light.ttf").to_vec(),
+                    include_bytes!("./assets/Roboto-Light.ttf").to_vec(),
                 )
                 .unwrap();
         }
