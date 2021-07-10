@@ -123,11 +123,31 @@ impl EventHandler for GameEngine {
     }
 
     #[inline]
+    fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32) {
+        let y = ctx.screen_size().1 - y;
+        self.input_engine.set_mouse_position(x, y)
+    }
+
+    #[inline]
+    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        let y = ctx.screen_size().1 - y;
+        self.input_engine.set_mouse_down(button, x, y)
+    }
+
+    #[inline]
+    fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        let y = ctx.screen_size().1 - y;
+        self.input_engine.set_mouse_up(button, x, y)
+    }
+
+    #[inline]
     fn draw(&mut self, mut ctx: &mut Context) {
         let start_of_frame = miniquad::date::now();
         let delta = start_of_frame - self.last_instant;
 
-        self.rendering_engine.pre_draw(ctx, &mut self.asset_store).unwrap();
+        self.rendering_engine
+            .pre_draw(ctx, &mut self.asset_store)
+            .unwrap();
         let emd = Emerald::new(
             delta as f32,
             self.get_fps(),

@@ -1,21 +1,26 @@
 use crate::*;
 
-use rapier2d::{dynamics::{BodyStatus, CCDSolver, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet}, pipeline::{PhysicsHooks, PhysicsHooksFlags}};
-use rapier2d::geometry::{
-    BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, ContactEvent, IntersectionEvent,
-    NarrowPhase,
-};
+use rapier2d::prelude::*;
 use rapier2d::na::Isometry2;
-use rapier2d::pipeline::{ChannelEventCollector, PhysicsPipeline};
 
 use crate::crossbeam;
 use hecs::{Entity, World};
 use std::collections::HashMap;
 
 struct DefaultPhysicsHooks;
-impl PhysicsHooks for DefaultPhysicsHooks {
-    fn active_hooks(&self) -> PhysicsHooksFlags {
-        PhysicsHooksFlags::MODIFY_SOLVER_CONTACTS
+impl PhysicsHooks<RigidBodySet, ColliderSet> for DefaultPhysicsHooks {
+    fn filter_contact_pair(
+        &self,
+        _context: &rapier2d::prelude::PairFilterContext<RigidBodySet, ColliderSet>,
+    ) -> Option<rapier2d::prelude::SolverFlags> {
+        Some(rapier2d::prelude::SolverFlags::COMPUTE_IMPULSES)
+    }
+
+    fn filter_intersection_pair(&self, _context: &rapier2d::prelude::PairFilterContext<RigidBodySet, ColliderSet>) -> bool {
+        true
+    }
+
+    fn modify_solver_contacts(&self, _context: &mut rapier2d::prelude::ContactModificationContext<RigidBodySet, ColliderSet>) {
     }
 }
 
@@ -26,6 +31,7 @@ pub struct PhysicsEngine {
     pub(crate) broad_phase: BroadPhase,
     pub(crate) narrow_phase: NarrowPhase,
     pub(crate) joints: JointSet,
+    pub(crate) island_manager: IslandManager,
     pipeline: PhysicsPipeline,
     pub(crate) gravity: Vector2<f32>,
     pub(crate) ccd_solver: CCDSolver,
@@ -40,7 +46,7 @@ pub struct PhysicsEngine {
     collider_body: HashMap<ColliderHandle, RigidBodyHandle>,
     entity_collisions: HashMap<Entity, Vec<Entity>>,
     entity_intersections: HashMap<Entity, Vec<Entity>>,
-    physics_hooks: Box<dyn PhysicsHooks>,
+    physics_hooks: Box<dyn PhysicsHooks<RigidBodySet, ColliderSet>>,
 }
 
 impl PhysicsEngine {
@@ -51,6 +57,7 @@ impl PhysicsEngine {
         let pipeline = PhysicsPipeline::new();
         let broad_phase = BroadPhase::new();
         let narrow_phase = NarrowPhase::new();
+        let island_manager = IslandManager::new();
 
         // Initialize the event collector.
         let (contact_send, contact_recv) = crossbeam::channel::unbounded();
@@ -67,6 +74,7 @@ impl PhysicsEngine {
             joints,
             pipeline,
             gravity: Vector2::new(0.0, 0.0),
+            island_manager,
             ccd_solver,
             integration_parameters: IntegrationParameters::default(),
             contact_recv,
@@ -90,6 +98,7 @@ impl PhysicsEngine {
         self.pipeline.step(
             &self.gravity,
             &self.integration_parameters,
+            &mut self.island_manager,
             &mut self.broad_phase,
             &mut self.narrow_phase,
             &mut self.bodies,
@@ -114,11 +123,16 @@ impl PhysicsEngine {
                     if let (Some(collider_one), Some(collider_two)) =
                         (self.colliders.get(h1), self.colliders.get(h2))
                     {
-                        if let (Some(entity_one), Some(entity_two)) = (
-                            self.body_entities.get(&collider_one.parent()),
-                            self.body_entities.get(&collider_two.parent()),
+                        if let (Some(collider_parent_one), Some(collider_parent_two)) = (
+                            collider_one.parent(),
+                            collider_two.parent()
                         ) {
-                            started_contacts.push((*entity_one, *entity_two));
+                            if let (Some(entity_one), Some(entity_two)) = (
+                                self.body_entities.get(&collider_parent_one),
+                                self.body_entities.get(&collider_parent_two),
+                            ) {
+                                started_contacts.push((*entity_one, *entity_two));
+                            }
                         }
                     }
                 }
@@ -126,11 +140,17 @@ impl PhysicsEngine {
                     if let (Some(collider_one), Some(collider_two)) =
                         (self.colliders.get(h1), self.colliders.get(h2))
                     {
-                        if let (Some(entity_one), Some(entity_two)) = (
-                            self.body_entities.get(&collider_one.parent()),
-                            self.body_entities.get(&collider_two.parent()),
+
+                        if let (Some(collider_parent_one), Some(collider_parent_two)) = (
+                            collider_one.parent(),
+                            collider_two.parent()
                         ) {
-                            stopped_contacts.push((*entity_one, *entity_two));
+                            if let (Some(entity_one), Some(entity_two)) = (
+                                self.body_entities.get(&collider_parent_one),
+                                self.body_entities.get(&collider_parent_two),
+                            ) {
+                                stopped_contacts.push((*entity_one, *entity_two));
+                            }
                         }
                     }
                 }
@@ -156,14 +176,19 @@ impl PhysicsEngine {
                 self.colliders.get(intersection_event.collider1),
                 self.colliders.get(intersection_event.collider2),
             ) {
-                if let (Some(entity_one), Some(entity_two)) = (
-                    self.body_entities.get(&collider_one.parent()),
-                    self.body_entities.get(&collider_two.parent()),
+                if let (Some(collider_parent_one), Some(collider_parent_two)) = (
+                    collider_one.parent(),
+                    collider_two.parent()
                 ) {
-                    if intersection_event.intersecting {
-                        intersections.push((*entity_one, *entity_two));
-                    } else {
-                        disjoints.push((*entity_one, *entity_two));
+                    if let (Some(entity_one), Some(entity_two)) = (
+                        self.body_entities.get(&collider_parent_one),
+                        self.body_entities.get(&collider_parent_two),
+                    ) {
+                        if intersection_event.intersecting {
+                            intersections.push((*entity_one, *entity_two));
+                        } else {
+                            disjoints.push((*entity_one, *entity_two));
+                        }
                     }
                 }
             }
@@ -276,7 +301,7 @@ impl PhysicsEngine {
                 )),
             }?;
 
-            let body = builder.translation(position.x, position.y).build();
+            let body = builder.translation(Vector2::new(position.x, position.y)).build();
             let handle = self.bodies.insert(body);
             self.entity_bodies.insert(entity.clone(), handle);
             self.body_entities.insert(handle, entity);
@@ -305,7 +330,7 @@ impl PhysicsEngine {
         let collider = builder.build();
         let handle = self
             .colliders
-            .insert(collider, body_handle, &mut self.bodies);
+            .insert_with_parent(collider, body_handle, &mut self.bodies);
 
         self.collider_body.insert(handle, body_handle);
         
@@ -347,7 +372,7 @@ impl PhysicsEngine {
 
             if let Some(body) =
                 self.bodies
-                    .remove(body_handle, &mut self.colliders, &mut self.joints)
+                    .remove(body_handle, &mut self.island_manager, &mut self.colliders, &mut self.joints)
             {
                 return Some(body);
             }
@@ -358,7 +383,7 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn remove_collider(&mut self, collider_handle: ColliderHandle) -> Option<Collider> {
-        if let Some(collider) = self.colliders.remove(collider_handle, &mut self.bodies, false) {
+        if let Some(collider) = self.colliders.remove(collider_handle, &mut self.island_manager, &mut self.bodies, false) {
             if let Some(rbh) = self.collider_body.remove(&collider_handle) {
                 if let Some(colliders) = self.body_colliders.get_mut(&rbh) {
                     let mut i = 0;
@@ -419,11 +444,10 @@ impl PhysicsEngine {
         body_handle: RigidBodyHandle,
     ) {
         if let Some(body) = self.bodies.get_mut(body_handle) {
-            match body.body_status() {
-                BodyStatus::Kinematic => {
-                    body.set_next_kinematic_position(Isometry2::translation(pos.x, pos.y))
-                }
-                _ => body.set_position(Isometry2::translation(pos.x, pos.y), false),
+            if body.is_kinematic() {
+                body.set_next_kinematic_position(Isometry2::translation(pos.x, pos.y))
+            } else {
+                body.set_position(Isometry2::translation(pos.x, pos.y), false)
             }
         }
     }

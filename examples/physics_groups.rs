@@ -43,7 +43,7 @@ impl Game for PhysicsGroupsExample {
             emd.loader()
                 .pack_bytes(
                     "./examples/assets/bunny.png",
-                    include_bytes!("../assets/bunny.png").to_vec(),
+                    include_bytes!("./assets/bunny.png").to_vec(),
                 )
                 .unwrap();
         }
@@ -78,7 +78,7 @@ impl Game for PhysicsGroupsExample {
                     Position::new(0.0, 0.0),
                     ColorRect::new(Color::new(0, 255, 0, 255), 32, 16),
                 ),
-                RigidBodyBuilder::new_kinematic().translation(0.0, 0.0),
+                RigidBodyBuilder::new_kinematic_position_based().translation(Vector2::new(0.0, 0.0)),
             )
             .unwrap();
 
