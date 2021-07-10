@@ -66,7 +66,7 @@ impl MyGame {
             .physics()
             .build_body(
                 entity,
-                RigidBodyBuilder::new_dynamic().linvel(velocity.dx, velocity.dy), // Fling it up and to the right
+                RigidBodyBuilder::new_dynamic().linvel(Vector2::new(velocity.dx, velocity.dy)), // Fling it up and to the right
             )
             .unwrap();
         emd.world().physics().build_collider(body, collider_builder);
@@ -106,7 +106,7 @@ impl Game for MyGame {
                 .world()
                 .spawn_with_body(
                     (border.0,),
-                    RigidBodyBuilder::new_static().translation(border.0.x, border.0.y),
+                    RigidBodyBuilder::new_static().translation(Vector2::new(border.0.x, border.0.y)),
                 )
                 .unwrap();
             emd.world().physics().build_collider(
@@ -120,6 +120,7 @@ impl Game for MyGame {
         let mut color_rect = ColorRect::new(WHITE, size.x as u32, size.y as u32);
         color_rect.z_index = 10.0;
 
+        // Spawn controller
         let (_, body_handle) = emd
             .world()
             .spawn_with_body(
@@ -129,7 +130,7 @@ impl Game for MyGame {
                     Position::new(0.0, 0.0),
                     color_rect,
                 ),
-                RigidBodyBuilder::new_kinematic().can_sleep(false),
+                RigidBodyBuilder::new_kinematic_position_based().can_sleep(false),
             )
             .unwrap();
         emd.world().physics().build_collider(
