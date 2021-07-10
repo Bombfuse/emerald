@@ -1,11 +1,7 @@
 use crate::physics::*;
 use crate::{EmeraldError, Vector2};
 
-use rapier2d::{
-    dynamics::{RigidBody, RigidBodyBuilder, RigidBodyHandle},
-    geometry::{Collider, ColliderBuilder, ColliderHandle},
-};
-
+use rapier2d::prelude::*;
 use hecs::Entity;
 
 pub struct PhysicsHandler<'a> {
