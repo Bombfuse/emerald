@@ -178,6 +178,24 @@ fn initialize(&mut self, mut emd: Emerald) {
 }
 ```
 
+## Android
+
+### Build
+
+Recommended way to build for Android is using Docker.
+```bash
+docker run --rm -v $(pwd)":/root/src" -w /root/src notfl3/cargo-apk cargo quad-apk build --example physics
+```
+See [miniquad readme](https://github.com/not-fl3/miniquad#android) and [cargo-quad-apk](https://github.com/not-fl3/cargo-quad-apk) for more details.
+
+### Asset Loading
+
+Add following to `Cargo.toml` and load assets as usual:
+```
+[package.metadata.android]
+assets = "YOUR_ASSETS_DIRECTORY/"
+```
+
 ## Demos
 * Links
 * To

@@ -3,10 +3,53 @@ use crate::audio::*;
 use crate::rendering::*;
 use crate::*;
 
-use std::{ffi::OsStr};
-use std::fs::File;
-use std::io::prelude::*;
+use std::ffi::OsStr;
 use std::path::PathBuf;
+
+use quad_snd::decoder::{read_ogg, read_wav};
+
+#[cfg(target_arch = "wasm")]
+fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
+    Err(EmeraldError::new(format!(
+        "Unable to get bytes for {}",
+        path
+    )))
+}
+
+#[cfg(target_os = "android")]
+fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
+    // Based on https://github.com/not-fl3/miniquad/blob/4be5328760ff356494caf59cc853bcb395bce5d2/src/fs.rs#L38-L53
+
+    let filename = std::ffi::CString::new(path).unwrap();
+
+    let mut data: sapp_android::android_asset = unsafe { std::mem::zeroed() };
+
+    unsafe { sapp_android::sapp_load_asset(filename.as_ptr(), &mut data as _) };
+
+    if data.content.is_null() == false {
+        let slice =
+            unsafe { std::slice::from_raw_parts(data.content, data.content_length as _) };
+        let response = slice.iter().map(|c| *c as _).collect::<Vec<_>>();
+        Ok(response)
+    } else {
+        Err(EmeraldError::new(format!("Unable to load asset `{}`", path)))
+    }
+}
+
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
+fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
+    use std::fs::File;
+    use std::io::Read;
+
+    let current_dir = std::env::current_dir()?;
+    let path = current_dir.join(path);
+    let path = path.into_os_string().into_string()?;
+
+    let mut contents = vec![];
+    let mut file = File::open(path)?;
+    file.read_to_end(&mut contents)?;
+    Ok(contents)
+}
 
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
@@ -29,48 +72,16 @@ impl<'a> AssetLoader<'a> {
         }
     }
 
-    fn full_path<T: Into<String>>(&self, file_path: T) -> Result<PathBuf, EmeraldError> {
-        let current_dir = std::env::current_dir()?;
-
-        Ok(current_dir.join(file_path.into()))
-    }
-
     pub fn bytes<T: Into<String>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
-        #[cfg(target_arch = "wasm32")]
-        {
-            let path: String = file_path.into();
-
-            if let Some(bytes) = self.asset_store.get_bytes(&path) {
-                return Ok(bytes.clone());
-            }
-
-            Err(EmeraldError::new(format!(
-                "Unable to get bytes for {}",
-                path
-            )))
+        let path: String = file_path.into();
+        if let Some(bytes) = self.asset_store.get_bytes(&path) {
+            return Ok(bytes);
         }
 
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let path: String = file_path.into();
-            if let Some(bytes) = self.asset_store.get_bytes(&path) {
-                return Ok(bytes);
-            }
+        let bytes = read_file(&path)?;
+        self.asset_store.insert_bytes(String::from(path), bytes.clone());
 
-            let full_path = self.full_path(path.clone())?;
-            let file_path: String = full_path.into_os_string().into_string()?;
-
-            if let Ok(mut file) = File::open(file_path) {
-                let mut bytes = Vec::new();
-                file.read_to_end(&mut bytes)?;
-    
-                self.asset_store.insert_bytes(String::from(path), bytes.clone());
-    
-                return Ok(bytes);
-            }
-
-            Err(EmeraldError::new(format!("Unable to open file at {:?}", path)))
-        }
+        return Ok(bytes);
     }
 
     /// Loads bytes from given path as a string
