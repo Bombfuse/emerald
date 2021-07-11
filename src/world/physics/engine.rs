@@ -7,23 +7,6 @@ use crate::crossbeam;
 use hecs::{Entity, World};
 use std::collections::HashMap;
 
-struct DefaultPhysicsHooks;
-impl PhysicsHooks<RigidBodySet, ColliderSet> for DefaultPhysicsHooks {
-    fn filter_contact_pair(
-        &self,
-        _context: &rapier2d::prelude::PairFilterContext<RigidBodySet, ColliderSet>,
-    ) -> Option<rapier2d::prelude::SolverFlags> {
-        Some(rapier2d::prelude::SolverFlags::COMPUTE_IMPULSES)
-    }
-
-    fn filter_intersection_pair(&self, _context: &rapier2d::prelude::PairFilterContext<RigidBodySet, ColliderSet>) -> bool {
-        true
-    }
-
-    fn modify_solver_contacts(&self, _context: &mut rapier2d::prelude::ContactModificationContext<RigidBodySet, ColliderSet>) {
-    }
-}
-
 /// A physics engine unique to a game world. This handles the RigidBodies of the game.
 pub struct PhysicsEngine {
     pub(crate) bodies: RigidBodySet,
@@ -63,7 +46,7 @@ impl PhysicsEngine {
         let (contact_send, contact_recv) = crossbeam::channel::unbounded();
         let (intersection_send, intersection_recv) = crossbeam::channel::unbounded();
         let event_handler = ChannelEventCollector::new(intersection_send, contact_send);
-        let physics_hooks = Box::new(DefaultPhysicsHooks { });
+        let physics_hooks = Box::new(());
         let ccd_solver = CCDSolver::new();
 
         PhysicsEngine {
@@ -327,7 +310,10 @@ impl PhysicsEngine {
         body_handle: RigidBodyHandle,
         builder: ColliderBuilder,
     ) -> ColliderHandle {
-        let collider = builder.build();
+        let collider = builder
+            .active_events(ActiveEvents::CONTACT_EVENTS |
+                ActiveEvents::INTERSECTION_EVENTS)
+            .build();
         let handle = self
             .colliders
             .insert_with_parent(collider, body_handle, &mut self.bodies);
