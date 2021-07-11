@@ -1,5 +1,4 @@
 use crate::input::*;
-use crate::mouse_state::MouseState;
 use miniquad::*;
 use std::collections::HashMap;
 
@@ -10,17 +9,26 @@ use gamepad::{Button, GamepadState, Joystick};
 pub struct InputHandler {
     keys: HashMap<KeyCode, ButtonState>,
     mouse: MouseState,
+    touches: HashMap<u64, TouchState>,
     #[cfg(feature = "gamepads")]
     gamepads: Vec<GamepadState>,
 }
 impl InputHandler {
     pub(crate) fn new(engine: &InputEngine) -> Self {
-        InputHandler {
+        let mut this = InputHandler {
             keys: engine.keys.clone(),
             mouse: engine.mouse,
+            touches: engine.touches.clone(),
             #[cfg(feature = "gamepads")]
             gamepads: engine.gamepads.clone(),
+        };
+        if engine.mouse_to_touch {
+            this.mouse_to_touch();
         }
+        if engine.touches_to_mouse {
+            this.touches_to_mouse();
+        }
+        this
     }
 
     #[inline]
@@ -50,6 +58,65 @@ impl InputHandler {
         self.mouse
     }
 
+    #[inline]
+    pub fn touches(&self) -> &HashMap<u64, TouchState> {
+        &self.touches
+    }
+
+    /// Converts touches to mouse clicks
+    pub fn touches_to_mouse(&mut self) {
+        let last_touch = self.touches.values().last();
+        let last_touch = match last_touch {
+            Some(x) => x,
+            None => return,
+        };
+
+        let number_of_touches = self.touches.len();
+        let button = match number_of_touches {
+            1 => &mut self.mouse.left,
+            2 => &mut self.mouse.right,
+            _ => &mut self.mouse.middle,
+        };
+
+        self.mouse.position = last_touch.position;
+        match last_touch.phase {
+            TouchPhase::Started => {
+                button.was_pressed = false;
+                button.is_pressed = true;
+            }
+            TouchPhase::Moved => {
+                button.was_pressed = true;
+                button.is_pressed = true;
+            }
+            TouchPhase::Ended | TouchPhase::Cancelled => {
+                button.was_pressed = true;
+                button.is_pressed = false;
+            }
+        }
+    }
+
+    /// Treat left mouse clicks as touches
+    pub fn mouse_to_touch(&mut self) {
+        let (previous, phase) = match (self.mouse.left.was_pressed, self.mouse.left.is_pressed) {
+            (false, false) => return,
+            (false, true) => (TouchPhase::Cancelled, TouchPhase::Started),
+            (true, true) => (TouchPhase::Moved, TouchPhase::Moved),
+            (true, false) => (TouchPhase::Moved, TouchPhase::Ended),
+        };
+
+        // We need some fake id:
+        let id = 0xC0FFEE;
+
+        self.touches.insert(
+            id,
+            TouchState {
+                position: self.mouse.position,
+                previous,
+                phase,
+            },
+        );
+    }
+
     /// Gets the value of the button from the first gamepad available, or defaults to false.
     #[inline]
     #[cfg(feature = "gamepads")]
@@ -71,7 +138,7 @@ impl InputHandler {
 
         false
     }
-    
+
     /// Gets the value of the button from the first gamepad available, or defaults to false.
     #[inline]
     #[cfg(feature = "gamepads")]
