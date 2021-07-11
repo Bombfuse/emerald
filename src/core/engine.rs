@@ -141,6 +141,12 @@ impl EventHandler for GameEngine {
     }
 
     #[inline]
+    fn touch_event(&mut self, ctx: &mut Context, phase: TouchPhase, id: u64, x: f32, y: f32) {
+        let y = ctx.screen_size().1 - y;
+        self.input_engine.touch_event(phase, id, x, y)
+    }
+
+    #[inline]
     fn draw(&mut self, mut ctx: &mut Context) {
         let start_of_frame = miniquad::date::now();
         let delta = start_of_frame - self.last_instant;

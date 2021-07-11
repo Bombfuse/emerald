@@ -129,6 +129,19 @@ impl<'a> Emerald<'a> {
     pub fn input(&mut self) -> InputHandler {
         InputHandler::new(&mut self.input_engine)
     }
+
+    /// Makes all touches also be registered as mouse events.
+    #[inline]
+    pub fn touches_to_mouse(&mut self, enabled: bool) {
+        self.input_engine.touches_to_mouse = enabled;
+    }
+
+    /// Makes mouse clicks treated as touch event.
+    #[inline]
+    pub fn mouse_to_touch(&mut self, enabled: bool) {
+        self.input_engine.mouse_to_touch = enabled;
+    }
+
     // ************************************* //
 
     // ************* World API ************* //

@@ -1,4 +1,3 @@
-use crate::mouse_state::MouseState;
 use crate::{input::*, EmeraldError, Position};
 
 #[cfg(feature = "gamepads")]
@@ -7,9 +6,15 @@ use gamepad::{GamepadEngine, GamepadState};
 use miniquad::*;
 use std::collections::HashMap;
 
+use super::touch_state::TouchState;
+
 #[cfg(not(feature = "gamepads"))]
 pub(crate) struct InputEngine {
     pub(crate) keys: HashMap<KeyCode, ButtonState>,
+    pub(crate) mouse: MouseState,
+    pub(crate) touches: HashMap<u64, TouchState>,
+    pub(crate) touches_to_mouse: bool,
+    pub(crate) mouse_to_touch: bool,
 }
 
 #[cfg(feature = "gamepads")]
@@ -18,6 +23,9 @@ pub(crate) struct InputEngine {
     pub(crate) gamepads: Vec<GamepadState>,
     pub(crate) keys: HashMap<KeyCode, ButtonState>,
     pub(crate) mouse: MouseState,
+    pub(crate) touches: HashMap<u64, TouchState>,
+    pub(crate) touches_to_mouse: bool,
+    pub(crate) mouse_to_touch: bool,
 }
 impl InputEngine {
     #[cfg(feature = "gamepads")]
@@ -27,6 +35,9 @@ impl InputEngine {
             gamepads: Vec::new(),
             keys: HashMap::new(),
             mouse: MouseState::new(),
+            touches: HashMap::new(),
+            touches_to_mouse: false,
+            mouse_to_touch: false,
         }
     }
 
@@ -34,6 +45,20 @@ impl InputEngine {
     pub(crate) fn new() -> Self {
         InputEngine {
             keys: HashMap::new(),
+            mouse: MouseState::new(),
+            touches: HashMap::new(),
+            touches_to_mouse: false,
+            mouse_to_touch: false,
+        }
+    }
+
+    fn rollover_touches(&mut self) {
+        // Remove outdated touches.
+        self.touches.retain(|_id, touch| !touch.is_outdated());
+
+        // Then rollover the rest
+        for (_id, touch) in &mut self.touches {
+            touch.rollover();
         }
     }
 
@@ -46,6 +71,7 @@ impl InputEngine {
         for (_key, state) in &mut self.keys {
             state.rollover();
         }
+        self.rollover_touches();
         self.mouse.rollover();
 
         Ok(())
@@ -57,6 +83,7 @@ impl InputEngine {
         for (_key, state) in &mut self.keys {
             state.rollover();
         }
+        self.rollover_touches();
         self.mouse.rollover();
 
         Ok(())
@@ -108,5 +135,12 @@ impl InputEngine {
             MouseButton::Unknown => return,
         };
         state.is_pressed = is_pressed;
+    }
+
+    #[inline]
+    pub fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
+        let touch = self.touches.entry(id).or_default();
+        touch.position = Position::new(x, y);
+        touch.phase = phase;
     }
 }
