@@ -47,6 +47,14 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.get_colliders(entity)
     }
 
+    pub fn get_collider_desc(&self, collider_handle: ColliderHandle) -> Option<Collider> {
+        if let Some(collider) = self.physics_engine.colliders.get(collider_handle) {
+            return Some(collider.clone());
+        }
+
+        None
+    }
+
     /// Remove physics body attached to this entity.
     pub fn remove_body(&mut self, entity: Entity) -> Option<RigidBody> {
         if let Some(body) = self.physics_engine.remove_body(entity.clone()) {
