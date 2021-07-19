@@ -422,21 +422,21 @@ impl RenderingEngine {
         }
 
         for glyph in self.layout.glyphs() {
-            let character = glyph.key.c;
+            let glyph_key = glyph.key;
             let x = glyph.x;
             let y = glyph.y;
 
             let mut need_to_cache_glyph = false;
             if let Some(font) = asset_store.get_font(&label.font_key) {
-                need_to_cache_glyph = !font.characters.contains_key(&(character, label.font_size));
+                need_to_cache_glyph = !font.characters.contains_key(&glyph_key);
             }
             
             if need_to_cache_glyph {
-                cache_glyph(&mut ctx, &mut asset_store, &label.font_key, character, label.font_size)?;
+                cache_glyph(&mut ctx, &mut asset_store, &label.font_key, glyph_key.clone(), label.font_size)?;
             }
 
             if let Some(font) = asset_store.get_font_mut(&label.font_key) {
-                let font_data = &font.characters[&(character, label.font_size)];
+                let font_data = &font.characters[&glyph_key];
                 {
                     let left_coord = (font_data.offset_x as f32 + x) * label.scale;
                     let top_coord = y * label.scale;
@@ -712,11 +712,6 @@ fn draw_texture(
         ctx.apply_uniforms(&uniforms);
         ctx.draw(0, 6, 1);
     }
-}
-
-#[inline]
-pub fn ascii_character_list() -> Vec<char> {
-    (0..255).filter_map(::std::char::from_u32).collect()
 }
 
 #[inline]

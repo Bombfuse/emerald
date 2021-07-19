@@ -2,6 +2,7 @@
 use crate::rendering::*;
 use crate::{Color, EmeraldError, AssetStore};
 
+use fontdue::layout::GlyphRasterConfig;
 pub use fontdue::layout::{VerticalAlign, HorizontalAlign, WrapStyle};
 
 use miniquad::Context;
@@ -76,7 +77,7 @@ impl FontImage {
 
 pub(crate) struct Font {
     pub font_key: FontKey,
-    pub characters: HashMap<(char, u16), CharacterInfo>,
+    pub characters: HashMap<GlyphRasterConfig, CharacterInfo>,
     pub font_texture_key: TextureKey,
     pub font_image: FontImage,
     pub cursor_x: u16,
@@ -104,7 +105,7 @@ pub(crate) fn cache_glyph(
     mut ctx: &mut Context,
     asset_store: &mut AssetStore,
     font_key: &FontKey,
-    character: char,
+    glyph_key: GlyphRasterConfig,
     size: u16
 ) -> Result<(), EmeraldError> {
     let mut recache_characters = None;
@@ -115,7 +116,7 @@ pub(crate) fn cache_glyph(
     let mut optional_bitmap = None;
 
     if let Some(font) = asset_store.get_fontdue_font(&font_key) {
-        let (metrics, bitmap) = font.rasterize(character, size as f32);
+        let (metrics, bitmap) = font.rasterize_config(glyph_key);
         optional_metrics = Some(metrics);
         optional_bitmap = Some(bitmap);
     }
@@ -157,7 +158,7 @@ pub(crate) fn cache_glyph(
                 offset_y,
             };
     
-            font.characters.insert((character, size), character_info);
+            font.characters.insert(glyph_key.clone(), character_info);
     
             // texture bounds exceeded
             if font.cursor_y + height as u16 > font.font_image.height {
@@ -211,8 +212,8 @@ pub(crate) fn cache_glyph(
 
     if let Some(characters) = recache_characters {
         // recache all previously asset_stored symbols
-        for ((character, size), _) in characters {
-            cache_glyph(&mut ctx, asset_store, &font_key, character, size)?;
+        for (glyph_key, _) in characters {
+            cache_glyph(&mut ctx, asset_store, &font_key, glyph_key, size)?;
         }
     }
 
