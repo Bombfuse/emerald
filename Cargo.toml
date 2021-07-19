@@ -21,7 +21,7 @@ headless = []
 image = { version = "0.23.14", default-features = false, features = [ "png" ] }
 glam = { version = "0.17.1", default-features = false, features = ["libm"] }
 quad-rand = "0.2.1"
-fontdue = "0.4.0"
+fontdue = "0.5.2"
 nanoserde = "0.1.28"
 hecs = { version = "0.5.2", default-features = false }
 nalgebra =  { version = "0.27.1" }

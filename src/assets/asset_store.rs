@@ -58,17 +58,12 @@ impl AssetStore {
             .insert(key, self.fontdue_fonts.len() - 1);
     }
 
-    pub fn insert_font(&mut self, ctx: &mut Context, key: FontKey, font: Font) -> Result<(), EmeraldError> {
+    pub fn insert_font(&mut self, _ctx: &mut Context, key: FontKey, font: Font) -> Result<(), EmeraldError> {
         self.fonts.push(font);
         self.font_key_map
             .insert(key.clone(), self.fonts.len() - 1);
 
-        let mut default_asset_stored_chars = ascii_character_list();
-        default_asset_stored_chars.push('.');
-        default_asset_stored_chars.push('!');
-        default_asset_stored_chars.push('?');
-
-        self.populate_font_cache(ctx, &key, &default_asset_stored_chars, key.1 as u16)
+        Ok(())
     }
 
     pub fn insert_texture(&mut self, ctx: &mut Context, key: TextureKey, texture: Texture) {
@@ -183,24 +178,5 @@ impl AssetStore {
                 }
             }
         }
-    }
-
-    #[inline]
-    pub fn populate_font_cache(
-        &mut self,
-        ctx: &mut Context,
-        key: &FontKey,
-        characters: &[char],
-        size: u16,
-    ) -> Result<(), EmeraldError> {
-        if let Some(index) = self.font_key_map.get(key) {
-            if let Some(_) = self.fonts.get_mut(*index) {
-                for character in characters {
-                    cache_glyph(ctx, self, &key, *character, size)?;
-                }
-            }
-        }
-
-        Ok(())
     }
 }
