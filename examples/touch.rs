@@ -17,18 +17,8 @@ pub struct TouchExample {
 
 impl Game for TouchExample {
     fn initialize(&mut self, mut emd: Emerald) {
-        // Pack all game files into WASM binary
-        #[cfg(target_arch = "wasm32")]
-        {
-            emd.loader()
-                .pack_bytes(
-                    "./examples/assets/bunny.png",
-                    include_bytes!("./assets/bunny.png").to_vec(),
-                )
-                .unwrap();
-        }
-
-        self.sprite = emd.loader().sprite("./examples/assets/bunny.png").ok();
+        emd.set_asset_folder_root(String::from("./examples/assets/"));
+        self.sprite = emd.loader().sprite("bunny.png").ok();
         emd.mouse_to_touch(true);
     }
 

@@ -19,6 +19,8 @@ pub struct MyGame {
 }
 impl Game for MyGame {
     fn initialize(&mut self, mut emd: Emerald) {
+        emd.set_asset_folder_root(String::from("./examples/assets/"));
+
         self.render_texture = Some(emd.loader().render_texture(RES_WIDTH as usize, RES_HEIGHT as usize).unwrap());
     }
 
@@ -56,9 +58,9 @@ impl Game for MyGame {
 
     fn draw(&mut self, mut emd: Emerald) {
         let now = std::time::Instant::now();
-        emd.graphics().begin_texture(self.render_texture.as_ref().unwrap().clone());
+        emd.graphics().begin_texture(self.render_texture.as_ref().unwrap().clone()).unwrap();
 
-        let rabbit = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
+        let rabbit = emd.loader().sprite("bunny.png").unwrap();
         emd.graphics().draw_color_rect(&ColorRect::new(WHITE, 500 * 500, 500 * 500),
         &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32));
         emd.graphics().draw_sprite(&rabbit, &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32));
@@ -77,9 +79,9 @@ impl Game for MyGame {
         screen_sprite.scale.x = self.scale;
         screen_sprite.scale.y = self.scale;
 
-        emd.graphics().begin();
+        emd.graphics().begin().unwrap();
         emd.graphics().draw_sprite(&screen_sprite, &self.pos);
-        emd.graphics().render();
+        emd.graphics().render().unwrap();
 
         println!("screen draw: {:?}", e - now);
     }
