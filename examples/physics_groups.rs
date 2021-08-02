@@ -37,16 +37,7 @@ pub struct PhysicsGroupsExample {
 }
 impl Game for PhysicsGroupsExample {
     fn initialize(&mut self, mut emd: Emerald) {
-        // Pack all game files into WASM binary
-        #[cfg(target_arch = "wasm32")]
-        {
-            emd.loader()
-                .pack_bytes(
-                    "./examples/assets/bunny.png",
-                    include_bytes!("./assets/bunny.png").to_vec(),
-                )
-                .unwrap();
-        }
+        emd.set_asset_folder_root(String::from("./examples/assets/"));
 
         let (entity1, body1) = emd
             .world()

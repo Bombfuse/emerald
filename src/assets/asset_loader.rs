@@ -5,48 +5,9 @@ use crate::*;
 
 use std::ffi::OsStr;
 
-#[cfg(target_arch = "wasm32")]
-fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
-    Err(EmeraldError::new(format!(
-        "Unable to get bytes for {}",
-        path
-    )))
-}
 
-#[cfg(target_os = "android")]
-fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
-    // Based on https://github.com/not-fl3/miniquad/blob/4be5328760ff356494caf59cc853bcb395bce5d2/src/fs.rs#L38-L53
-
-    let filename = std::ffi::CString::new(path).unwrap();
-
-    let mut data: sapp_android::android_asset = unsafe { std::mem::zeroed() };
-
-    unsafe { sapp_android::sapp_load_asset(filename.as_ptr(), &mut data as _) };
-
-    if data.content.is_null() == false {
-        let slice =
-            unsafe { std::slice::from_raw_parts(data.content, data.content_length as _) };
-        let response = slice.iter().map(|c| *c as _).collect::<Vec<_>>();
-        Ok(response)
-    } else {
-        Err(EmeraldError::new(format!("Unable to load asset `{}`", path)))
-    }
-}
-
-#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
-fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
-    use std::fs::File;
-    use std::io::Read;
-
-    let current_dir = std::env::current_dir()?;
-    let path = current_dir.join(path);
-    let path = path.into_os_string().into_string()?;
-
-    let mut contents = vec![];
-    let mut file = File::open(path)?;
-    file.read_to_end(&mut contents)?;
-    Ok(contents)
-}
+// assets
+// user
 
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
@@ -69,21 +30,35 @@ impl<'a> AssetLoader<'a> {
         }
     }
 
-    pub fn bytes<T: Into<String>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
+    /// Retrieves bytes from the assets directory of the game
+    pub fn asset_bytes<T: Into<String>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
         let path: String = file_path.into();
-        if let Some(bytes) = self.asset_store.get_bytes(&path) {
+        if let Some(bytes) = self.asset_store.get_asset_bytes(&path) {
             return Ok(bytes);
         }
 
-        let bytes = read_file(&path)?;
-        self.asset_store.insert_bytes(String::from(path), bytes.clone());
+        let bytes = self.asset_store.read_asset_file(&path)?;
+        self.asset_store.insert_asset_bytes(String::from(path), bytes.clone())?;
+
+        return Ok(bytes);
+    }
+
+    /// Retrieves bytes from a file in the user directory of the game
+    pub fn user_bytes<T: Into<String>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
+        let path: String = file_path.into();
+        if let Some(bytes) = self.asset_store.get_user_bytes(&path) {
+            return Ok(bytes);
+        }
+
+        let bytes = self.asset_store.read_user_file(&path)?;
+        self.asset_store.insert_user_bytes(String::from(path), bytes.clone())?;
 
         return Ok(bytes);
     }
 
     /// Loads bytes from given path as a string
     pub fn string<T: Into<String>>(&mut self, file_path: T) -> Result<String, EmeraldError> {
-        let bytes = self.bytes(file_path)?;
+        let bytes = self.asset_bytes(file_path)?;
         let string = String::from_utf8(bytes)?;
 
         Ok(string)
@@ -110,7 +85,7 @@ impl<'a> AssetLoader<'a> {
             font_image.height,
             &font_image.bytes,
         )?;
-        let font_bytes = self.bytes(file_path.clone())?;
+        let font_bytes = self.asset_bytes(file_path.clone())?;
         let mut font_settings = fontdue::FontSettings::default();
         font_settings.scale = font_size as f32;
         let inner_font = fontdue::Font::from_bytes(font_bytes, font_settings)?;
@@ -123,9 +98,6 @@ impl<'a> AssetLoader<'a> {
         Ok(key)
     }
 
-    /// TODO(bombfuse): Automatically load texture and animations from a .aseprite
-    // fn aseprite() {}
-
     pub fn aseprite_with_animations<T: Into<String>>(
         &mut self,
         path_to_texture: T,
@@ -134,7 +106,7 @@ impl<'a> AssetLoader<'a> {
         let texture_path: String = path_to_texture.into();
         let animation_path: String = path_to_animations.into();
 
-        let aseprite_data = self.bytes(animation_path.clone())?;
+        let aseprite_data = self.asset_bytes(animation_path.clone())?;
 
         let sprite = self.sprite(texture_path)?;
         let aseprite = Aseprite::new(sprite, aseprite_data)?;
@@ -150,7 +122,7 @@ impl<'a> AssetLoader<'a> {
             return Ok(key);
         }
 
-        let data = self.bytes(path.clone())?;
+        let data = self.asset_bytes(path.clone())?;
         let texture = Texture::new(&mut self.quad_ctx, key.clone(), data)?;
         self.asset_store.insert_texture(&mut self.quad_ctx, key.clone(), texture);
 
@@ -189,22 +161,21 @@ impl<'a> AssetLoader<'a> {
         };
 
         let key = SoundKey::new(path.clone(), sound_format);
-        if self.asset_store.sound_map.contains_key(&key) {
+        if self.asset_store.contains_sound(&key) {
             return Ok(key);
         }
-
-        let sound_bytes = self.bytes(path.clone())?;
+        let sound_bytes = self.asset_bytes(path.clone())?;
         let sound = Sound::new(sound_bytes, sound_format)?;
 
-        if !self.asset_store.sound_map.contains_key(&key) {
-            self.asset_store.sound_map.insert(key.clone(), sound);
+        if !self.asset_store.contains_sound(&key) {
+            self.asset_store.insert_sound(key.clone(), sound);
         }
 
         Ok(key)
     }
 
-    pub fn pack_bytes(&mut self, name: &str, bytes: Vec<u8>) -> Result<(), EmeraldError> {
-        self.asset_store.insert_bytes(name.into(), bytes);
+    pub fn pack_asset_bytes(&mut self, name: &str, bytes: Vec<u8>) -> Result<(), EmeraldError> {
+        self.asset_store.insert_asset_bytes(name.into(), bytes)?;
 
         Ok(())
     }

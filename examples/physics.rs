@@ -59,7 +59,7 @@ impl MyGame {
         collider_builder: ColliderBuilder,
         velocity: Velocity,
     ) {
-        let sprite = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
+        let sprite = emd.loader().sprite("bunny.png").unwrap();
         let entity = emd.world().spawn((sprite, position));
         let body = emd
             .world()
@@ -74,19 +74,7 @@ impl MyGame {
 }
 impl Game for MyGame {
     fn initialize(&mut self, mut emd: Emerald) {
-        // Pack all game files into WASM binary
-        emd.loader()
-            .pack_bytes(
-                "./examples/assets/bunny.png",
-                include_bytes!("./assets/bunny.png").to_vec(),
-            )
-            .unwrap();
-        emd.loader()
-            .pack_bytes(
-                "./examples/assets/Roboto-Light.ttf",
-                include_bytes!("./assets/Roboto-Light.ttf").to_vec(),
-            )
-            .unwrap();
+        emd.set_asset_folder_root(String::from("./examples/assets/"));
 
         let borders = vec![
             (
@@ -173,7 +161,7 @@ impl Game for MyGame {
     }
 
     fn draw(&mut self, mut emd: Emerald) {
-        emd.graphics().begin();
+        emd.graphics().begin().unwrap();
 
         if let Some(mut world) = emd.pop_world() {
             emd.graphics().draw_world(&mut world).unwrap();
@@ -184,7 +172,7 @@ impl Game for MyGame {
             let fps = emd.fps() as u8;
             let font = emd
                 .loader()
-                .font("./examples/assets/Roboto-Light.ttf", 48)
+                .font("Roboto-Light.ttf", 48)
                 .unwrap();
             let mut label = Label::new(format!("FPS: {}", fps), font, 24);
             label.centered = false;
@@ -192,6 +180,6 @@ impl Game for MyGame {
                 .draw_label(&label, &Position::new(24.0, RES_HEIGHT as f32 - 10.0)).unwrap();
         }
         // emd.graphics().draw_colliders(Color::new(255, 0, 0, 130));
-        emd.graphics().render();
+        emd.graphics().render().unwrap();
     }
 }

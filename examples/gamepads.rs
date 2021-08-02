@@ -11,18 +11,9 @@ pub fn main() {
 pub struct GamepadExample;
 impl Game for GamepadExample {
     fn initialize(&mut self, mut emd: Emerald) {
-        // Pack all game files into WASM binary
-        #[cfg(target_arch = "wasm32")]
-        {
-            emd.loader()
-                .pack_bytes(
-                    "./examples/assets/bunny.png",
-                    include_bytes!("./assets/bunny.png").to_vec(),
-                )
-                .unwrap();
-        }
+        emd.set_asset_folder_root(String::from("./examples/assets/"));
 
-        match emd.loader().sprite("./examples/assets/bunny.png") {
+        match emd.loader().sprite("bunny.png") {
             Ok(sprite) => {
                 emd.world().spawn((sprite, Position::new(16.0, 16.0)));
             }
