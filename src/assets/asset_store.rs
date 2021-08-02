@@ -9,7 +9,7 @@ use std::collections::HashMap;
 const INITIAL_TEXTURE_STORAGE_CAPACITY: usize = 100;
 const INITIAL_FONT_STORAGE_CAPACITY: usize = 100;
 
-const DEFAULT_ASSET_FOLDER: &str = "./assets";
+const DEFAULT_ASSET_FOLDER: &str = "./assets/";
 
 /// Default to storing user data in the application directory.
 /// Note: This will destroy any user/save files if the game is re-installed.
