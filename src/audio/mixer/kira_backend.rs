@@ -102,6 +102,14 @@ impl Mixer for KiraMixer {
         Ok(())
     }
 
+    fn set_instance_volume(&mut self, snd_instance_id: SoundInstanceId, volume: f32) -> Result<(), EmeraldError> {
+        if let Some(instance) = self.instances.get_mut(&snd_instance_id) {
+            instance.set_volume(volume as f64)?;
+        }
+
+        Ok(())
+    }
+
     /// Get the ids of all instances in the mixer.
     fn get_instances(&self) -> Result<Vec<SoundInstanceId>, EmeraldError> {
         let mut instances = Vec::new();

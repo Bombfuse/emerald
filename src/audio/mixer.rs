@@ -16,6 +16,7 @@ pub(crate) trait Mixer {
     fn play_and_loop(&mut self, sound: SoundKey, asset_store: &mut AssetStore) -> Result<SoundInstanceId, EmeraldError>;
     fn get_volume(&self) -> Result<f32, EmeraldError>;
     fn set_volume(&mut self, volume: f32) -> Result<(), EmeraldError>;
+    fn set_instance_volume(&mut self, snd_instance_id: SoundInstanceId, volume: f32) -> Result<(), EmeraldError>;
     fn get_instances(&self) -> Result<Vec<SoundInstanceId>, EmeraldError>;
     fn stop(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError>;
     fn pause(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError>;
