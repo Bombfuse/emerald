@@ -15,6 +15,7 @@ logging = ["miniquad/log-impl"]
 physics = ["rapier2d"]
 gamepads = ["gamepad"]
 headless = []
+hotreload = []
 audio = ["kira"]
 
 [dependencies]

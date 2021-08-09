@@ -15,6 +15,9 @@ const DEFAULT_ASSET_FOLDER: &str = "./assets/";
 /// Note: This will destroy any user/save files if the game is re-installed.
 const DEFAULT_USER_DATA_FOLDER: &str = "./";
 
+
+
+
 // const INITIAL_SOUND_STORAGE_CAPACITY: usize = 100;
 
 /// The AssetStore stores all Textures, Fonts, and Audio for the game.
@@ -35,6 +38,9 @@ pub(crate) struct AssetStore {
     pub sound_map: HashMap<SoundKey, Sound>,
     asset_folder_root: String,
     user_data_folder_root: String,
+
+    #[cfg(feature="hotreload")]
+    pub(crate) file_hot_reload_metadata: HashMap<String, crate::assets::hotreload::HotReloadMetadata>,
 }
 impl AssetStore {
     pub fn new(ctx: &mut Context) -> Self {
@@ -61,6 +67,9 @@ impl AssetStore {
             sound_map: HashMap::new(),
             asset_folder_root,
             user_data_folder_root,
+            
+            #[cfg(feature="hotreload")]
+            file_hot_reload_metadata: HashMap::new(),
         }
     }
 
@@ -70,6 +79,14 @@ impl AssetStore {
 
     pub fn set_user_data_folder_root(&mut self, root: String) {
         self.user_data_folder_root = root;
+    }
+
+    pub fn get_asset_folder_root(&mut self) -> String {
+        self.asset_folder_root.clone()
+    }
+
+    pub fn get_user_data_folder_root(&mut self) -> String {
+        self.user_data_folder_root.clone()
     }
 
     pub fn insert_asset_bytes(&mut self, relative_path: String, bytes: Vec<u8>) -> Result<(), EmeraldError> {
@@ -82,12 +99,13 @@ impl AssetStore {
         let full_path = self.get_full_asset_path(relative_path);
         self.get_bytes(full_path)
     }
+
     pub fn read_asset_file(&mut self, relative_path: &String) -> Result<Vec<u8>, EmeraldError> {
         let full_path = self.get_full_asset_path(relative_path);
         read_file(&full_path)
     }
 
-    pub fn insert_user_bytes(&mut self, relative_path: String, bytes: Vec<u8>) -> Result<(), EmeraldError> {
+    pub fn _insert_user_bytes(&mut self, relative_path: String, bytes: Vec<u8>) -> Result<(), EmeraldError> {
         let path = self.get_full_user_data_path(&relative_path);
         self.bytes.insert(path, bytes);
 
@@ -124,16 +142,24 @@ impl AssetStore {
         Ok(())
     }
 
-    pub fn insert_texture(&mut self, ctx: &mut Context, key: TextureKey, texture: Texture) {
+    pub fn insert_texture(&mut self, key: TextureKey, texture: Texture) {
         if let Some(_) = self.get_texture(&key) {
-            self.remove_texture(ctx, key.clone());
+            self.remove_texture(key.clone());
         }
 
         self.textures.push(texture);
-        self.texture_key_map.insert(key, self.textures.len() - 1);
+        self.texture_key_map.insert(key.clone(), self.textures.len() - 1);
+
+        #[cfg(feature="hotreload")]
+        crate::assets::hotreload::on_insert_texture(self, self.get_full_asset_path(&key.get_name()))
     }
 
     pub fn get_full_asset_path(&self, path: &String) -> String {
+        // If it already contains the correct directory then just return it
+        if path.contains(&self.asset_folder_root) {
+            return path.clone();
+        }
+
         let mut full_path = self.asset_folder_root.clone();
         full_path.push_str(path);
 
@@ -142,6 +168,11 @@ impl AssetStore {
 
 
     pub fn get_full_user_data_path(&self, path: &String) -> String {
+        // If it already contains the correct directory then just return it
+        if path.contains(&self.user_data_folder_root) {
+            return path.clone();
+        }
+
         let mut full_path = self.user_data_folder_root.clone();
         full_path.push_str(path);
 
@@ -196,7 +227,7 @@ impl AssetStore {
         None
     }
 
-    pub fn remove_texture(&mut self, _ctx: &mut Context, key: TextureKey) -> Option<Texture> {
+    pub fn remove_texture(&mut self, key: TextureKey) -> Option<Texture> {
         let mut i: i32 = -1;
 
         if let Some(index) = self.texture_key_map.get(&key) {
