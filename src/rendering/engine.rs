@@ -129,7 +129,7 @@ impl RenderingEngine {
         }
 
         for key in to_remove {
-            asset_store.remove_texture(ctx, key);
+            asset_store.remove_texture(key);
         }
 
         let (w, h) = ctx.screen_size();
@@ -790,7 +790,7 @@ pub(crate) fn create_render_texture(w: usize, h: usize, key: TextureKey, ctx: &m
     );
 
     let texture = crate::rendering::Texture::from_texture(ctx, key.clone(), color_img)?;
-    asset_store.insert_texture(ctx, key.clone(), texture);
+    asset_store.insert_texture(key.clone(), texture);
 
     Ok(key)
 }

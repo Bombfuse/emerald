@@ -203,7 +203,7 @@ pub(crate) fn cache_glyph(
     }
     
     if let Some((font_texture_key, new_font_texture)) = optional_new_font_texture {
-        asset_store.insert_texture(&mut ctx, font_texture_key, new_font_texture);
+        asset_store.insert_texture(font_texture_key, new_font_texture);
     }
 
     if update_font_texture {

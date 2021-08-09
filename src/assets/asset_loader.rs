@@ -11,7 +11,7 @@ use std::ffi::OsStr;
 
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
-    asset_store: &'a mut AssetStore,
+    pub(crate) asset_store: &'a mut AssetStore,
     rendering_engine: &'a mut RenderingEngine,
     _audio_engine: &'a mut AudioEngine,
 }
@@ -38,7 +38,7 @@ impl<'a> AssetLoader<'a> {
         }
 
         let bytes = self.asset_store.read_asset_file(&path)?;
-        self.asset_store.insert_asset_bytes(String::from(path), bytes.clone())?;
+        // self.asset_store.insert_asset_bytes(String::from(path), bytes.clone())?;
 
         return Ok(bytes);
     }
@@ -51,7 +51,7 @@ impl<'a> AssetLoader<'a> {
         }
 
         let bytes = self.asset_store.read_user_file(&path)?;
-        self.asset_store.insert_user_bytes(String::from(path), bytes.clone())?;
+        // self.asset_store.insert_user_bytes(String::from(path), bytes.clone())?;
 
         return Ok(bytes);
     }
@@ -91,7 +91,7 @@ impl<'a> AssetLoader<'a> {
         let inner_font = fontdue::Font::from_bytes(font_bytes, font_settings)?;
         let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
 
-        self.asset_store.insert_texture(&mut self.quad_ctx, font_texture_key, font_texture);
+        self.asset_store.insert_texture(font_texture_key, font_texture);
         self.asset_store.insert_fontdue_font(key.clone(), inner_font);
         self.asset_store.insert_font(&mut self.quad_ctx, key.clone(), font)?;
 
@@ -116,6 +116,7 @@ impl<'a> AssetLoader<'a> {
 
     pub fn texture<T: Into<String>>(&mut self, path: T) -> Result<TextureKey, EmeraldError> {
         let path: String = path.into();
+        println!("tp: {:?}", path);
         let key = TextureKey::new(path.clone());
 
         if let Some(_) = self.asset_store.get_texture(&key) {
@@ -124,7 +125,7 @@ impl<'a> AssetLoader<'a> {
 
         let data = self.asset_bytes(path.clone())?;
         let texture = Texture::new(&mut self.quad_ctx, key.clone(), data)?;
-        self.asset_store.insert_texture(&mut self.quad_ctx, key.clone(), texture);
+        self.asset_store.insert_texture(key.clone(), texture);
 
         Ok(key)
     }
@@ -191,5 +192,80 @@ impl<'a> AssetLoader<'a> {
             "Unable to preload texture {}",
             name
         )))
+    }
+
+    pub fn hotreload(&mut self) {
+        #[cfg(feature="hotreload")]
+        hotreload::run(self)
+    }
+}
+
+
+
+
+#[cfg(feature="hotreload")]
+pub(crate) mod hotreload {
+    use crate::{AssetStore, AssetLoader, TextureKey};
+
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    pub enum HotReloadAssetType {
+        Texture,
+    }
+
+    #[derive(Clone)]
+    pub struct HotReloadMetadata {
+        pub last_modified: std::time::SystemTime,
+        pub asset_type: HotReloadAssetType,
+    }
+
+    pub(crate) fn on_insert_texture(asset_store: &mut AssetStore, texture_path: String) {
+        println!("insert path: {:?}", texture_path);
+        match std::fs::metadata(&texture_path) {
+            Ok(metadata) => {
+                if let Ok(system_time) = metadata.modified() {
+                    let hot_reload_metadata = HotReloadMetadata {
+                        last_modified: system_time,
+                        asset_type: HotReloadAssetType::Texture,
+                    };
+    
+                    asset_store.file_hot_reload_metadata.insert(texture_path, hot_reload_metadata);
+                }
+            }
+            Err(e) => println!("{:?}", e),
+        }
+    }
+
+    pub(crate) fn run(loader: &mut AssetLoader) {
+        let mut updates = Vec::new();
+
+        for (path, hot_reload_metadata) in &loader.asset_store.file_hot_reload_metadata {
+            if let Ok(metadata) = std::fs::metadata(&path) {
+                if let Ok(new_system_time) = metadata.modified() {
+                    if let Ok(duration) = new_system_time.duration_since(hot_reload_metadata.last_modified) {
+                        if duration.as_millis() > 0 {
+                            updates.push((path.clone(), hot_reload_metadata.asset_type, new_system_time.clone()));
+                            println!("updated");
+                        }
+                    }
+                }
+            }
+        }
+
+        for (mut path, asset_type, new_system_time) in updates {
+            match asset_type {
+                HotReloadAssetType::Texture => {
+                    let asset_root_folder_path = loader.asset_store.get_asset_folder_root();
+                    let relative_path = path.split_off(asset_root_folder_path.len());
+                    println!("relative path: {:?}", relative_path);
+                    if let Some(_) = loader.asset_store.remove_texture(TextureKey::new(relative_path.clone())) {
+                        if let Ok(_) = loader.texture(relative_path) {
+                            if let Some(mut hotreload_metadata) = loader.asset_store.file_hot_reload_metadata.get_mut(&path) {
+                                hotreload_metadata.last_modified = new_system_time;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
