@@ -23,6 +23,6 @@ impl Rectangle {
     }
 
     pub fn is_zero_sized(self) -> bool {
-        return self.width == 0.0 && self.height == 0.0;
+        self.width == 0.0 && self.height == 0.0
     }
 }

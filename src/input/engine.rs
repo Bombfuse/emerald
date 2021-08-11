@@ -57,7 +57,7 @@ impl InputEngine {
         self.touches.retain(|_id, touch| !touch.is_outdated());
 
         // Then rollover the rest
-        for (_id, touch) in &mut self.touches {
+        for touch in self.touches.values_mut() {
             touch.rollover();
         }
     }
@@ -68,7 +68,7 @@ impl InputEngine {
         self.gamepad_engine.update()?;
         self.gamepads = self.gamepad_engine.gamepads().clone();
 
-        for (_key, state) in &mut self.keys {
+        for state in self.keys.values_mut() {
             state.rollover();
         }
         self.rollover_touches();

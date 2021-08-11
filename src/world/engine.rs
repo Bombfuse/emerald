@@ -19,7 +19,7 @@ impl WorldEngine {
     }
 
     pub(crate) fn world_ref(&self) -> &EmeraldWorld {
-        if self.world_stack.len() == 0 {
+        if self.world_stack.is_empty() {
             panic!("There are no worlds available to process.");
         }
 
@@ -28,7 +28,7 @@ impl WorldEngine {
     }
 
     pub(crate) fn world(&mut self) -> &mut EmeraldWorld {
-        if self.world_stack.len() == 0 {
+        if self.world_stack.is_empty() {
             panic!("There are no worlds available to process.");
         }
 

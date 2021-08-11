@@ -12,10 +12,6 @@ impl EmeraldError {
     }
 }
 
-
-
-
-
 // Kira audio backend error translations
 #[cfg(feature = "audio")]
 impl std::convert::From<kira::CommandError> for EmeraldError {
@@ -51,9 +47,6 @@ impl std::convert::From<kira::sound::error::SoundFromFileError> for EmeraldError
         }
     }
 }
-
-
-
 
 impl std::fmt::Display for EmeraldError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

@@ -12,5 +12,5 @@ pub use font::*;
 pub use handler::*;
 pub use render_settings::*;
 pub(crate) use shaders::*;
-pub(crate) use texture::*;
 pub use texture::TextureKey;
+pub(crate) use texture::*;

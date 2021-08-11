@@ -24,12 +24,14 @@ fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
     unsafe { sapp_android::sapp_load_asset(filename.as_ptr(), &mut data as _) };
 
     if data.content.is_null() == false {
-        let slice =
-            unsafe { std::slice::from_raw_parts(data.content, data.content_length as _) };
+        let slice = unsafe { std::slice::from_raw_parts(data.content, data.content_length as _) };
         let response = slice.iter().map(|c| *c as _).collect::<Vec<_>>();
         Ok(response)
     } else {
-        Err(EmeraldError::new(format!("Unable to load asset `{}`", path)))
+        Err(EmeraldError::new(format!(
+            "Unable to load asset `{}`",
+            path
+        )))
     }
 }
 
@@ -76,9 +78,9 @@ impl<'a> AssetLoader<'a> {
         }
 
         let bytes = read_file(&path)?;
-        self.asset_store.insert_bytes(String::from(path), bytes.clone());
+        self.asset_store.insert_bytes(path, bytes.clone());
 
-        return Ok(bytes);
+        Ok(bytes)
     }
 
     /// Loads bytes from given path as a string
@@ -97,7 +99,7 @@ impl<'a> AssetLoader<'a> {
         let file_path: String = file_path.into();
         let key = FontKey::new(file_path.clone(), font_size);
 
-        if let Some(_) = self.asset_store.get_font(&key) {
+        if self.asset_store.get_font(&key).is_some() {
             return Ok(key);
         }
 
@@ -110,15 +112,18 @@ impl<'a> AssetLoader<'a> {
             font_image.height,
             &font_image.bytes,
         )?;
-        let font_bytes = self.bytes(file_path.clone())?;
+        let font_bytes = self.bytes(file_path)?;
         let mut font_settings = fontdue::FontSettings::default();
         font_settings.scale = font_size as f32;
         let inner_font = fontdue::Font::from_bytes(font_bytes, font_settings)?;
         let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
 
-        self.asset_store.insert_texture(&mut self.quad_ctx, font_texture_key, font_texture);
-        self.asset_store.insert_fontdue_font(key.clone(), inner_font);
-        self.asset_store.insert_font(&mut self.quad_ctx, key.clone(), font)?;
+        self.asset_store
+            .insert_texture(&mut self.quad_ctx, font_texture_key, font_texture);
+        self.asset_store
+            .insert_fontdue_font(key.clone(), inner_font);
+        self.asset_store
+            .insert_font(&mut self.quad_ctx, key.clone(), font)?;
 
         Ok(key)
     }
@@ -134,7 +139,7 @@ impl<'a> AssetLoader<'a> {
         let texture_path: String = path_to_texture.into();
         let animation_path: String = path_to_animations.into();
 
-        let aseprite_data = self.bytes(animation_path.clone())?;
+        let aseprite_data = self.bytes(animation_path)?;
 
         let sprite = self.sprite(texture_path)?;
         let aseprite = Aseprite::new(sprite, aseprite_data)?;
@@ -146,28 +151,29 @@ impl<'a> AssetLoader<'a> {
         let path: String = path.into();
         let key = TextureKey::new(path.clone());
 
-        if let Some(_) = self.asset_store.get_texture(&key) {
+        if self.asset_store.get_texture(&key).is_some() {
             return Ok(key);
         }
 
-        let data = self.bytes(path.clone())?;
+        let data = self.bytes(path)?;
         let texture = Texture::new(&mut self.quad_ctx, key.clone(), data)?;
-        self.asset_store.insert_texture(&mut self.quad_ctx, key.clone(), texture);
+        self.asset_store
+            .insert_texture(&mut self.quad_ctx, key.clone(), texture);
 
         Ok(key)
     }
-
 
     /// Creating render textures is slightly expensive and should be used conservatively.
     /// Please re-use render textures you've created before if possible.
     /// If you need a render texture with a new size, you should create a new render texture.
     pub fn render_texture(&mut self, w: usize, h: usize) -> Result<TextureKey, EmeraldError> {
-        self.rendering_engine.create_render_texture(w, h, &mut self.quad_ctx, &mut self.asset_store)
+        self.rendering_engine
+            .create_render_texture(w, h, &mut self.quad_ctx, &mut self.asset_store)
     }
 
     pub fn sprite<T: Into<String>>(&mut self, path: T) -> Result<Sprite, EmeraldError> {
         let path: String = path.into();
-        let texture_key = self.texture(path.clone())?;
+        let texture_key = self.texture(path)?;
 
         Ok(Sprite::from_texture(texture_key))
     }

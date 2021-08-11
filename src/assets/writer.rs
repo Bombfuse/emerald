@@ -1,11 +1,11 @@
 use crate::EmeraldError;
 use std::fs::File;
-use std::io::prelude::{Write};
+use std::io::prelude::Write;
 
-pub struct Writer { }
+pub struct Writer {}
 impl Writer {
     pub(crate) fn new() -> Self {
-        Writer { }
+        Writer {}
     }
 
     pub fn write<T: Into<String>>(&mut self, bytes: &[u8], path: T) -> Result<(), EmeraldError> {
