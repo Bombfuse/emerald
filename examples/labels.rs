@@ -11,10 +11,7 @@ impl Game for GamepadExample {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
 
-        let font = emd
-            .loader()
-            .font("Roboto-Light.ttf", 40)
-            .unwrap();
+        let font = emd.loader().font("Roboto-Light.ttf", 40).unwrap();
 
         let mut left_aligned_label = Label::new("Emerald Engine", font, 80);
         left_aligned_label.max_width = Some(400.0);
