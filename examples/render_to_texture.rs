@@ -5,8 +5,10 @@ const RES_HEIGHT: usize = 160;
 
 pub fn main() {
     let mut settings = GameSettings::default();
-    let mut render_settings = RenderSettings::default();
-    render_settings.resolution = (320 * 2, 160 * 2);
+    let render_settings = RenderSettings {
+        resolution: (320 * 2, 160 * 2),
+        ..Default::default()
+    };
     settings.render_settings = render_settings;
 
     emerald::start(

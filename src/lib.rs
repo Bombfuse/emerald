@@ -53,15 +53,17 @@ pub use gamepad;
 #[cfg(feature = "gamepads")]
 pub use gamepad::{Button, Joystick};
 
-use miniquad::{conf, UserData};
+use miniquad::UserData;
 
 pub fn start(game: Box<dyn Game>, settings: GameSettings) {
-    let mut config = conf::Conf::default();
-    config.window_title = settings.title.clone();
-    config.window_width = settings.render_settings.resolution.0 as i32;
-    config.window_height = settings.render_settings.resolution.1 as i32;
-    config.fullscreen = settings.render_settings.fullscreen;
-    config.high_dpi = settings.render_settings.high_dpi;
+    let config = miniquad::conf::Conf {
+        window_title: settings.title.clone(),
+        window_width: settings.render_settings.resolution.0 as i32,
+        window_height: settings.render_settings.resolution.1 as i32,
+        fullscreen: settings.render_settings.fullscreen,
+        high_dpi: settings.render_settings.high_dpi,
+        ..Default::default()
+    };
 
     miniquad::start(config, move |mut ctx| {
         UserData::owning(GameEngine::new(game, settings, &mut ctx), ctx)

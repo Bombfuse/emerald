@@ -2,8 +2,10 @@ use emerald::*;
 
 pub fn main() {
     let mut settings = GameSettings::default();
-    let mut render_settings = RenderSettings::default();
-    render_settings.resolution = (320, 180);
+    let render_settings = RenderSettings {
+        resolution: (320, 180),
+        ..Default::default()
+    };
     settings.render_settings = render_settings;
     emerald::start(Box::new(MyGame {}), settings)
 }

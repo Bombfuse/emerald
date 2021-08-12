@@ -113,8 +113,10 @@ impl<'a> AssetLoader<'a> {
             &font_image.bytes,
         )?;
         let font_bytes = self.bytes(file_path)?;
-        let mut font_settings = fontdue::FontSettings::default();
-        font_settings.scale = font_size as f32;
+        let font_settings = fontdue::FontSettings {
+            scale: font_size as f32,
+            ..Default::default()
+        };
         let inner_font = fontdue::Font::from_bytes(font_bytes, font_settings)?;
         let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
 
