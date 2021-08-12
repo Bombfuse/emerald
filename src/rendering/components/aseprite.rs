@@ -163,7 +163,7 @@ pub fn aseprite_update_system(world: &mut EmeraldWorld, delta: f32) {
 pub mod types {
     use nanoserde::DeJson;
 
-    #[derive(Clone, Debug, DeJson)]
+    #[derive(Copy, Clone, Debug, DeJson)]
     pub struct AseRect {
         pub(crate) x: u32,
         pub(crate) y: u32,
@@ -171,7 +171,7 @@ pub mod types {
         pub(crate) h: u32,
     }
 
-    #[derive(Clone, Debug, DeJson)]
+    #[derive(Copy, Clone, Debug, DeJson)]
     pub struct AseSize {
         pub(crate) w: u32,
         pub(crate) h: u32,
@@ -201,7 +201,7 @@ pub mod types {
         }
     }
 
-    #[derive(Clone, Debug, DeJson)]
+    #[derive(Copy, Clone, Debug, DeJson)]
     pub struct AsepriteFrame {
         pub(crate) frame: AseRect,
         rotated: bool,

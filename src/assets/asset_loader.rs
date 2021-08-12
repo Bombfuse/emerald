@@ -231,7 +231,7 @@ pub(crate) mod hotreload {
         }
     }
 
-    pub(crate) fn run(loader: &mut AssetLoader) {
+    pub(crate) fn run(loader: &mut AssetLoader<'_>) {
         let mut updates = Vec::new();
 
         for (path, hot_reload_metadata) in &loader.asset_store.file_hot_reload_metadata {
