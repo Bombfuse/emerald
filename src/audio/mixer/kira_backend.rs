@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
-use kira::{instance::{InstanceSettings, InstanceState, handle::InstanceHandle}, manager::{AudioManager, AudioManagerSettings}, sound::{SoundId, handle::SoundHandle}};
+use kira::{
+    instance::{handle::InstanceHandle, InstanceSettings, InstanceState},
+    manager::{AudioManager, AudioManagerSettings},
+    sound::{handle::SoundHandle, SoundId},
+};
 
 use crate::{AssetStore, EmeraldError, Mixer, SoundInstanceId, SoundKey};
-
 
 pub(crate) struct KiraMixer {
     inner: AudioManager,
@@ -31,61 +34,72 @@ impl KiraMixer {
 impl Mixer for KiraMixer {
     /// Plays the given sound data once.
     /// Applies the volume of the mixer to the sound.
-    fn play(&mut self, key: SoundKey, asset_store: &mut AssetStore) -> Result<SoundInstanceId, EmeraldError> {
+    fn play(
+        &mut self,
+        key: SoundKey,
+        asset_store: &mut AssetStore,
+    ) -> Result<SoundInstanceId, EmeraldError> {
         if let Some(sound) = asset_store.sound_map.get(&key) {
             let id = sound.inner.id();
-        
+
             let mut sound_handle = if let Some(sound_handle) = self.sound_handles.get_mut(&id) {
                 sound_handle.clone()
             } else {
                 let handle = self.inner.add_sound(sound.inner.clone())?;
                 self.sound_handles.insert(id, handle.clone());
-    
+
                 handle
             };
-    
-            let instance_handle = sound_handle.play(InstanceSettings::new()
-                .volume(self.volume)
-            )?;
-    
+
+            let instance_handle = sound_handle.play(InstanceSettings::new().volume(self.volume))?;
+
             let id = SoundInstanceId::new(self.sound_instance_uid);
             self.sound_instance_uid += 1;
             self.instances.insert(id, instance_handle);
-    
+
             return Ok(id);
         }
 
-        Err(EmeraldError::new(format!("Sound for {:?} is not loaded in the asset store.", key)))
+        Err(EmeraldError::new(format!(
+            "Sound for {:?} is not loaded in the asset store.",
+            key
+        )))
     }
 
-    fn play_and_loop(&mut self, key: SoundKey, asset_store: &mut AssetStore) -> Result<SoundInstanceId, EmeraldError> {
+    fn play_and_loop(
+        &mut self,
+        key: SoundKey,
+        asset_store: &mut AssetStore,
+    ) -> Result<SoundInstanceId, EmeraldError> {
         if let Some(sound) = asset_store.sound_map.get(&key) {
             let id = sound.inner.id();
-        
+
             let mut sound_handle = if let Some(sound_handle) = self.sound_handles.get_mut(&id) {
                 sound_handle.clone()
             } else {
                 let handle = self.inner.add_sound(sound.inner.clone())?;
                 self.sound_handles.insert(id, handle.clone());
-    
+
                 handle
             };
-    
 
-            let instance_handle = sound_handle.play(InstanceSettings::new()
-                .volume(self.volume)
-                .loop_start(kira::instance::InstanceLoopStart::Custom(0.0))
+            let instance_handle = sound_handle.play(
+                InstanceSettings::new()
+                    .volume(self.volume)
+                    .loop_start(kira::instance::InstanceLoopStart::Custom(0.0)),
             )?;
-        
-    
+
             let id = SoundInstanceId::new(self.sound_instance_uid);
             self.sound_instance_uid += 1;
             self.instances.insert(id, instance_handle);
-    
+
             return Ok(id);
         }
 
-        Err(EmeraldError::new(format!("Sound for {:?} is not loaded in the asset store.", key)))
+        Err(EmeraldError::new(format!(
+            "Sound for {:?} is not loaded in the asset store.",
+            key
+        )))
     }
 
     fn get_volume(&self) -> Result<f32, EmeraldError> {
@@ -95,7 +109,7 @@ impl Mixer for KiraMixer {
     fn set_volume(&mut self, volume: f32) -> Result<(), EmeraldError> {
         self.volume = volume as f64;
 
-        for (_, instance) in &mut self.instances {
+        for instance in self.instances.values_mut() {
             instance.set_volume(self.volume)?;
         }
 
@@ -150,7 +164,7 @@ impl Mixer for KiraMixer {
 
     /// Clears all sounds and instances from the mixer.
     fn clear(&mut self) -> Result<(), EmeraldError> {
-        for (_, instance) in &mut self.instances {
+        for instance in self.instances.values_mut() {
             instance.stop(Default::default())?;
         }
 
@@ -166,7 +180,7 @@ impl Mixer for KiraMixer {
 
         for (id, instance) in &self.instances {
             if instance.state() == InstanceState::Stopped {
-                to_remove.push(id.clone());
+                to_remove.push(*id);
             }
         }
 

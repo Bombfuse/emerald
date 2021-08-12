@@ -94,7 +94,8 @@ impl Game for MyGame {
                 .world()
                 .spawn_with_body(
                     (border.0,),
-                    RigidBodyBuilder::new_static().translation(Vector2::new(border.0.x, border.0.y)),
+                    RigidBodyBuilder::new_static()
+                        .translation(Vector2::new(border.0.x, border.0.y)),
                 )
                 .unwrap();
             emd.world().physics().build_collider(
@@ -177,7 +178,8 @@ impl Game for MyGame {
             let mut label = Label::new(format!("FPS: {}", fps), font, 24);
             label.centered = false;
             emd.graphics()
-                .draw_label(&label, &Position::new(24.0, RES_HEIGHT as f32 - 10.0)).unwrap();
+                .draw_label(&label, &Position::new(24.0, RES_HEIGHT as f32 - 10.0))
+                .unwrap();
         }
         // emd.graphics().draw_colliders(Color::new(255, 0, 0, 130));
         emd.graphics().render().unwrap();

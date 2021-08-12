@@ -24,7 +24,7 @@ impl Game for MouseExample {
         if let Ok(sprite) = emd.loader().sprite("bunny.png") {
             emd.world().spawn((sprite, Position::new(16.0, 16.0)));
         }
-        
+
         emd.touches_to_mouse(true);
     }
 

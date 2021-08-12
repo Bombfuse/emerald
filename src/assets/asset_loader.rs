@@ -6,9 +6,6 @@ use crate::*;
 use std::ffi::OsStr;
 
 
-// assets
-// user
-
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
     pub(crate) asset_store: &'a mut AssetStore,
@@ -50,8 +47,7 @@ impl<'a> AssetLoader<'a> {
         }
 
         let bytes = self.asset_store.read_user_file(&path)?;
-
-        return Ok(bytes);
+        Ok(bytes)
     }
 
     /// Loads bytes from given path as a string
@@ -70,7 +66,7 @@ impl<'a> AssetLoader<'a> {
         let file_path: String = file_path.into();
         let key = FontKey::new(file_path.clone(), font_size);
 
-        if let Some(_) = self.asset_store.get_font(&key) {
+        if self.asset_store.get_font(&key).is_some() {
             return Ok(key);
         }
 
@@ -84,6 +80,7 @@ impl<'a> AssetLoader<'a> {
             &font_image.bytes,
         )?;
         let font_bytes = self.asset_bytes(file_path.clone())?;
+
         let mut font_settings = fontdue::FontSettings::default();
         font_settings.scale = font_size as f32;
         let inner_font = fontdue::Font::from_bytes(font_bytes, font_settings)?;
@@ -92,6 +89,7 @@ impl<'a> AssetLoader<'a> {
         self.asset_store.insert_texture(font_texture_key, font_texture);
         self.asset_store.insert_fontdue_font(key.clone(), inner_font);
         self.asset_store.insert_font(&mut self.quad_ctx, key.clone(), font)?;
+
 
         Ok(key)
     }
@@ -106,6 +104,7 @@ impl<'a> AssetLoader<'a> {
 
         let aseprite_data = self.asset_bytes(animation_path.clone())?;
 
+
         let sprite = self.sprite(texture_path)?;
         let aseprite = Aseprite::new(sprite, aseprite_data)?;
 
@@ -116,7 +115,7 @@ impl<'a> AssetLoader<'a> {
         let path: String = path.into();
         let key = TextureKey::new(path.clone());
 
-        if let Some(_) = self.asset_store.get_texture(&key) {
+        if self.asset_store.get_texture(&key).is_some() {
             return Ok(key);
         }
 
@@ -124,20 +123,21 @@ impl<'a> AssetLoader<'a> {
         let texture = Texture::new(&mut self.quad_ctx, key.clone(), data)?;
         self.asset_store.insert_texture(key.clone(), texture);
 
+
         Ok(key)
     }
-
 
     /// Creating render textures is slightly expensive and should be used conservatively.
     /// Please re-use render textures you've created before if possible.
     /// If you need a render texture with a new size, you should create a new render texture.
     pub fn render_texture(&mut self, w: usize, h: usize) -> Result<TextureKey, EmeraldError> {
-        self.rendering_engine.create_render_texture(w, h, &mut self.quad_ctx, &mut self.asset_store)
+        self.rendering_engine
+            .create_render_texture(w, h, &mut self.quad_ctx, &mut self.asset_store)
     }
 
     pub fn sprite<T: Into<String>>(&mut self, path: T) -> Result<Sprite, EmeraldError> {
         let path: String = path.into();
-        let texture_key = self.texture(path.clone())?;
+        let texture_key = self.texture(path)?;
 
         Ok(Sprite::from_texture(texture_key))
     }

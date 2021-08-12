@@ -1,5 +1,5 @@
-use crate::{EmeraldError, SoundKey, Sound,};
 use crate::rendering::*;
+use crate::{EmeraldError, Sound, SoundKey};
 
 use miniquad::Context;
 use std::collections::HashMap;
@@ -134,10 +134,14 @@ impl AssetStore {
             .insert(key, self.fontdue_fonts.len() - 1);
     }
 
-    pub fn insert_font(&mut self, _ctx: &mut Context, key: FontKey, font: Font) -> Result<(), EmeraldError> {
+    pub fn insert_font(
+        &mut self,
+        _ctx: &mut Context,
+        key: FontKey,
+        font: Font,
+    ) -> Result<(), EmeraldError> {
         self.fonts.push(font);
-        self.font_key_map
-            .insert(key.clone(), self.fonts.len() - 1);
+        self.font_key_map.insert(key, self.fonts.len() - 1);
 
         Ok(())
     }
@@ -145,6 +149,7 @@ impl AssetStore {
     pub fn insert_texture(&mut self, key: TextureKey, texture: Texture) {
         if let Some(_) = self.get_texture(&key) {
             self.remove_texture(key.clone());
+
         }
 
         self.textures.push(texture);
@@ -158,6 +163,7 @@ impl AssetStore {
         // If it already contains the correct directory then just return it
         if path.contains(&self.asset_folder_root) {
             return path.clone();
+
         }
 
         let mut full_path = self.asset_folder_root.clone();
@@ -180,7 +186,7 @@ impl AssetStore {
     }
 
     pub fn get_fontdue_font(&self, key: &FontKey) -> Option<&fontdue::Font> {
-        if let Some(index) = self.fontdue_key_map.get(&key) {
+        if let Some(index) = self.fontdue_key_map.get(key) {
             return self.fontdue_fonts.get(*index);
         }
 
@@ -188,7 +194,7 @@ impl AssetStore {
     }
 
     pub fn _get_fontdue_font_mut(&mut self, key: &FontKey) -> Option<&mut fontdue::Font> {
-        if let Some(index) = self.fontdue_key_map.get(&key) {
+        if let Some(index) = self.fontdue_key_map.get(key) {
             return self.fontdue_fonts.get_mut(*index);
         }
 
@@ -196,7 +202,7 @@ impl AssetStore {
     }
 
     pub fn get_font(&self, key: &FontKey) -> Option<&Font> {
-        if let Some(index) = self.font_key_map.get(&key) {
+        if let Some(index) = self.font_key_map.get(key) {
             return self.fonts.get(*index);
         }
 
@@ -204,7 +210,7 @@ impl AssetStore {
     }
 
     pub fn get_font_mut(&mut self, key: &FontKey) -> Option<&mut Font> {
-        if let Some(index) = self.fontdue_key_map.get(&key) {
+        if let Some(index) = self.fontdue_key_map.get(key) {
             return self.fonts.get_mut(*index);
         }
 
@@ -256,7 +262,7 @@ impl AssetStore {
         self.texture_key_map = HashMap::with_capacity(self.textures.len());
 
         let mut i = 0;
-        
+
         for texture in &self.textures {
             self.texture_key_map.insert(texture.key.clone(), i);
             i += 1;
@@ -265,7 +271,7 @@ impl AssetStore {
 
     #[inline]
     pub fn update_font_texture(&mut self, mut ctx: &mut Context, key: &FontKey) {
-        if let Some(index) = self.font_key_map.get(&key) {
+        if let Some(index) = self.font_key_map.get(key) {
             if let Some(font) = self.fonts.get_mut(*index) {
                 if let Some(index) = self.texture_key_map.get(&font.font_texture_key) {
                     if let Some(font_texture) = self.textures.get_mut(*index) {

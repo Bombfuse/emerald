@@ -6,15 +6,10 @@ pub fn main() {
     let mut render_settings = RenderSettings::default();
     render_settings.resolution = (480, 320);
     settings.render_settings = render_settings;
-    emerald::start(
-        Box::new(Example {
-        }),
-        settings,
-    )
+    emerald::start(Box::new(Example {}), settings)
 }
 
-pub struct Example {
-}
+pub struct Example {}
 impl Game for Example {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
@@ -34,7 +29,11 @@ impl Game for Example {
             let snd = emd.loader()
                 .sound("test_music.wav")
                 .unwrap();
-            emd.audio().mixer("test").unwrap().play_and_loop(snd.clone()).unwrap();
+            emd.audio()
+                .mixer("test")
+                .unwrap()
+                .play_and_loop(snd)
+                .unwrap();
         }
 
         if input.is_key_just_pressed(KeyCode::Z) {
@@ -42,7 +41,11 @@ impl Game for Example {
                 let snd = emd.loader()
                     .sound("test_sound.wav")
                     .unwrap();
-                emd.audio().mixer("test").unwrap().play(snd.clone()).unwrap();
+                emd.audio()
+                    .mixer("test")
+                    .unwrap()
+                    .play(snd.clone())
+                    .unwrap();
             }
         }
     }
@@ -54,6 +57,7 @@ impl Game for Example {
 
         let volume_label = Label::new(format!("Volume: {:05.2}", volume), font.clone(), 48);
         emd.graphics().draw_label(&volume_label, &Position::new(240.0, 180.0)).unwrap();
+
 
         emd.graphics().render().unwrap();
     }

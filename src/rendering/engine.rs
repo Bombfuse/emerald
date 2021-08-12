@@ -32,7 +32,11 @@ pub(crate) struct RenderingEngine {
     current_resolution: (usize, usize),
 }
 impl RenderingEngine {
-    pub(crate) fn new(ctx: &mut Context, settings: RenderSettings, asset_store: &mut AssetStore) -> Self {
+    pub(crate) fn new(
+        ctx: &mut Context,
+        settings: RenderSettings,
+        asset_store: &mut AssetStore,
+    ) -> Self {
         let mut pipelines = HashMap::new();
 
         let shader = Shader::new(ctx, VERTEX, FRAGMENT, shaders::meta()).unwrap();
@@ -62,7 +66,8 @@ impl RenderingEngine {
         let mut render_texture_counter = 0;
         let key = TextureKey::new(String::from(EMERALD_DEFAULT_RENDER_TARGET));
         let (w, h) = ctx.screen_size();
-        let screen_texture_key = create_render_texture(w as usize, h as usize, key, ctx, asset_store).unwrap();
+        let screen_texture_key =
+            create_render_texture(w as usize, h as usize, key, ctx, asset_store).unwrap();
         render_texture_counter += 1;
 
         let texture = asset_store.get_texture(&screen_texture_key).unwrap();
@@ -84,15 +89,28 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub(crate) fn create_render_texture(&mut self, w: usize, h: usize, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<TextureKey, EmeraldError> {
+    pub(crate) fn create_render_texture(
+        &mut self,
+        w: usize,
+        h: usize,
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+    ) -> Result<TextureKey, EmeraldError> {
         self.render_texture_counter += 1;
-        let key = TextureKey::new(format!("emd_render_texture_{}", self.render_texture_counter));
+        let key = TextureKey::new(format!(
+            "emd_render_texture_{}",
+            self.render_texture_counter
+        ));
 
         create_render_texture(w, h, key, ctx, asset_store)
     }
 
     #[inline]
-    pub(crate) fn pre_draw(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+    pub(crate) fn pre_draw(
+        &mut self,
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+    ) -> Result<(), EmeraldError> {
         let (w, h) = ctx.screen_size();
         let (prev_w, prev_h) = self.last_screen_size;
 
@@ -104,9 +122,16 @@ impl RenderingEngine {
     }
 
     #[inline]
-    fn update_screen_texture_size(&mut self, ctx: &mut Context, w: usize, h: usize, asset_store: &mut AssetStore) -> Result<TextureKey, EmeraldError> {
+    fn update_screen_texture_size(
+        &mut self,
+        ctx: &mut Context,
+        w: usize,
+        h: usize,
+        asset_store: &mut AssetStore,
+    ) -> Result<TextureKey, EmeraldError> {
         let key = TextureKey::new(String::from(EMERALD_DEFAULT_RENDER_TARGET));
-        let screen_texture_key = create_render_texture(w as usize, h as usize, key, ctx, asset_store)?;
+        let screen_texture_key =
+            create_render_texture(w as usize, h as usize, key, ctx, asset_store)?;
 
         Ok(screen_texture_key)
     }
@@ -116,7 +141,7 @@ impl RenderingEngine {
         let mut to_remove = Vec::new();
         let default_texture_name = String::from(EMERALD_DEFAULT_TEXTURE_NAME);
 
-        for (key, _) in &asset_store.texture_key_map {
+        for key in asset_store.texture_key_map.keys() {
             if key.get_name() == default_texture_name {
                 continue;
             }
@@ -143,7 +168,10 @@ impl RenderingEngine {
         asset_store: &mut AssetStore,
         world: &mut EmeraldWorld,
     ) -> Result<(), EmeraldError> {
-        let screen_size = (self.current_resolution.0 as f32, self.current_resolution.1 as f32);
+        let screen_size = (
+            self.current_resolution.0 as f32,
+            self.current_resolution.1 as f32,
+        );
         let (camera, camera_position) = get_camera_and_camera_position(world);
         let mut draw_queue = Vec::new();
 
@@ -151,13 +179,13 @@ impl RenderingEngine {
         {
             aseprite.update();
 
-            if is_in_view(&aseprite.sprite, &position, &camera, &screen_size) {
+            if is_in_view(&aseprite.sprite, position, &camera, &screen_size) {
                 let drawable = Drawable::Aseprite {
                     sprite: aseprite.sprite.clone(),
-                    offset: aseprite.offset.clone(),
-                    scale: aseprite.scale.clone(),
+                    offset: aseprite.offset,
+                    scale: aseprite.scale,
                     centered: aseprite.centered,
-                    color: aseprite.color.clone(),
+                    color: aseprite.color,
                     rotation: aseprite.rotation,
                     z_index: aseprite.z_index,
                     visible: aseprite.visible,
@@ -165,21 +193,21 @@ impl RenderingEngine {
 
                 draw_queue.push(DrawCommand {
                     drawable,
-                    position: position.clone(),
+                    position: *position,
                     z_index: aseprite.z_index,
                 });
             }
         }
 
         for (_id, (sprite, position)) in world.inner.query::<(&Sprite, &Position)>().iter() {
-            if is_in_view(&sprite, &position, &camera, &screen_size) {
+            if is_in_view(sprite, position, &camera, &screen_size) {
                 let drawable = Drawable::Sprite {
                     sprite: sprite.clone(),
                 };
 
                 draw_queue.push(DrawCommand {
                     drawable,
-                    position: position.clone(),
+                    position: *position,
                     z_index: sprite.z_index,
                 });
             }
@@ -192,7 +220,7 @@ impl RenderingEngine {
 
             draw_queue.push(DrawCommand {
                 drawable,
-                position: position.clone(),
+                position: *position,
                 z_index: color_rect.z_index,
             });
         }
@@ -204,7 +232,7 @@ impl RenderingEngine {
 
             draw_queue.push(DrawCommand {
                 drawable,
-                position: position.clone(),
+                position: *position,
                 z_index: label.z_index,
             })
         }
@@ -213,7 +241,7 @@ impl RenderingEngine {
 
         for draw_command in draw_queue {
             let position = {
-                let mut pos = draw_command.position.clone() - camera_position;
+                let mut pos = draw_command.position - camera_position;
 
                 if camera.centered {
                     pos = pos + Position::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
@@ -236,14 +264,27 @@ impl RenderingEngine {
                     color,
                     z_index,
                 } => self.draw_aseprite(
-                    &mut ctx, asset_store, &sprite, rotation, &offset, centered, visible, &scale, &color,
-                    z_index, &position,
+                    &mut ctx,
+                    asset_store,
+                    &sprite,
+                    rotation,
+                    &offset,
+                    centered,
+                    visible,
+                    &scale,
+                    &color,
+                    z_index,
+                    &position,
                 ),
-                Drawable::Sprite { sprite } => self.draw_sprite(&mut ctx, asset_store, &sprite, &position),
+                Drawable::Sprite { sprite } => {
+                    self.draw_sprite(&mut ctx, asset_store, &sprite, &position)
+                }
                 Drawable::ColorRect { color_rect } => {
                     self.draw_color_rect(&mut ctx, asset_store, &color_rect, &position)
                 }
-                Drawable::Label { label } => self.draw_label(&mut ctx, asset_store, &label, &position)?,
+                Drawable::Label { label } => {
+                    self.draw_label(&mut ctx, asset_store, &label, &position)?
+                }
             }
         }
 
@@ -259,7 +300,10 @@ impl RenderingEngine {
         world: &mut EmeraldWorld,
         collider_color: Color,
     ) {
-        let screen_size = (self.current_resolution.0 as f32, self.current_resolution.1 as f32);
+        let screen_size = (
+            self.current_resolution.0 as f32,
+            self.current_resolution.1 as f32,
+        );
         let mut color_rect = ColorRect::default();
         color_rect.color = collider_color;
         let (camera, camera_position) = get_camera_and_camera_position(world);
@@ -267,9 +311,7 @@ impl RenderingEngine {
         for (_id, body_handle) in world.inner.query::<&RigidBodyHandle>().iter() {
             if let Some(body) = world.physics_engine.bodies.get(*body_handle) {
                 for collider_handle in body.colliders() {
-                    if let Some(collider) =
-                        world.physics_engine.colliders.get(collider_handle.clone())
-                    {
+                    if let Some(collider) = world.physics_engine.colliders.get(*collider_handle) {
                         let aabb = collider.compute_aabb();
                         let pos = Position::new(aabb.center().coords.x, aabb.center().coords.y);
                         color_rect.width = aabb.half_extents().x as u32 * 2;
@@ -293,13 +335,19 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub(crate) fn begin(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+    pub(crate) fn begin(
+        &mut self,
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+    ) -> Result<(), EmeraldError> {
         self.current_render_texture_key = self.screen_texture_key.clone();
 
         if let Some(texture) = asset_store.get_texture(&self.current_render_texture_key) {
             self.current_resolution = (texture.width as usize, texture.height as usize);
         } else {
-            return Err(EmeraldError::new("Unable to retrieve default rendering texture"));
+            return Err(EmeraldError::new(
+                "Unable to retrieve default rendering texture",
+            ));
         }
 
         self.begin_texture_pass(ctx, asset_store, self.screen_texture_key.clone())?;
@@ -308,13 +356,21 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub(crate) fn begin_texture(&mut self, ctx: &mut Context, texture_key: TextureKey, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+    pub(crate) fn begin_texture(
+        &mut self,
+        ctx: &mut Context,
+        texture_key: TextureKey,
+        asset_store: &mut AssetStore,
+    ) -> Result<(), EmeraldError> {
         self.current_render_texture_key = texture_key.clone();
 
         if let Some(texture) = asset_store.get_texture(&self.current_render_texture_key) {
             self.current_resolution = (texture.width as usize, texture.height as usize);
         } else {
-            return Err(EmeraldError::new(format!("Unable to retrieve texture for {:?}", texture_key)));
+            return Err(EmeraldError::new(format!(
+                "Unable to retrieve texture for {:?}",
+                texture_key
+            )));
         }
 
         self.begin_texture_pass(ctx, asset_store, texture_key)?;
@@ -325,7 +381,12 @@ impl RenderingEngine {
     /// This will begin a rendering pass that will render to a WxH size texture
     /// Call `render_to_texture` to retrieve the texture key for this pass.
     #[inline]
-    fn begin_texture_pass(&mut self, ctx: &mut Context, asset_store: &mut AssetStore, texture_key: TextureKey) -> Result<(), EmeraldError> {
+    fn begin_texture_pass(
+        &mut self,
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+        texture_key: TextureKey,
+    ) -> Result<(), EmeraldError> {
         if let Some(texture) = asset_store.get_texture(&texture_key) {
             self.render_pass = RenderPass::new(ctx, texture.inner, None);
             ctx.begin_pass(
@@ -334,17 +395,24 @@ impl RenderingEngine {
                     color: Some(self.settings.background_color.to_percentage()),
                     depth: None,
                     stencil: None,
-                }
+                },
             );
 
-            return Ok(())
+            return Ok(());
         }
 
-        Err(EmeraldError::new(format!("Unable to retrieve texture for {:?}", texture_key)))
+        Err(EmeraldError::new(format!(
+            "Unable to retrieve texture for {:?}",
+            texture_key
+        )))
     }
 
     #[inline]
-    pub(crate) fn render(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+    pub(crate) fn render(
+        &mut self,
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+    ) -> Result<(), EmeraldError> {
         let texture_key = self.render_texture(ctx, asset_store)?;
 
         ctx.begin_default_pass(PassAction::Clear {
@@ -362,9 +430,13 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub(crate) fn render_texture(&mut self, ctx: &mut Context, _asset_store: &mut AssetStore) -> Result<TextureKey, EmeraldError> {
+    pub(crate) fn render_texture(
+        &mut self,
+        ctx: &mut Context,
+        _asset_store: &mut AssetStore,
+    ) -> Result<TextureKey, EmeraldError> {
         ctx.end_render_pass();
-        
+
         Ok(self.current_render_texture_key.clone())
     }
 
@@ -385,7 +457,10 @@ impl RenderingEngine {
         });
 
         if let Some(font) = asset_store.get_fontdue_font(&label.font_key) {
-            self.layout.append(&[font], &TextStyle::new(&label.text, label.font_size as f32, 0));
+            self.layout.append(
+                &[font],
+                &TextStyle::new(&label.text, label.font_size as f32, 0),
+            );
         }
 
         let mut font_texture_width = 0;
@@ -397,24 +472,24 @@ impl RenderingEngine {
         }
 
         if let Some(font_texture_key) = font_texture_key.as_ref() {
-            if let Some(texture) = asset_store.get_texture(&font_texture_key) {
+            if let Some(texture) = asset_store.get_texture(font_texture_key) {
                 font_texture_width = texture.width;
                 font_texture_height = texture.height;
             }
         }
 
         let mut draw_calls: Vec<(
-            f32,       // z_index
-            Vec2,      // real_scale
-            Vec2,      // real_position
-            Rectangle, // target
-            Color,     // color
-            bool,      // centered
-            bool,      // Visible
+            f32,         // z_index
+            Vec2,        // real_scale
+            Vec2,        // real_position
+            Rectangle,   // target
+            Color,       // color
+            bool,        // centered
+            bool,        // Visible
             Option<f32>, // max_width
         )> = Vec::new();
 
-        ctx.apply_pipeline(&self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
+        ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
 
         let mut remaining_char_count = label.visible_characters;
         if label.visible_characters < 0 {
@@ -430,9 +505,15 @@ impl RenderingEngine {
             if let Some(font) = asset_store.get_font(&label.font_key) {
                 need_to_cache_glyph = !font.characters.contains_key(&glyph_key);
             }
-            
+
             if need_to_cache_glyph {
-                cache_glyph(&mut ctx, &mut asset_store, &label.font_key, glyph_key.clone(), label.font_size)?;
+                cache_glyph(
+                    &mut ctx,
+                    &mut asset_store,
+                    &label.font_key,
+                    glyph_key,
+                    label.font_size,
+                )?;
             }
 
             if let Some(font) = asset_store.get_font_mut(&label.font_key) {
@@ -466,7 +547,7 @@ impl RenderingEngine {
                             label.color,
                             label.centered,
                             label.visible,
-                            label.max_width.clone(),
+                            label.max_width,
                         ));
                     }
                 }
@@ -477,8 +558,17 @@ impl RenderingEngine {
 
         if let Some(font_texture_key) = font_texture_key {
             for draw_call in draw_calls {
-                let (z_index, real_scale, mut real_position, target, mut color, centered, visible, max_width) = draw_call;
-    
+                let (
+                    z_index,
+                    real_scale,
+                    mut real_position,
+                    target,
+                    mut color,
+                    centered,
+                    visible,
+                    max_width,
+                ) = draw_call;
+
                 if centered {
                     if let Some(max_width) = max_width {
                         real_position.x -= max_width / 2.0;
@@ -488,7 +578,7 @@ impl RenderingEngine {
                 if !visible {
                     color.a = 0;
                 }
-    
+
                 draw_texture(
                     &self.settings,
                     &mut ctx,
@@ -501,7 +591,7 @@ impl RenderingEngine {
                     real_position,
                     target,
                     color,
-                    self.current_resolution
+                    self.current_resolution,
                 );
             }
         }
@@ -517,10 +607,10 @@ impl RenderingEngine {
         color_rect: &ColorRect,
         position: &Position,
     ) {
-        ctx.apply_pipeline(&self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
+        ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
 
         let (width, height) = (color_rect.width, color_rect.height);
-        let mut offset = color_rect.offset.clone();
+        let mut offset = color_rect.offset;
 
         if color_rect.centered {
             offset.x -= (color_rect.width / 2) as f32;
@@ -542,7 +632,7 @@ impl RenderingEngine {
             real_position,
             Rectangle::new(0.0, 0.0, 1.0, 1.0),
             color_rect.color,
-            self.current_resolution
+            self.current_resolution,
         )
     }
 
@@ -565,7 +655,7 @@ impl RenderingEngine {
             return;
         }
 
-        ctx.apply_pipeline(&self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
+        ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
         let texture = asset_store.get_texture(&sprite.texture_key).unwrap();
         let mut target = Rectangle::new(
             sprite.target.x / texture.width as f32,
@@ -578,7 +668,7 @@ impl RenderingEngine {
             target = Rectangle::new(0.0, 0.0, 1.0, 1.0);
         }
 
-        let mut offset = offset.clone();
+        let mut offset = *offset;
         if centered {
             if sprite.target.is_zero_sized() {
                 offset.x -= scale.x * texture.width as f32 / 2.0;
@@ -606,8 +696,8 @@ impl RenderingEngine {
             Vec2::new(0.0, 0.0),
             real_position,
             target,
-            color.clone(),
-            self.current_resolution
+            *color,
+            self.current_resolution,
         )
     }
 
@@ -623,7 +713,7 @@ impl RenderingEngine {
             return;
         }
 
-        ctx.apply_pipeline(&self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
+        ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
         let texture = asset_store.get_texture(&sprite.texture_key).unwrap();
         let mut target = Rectangle::new(
             sprite.target.x / texture.width as f32,
@@ -636,7 +726,7 @@ impl RenderingEngine {
             target = Rectangle::new(0.0, 0.0, 1.0, 1.0);
         }
 
-        let mut offset = sprite.offset.clone();
+        let mut offset = sprite.offset;
         if sprite.centered {
             if sprite.target.is_zero_sized() {
                 offset.x -= sprite.scale.x * texture.width as f32 / 2.0;
@@ -664,8 +754,8 @@ impl RenderingEngine {
             Vec2::new(0.0, 0.0),
             real_position,
             target,
-            sprite.color.clone(),
-            self.current_resolution
+            sprite.color,
+            self.current_resolution,
         )
     }
 }
@@ -706,7 +796,7 @@ fn draw_texture(
     uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);
     uniforms.color = Vec4::new(color.0, color.1, color.2, color.3);
 
-    if let Some(texture) = asset_store.get_texture(&texture_key) {
+    if let Some(texture) = asset_store.get_texture(texture_key) {
         texture.inner.set_filter(&mut ctx, texture.filter);
         ctx.apply_bindings(&texture.bindings);
         ctx.apply_uniforms(&uniforms);
@@ -732,14 +822,14 @@ fn get_camera_and_camera_position(world: &EmeraldWorld) -> (Camera, Position) {
 
     for (id, camera) in world.query::<&Camera>().iter() {
         if camera.is_active {
-            cam = camera.clone();
+            cam = *camera;
             entity_holding_camera = Some(id);
         }
     }
 
     if let Some(entity) = entity_holding_camera {
         if let Ok(position) = world.get_mut::<Position>(entity) {
-            cam_position = position.clone();
+            cam_position = *position;
         }
     }
 
@@ -777,7 +867,13 @@ struct DrawCommand {
 }
 
 #[inline]
-pub(crate) fn create_render_texture(w: usize, h: usize, key: TextureKey, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<TextureKey, EmeraldError> {
+pub(crate) fn create_render_texture(
+    w: usize,
+    h: usize,
+    key: TextureKey,
+    ctx: &mut Context,
+    asset_store: &mut AssetStore,
+) -> Result<TextureKey, EmeraldError> {
     let color_img = miniquad::Texture::new_render_texture(
         ctx,
         TextureParams {

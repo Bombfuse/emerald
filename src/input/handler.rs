@@ -46,11 +46,11 @@ impl InputHandler {
     #[inline]
     pub fn get_key_state(&mut self, keycode: KeyCode) -> ButtonState {
         if let Some(key) = self.keys.get(&keycode) {
-            return key.clone();
+            return *key;
         }
 
         self.keys.insert(keycode, ButtonState::new());
-        return self.get_key_state(keycode);
+        self.get_key_state(keycode)
     }
 
     #[inline]

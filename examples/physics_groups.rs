@@ -69,7 +69,8 @@ impl Game for PhysicsGroupsExample {
                     Position::new(0.0, 0.0),
                     ColorRect::new(Color::new(0, 255, 0, 255), 32, 16),
                 ),
-                RigidBodyBuilder::new_kinematic_position_based().translation(Vector2::new(0.0, 0.0)),
+                RigidBodyBuilder::new_kinematic_position_based()
+                    .translation(Vector2::new(0.0, 0.0)),
             )
             .unwrap();
 

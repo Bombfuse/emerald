@@ -1,20 +1,21 @@
 use crate::{
-    EmeraldError,
-    AssetStore,
-    audio::{Mixer, SoundInstanceId, SoundKey}
+    audio::{Mixer, SoundInstanceId, SoundKey},
+    AssetStore, EmeraldError,
 };
 
 pub struct DummyMixer {}
 impl DummyMixer {
     pub fn new() -> Result<Box<Self>, EmeraldError> {
-        Ok(
-            Box::new(DummyMixer {})
-        )
+        Ok(Box::new(DummyMixer {}))
     }
 }
 
 impl Mixer for DummyMixer {
-    fn play(&mut self, _key: SoundKey, _asset_store: &mut AssetStore) -> Result<SoundInstanceId, EmeraldError> {
+    fn play(
+        &mut self,
+        _key: SoundKey,
+        _asset_store: &mut AssetStore,
+    ) -> Result<SoundInstanceId, EmeraldError> {
         Ok(SoundInstanceId::new(0))
     }
 
@@ -29,3 +30,4 @@ impl Mixer for DummyMixer {
     fn clear(&mut self) -> Result<(), EmeraldError> { Ok(()) }
     fn post_update(&mut self) -> Result<(), EmeraldError> { Ok(()) }
 }
+

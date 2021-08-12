@@ -9,13 +9,20 @@ pub fn main() {
     render_settings.resolution = (320 * 2, 160 * 2);
     settings.render_settings = render_settings;
 
-    emerald::start(Box::new(MyGame { pos: Position::new(320.0, 160.0), scale: 1.0, render_texture: None }), settings)
+    emerald::start(
+        Box::new(MyGame {
+            pos: Position::new(320.0, 160.0),
+            scale: 1.0,
+            render_texture: None,
+        }),
+        settings,
+    )
 }
 
 pub struct MyGame {
     pos: Position,
     scale: f32,
-    render_texture: Option<TextureKey>
+    render_texture: Option<TextureKey>,
 }
 impl Game for MyGame {
     fn initialize(&mut self, mut emd: Emerald) {
@@ -64,8 +71,9 @@ impl Game for MyGame {
         emd.graphics().draw_color_rect(&ColorRect::new(WHITE, 500 * 500, 500 * 500),
         &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32));
         emd.graphics().draw_sprite(&rabbit, &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32));
+
         let texture_key = emd.graphics().render_texture().unwrap();
-        
+
         let e = std::time::Instant::now();
 
         println!("texture render: {:?}", e - now);

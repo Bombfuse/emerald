@@ -95,7 +95,7 @@ impl<'a> Emerald<'a> {
     pub fn quit(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            if let Err(_) = self.audio_engine.clear() {
+            if self.audio_engine.clear().is_err() {
                 //ignore
             }
         }
@@ -105,7 +105,11 @@ impl<'a> Emerald<'a> {
     // *****************************************
 
     pub fn graphics(&mut self) -> GraphicsHandler {
-        GraphicsHandler::new(&mut self.quad_ctx, &mut self.asset_store, &mut self.rendering_engine)
+        GraphicsHandler::new(
+            &mut self.quad_ctx,
+            &mut self.asset_store,
+            &mut self.rendering_engine,
+        )
     }
 
     // ************* Asset API ************* //
@@ -143,7 +147,7 @@ impl<'a> Emerald<'a> {
     // ************* Input API ************* //
     #[inline]
     pub fn input(&mut self) -> InputHandler {
-        InputHandler::new(&mut self.input_engine)
+        InputHandler::new(self.input_engine)
     }
 
     /// Makes all touches also be registered as mouse events.

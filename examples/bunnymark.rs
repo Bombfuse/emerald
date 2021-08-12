@@ -35,7 +35,7 @@ impl Game for BunnymarkGame {
         emd.world().spawn_batch((0..1000).map(|_| {
             position.x += 6.0;
             position.y += 1.0;
-            (position.clone(), sprite.clone(), Velocity::new(5.0, 3.0))
+            (position, sprite.clone(), Velocity::new(5.0, 3.0))
         }));
     }
 
@@ -54,7 +54,7 @@ impl Game for BunnymarkGame {
                 position.x += 6.0;
                 position.y += 1.0;
 
-                (position.clone(), sprite.clone(), Velocity::new(5.0, 3.0))
+                (position, sprite.clone(), Velocity::new(5.0, 3.0))
             }));
         }
 

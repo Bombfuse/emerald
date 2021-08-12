@@ -1,8 +1,8 @@
 use crate::rendering::font::*;
 use crate::rendering::shaders::*;
 use crate::*;
-use miniquad::{Bindings, Buffer, BufferType, Context, FilterMode};
 use glam::Vec2;
+use miniquad::{Bindings, Buffer, BufferType, Context, FilterMode};
 use std::sync::Arc;
 
 pub const EMERALD_DEFAULT_TEXTURE_NAME: &str = "emerald_default_texture";
@@ -36,7 +36,11 @@ impl Texture {
 
         let texture = miniquad::Texture::from_rgba8(ctx, 4, 4, &pixels);
 
-        Self::from_texture(&mut ctx, TextureKey::new(EMERALD_DEFAULT_TEXTURE_NAME), texture)
+        Self::from_texture(
+            &mut ctx,
+            TextureKey::new(EMERALD_DEFAULT_TEXTURE_NAME),
+            texture,
+        )
     }
 
     pub fn from_png_bytes(
@@ -44,7 +48,7 @@ impl Texture {
         key: TextureKey,
         bytes: &[u8],
     ) -> Result<Self, EmeraldError> {
-        let img = image::load_from_memory(&bytes)?.to_rgba8();
+        let img = image::load_from_memory(bytes)?.to_rgba8();
         let img = image::imageops::flip_vertical(&img);
 
         let width = img.width() as u16;
@@ -84,7 +88,7 @@ impl Texture {
         let index_buffer = Buffer::immutable(ctx, BufferType::IndexBuffer, &indices);
         let bindings = Bindings {
             vertex_buffers: vec![vertex_buffer],
-            index_buffer: index_buffer,
+            index_buffer,
             images: vec![texture],
         };
 
