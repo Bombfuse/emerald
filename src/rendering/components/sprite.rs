@@ -14,10 +14,10 @@ pub struct Sprite {
 }
 impl Sprite {
     pub fn from_texture(texture_key: TextureKey) -> Self {
-        let mut sprite = Sprite::default();
-        sprite.texture_key = texture_key;
-
-        sprite
+        Sprite {
+            texture_key,
+            ..Default::default()
+        }
     }
 }
 impl Default for Sprite {

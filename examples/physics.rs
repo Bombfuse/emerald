@@ -5,8 +5,10 @@ const RES_HEIGHT: f32 = 480.0;
 
 pub fn main() {
     let mut settings = GameSettings::default();
-    let mut render_settings = RenderSettings::default();
-    render_settings.resolution = (RES_WIDTH as u32, RES_HEIGHT as u32);
+    let render_settings = RenderSettings {
+        resolution: (RES_WIDTH as u32, RES_HEIGHT as u32),
+        ..Default::default()
+    };
     settings.render_settings = render_settings;
     emerald::start(
         Box::new(MyGame {
@@ -171,10 +173,7 @@ impl Game for MyGame {
 
         {
             let fps = emd.fps() as u8;
-            let font = emd
-                .loader()
-                .font("Roboto-Light.ttf", 48)
-                .unwrap();
+            let font = emd.loader().font("Roboto-Light.ttf", 48).unwrap();
             let mut label = Label::new(format!("FPS: {}", fps), font, 24);
             label.centered = false;
             emd.graphics()
