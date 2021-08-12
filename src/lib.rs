@@ -1,3 +1,11 @@
+#![deny(
+    rust_2018_compatibility,
+    rust_2018_idioms,
+    future_incompatible,
+    nonstandard_style,
+    missing_copy_implementations
+)]
+
 pub mod assets;
 pub mod audio;
 pub mod colors;

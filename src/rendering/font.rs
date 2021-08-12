@@ -25,8 +25,8 @@ impl Default for FontKey {
 
 pub(crate) struct CharacterInfo {
     pub offset_x: i32,
-    pub offset_y: i32,
-    pub advance: f32,
+    pub _offset_y: i32,
+    pub _advance: f32,
 
     pub glyph_x: u32,
     pub glyph_y: u32,
@@ -76,7 +76,7 @@ impl FontImage {
 }
 
 pub(crate) struct Font {
-    pub font_key: FontKey,
+    pub _font_key: FontKey,
     pub characters: HashMap<GlyphRasterConfig, CharacterInfo>,
     pub font_texture_key: TextureKey,
     pub font_image: FontImage,
@@ -94,7 +94,7 @@ impl Font {
     ) -> Result<Font, EmeraldError> {
         Ok(Font {
             font_image,
-            font_key,
+            _font_key: font_key,
             font_texture_key,
             characters: HashMap::new(),
             cursor_x: 0,
@@ -156,9 +156,9 @@ pub(crate) fn cache_glyph(
                 glyph_w: width as _,
                 glyph_h: height as _,
 
-                advance,
+                _advance: advance,
                 offset_x,
-                offset_y,
+                _offset_y: offset_y,
             };
 
             font.characters.insert(glyph_key, character_info);

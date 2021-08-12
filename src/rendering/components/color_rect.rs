@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct ColorRect {
     pub color: Color,
     pub offset: Vector2<f32>,

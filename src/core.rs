@@ -104,7 +104,7 @@ impl<'a> Emerald<'a> {
     }
     // *****************************************
 
-    pub fn graphics(&mut self) -> GraphicsHandler {
+    pub fn graphics(&mut self) -> GraphicsHandler<'_> {
         GraphicsHandler::new(
             &mut self.quad_ctx,
             &mut self.asset_store,
@@ -114,7 +114,7 @@ impl<'a> Emerald<'a> {
 
     // ************* Asset API ************* //
     #[inline]
-    pub fn loader(&mut self) -> AssetLoader {
+    pub fn loader(&mut self) -> AssetLoader<'_> {
         AssetLoader::new(
             &mut self.quad_ctx,
             &mut self.asset_store,
@@ -131,7 +131,7 @@ impl<'a> Emerald<'a> {
 
     // ************* Audio API ************* //
     #[inline]
-    pub fn audio(&mut self) -> AudioHandler {
+    pub fn audio(&mut self) -> AudioHandler<'_> {
         AudioHandler::new(&mut self.audio_engine, &mut self.asset_store)
     }
     // ************************************* //

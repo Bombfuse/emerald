@@ -49,7 +49,7 @@ impl std::convert::From<kira::sound::error::SoundFromFileError> for EmeraldError
 }
 
 impl std::fmt::Display for EmeraldError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.message)
     }
 }

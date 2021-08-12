@@ -217,7 +217,7 @@ impl RenderingEngine {
 
         for (_id, (color_rect, position)) in world.inner.query::<(&ColorRect, &Position)>().iter() {
             let drawable = Drawable::ColorRect {
-                color_rect: color_rect.clone(),
+                color_rect: *color_rect,
             };
 
             draw_queue.push(DrawCommand {
