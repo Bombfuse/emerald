@@ -9,19 +9,11 @@ pub struct ElapsedTime(f32);
 pub struct GamepadExample;
 impl Game for GamepadExample {
     fn initialize(&mut self, mut emd: Emerald) {
-        // Pack all game files into WASM binary
-        #[cfg(target_arch = "wasm32")]
-        {
-            emd.loader()
-                .pack_bytes(
-                    "./examples/assets/Roboto-Light.ttf",
-                    include_bytes!("./assets/Roboto-Light.ttf").to_vec(),
-                )
-                .unwrap();
-        }
+        emd.set_asset_folder_root(String::from("./examples/assets/"));
+
         let font = emd
             .loader()
-            .font("./examples/assets/Roboto-Light.ttf", 40)
+            .font("Roboto-Light.ttf", 40)
             .unwrap();
 
         let mut left_aligned_label = Label::new("Emerald Engine", font, 80);
@@ -59,17 +51,6 @@ impl Game for GamepadExample {
             } else if input.is_key_just_pressed(KeyCode::R) {
                 label.max_width = Some(400.0);
             }
-
-            // elapsed_time.0 = elapsed_time.0 + delta;
-
-            // if elapsed_time.0 >= 0.5 {
-            //     elapsed_time.0 = 0.0;
-            //     label.visible_characters += 1;
-
-            //     if label.visible_characters > label.text.len() as i64 {
-            //         label.visible_characters = 0;
-            //     }
-            // }
         }
     }
 }

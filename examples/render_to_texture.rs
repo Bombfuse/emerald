@@ -26,11 +26,9 @@ pub struct MyGame {
 }
 impl Game for MyGame {
     fn initialize(&mut self, mut emd: Emerald) {
-        self.render_texture = Some(
-            emd.loader()
-                .render_texture(RES_WIDTH as usize, RES_HEIGHT as usize)
-                .unwrap(),
-        );
+        emd.set_asset_folder_root(String::from("./examples/assets/"));
+
+        self.render_texture = Some(emd.loader().render_texture(RES_WIDTH as usize, RES_HEIGHT as usize).unwrap());
     }
 
     fn update(&mut self, mut emd: Emerald) {
@@ -67,19 +65,13 @@ impl Game for MyGame {
 
     fn draw(&mut self, mut emd: Emerald) {
         let now = std::time::Instant::now();
-        emd.graphics()
-            .begin_texture(self.render_texture.as_ref().unwrap().clone())
-            .unwrap();
+        emd.graphics().begin_texture(self.render_texture.as_ref().unwrap().clone()).unwrap();
 
-        let rabbit = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
-        emd.graphics().draw_color_rect(
-            &ColorRect::new(WHITE, 500 * 500, 500 * 500),
-            &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32),
-        );
-        emd.graphics().draw_sprite(
-            &rabbit,
-            &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32),
-        );
+        let rabbit = emd.loader().sprite("bunny.png").unwrap();
+        emd.graphics().draw_color_rect(&ColorRect::new(WHITE, 500 * 500, 500 * 500),
+        &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32));
+        emd.graphics().draw_sprite(&rabbit, &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32));
+
         let texture_key = emd.graphics().render_texture().unwrap();
 
         let e = std::time::Instant::now();

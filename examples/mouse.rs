@@ -19,18 +19,9 @@ pub struct MouseExample {
 
 impl Game for MouseExample {
     fn initialize(&mut self, mut emd: Emerald) {
-        // Pack all game files into WASM binary
-        #[cfg(target_arch = "wasm32")]
-        {
-            emd.loader()
-                .pack_bytes(
-                    "./examples/assets/bunny.png",
-                    include_bytes!("./assets/bunny.png").to_vec(),
-                )
-                .unwrap();
-        }
+        emd.set_asset_folder_root(String::from("./examples/assets/"));
 
-        if let Ok(sprite) = emd.loader().sprite("./examples/assets/bunny.png") {
+        if let Ok(sprite) = emd.loader().sprite("bunny.png") {
             emd.world().spawn((sprite, Position::new(16.0, 16.0)));
         }
 

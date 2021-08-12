@@ -54,6 +54,22 @@ impl<'a> Emerald<'a> {
         }
     }
 
+    pub fn set_asset_folder_root(&mut self, root: String) {
+        self.asset_store.set_asset_folder_root(root);
+    }
+
+    pub fn set_user_data_folder_root(&mut self, root: String) {
+        self.asset_store.set_user_data_folder_root(root);
+    }
+
+    pub fn get_asset_folder_root(&mut self) -> String {
+        self.asset_store.get_asset_folder_root()
+    }
+
+    pub fn get_user_data_folder_root(&mut self) -> String {
+        self.asset_store.get_user_data_folder_root()
+    }
+
     // ************* General API ***************
     #[inline]
     pub fn delta(&self) -> f32 {

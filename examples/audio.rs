@@ -11,30 +11,23 @@ pub fn main() {
 
 pub struct Example {}
 impl Game for Example {
-    fn initialize(&mut self, emd: Emerald) {}
+    fn initialize(&mut self, mut emd: Emerald) {
+        emd.set_asset_folder_root(String::from("./examples/assets/"));
+    }
 
     fn update(&mut self, mut emd: Emerald) {
         let mut input = emd.input();
 
         let volume = emd.audio().mixer("test").unwrap().get_volume().unwrap();
         if input.is_key_just_pressed(KeyCode::A) {
-            emd.audio()
-                .mixer("test")
-                .unwrap()
-                .set_volume(volume - 0.1)
-                .unwrap();
+            emd.audio().mixer("test").unwrap().set_volume(volume - 0.1).unwrap();
         } else if input.is_key_just_pressed(KeyCode::D) {
-            emd.audio()
-                .mixer("test")
-                .unwrap()
-                .set_volume(volume + 0.1)
-                .unwrap();
+            emd.audio().mixer("test").unwrap().set_volume(volume + 0.1).unwrap();
         }
 
         if input.is_key_just_pressed(KeyCode::Space) {
-            let snd = emd
-                .loader()
-                .sound("./examples/assets/test_music.wav")
+            let snd = emd.loader()
+                .sound("test_music.wav")
                 .unwrap();
             emd.audio()
                 .mixer("test")
@@ -45,9 +38,8 @@ impl Game for Example {
 
         if input.is_key_just_pressed(KeyCode::Z) {
             for _ in 0..10 {
-                let snd = emd
-                    .loader()
-                    .sound("./examples/assets/test_sound.wav")
+                let snd = emd.loader()
+                    .sound("test_sound.wav")
                     .unwrap();
                 emd.audio()
                     .mixer("test")
@@ -60,21 +52,12 @@ impl Game for Example {
 
     fn draw(&mut self, mut emd: Emerald) {
         emd.graphics().begin().unwrap();
-        let font = emd
-            .loader()
-            .font("./examples/assets/Roboto-Light.ttf", 48)
-            .unwrap();
+        let font = emd.loader().font("Roboto-Light.ttf", 48).unwrap();
         let volume = emd.audio().mixer("test").unwrap().get_volume().unwrap();
 
         let volume_label = Label::new(format!("Volume: {:05.2}", volume), font.clone(), 48);
-        let instructions_a = Label::new("A = -0.1", font.clone(), 48);
-        let instructions_b = Label::new("D = +0.1", font, 48);
+        emd.graphics().draw_label(&volume_label, &Position::new(240.0, 180.0)).unwrap();
 
-        emd.graphics()
-            .draw_label(&volume_label, &Position::new(240.0, 180.0))
-            .unwrap();
-        // emd.graphics().draw_label(&volume_label, &Position::new(240.0, 180.0)).unwrap();
-        // emd.graphics().draw_label(&volume_label, &Position::new(240.0, 180.0)).unwrap();
 
         emd.graphics().render().unwrap();
     }

@@ -25,16 +25,9 @@ pub struct BunnymarkGame {
 }
 impl Game for BunnymarkGame {
     fn initialize(&mut self, mut emd: Emerald) {
-        // Pack all game files into WASM binary
-        #[cfg(target_arch = "wasm32")]
-        {
-            emd.loader().pack_bytes(
-                "./examples/assets/bunny.png",
-                include_bytes!("../examples/assets/bunny.png").to_vec(),
-            );
-        }
+        emd.set_asset_folder_root(String::from("./examples/assets/"));
 
-        let sprite = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
+        let sprite = emd.loader().sprite("bunny.png").unwrap();
 
         let mut position = Position::new(0.0, 0.0);
 
@@ -52,7 +45,7 @@ impl Game for BunnymarkGame {
         let sprite_width = 32.0;
 
         if emd.input().is_key_just_pressed(KeyCode::Space) {
-            let mut sprite = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
+            let mut sprite = emd.loader().sprite("bunny.png").unwrap();
             sprite.offset = Vector2::new(-10.0, 0.0);
 
             let mut position = Position::new(0.0, 0.0);
