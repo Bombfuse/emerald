@@ -12,12 +12,12 @@ pub struct ColorRect {
 }
 impl ColorRect {
     pub fn new(color: Color, width: u32, height: u32) -> Self {
-        let mut rect = ColorRect::default();
-        rect.color = color;
-        rect.width = width;
-        rect.height = height;
-
-        rect
+        ColorRect {
+            color,
+            width,
+            height,
+            ..Default::default()
+        }
     }
 }
 impl Default for ColorRect {

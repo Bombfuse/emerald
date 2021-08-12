@@ -4,8 +4,6 @@ use crate::{EmeraldError, Sound, SoundKey};
 use miniquad::Context;
 use std::collections::HashMap;
 
-
-
 const INITIAL_TEXTURE_STORAGE_CAPACITY: usize = 100;
 const INITIAL_FONT_STORAGE_CAPACITY: usize = 100;
 
@@ -14,9 +12,6 @@ const DEFAULT_ASSET_FOLDER: &str = "./assets/";
 /// Default to storing user data in the application directory.
 /// Note: This will destroy any user/save files if the game is re-installed.
 const DEFAULT_USER_DATA_FOLDER: &str = "./";
-
-
-
 
 // const INITIAL_SOUND_STORAGE_CAPACITY: usize = 100;
 
@@ -39,8 +34,9 @@ pub(crate) struct AssetStore {
     asset_folder_root: String,
     user_data_folder_root: String,
 
-    #[cfg(feature="hotreload")]
-    pub(crate) file_hot_reload_metadata: HashMap<String, crate::assets::hotreload::HotReloadMetadata>,
+    #[cfg(feature = "hotreload")]
+    pub(crate) file_hot_reload_metadata:
+        HashMap<String, crate::assets::hotreload::HotReloadMetadata>,
 }
 impl AssetStore {
     pub fn new(ctx: &mut Context) -> Self {
@@ -67,8 +63,8 @@ impl AssetStore {
             sound_map: HashMap::new(),
             asset_folder_root,
             user_data_folder_root,
-            
-            #[cfg(feature="hotreload")]
+
+            #[cfg(feature = "hotreload")]
             file_hot_reload_metadata: HashMap::new(),
         }
     }
@@ -89,33 +85,41 @@ impl AssetStore {
         self.user_data_folder_root.clone()
     }
 
-    pub fn insert_asset_bytes(&mut self, relative_path: String, bytes: Vec<u8>) -> Result<(), EmeraldError> {
+    pub fn insert_asset_bytes(
+        &mut self,
+        relative_path: String,
+        bytes: Vec<u8>,
+    ) -> Result<(), EmeraldError> {
         let path = self.get_full_asset_path(&relative_path);
         self.bytes.insert(path, bytes);
 
         Ok(())
     }
-    pub fn get_asset_bytes(&mut self, relative_path: &String) -> Option<Vec<u8>> {
+    pub fn get_asset_bytes(&mut self, relative_path: &str) -> Option<Vec<u8>> {
         let full_path = self.get_full_asset_path(relative_path);
         self.get_bytes(full_path)
     }
 
-    pub fn read_asset_file(&mut self, relative_path: &String) -> Result<Vec<u8>, EmeraldError> {
+    pub fn read_asset_file(&mut self, relative_path: &str) -> Result<Vec<u8>, EmeraldError> {
         let full_path = self.get_full_asset_path(relative_path);
         read_file(&full_path)
     }
 
-    pub fn _insert_user_bytes(&mut self, relative_path: String, bytes: Vec<u8>) -> Result<(), EmeraldError> {
+    pub fn _insert_user_bytes(
+        &mut self,
+        relative_path: String,
+        bytes: Vec<u8>,
+    ) -> Result<(), EmeraldError> {
         let path = self.get_full_user_data_path(&relative_path);
         self.bytes.insert(path, bytes);
 
         Ok(())
     }
-    pub fn get_user_bytes(&mut self, relative_path: &String) -> Option<Vec<u8>> {
+    pub fn get_user_bytes(&mut self, relative_path: &str) -> Option<Vec<u8>> {
         let full_path = self.get_full_user_data_path(relative_path);
         self.get_bytes(full_path)
     }
-    pub fn read_user_file(&mut self, relative_path: &String) -> Result<Vec<u8>, EmeraldError> {
+    pub fn read_user_file(&mut self, relative_path: &str) -> Result<Vec<u8>, EmeraldError> {
         let full_path = self.get_full_user_data_path(relative_path);
         read_file(&full_path)
     }
@@ -147,23 +151,22 @@ impl AssetStore {
     }
 
     pub fn insert_texture(&mut self, key: TextureKey, texture: Texture) {
-        if let Some(_) = self.get_texture(&key) {
+        if self.get_texture(&key).is_some() {
             self.remove_texture(key.clone());
-
         }
 
         self.textures.push(texture);
-        self.texture_key_map.insert(key.clone(), self.textures.len() - 1);
+        self.texture_key_map
+            .insert(key.clone(), self.textures.len() - 1);
 
-        #[cfg(feature="hotreload")]
+        #[cfg(feature = "hotreload")]
         crate::assets::hotreload::on_insert_texture(self, self.get_full_asset_path(&key.get_name()))
     }
 
-    pub fn get_full_asset_path(&self, path: &String) -> String {
+    pub fn get_full_asset_path(&self, path: &str) -> String {
         // If it already contains the correct directory then just return it
         if path.contains(&self.asset_folder_root) {
-            return path.clone();
-
+            return path.to_string();
         }
 
         let mut full_path = self.asset_folder_root.clone();
@@ -172,11 +175,10 @@ impl AssetStore {
         full_path
     }
 
-
-    pub fn get_full_user_data_path(&self, path: &String) -> String {
+    pub fn get_full_user_data_path(&self, path: &str) -> String {
         // If it already contains the correct directory then just return it
         if path.contains(&self.user_data_folder_root) {
-            return path.clone();
+            return path.to_string();
         }
 
         let mut full_path = self.user_data_folder_root.clone();
@@ -293,7 +295,6 @@ impl AssetStore {
     }
 }
 
-
 #[cfg(target_arch = "wasm32")]
 fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
     Err(EmeraldError::new(format!(
@@ -313,12 +314,14 @@ fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
     unsafe { sapp_android::sapp_load_asset(filename.as_ptr(), &mut data as _) };
 
     if data.content.is_null() == false {
-        let slice =
-            unsafe { std::slice::from_raw_parts(data.content, data.content_length as _) };
+        let slice = unsafe { std::slice::from_raw_parts(data.content, data.content_length as _) };
         let response = slice.iter().map(|c| *c as _).collect::<Vec<_>>();
         Ok(response)
     } else {
-        Err(EmeraldError::new(format!("Unable to load asset `{}`", path)))
+        Err(EmeraldError::new(format!(
+            "Unable to load asset `{}`",
+            path
+        )))
     }
 }
 

@@ -24,12 +24,12 @@ pub struct Label {
 }
 impl Label {
     pub fn new<T: Into<String>>(text: T, font_key: FontKey, font_size: u16) -> Self {
-        let mut label = Label::default();
-        label.font_key = font_key;
-        label.text = text.into();
-        label.font_size = font_size;
-
-        label
+        Label {
+            font_key,
+            text: text.into(),
+            font_size,
+            ..Default::default()
+        }
     }
 }
 impl Default for Label {
