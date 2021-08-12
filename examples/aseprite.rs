@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use emerald::*;
 
 pub fn main() {
@@ -22,5 +24,9 @@ impl Game for MyGame {
         aseprite.play_and_loop("smile");
 
         emd.world().spawn((aseprite, Position::new(64.0, 64.0)));
+
+        emd.loader()
+            .aseprite(Path::new("./examples/assets/test.aseprite"))
+            .unwrap();
     }
 }

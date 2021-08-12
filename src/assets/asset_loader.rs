@@ -2,8 +2,14 @@ use crate::assets::*;
 use crate::audio::*;
 use crate::rendering::*;
 use crate::*;
+use byteorder::{LittleEndian, ReadBytesExt};
 
+use aseprite_parsing::*;
 use std::ffi::OsStr;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::Read;
+use std::path::Path;
 
 #[cfg(target_arch = "wasm32")]
 fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
@@ -24,12 +30,14 @@ fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
     unsafe { sapp_android::sapp_load_asset(filename.as_ptr(), &mut data as _) };
 
     if data.content.is_null() == false {
-        let slice =
-            unsafe { std::slice::from_raw_parts(data.content, data.content_length as _) };
+        let slice = unsafe { std::slice::from_raw_parts(data.content, data.content_length as _) };
         let response = slice.iter().map(|c| *c as _).collect::<Vec<_>>();
         Ok(response)
     } else {
-        Err(EmeraldError::new(format!("Unable to load asset `{}`", path)))
+        Err(EmeraldError::new(format!(
+            "Unable to load asset `{}`",
+            path
+        )))
     }
 }
 
@@ -76,7 +84,8 @@ impl<'a> AssetLoader<'a> {
         }
 
         let bytes = read_file(&path)?;
-        self.asset_store.insert_bytes(String::from(path), bytes.clone());
+        self.asset_store
+            .insert_bytes(String::from(path), bytes.clone());
 
         return Ok(bytes);
     }
@@ -116,9 +125,12 @@ impl<'a> AssetLoader<'a> {
         let inner_font = fontdue::Font::from_bytes(font_bytes, font_settings)?;
         let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
 
-        self.asset_store.insert_texture(&mut self.quad_ctx, font_texture_key, font_texture);
-        self.asset_store.insert_fontdue_font(key.clone(), inner_font);
-        self.asset_store.insert_font(&mut self.quad_ctx, key.clone(), font)?;
+        self.asset_store
+            .insert_texture(&mut self.quad_ctx, font_texture_key, font_texture);
+        self.asset_store
+            .insert_fontdue_font(key.clone(), inner_font);
+        self.asset_store
+            .insert_font(&mut self.quad_ctx, key.clone(), font)?;
 
         Ok(key)
     }
@@ -142,6 +154,84 @@ impl<'a> AssetLoader<'a> {
         Ok(aseprite)
     }
 
+    pub fn aseprite(&mut self, path: &Path) -> Result<(), EmeraldError> {
+        // aseprite file specs: https://github.com/aseprite/aseprite/blob/main/docs/ase-file-specs.md
+        use byteorder::ReadBytesExt;
+        let file = File::open(&path)?;
+        let mut reader = BufReader::new(file);
+        let file_byte_size = dword(&mut reader)?;
+        let magic_number = word(&mut reader)?;
+
+        if magic_number != 0xA5E0 {
+            return Err(EmeraldError {
+                message: "Not a valid aseprite file".to_owned(),
+            });
+        }
+
+        let frames_count = word(&mut reader)?;
+        let width = word(&mut reader)?;
+        let height = word(&mut reader)?;
+        let color_depth = word(&mut reader)?;
+        let flags = dword(&mut reader)?;
+        let _ = word(&mut reader); // Speed milliseconds between frame (DEPERCATED)
+        let _ = dword(&mut reader); // set to be 0
+        let _ = dword(&mut reader); // set to be 0
+        let palette_entry_index = byte(&mut reader)?;
+        reader.seek_relative(3)?; // ignore the next 3 bytes
+        let number_of_colors = word(&mut reader)?;
+        let width_ratio = byte(&mut reader)?;
+        let height_ratio = byte(&mut reader)?;
+        let grid_pos_x = short(&mut reader)?;
+        let grid_pos_y = short(&mut reader)?;
+        let grid_width = short(&mut reader)?;
+        let grid_height = short(&mut reader)?;
+        reader.seek_relative(84)?; // for future (ignore for now)
+
+        println!("file_size:{}", width);
+
+        let frames = {
+            for frame_index in 0..frames_count {
+                let frame_btyes = dword(&mut reader)?;
+                let magic_number = word(&mut reader)?;
+                if magic_number != 0xF1FA {
+                    return Err(EmeraldError {
+                        message: "Not a valid aseprite file".to_owned(),
+                    });
+                }
+                let old_chunk_count = word(&mut reader)?;
+                let frame_duration = word(&mut reader)?;
+                let _ = reader.seek_relative(2)?; // for future
+                let new_chunk_count = dword(&mut reader)?;
+
+                let chunks_count = if old_chunk_count == 0 {
+                    old_chunk_count as u32
+                } else {
+                    new_chunk_count
+                };
+
+                // for chunk_index in 0..chunks {
+                //     let offset = word(&mut reader)?.into();
+                //     let chunk_end = reader.seek_relative(offset);
+                //     let chunk_type = word(&mut reader)?;
+
+                //     // println!("chunk type:{}", chunk_type);
+
+                //     // match chunk_type {
+                //     //     0 => {}
+                //     //     1 => {}
+                //     //     2 => {}
+                //     //     3 => {}
+                //     //     4 => {}
+                //     //     5 => {}
+                //     //     _ => panic!("invalid chunk type"), // Err(EmeraldError::new("incorrect chunk type")),
+                //     // }
+                // }
+            }
+        };
+
+        return Ok(());
+    }
+
     pub fn texture<T: Into<String>>(&mut self, path: T) -> Result<TextureKey, EmeraldError> {
         let path: String = path.into();
         let key = TextureKey::new(path.clone());
@@ -152,17 +242,18 @@ impl<'a> AssetLoader<'a> {
 
         let data = self.bytes(path.clone())?;
         let texture = Texture::new(&mut self.quad_ctx, key.clone(), data)?;
-        self.asset_store.insert_texture(&mut self.quad_ctx, key.clone(), texture);
+        self.asset_store
+            .insert_texture(&mut self.quad_ctx, key.clone(), texture);
 
         Ok(key)
     }
-
 
     /// Creating render textures is slightly expensive and should be used conservatively.
     /// Please re-use render textures you've created before if possible.
     /// If you need a render texture with a new size, you should create a new render texture.
     pub fn render_texture(&mut self, w: usize, h: usize) -> Result<TextureKey, EmeraldError> {
-        self.rendering_engine.create_render_texture(w, h, &mut self.quad_ctx, &mut self.asset_store)
+        self.rendering_engine
+            .create_render_texture(w, h, &mut self.quad_ctx, &mut self.asset_store)
     }
 
     pub fn sprite<T: Into<String>>(&mut self, path: T) -> Result<Sprite, EmeraldError> {
