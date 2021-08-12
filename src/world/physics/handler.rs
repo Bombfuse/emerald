@@ -1,8 +1,8 @@
 use crate::physics::*;
 use crate::{EmeraldError, Vector2};
 
-use rapier2d::prelude::*;
 use hecs::Entity;
+use rapier2d::prelude::*;
 
 pub struct PhysicsHandler<'a> {
     physics_engine: &'a mut PhysicsEngine,
@@ -57,8 +57,8 @@ impl<'a> PhysicsHandler<'a> {
 
     /// Remove physics body attached to this entity.
     pub fn remove_body(&mut self, entity: Entity) -> Option<RigidBody> {
-        if let Some(body) = self.physics_engine.remove_body(entity.clone()) {
-            if let Ok(_) = self.world.remove_one::<RigidBodyHandle>(entity) {
+        if let Some(body) = self.physics_engine.remove_body(entity) {
+            if self.world.remove_one::<RigidBodyHandle>(entity).is_ok() {
                 return Some(body);
             }
         }

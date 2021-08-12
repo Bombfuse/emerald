@@ -27,7 +27,7 @@ impl EmeraldWorld {
     #[inline]
     pub fn make_active_camera(&mut self, entity: Entity) -> Result<(), EmeraldError> {
         let mut set_camera = false;
-        if let Ok(mut camera) = self.get_mut::<Camera>(entity.clone()) {
+        if let Ok(mut camera) = self.get_mut::<Camera>(entity) {
             camera.is_active = true;
             set_camera = true;
         }
@@ -78,7 +78,7 @@ impl EmeraldWorld {
         body_builder: RigidBodyBuilder,
     ) -> Result<(Entity, RigidBodyHandle), EmeraldError> {
         let entity = self.spawn(components);
-        let rbh = self.physics().build_body(entity.clone(), body_builder)?;
+        let rbh = self.physics().build_body(entity, body_builder)?;
 
         Ok((entity, rbh))
     }
@@ -89,7 +89,6 @@ impl EmeraldWorld {
         I::Item: Bundle + 'static,
     {
         self.inner.spawn_batch::<I>(iter)
-
     }
 
     pub fn despawn(&mut self, entity: Entity) -> Result<(), NoSuchEntity> {

@@ -24,7 +24,7 @@ impl Game for GamepadExample {
             .font("./examples/assets/Roboto-Light.ttf", 40)
             .unwrap();
 
-        let mut left_aligned_label = Label::new("Emerald Engine", font.clone(), 80);
+        let mut left_aligned_label = Label::new("Emerald Engine", font, 80);
         left_aligned_label.max_width = Some(400.0);
 
         let mut centered_label = left_aligned_label.clone();
@@ -38,16 +38,10 @@ impl Game for GamepadExample {
             Position::new(0.0, 0.0),
             left_aligned_label,
         ));
-        emd.world().spawn((
-            ElapsedTime(0.0),
-            Position::new(0.0, 300.0),
-            centered_label,
-        ));
-        emd.world().spawn((
-            ElapsedTime(0.0),
-            Position::new(0.0, -300.0),
-            right_label,
-        ));
+        emd.world()
+            .spawn((ElapsedTime(0.0), Position::new(0.0, 300.0), centered_label));
+        emd.world()
+            .spawn((ElapsedTime(0.0), Position::new(0.0, -300.0), right_label));
     }
 
     fn update(&mut self, mut emd: Emerald) {

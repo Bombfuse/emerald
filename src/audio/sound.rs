@@ -1,7 +1,5 @@
 use crate::EmeraldError;
 
-
-
 #[derive(Clone, Debug, Copy, Hash, Eq, PartialEq)]
 pub enum SoundFormat {
     Ogg,
@@ -17,7 +15,6 @@ impl SoundInstanceId {
     }
 }
 
-
 /// A key to sound data in the engine.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct SoundKey(String, SoundFormat);
@@ -28,7 +25,6 @@ impl SoundKey {
 }
 
 pub use sound_backend::*;
-
 
 // Kira sound backend
 #[cfg(feature = "audio")]
@@ -49,9 +45,7 @@ mod sound_backend {
                 SoundFormat::Wav => kira::sound::Sound::from_wav_reader(reader, settings),
             }?;
 
-            Ok(Sound {
-                inner,
-            })
+            Ok(Sound { inner })
         }
     }
 }

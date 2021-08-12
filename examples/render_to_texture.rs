@@ -9,17 +9,28 @@ pub fn main() {
     render_settings.resolution = (320 * 2, 160 * 2);
     settings.render_settings = render_settings;
 
-    emerald::start(Box::new(MyGame { pos: Position::new(320.0, 160.0), scale: 1.0, render_texture: None }), settings)
+    emerald::start(
+        Box::new(MyGame {
+            pos: Position::new(320.0, 160.0),
+            scale: 1.0,
+            render_texture: None,
+        }),
+        settings,
+    )
 }
 
 pub struct MyGame {
     pos: Position,
     scale: f32,
-    render_texture: Option<TextureKey>
+    render_texture: Option<TextureKey>,
 }
 impl Game for MyGame {
     fn initialize(&mut self, mut emd: Emerald) {
-        self.render_texture = Some(emd.loader().render_texture(RES_WIDTH as usize, RES_HEIGHT as usize).unwrap());
+        self.render_texture = Some(
+            emd.loader()
+                .render_texture(RES_WIDTH as usize, RES_HEIGHT as usize)
+                .unwrap(),
+        );
     }
 
     fn update(&mut self, mut emd: Emerald) {
@@ -56,14 +67,21 @@ impl Game for MyGame {
 
     fn draw(&mut self, mut emd: Emerald) {
         let now = std::time::Instant::now();
-        emd.graphics().begin_texture(self.render_texture.as_ref().unwrap().clone());
+        emd.graphics()
+            .begin_texture(self.render_texture.as_ref().unwrap().clone())
+            .unwrap();
 
         let rabbit = emd.loader().sprite("./examples/assets/bunny.png").unwrap();
-        emd.graphics().draw_color_rect(&ColorRect::new(WHITE, 500 * 500, 500 * 500),
-        &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32));
-        emd.graphics().draw_sprite(&rabbit, &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32));
+        emd.graphics().draw_color_rect(
+            &ColorRect::new(WHITE, 500 * 500, 500 * 500),
+            &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32),
+        );
+        emd.graphics().draw_sprite(
+            &rabbit,
+            &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32),
+        );
         let texture_key = emd.graphics().render_texture().unwrap();
-        
+
         let e = std::time::Instant::now();
 
         println!("texture render: {:?}", e - now);
@@ -77,9 +95,9 @@ impl Game for MyGame {
         screen_sprite.scale.x = self.scale;
         screen_sprite.scale.y = self.scale;
 
-        emd.graphics().begin();
+        emd.graphics().begin().unwrap();
         emd.graphics().draw_sprite(&screen_sprite, &self.pos);
-        emd.graphics().render();
+        emd.graphics().render().unwrap();
 
         println!("screen draw: {:?}", e - now);
     }

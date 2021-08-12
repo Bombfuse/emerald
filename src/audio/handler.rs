@@ -1,5 +1,5 @@
-use crate::{AssetStore, audio::*};
 use crate::EmeraldError;
+use crate::{audio::*, AssetStore};
 
 pub struct AudioHandler<'a> {
     audio_engine: &'a mut AudioEngine,
@@ -7,7 +7,10 @@ pub struct AudioHandler<'a> {
 }
 impl<'a> AudioHandler<'a> {
     pub(crate) fn new(audio_engine: &'a mut AudioEngine, asset_store: &'a mut AssetStore) -> Self {
-        AudioHandler { audio_engine, asset_store }
+        AudioHandler {
+            audio_engine,
+            asset_store,
+        }
     }
 
     pub fn mixer<T: Into<String>>(&mut self, mixer_name: T) -> Result<MixerHandler, EmeraldError> {

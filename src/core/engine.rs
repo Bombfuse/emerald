@@ -27,7 +27,8 @@ impl GameEngine {
         let mut logging_engine = LoggingEngine::new();
         let mut audio_engine = AudioEngine::new();
         let mut input_engine = InputEngine::new();
-        let mut rendering_engine = RenderingEngine::new(&mut ctx, settings.render_settings.clone(), &mut asset_store);
+        let mut rendering_engine =
+            RenderingEngine::new(&mut ctx, settings.render_settings, &mut asset_store);
         let mut world_engine = WorldEngine::new();
 
         world_engine.push(EmeraldWorld::new());
