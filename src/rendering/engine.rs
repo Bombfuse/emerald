@@ -40,18 +40,20 @@ impl RenderingEngine {
         let mut pipelines = HashMap::new();
 
         let shader = Shader::new(ctx, VERTEX, FRAGMENT, shaders::meta()).unwrap();
-        let mut params = PipelineParams::default();
-        params.depth_write = true;
-        params.color_blend = Some(BlendState::new(
-            Equation::Add,
-            BlendFactor::Value(BlendValue::SourceAlpha),
-            BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
-        ));
-        params.alpha_blend = Some(BlendState::new(
-            Equation::Add,
-            BlendFactor::Zero,
-            BlendFactor::One,
-        ));
+        let params = PipelineParams {
+            depth_write: true,
+            color_blend: Some(BlendState::new(
+                Equation::Add,
+                BlendFactor::Value(BlendValue::SourceAlpha),
+                BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+            )),
+            alpha_blend: Some(BlendState::new(
+                Equation::Add,
+                BlendFactor::Zero,
+                BlendFactor::One,
+            )),
+            ..Default::default()
+        };
 
         let texture_pipeline = Pipeline::with_params(
             ctx,
@@ -215,7 +217,7 @@ impl RenderingEngine {
 
         for (_id, (color_rect, position)) in world.inner.query::<(&ColorRect, &Position)>().iter() {
             let drawable = Drawable::ColorRect {
-                color_rect: color_rect.clone(),
+                color_rect: *color_rect,
             };
 
             draw_queue.push(DrawCommand {
@@ -304,7 +306,10 @@ impl RenderingEngine {
             self.current_resolution.0 as f32,
             self.current_resolution.1 as f32,
         );
-        let mut color_rect = ColorRect::default();
+        let mut color_rect = ColorRect {
+            color: collider_color,
+            ..Default::default()
+        };
         color_rect.color = collider_color;
         let (camera, camera_position) = get_camera_and_camera_position(world);
 
@@ -787,10 +792,11 @@ fn draw_texture(
         1.0,
     );
 
-    let mut uniforms = Uniforms::default();
-    uniforms.projection = projection;
-    uniforms.model =
-        crate::rendering::param_to_instance_transform(rotation, scale, offset, position);
+    let mut uniforms = Uniforms {
+        projection,
+        model: crate::rendering::param_to_instance_transform(rotation, scale, offset, position),
+        ..Default::default()
+    };
 
     let color = color.to_percentage();
     uniforms.source = Vec4::new(source.x, source.y, source.width, source.height);

@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct ColorRect {
     pub color: Color,
     pub offset: Vector2<f32>,
@@ -12,12 +12,12 @@ pub struct ColorRect {
 }
 impl ColorRect {
     pub fn new(color: Color, width: u32, height: u32) -> Self {
-        let mut rect = ColorRect::default();
-        rect.color = color;
-        rect.width = width;
-        rect.height = height;
-
-        rect
+        ColorRect {
+            color,
+            width,
+            height,
+            ..Default::default()
+        }
     }
 }
 impl Default for ColorRect {

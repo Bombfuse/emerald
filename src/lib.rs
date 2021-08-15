@@ -1,3 +1,11 @@
+#![deny(
+    rust_2018_compatibility,
+    rust_2018_idioms,
+    future_incompatible,
+    nonstandard_style,
+    missing_copy_implementations
+)]
+
 pub mod assets;
 pub mod audio;
 pub mod colors;
@@ -56,12 +64,14 @@ pub use gamepad::{Button, Joystick};
 use miniquad::{conf, UserData};
 
 pub fn start(game: Box<dyn Game>, settings: GameSettings) {
-    let mut config = conf::Conf::default();
-    config.window_title = settings.title.clone();
-    config.window_width = settings.render_settings.resolution.0 as i32;
-    config.window_height = settings.render_settings.resolution.1 as i32;
-    config.fullscreen = settings.render_settings.fullscreen;
-    config.high_dpi = settings.render_settings.high_dpi;
+    let config = conf::Conf {
+        window_title: settings.title.clone(),
+        window_width: settings.render_settings.resolution.0 as i32,
+        window_height: settings.render_settings.resolution.1 as i32,
+        fullscreen: settings.render_settings.fullscreen,
+        high_dpi: settings.render_settings.high_dpi,
+        ..Default::default()
+    };
 
     miniquad::start(config, move |mut ctx| {
         UserData::owning(GameEngine::new(game, settings, &mut ctx), ctx)

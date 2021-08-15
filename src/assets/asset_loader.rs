@@ -5,7 +5,6 @@ use crate::*;
 
 use std::ffi::OsStr;
 
-
 pub struct AssetLoader<'a> {
     pub(crate) quad_ctx: &'a mut miniquad::Context,
     pub(crate) asset_store: &'a mut AssetStore,
@@ -36,7 +35,7 @@ impl<'a> AssetLoader<'a> {
 
         let bytes = self.asset_store.read_asset_file(&path)?;
 
-        return Ok(bytes);
+        Ok(bytes)
     }
 
     /// Retrieves bytes from a file in the user directory of the game
@@ -79,17 +78,21 @@ impl<'a> AssetLoader<'a> {
             font_image.height,
             &font_image.bytes,
         )?;
-        let font_bytes = self.asset_bytes(file_path.clone())?;
+        let font_bytes = self.asset_bytes(file_path)?;
 
-        let mut font_settings = fontdue::FontSettings::default();
-        font_settings.scale = font_size as f32;
+        let font_settings = fontdue::FontSettings {
+            scale: font_size as f32,
+            ..Default::default()
+        };
         let inner_font = fontdue::Font::from_bytes(font_bytes, font_settings)?;
         let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
 
-        self.asset_store.insert_texture(font_texture_key, font_texture);
-        self.asset_store.insert_fontdue_font(key.clone(), inner_font);
-        self.asset_store.insert_font(&mut self.quad_ctx, key.clone(), font)?;
-
+        self.asset_store
+            .insert_texture(font_texture_key, font_texture);
+        self.asset_store
+            .insert_fontdue_font(key.clone(), inner_font);
+        self.asset_store
+            .insert_font(&mut self.quad_ctx, key.clone(), font)?;
 
         Ok(key)
     }
@@ -102,8 +105,7 @@ impl<'a> AssetLoader<'a> {
         let texture_path: String = path_to_texture.into();
         let animation_path: String = path_to_animations.into();
 
-        let aseprite_data = self.asset_bytes(animation_path.clone())?;
-
+        let aseprite_data = self.asset_bytes(animation_path)?;
 
         let sprite = self.sprite(texture_path)?;
         let aseprite = Aseprite::new(sprite, aseprite_data)?;
@@ -119,10 +121,9 @@ impl<'a> AssetLoader<'a> {
             return Ok(key);
         }
 
-        let data = self.asset_bytes(path.clone())?;
+        let data = self.asset_bytes(path)?;
         let texture = Texture::new(&mut self.quad_ctx, key.clone(), data)?;
         self.asset_store.insert_texture(key.clone(), texture);
-
 
         Ok(key)
     }
@@ -192,17 +193,14 @@ impl<'a> AssetLoader<'a> {
     }
 
     pub fn hotreload(&mut self) {
-        #[cfg(feature="hotreload")]
+        #[cfg(feature = "hotreload")]
         hotreload::run(self)
     }
 }
 
-
-
-
-#[cfg(feature="hotreload")]
+#[cfg(feature = "hotreload")]
 pub(crate) mod hotreload {
-    use crate::{AssetStore, AssetLoader, TextureKey};
+    use crate::{AssetLoader, AssetStore, TextureKey};
 
     #[derive(Clone, Copy, PartialEq, Eq)]
     pub enum HotReloadAssetType {
@@ -223,23 +221,31 @@ pub(crate) mod hotreload {
                         last_modified: system_time,
                         asset_type: HotReloadAssetType::Texture,
                     };
-    
-                    asset_store.file_hot_reload_metadata.insert(texture_path, hot_reload_metadata);
+
+                    asset_store
+                        .file_hot_reload_metadata
+                        .insert(texture_path, hot_reload_metadata);
                 }
             }
-            Err(_) => {},
+            Err(_) => {}
         }
     }
 
-    pub(crate) fn run(loader: &mut AssetLoader) {
+    pub(crate) fn run(loader: &mut AssetLoader<'_>) {
         let mut updates = Vec::new();
 
         for (path, hot_reload_metadata) in &loader.asset_store.file_hot_reload_metadata {
             if let Ok(metadata) = std::fs::metadata(&path) {
                 if let Ok(new_system_time) = metadata.modified() {
-                    if let Ok(duration) = new_system_time.duration_since(hot_reload_metadata.last_modified) {
+                    if let Ok(duration) =
+                        new_system_time.duration_since(hot_reload_metadata.last_modified)
+                    {
                         if duration.as_millis() > 0 {
-                            updates.push((path.clone(), hot_reload_metadata.asset_type, new_system_time.clone()));
+                            updates.push((
+                                path.clone(),
+                                hot_reload_metadata.asset_type,
+                                new_system_time,
+                            ));
                         }
                     }
                 }
@@ -251,11 +257,16 @@ pub(crate) mod hotreload {
                 HotReloadAssetType::Texture => {
                     let asset_root_folder_path = loader.asset_store.get_asset_folder_root();
                     let relative_path = path.split_off(asset_root_folder_path.len());
-                    if let Some(_) = loader.asset_store.remove_texture(TextureKey::new(relative_path.clone())) {
-                        if let Ok(_) = loader.texture(relative_path) {
-                            if let Some(mut hotreload_metadata) = loader.asset_store.file_hot_reload_metadata.get_mut(&path) {
-                                hotreload_metadata.last_modified = new_system_time;
-                            }
+                    if loader
+                        .asset_store
+                        .remove_texture(TextureKey::new(relative_path.clone()))
+                        .is_some()
+                        && loader.texture(relative_path).is_ok()
+                    {
+                        if let Some(mut hotreload_metadata) =
+                            loader.asset_store.file_hot_reload_metadata.get_mut(&path)
+                        {
+                            hotreload_metadata.last_modified = new_system_time;
                         }
                     }
                 }

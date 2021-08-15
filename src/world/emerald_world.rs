@@ -140,12 +140,12 @@ impl EmeraldWorld {
     }
 
     #[cfg(feature = "physics")]
-    pub fn physics(&mut self) -> PhysicsHandler {
+    pub fn physics(&mut self) -> PhysicsHandler<'_> {
         PhysicsHandler::new(&mut self.physics_engine, &mut self.inner)
     }
 
     #[cfg(feature = "physics")]
-    pub fn physics_ref(&self) -> PhysicsRefHandler {
+    pub fn physics_ref(&self) -> PhysicsRefHandler<'_> {
         PhysicsRefHandler::new(&self.physics_engine)
     }
 }

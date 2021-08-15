@@ -2,6 +2,7 @@ use crate::EmeraldError;
 use std::fs::File;
 use std::io::prelude::Write;
 
+#[derive(Copy, Clone)]
 pub struct Writer {}
 impl Writer {
     pub(crate) fn new() -> Self {
