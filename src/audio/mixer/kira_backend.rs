@@ -122,7 +122,7 @@ impl Mixer for KiraMixer {
         volume: f32,
     ) -> Result<(), EmeraldError> {
         if let Some(instance) = self.instances.get_mut(&snd_instance_id) {
-            instance.set_volume(volume as f64)?;
+            instance.set_volume(self.volume * volume as f64)?;
         }
 
         Ok(())
