@@ -88,12 +88,8 @@ impl Aseprite {
     }
 
     pub fn play<T: Into<String>>(&mut self, new_animation: T) {
-        // TODO(bombfuse): Should this reset the the animation or continue?
         self.is_looping = false;
         let new_animation: String = new_animation.into();
-        if self.current_tag.name == new_animation {
-            return;
-        }
 
         for tag in &self.data.meta.frame_tags {
             if tag.name == new_animation {
