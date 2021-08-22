@@ -3,6 +3,8 @@ use crate::{EmeraldError, Sound, SoundKey};
 
 use miniquad::Context;
 use std::collections::HashMap;
+use std::fs::create_dir;
+use std::path::Path;
 
 const INITIAL_TEXTURE_STORAGE_CAPACITY: usize = 100;
 const INITIAL_FONT_STORAGE_CAPACITY: usize = 100;
@@ -39,7 +41,7 @@ pub(crate) struct AssetStore {
         HashMap<String, crate::assets::hotreload::HotReloadMetadata>,
 }
 impl AssetStore {
-    pub fn new(ctx: &mut Context) -> Self {
+    pub fn new(ctx: &mut Context, game_name: String) -> Result<Self, EmeraldError> {
         let mut texture_key_map = HashMap::new();
         let default_texture = Texture::default(ctx).unwrap();
         texture_key_map.insert(TextureKey::default(), 0);
@@ -48,9 +50,18 @@ impl AssetStore {
         textures.push(default_texture);
 
         let asset_folder_root = String::from(DEFAULT_ASSET_FOLDER);
+
+        #[cfg(not(target_os="windows"))]
         let user_data_folder_root = String::from(DEFAULT_USER_DATA_FOLDER);
 
-        AssetStore {
+        #[cfg(target_os="windows")]
+        let user_data_folder_root = String::from(format!("{}/{}/", get_app_data_directory(), game_name));
+
+        if !Path::new(&user_data_folder_root).exists() {
+            create_dir(&user_data_folder_root)?;
+        }
+
+        Ok(AssetStore {
             bytes: HashMap::new(),
             fontdue_fonts: Vec::with_capacity(INITIAL_FONT_STORAGE_CAPACITY),
             fonts: Vec::with_capacity(INITIAL_FONT_STORAGE_CAPACITY),
@@ -66,7 +77,7 @@ impl AssetStore {
 
             #[cfg(feature = "hotreload")]
             file_hot_reload_metadata: HashMap::new(),
-        }
+        })
     }
 
     pub fn set_asset_folder_root(&mut self, root: String) {
@@ -338,4 +349,50 @@ fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
     let mut file = File::open(path)?;
     file.read_to_end(&mut contents)?;
     Ok(contents)
+}
+
+
+#[cfg(not(target_os="windows"))]
+fn get_app_data_directory() -> String {
+    String::from(DEFAULT_USER_DATA_FOLDER)
+}
+
+
+// Source
+// https://github.com/dirs-dev/dirs-sys-rs/blob/main/src/lib.rs
+#[cfg(target_os="windows")]
+fn get_app_data_directory() -> String {
+    use std::ffi::OsString;
+    use std::os::windows::ffi::OsStringExt;
+    use std::path::PathBuf;
+    use std::ptr;
+    use std::slice;
+
+    use winapi::shared::winerror;
+    use winapi::um::{combaseapi, knownfolders, shlobj, shtypes, winbase, winnt};
+
+    pub fn known_folder(folder_id: shtypes::REFKNOWNFOLDERID) -> Option<PathBuf> {
+        unsafe {
+            let mut path_ptr: winnt::PWSTR = ptr::null_mut();
+            let result = shlobj::SHGetKnownFolderPath(folder_id, 0, ptr::null_mut(), &mut path_ptr);
+            if result == winerror::S_OK {
+                let len = winbase::lstrlenW(path_ptr) as usize;
+                let path = slice::from_raw_parts(path_ptr, len);
+                let ostr: OsString = OsStringExt::from_wide(path);
+                combaseapi::CoTaskMemFree(path_ptr as *mut winapi::ctypes::c_void);
+                Some(PathBuf::from(ostr))
+            } else {
+                combaseapi::CoTaskMemFree(path_ptr as *mut winapi::ctypes::c_void);
+                None
+            }
+        }
+    }
+
+    if let Some(folder) = known_folder(&knownfolders::FOLDERID_RoamingAppData) {
+        if let Some(s) = folder.to_str() {
+            return s.to_string();
+        }
+    }
+
+    String::from(DEFAULT_USER_DATA_FOLDER)
 }
