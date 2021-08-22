@@ -23,7 +23,7 @@ pub struct GameEngine {
 }
 impl GameEngine {
     pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
-        let mut asset_store = AssetStore::new(ctx);
+        let mut asset_store = AssetStore::new(ctx, settings.title.clone()).unwrap();
         let mut logging_engine = LoggingEngine::new();
         let mut audio_engine = AudioEngine::new();
         let mut input_engine = InputEngine::new();

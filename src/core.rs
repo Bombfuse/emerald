@@ -125,7 +125,7 @@ impl<'a> Emerald<'a> {
 
     #[inline]
     pub fn writer(&mut self) -> Writer {
-        Writer::new()
+        Writer::new(self.get_user_data_folder_root())
     }
     // ************************************* //
 
