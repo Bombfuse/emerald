@@ -7,7 +7,6 @@ use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
 use glam::{Mat4, Vec2, Vec4};
 use miniquad::*;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 const EMERALD_TEXTURE_PIPELINE_NAME: &str = "emerald_default_texture_pipline";
 
@@ -15,19 +14,14 @@ const EMERALD_TEXTURE_PIPELINE_NAME: &str = "emerald_default_texture_pipline";
 // Renders to a texture the size of the screen when rendering begins.
 const EMERALD_DEFAULT_RENDER_TARGET: &str = "emerald_default_render_target";
 
-// When reference is 2 or less, the only reference remaining is by the engine itself. So it is safe to cleanup.
-// 1 reference is by the texture_key_map
-// 1 reference is held by the texture itself
-const MINIMUM_TEXTURE_REFERENCES: usize = 1;
-
 pub(crate) struct RenderingEngine {
     pub(crate) settings: RenderSettings,
     pipelines: HashMap<String, Pipeline>,
-    render_pass: RenderPass,
     layout: Layout,
     render_texture_counter: usize,
     last_screen_size: (usize, usize),
     screen_texture_key: TextureKey,
+    render_passes: HashMap<TextureKey, RenderPass>,
     current_render_texture_key: TextureKey,
     current_resolution: (usize, usize),
 }
@@ -73,8 +67,9 @@ impl RenderingEngine {
         render_texture_counter += 1;
 
         let texture = asset_store.get_texture(&screen_texture_key).unwrap();
-        let render_pass = RenderPass::new(ctx, texture.inner, None);
         let current_render_texture_key = screen_texture_key.clone();
+        let mut render_passes = HashMap::new();
+        render_passes.insert(screen_texture_key.clone(), RenderPass::new(ctx, texture.inner, None));
         let current_resolution = (w as usize, h as usize);
 
         RenderingEngine {
@@ -82,8 +77,8 @@ impl RenderingEngine {
             pipelines,
             layout: Layout::new(CoordinateSystem::PositiveYDown),
             render_texture_counter,
-            render_pass,
-            last_screen_size: (0, 0),
+            render_passes,
+            last_screen_size: (w as usize, h as usize),
             screen_texture_key,
             current_render_texture_key,
             current_resolution,
@@ -132,6 +127,7 @@ impl RenderingEngine {
         asset_store: &mut AssetStore,
     ) -> Result<TextureKey, EmeraldError> {
         let key = TextureKey::new(String::from(EMERALD_DEFAULT_RENDER_TARGET));
+
         let screen_texture_key =
             create_render_texture(w as usize, h as usize, key, ctx, asset_store)?;
 
@@ -139,26 +135,7 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub(crate) fn post_draw(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) {
-        let mut to_remove = Vec::new();
-        let default_texture_name = String::from(EMERALD_DEFAULT_TEXTURE_NAME);
-
-        for key in asset_store.texture_key_map.keys() {
-            if key.get_name() == default_texture_name {
-                continue;
-            }
-
-            let i = Arc::strong_count(&key.0);
-
-            if i <= MINIMUM_TEXTURE_REFERENCES {
-                to_remove.push(key.clone());
-            }
-        }
-
-        for key in to_remove {
-            asset_store.remove_texture(key);
-        }
-
+    pub(crate) fn post_draw(&mut self, ctx: &mut Context, _asset_store: &mut AssetStore) {
         let (w, h) = ctx.screen_size();
         self.last_screen_size = (w as usize, h as usize);
     }
@@ -355,7 +332,7 @@ impl RenderingEngine {
             ));
         }
 
-        self.begin_texture_pass(ctx, asset_store, self.screen_texture_key.clone())?;
+        self.begin_texture_pass(ctx, asset_store, self.current_render_texture_key.clone())?;
 
         Ok(())
     }
@@ -393,9 +370,19 @@ impl RenderingEngine {
         texture_key: TextureKey,
     ) -> Result<(), EmeraldError> {
         if let Some(texture) = asset_store.get_texture(&texture_key) {
-            self.render_pass = RenderPass::new(ctx, texture.inner, None);
+            if !self.render_passes.contains_key(&texture_key) {
+                self.render_passes.insert(texture_key.clone(), RenderPass::new(ctx, texture.inner, None));
+            }
+        } else {
+            return Err(EmeraldError::new(format!(
+                "Unable to retrieve texture for {:?}",
+                texture_key
+            )));
+        }
+
+        if let Some(render_pass) = self.render_passes.get(&texture_key) {
             ctx.begin_pass(
-                self.render_pass,
+                *render_pass,
                 PassAction::Clear {
                     color: Some(self.settings.background_color.to_percentage()),
                     depth: None,
@@ -407,7 +394,7 @@ impl RenderingEngine {
         }
 
         Err(EmeraldError::new(format!(
-            "Unable to retrieve texture for {:?}",
+            "Unable to retrieve render pass for {:?}",
             texture_key
         )))
     }
