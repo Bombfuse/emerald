@@ -259,7 +259,7 @@ pub(crate) mod hotreload {
                     let relative_path = path.split_off(asset_root_folder_path.len());
                     if loader
                         .asset_store
-                        .remove_texture(TextureKey::new(relative_path.clone()))
+                        .remove_texture(TextureKey::new(relative_path.clone(), false))
                         .is_some()
                         && loader.texture(relative_path).is_ok()
                     {
