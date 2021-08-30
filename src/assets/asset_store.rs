@@ -163,7 +163,7 @@ impl AssetStore {
 
     pub fn insert_texture(&mut self, key: TextureKey, texture: Texture) {
         if self.get_texture(&key).is_some() {
-            self.remove_texture(key.clone());
+            self.remove_texture(key.clone(), false);
         }
 
         self.textures.push(texture);
@@ -246,7 +246,7 @@ impl AssetStore {
         None
     }
 
-    pub fn remove_texture(&mut self, key: TextureKey) -> Option<Texture> {
+    pub fn remove_texture(&mut self, key: TextureKey, delete: bool) -> Option<Texture> {
         let mut i: i32 = -1;
 
         if let Some(index) = self.texture_key_map.get(&key) {
@@ -258,7 +258,10 @@ impl AssetStore {
             let reset_map = (i as usize) != self.textures.len();
             self.texture_key_map.remove(&key);
             let texture = self.textures.remove(i as _);
-            texture.inner.delete();
+
+            if delete {
+                texture.inner.delete();
+            }
 
             if reset_map {
                 self.update_texture_key_map();

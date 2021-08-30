@@ -78,7 +78,7 @@ impl RenderingEngine {
             layout: Layout::new(CoordinateSystem::PositiveYDown),
             render_texture_counter,
             render_passes,
-            last_screen_size: (w as usize, h as usize),
+            last_screen_size: current_resolution,
             screen_texture_key,
             current_render_texture_key,
             current_resolution,
@@ -127,6 +127,11 @@ impl RenderingEngine {
         asset_store: &mut AssetStore,
     ) -> Result<TextureKey, EmeraldError> {
         let key = TextureKey::new(String::from(EMERALD_DEFAULT_RENDER_TARGET));
+
+        if let Some(render_pass) = self.render_passes.get_mut(&key) {
+            render_pass.delete(ctx);
+            self.render_passes.remove(&key);
+        }
 
         let screen_texture_key =
             create_render_texture(w as usize, h as usize, key, ctx, asset_store)?;
