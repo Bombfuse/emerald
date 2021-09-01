@@ -1,33 +1,38 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::{Arc, Mutex, MutexGuard}};
 
 use kira::{
     instance::{handle::InstanceHandle, InstanceSettings, InstanceState},
-    manager::{AudioManager, AudioManagerSettings},
+    manager::{AudioManager},
     sound::{handle::SoundHandle, SoundId},
 };
 
 use crate::{AssetStore, EmeraldError, Mixer, SoundInstanceId, SoundKey};
 
+
+
 pub(crate) struct KiraMixer {
-    inner: AudioManager,
+    inner: Arc<Mutex<AudioManager>>,
     sound_handles: HashMap<SoundId, SoundHandle>,
     instances: HashMap<SoundInstanceId, InstanceHandle>,
     volume: f64,
     sound_instance_uid: usize,
 }
 impl KiraMixer {
-    pub fn new() -> Result<Box<dyn Mixer>, EmeraldError> {
+    pub fn new(inner: Arc<Mutex<AudioManager>>) -> Result<Box<dyn Mixer>, EmeraldError> {
         Ok(Box::new(KiraMixer {
-            inner: AudioManager::new(AudioManagerSettings {
-                num_sounds: 1000,
-                num_instances: 1000,
-                ..Default::default()
-            })?,
+            inner,
             sound_handles: HashMap::new(),
             instances: HashMap::new(),
             volume: 1.0,
             sound_instance_uid: 0,
         }))
+    }
+
+    fn get_inner_handle(&mut self) -> Result<MutexGuard<'_, AudioManager>, EmeraldError> {
+        match self.inner.lock() {
+            Ok(inner) => Ok(inner),
+            Err(e) => Err(EmeraldError::new(format!("Error while trying to retrieve a handle on the audio manager. {:?}", e)))
+        }
     }
 }
 
@@ -45,7 +50,10 @@ impl Mixer for KiraMixer {
             let mut sound_handle = if let Some(sound_handle) = self.sound_handles.get_mut(&id) {
                 sound_handle.clone()
             } else {
-                let handle = self.inner.add_sound(sound.inner.clone())?;
+                let handle = {
+                    let mut inner = self.get_inner_handle()?;
+                    inner.add_sound(sound.inner.clone())?
+                };
                 self.sound_handles.insert(id, handle.clone());
 
                 handle
@@ -77,7 +85,11 @@ impl Mixer for KiraMixer {
             let mut sound_handle = if let Some(sound_handle) = self.sound_handles.get_mut(&id) {
                 sound_handle.clone()
             } else {
-                let handle = self.inner.add_sound(sound.inner.clone())?;
+                let handle = {
+                    let mut inner = self.get_inner_handle()?;
+                    inner.add_sound(sound.inner.clone())?
+                };
+
                 self.sound_handles.insert(id, handle.clone());
 
                 handle
@@ -178,7 +190,10 @@ impl Mixer for KiraMixer {
     }
 
     fn post_update(&mut self) -> Result<(), EmeraldError> {
-        self.inner.free_unused_resources();
+        {
+            let mut inner = self.get_inner_handle()?;
+            inner.free_unused_resources();
+        }
 
         let mut to_remove = Vec::new();
 
