@@ -12,7 +12,6 @@ impl EmeraldError {
     }
 }
 
-
 // Kira audio backend error translations
 #[cfg(feature = "audio")]
 impl std::convert::From<kira::CommandError> for EmeraldError {

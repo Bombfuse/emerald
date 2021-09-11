@@ -2,7 +2,7 @@
     rust_2018_compatibility,
     rust_2018_idioms,
     future_incompatible,
-    nonstandard_style,
+    nonstandard_style
 )]
 
 pub mod assets;
@@ -36,7 +36,7 @@ pub use rapier2d;
 pub use rapier2d::{
     crossbeam,
     dynamics::{RigidBody, RigidBodyBuilder, RigidBodyHandle},
-    geometry::{Collider, ColliderBuilder, ColliderHandle, InteractionGroups},
+    geometry::{Collider, ColliderBuilder, ColliderHandle, InteractionGroups, Ray},
     na as nalgebra,
     na::Vector2,
     parry,

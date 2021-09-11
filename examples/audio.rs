@@ -27,9 +27,19 @@ impl Game for Example {
                 .unwrap()
                 .set_volume(volume - 0.1)
                 .unwrap();
+            emd.audio()
+                .mixer("test2")
+                .unwrap()
+                .set_volume(volume - 0.1)
+                .unwrap();
         } else if input.is_key_just_pressed(KeyCode::D) {
             emd.audio()
                 .mixer("test")
+                .unwrap()
+                .set_volume(volume + 0.1)
+                .unwrap();
+            emd.audio()
+                .mixer("test2")
                 .unwrap()
                 .set_volume(volume + 0.1)
                 .unwrap();
@@ -48,7 +58,7 @@ impl Game for Example {
             for _ in 0..10 {
                 let snd = emd.loader().sound("test_sound.wav").unwrap();
                 emd.audio()
-                    .mixer("test")
+                    .mixer("test2")
                     .unwrap()
                     .play(snd.clone())
                     .unwrap();
