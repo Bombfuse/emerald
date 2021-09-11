@@ -1,14 +1,15 @@
-use std::{collections::HashMap, sync::{Arc, Mutex, MutexGuard}};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex, MutexGuard},
+};
 
 use kira::{
     instance::{handle::InstanceHandle, InstanceSettings, InstanceState},
-    manager::{AudioManager},
+    manager::AudioManager,
     sound::{handle::SoundHandle, SoundId},
 };
 
 use crate::{AssetStore, EmeraldError, Mixer, SoundInstanceId, SoundKey};
-
-
 
 pub(crate) struct KiraMixer {
     inner: Arc<Mutex<AudioManager>>,
@@ -31,7 +32,10 @@ impl KiraMixer {
     fn get_inner_handle(&mut self) -> Result<MutexGuard<'_, AudioManager>, EmeraldError> {
         match self.inner.lock() {
             Ok(inner) => Ok(inner),
-            Err(e) => Err(EmeraldError::new(format!("Error while trying to retrieve a handle on the audio manager. {:?}", e)))
+            Err(e) => Err(EmeraldError::new(format!(
+                "Error while trying to retrieve a handle on the audio manager. {:?}",
+                e
+            ))),
         }
     }
 }
