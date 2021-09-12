@@ -87,6 +87,11 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.cast_ray(ray_cast_query)
     }
 
+    /// Returns the first entity the shape collides with if one exists.
+    pub fn cast_shape(&mut self, shape: &dyn Shape, shape_cast_query: ShapeCastQuery<'_>) -> Option<Entity> {
+        self.physics_engine.cast_shape(shape, shape_cast_query)
+    }
+
     /// Steps the physics at 1/60 timestep
     pub fn step(&mut self, delta: f32) {
         self.step_n(1, delta);
