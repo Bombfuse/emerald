@@ -1,6 +1,10 @@
-use nalgebra::{Vector2, Point2};
-use rapier2d::{parry::query::Ray, prelude::{ColliderHandle, InteractionGroups}};
+use nalgebra::{Point2, Vector2};
+use rapier2d::{
+    parry::{query::Ray},
+    prelude::{ColliderHandle, InteractionGroups},
+};
 
+use crate::Position;
 
 /// # Parameters
 /// - `ray`: the ray to cast.
@@ -29,6 +33,27 @@ impl<'a> Default for RayCastQuery<'a> {
             max_toi: 4.0,
             filter: None,
             solid: true,
+            interaction_groups: InteractionGroups::all(),
+        }
+    }
+}
+
+pub struct ShapeCastQuery<'a> {
+    /// The origin position that the shape will be cast from.
+    pub position: Position,
+    /// The directional velocity the shape will move at during the cast.
+    pub velocity: Vector2<f32>,
+    pub max_toi: f32,
+    pub interaction_groups: InteractionGroups,
+    pub filter: Option<&'a dyn Fn(ColliderHandle) -> bool>,
+}
+impl<'a> Default for ShapeCastQuery<'a> {
+    fn default() -> ShapeCastQuery<'a> {
+        ShapeCastQuery {
+            position: Position::new(0.0, 0.0),
+            velocity: Vector2::new(0.0, 0.0),
+            max_toi: 4.0,
+            filter: None,
             interaction_groups: InteractionGroups::all(),
         }
     }

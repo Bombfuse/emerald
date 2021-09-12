@@ -100,7 +100,8 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn update_query_pipeline(&mut self) {
-        self.query_pipeline.update(&self.island_manager, &self.bodies, &self.colliders);
+        self.query_pipeline
+            .update(&self.island_manager, &self.bodies, &self.colliders);
     }
 
     #[inline]
@@ -273,7 +274,33 @@ impl PhysicsEngine {
 
     #[inline]
     pub fn cast_ray(&mut self, ray_cast_query: RayCastQuery<'_>) -> Option<Entity> {
-        if let Some((handle, _toi)) = self.query_pipeline.cast_ray(&self.colliders, &ray_cast_query.ray, ray_cast_query.max_toi, ray_cast_query.solid, ray_cast_query.interaction_groups, ray_cast_query.filter) {
+        if let Some((handle, _toi)) = self.query_pipeline.cast_ray(
+            &self.colliders,
+            &ray_cast_query.ray,
+            ray_cast_query.max_toi,
+            ray_cast_query.solid,
+            ray_cast_query.interaction_groups,
+            ray_cast_query.filter,
+        ) {
+            return self.get_entity_from_collider(handle);
+        }
+
+        None
+    }
+
+    #[inline]
+    pub fn cast_shape(&mut self, shape: &dyn Shape, shape_cast_query: ShapeCastQuery<'_>) -> Option<Entity> {
+        let pos = Isometry::new(Vector2::new(shape_cast_query.position.x, shape_cast_query.position.y), 0.0);
+
+        if let Some((handle, _hit)) = self.query_pipeline.cast_shape(
+            &self.colliders,
+            &pos,
+            &shape_cast_query.velocity,
+            shape,
+            shape_cast_query.max_toi,
+            shape_cast_query.interaction_groups,
+            shape_cast_query.filter,
+        ) {
             return self.get_entity_from_collider(handle);
         }
 
