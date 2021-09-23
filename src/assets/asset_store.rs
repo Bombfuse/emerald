@@ -41,7 +41,7 @@ pub(crate) struct AssetStore {
         HashMap<String, crate::assets::hotreload::HotReloadMetadata>,
 }
 impl AssetStore {
-    pub fn new(ctx: &mut Context, game_name: String) -> Result<Self, EmeraldError> {
+    pub fn new(ctx: &mut Context, _game_name: String) -> Result<Self, EmeraldError> {
         let mut texture_key_map = HashMap::new();
         let default_texture = Texture::default(ctx).unwrap();
         texture_key_map.insert(TextureKey::default(), 0);
@@ -56,7 +56,7 @@ impl AssetStore {
 
         #[cfg(target_os = "windows")]
         let user_data_folder_root =
-            String::from(format!("{}/{}/", get_app_data_directory(), game_name));
+            String::from(format!("{}/{}/", get_app_data_directory(), _game_name));
 
         if !Path::new(&user_data_folder_root).exists() {
             create_dir(&user_data_folder_root)?;
