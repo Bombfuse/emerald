@@ -11,11 +11,11 @@ pub fn main() {
     };
     settings.render_settings = render_settings;
     emerald::start(
-        Box::new(PhysicsGroupsExample {
+        PhysicsGroupsExample {
             e1: None,
             e2: None,
             e3: None,
-        }),
+        },
         settings,
     )
 }

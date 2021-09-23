@@ -7,7 +7,7 @@ pub fn main() {
         background: ColorRect::new(BLACK, 0, 0),
         screen_center: Position::zero(),
     };
-    emerald::start(Box::new(game), GameSettings::default())
+    emerald::start(game, GameSettings::default())
 }
 
 pub struct MouseExample {

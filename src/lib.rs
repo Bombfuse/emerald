@@ -62,7 +62,10 @@ pub use gamepad::{Button, Joystick};
 
 use miniquad::{conf, UserData};
 
-pub fn start(game: Box<dyn Game>, settings: GameSettings) {
+pub fn start<G>(game: G, settings: GameSettings)
+where
+    G: Game + 'static,
+{
     let config = conf::Conf {
         window_title: settings.title.clone(),
         window_width: settings.render_settings.resolution.0 as i32,

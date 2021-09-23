@@ -7,7 +7,7 @@ pub fn main() {
         ..Default::default()
     };
     settings.render_settings = render_settings;
-    emerald::start(Box::new(GamepadExample {}), settings)
+    emerald::start(GamepadExample {}, settings)
 }
 
 pub struct GamepadExample;

@@ -17,7 +17,7 @@ impl Velocity {
 pub fn main() {
     let mut settings = GameSettings::default();
     settings.render_settings.resolution = (320, 180);
-    emerald::start(Box::new(BunnymarkGame { count: 0 }), settings)
+    emerald::start(BunnymarkGame { count: 0 }, settings)
 }
 
 pub struct BunnymarkGame {

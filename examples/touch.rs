@@ -7,7 +7,7 @@ pub fn main() {
         bunnies: HashMap::new(),
         sprite: None,
     };
-    emerald::start(Box::new(game), GameSettings::default())
+    emerald::start(game, GameSettings::default())
 }
 
 pub struct TouchExample {
