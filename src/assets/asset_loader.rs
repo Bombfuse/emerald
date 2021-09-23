@@ -97,6 +97,7 @@ impl<'a> AssetLoader<'a> {
         Ok(key)
     }
 
+    #[cfg(feature = "aseprite")]
     pub fn aseprite_with_animations<T: Into<String>>(
         &mut self,
         path_to_texture: T,

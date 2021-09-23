@@ -162,6 +162,7 @@ impl RenderingEngine {
         let (camera, camera_position) = get_camera_and_camera_position(world);
         let mut draw_queue = Vec::new();
 
+        #[cfg(feature = "aseprite")]
         for (_id, (aseprite, position)) in world.inner.query::<(&mut Aseprite, &Position)>().iter()
         {
             aseprite.update();
