@@ -12,11 +12,11 @@ pub fn main() {
     settings.render_settings = render_settings;
 
     emerald::start(
-        Box::new(MyGame {
+        MyGame {
             pos: Position::new(320.0, 160.0),
             scale: 1.0,
             render_texture: None,
-        }),
+        },
         settings,
     )
 }

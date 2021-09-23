@@ -1,10 +1,7 @@
 use emerald::*;
 
 pub fn main() {
-    emerald::start(
-        Box::new(SpritesExample { world: None }),
-        GameSettings::default(),
-    )
+    emerald::start(SpritesExample { world: None }, GameSettings::default())
 }
 
 pub struct SpritesExample {

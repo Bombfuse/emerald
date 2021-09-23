@@ -1,11 +1,11 @@
-use emerald::{*, parry::shape::Cuboid};
+use emerald::{parry::shape::Cuboid, *};
 use nalgebra::Point2;
 
 pub fn main() {
     emerald::start(
-        Box::new(RaycastExample {
+        RaycastExample {
             world: EmeraldWorld::new(),
-        }),
+        },
         GameSettings::default(),
     )
 }
@@ -101,7 +101,6 @@ impl Game for RaycastExample {
             }
         }
 
-
         let mut vel = None;
 
         if emd.input().is_key_just_pressed(KeyCode::Up) {
@@ -112,13 +111,16 @@ impl Game for RaycastExample {
 
         if let Some(vel) = vel {
             let shape = Cuboid::new(Vector2::new(40.0, 10.0));
-            
-            let entity = self.world.physics().cast_shape(&shape, ShapeCastQuery {
-                velocity: vel,
-                position: Position::zero(),
-                max_toi: 30.0,
-                ..ShapeCastQuery::default()
-            });
+
+            let entity = self.world.physics().cast_shape(
+                &shape,
+                ShapeCastQuery {
+                    velocity: vel,
+                    position: Position::zero(),
+                    max_toi: 30.0,
+                    ..ShapeCastQuery::default()
+                },
+            );
 
             if let Some(e) = entity {
                 if let Ok(s) = self.world.get_mut::<String>(e) {
