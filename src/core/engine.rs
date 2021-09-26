@@ -9,8 +9,8 @@ use crate::world::*;
 use miniquad::*;
 use std::collections::VecDeque;
 
-pub struct GameEngine {
-    game: Box<dyn Game>,
+pub struct GameEngine<G: Game> {
+    game: G,
     _settings: GameSettings,
     audio_engine: AudioEngine,
     input_engine: InputEngine,
@@ -21,8 +21,8 @@ pub struct GameEngine {
     fps_tracker: VecDeque<f64>,
     asset_store: AssetStore,
 }
-impl GameEngine {
-    pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
+impl<G: Game> GameEngine<G> {
+    pub fn new(mut game: G, settings: GameSettings, mut ctx: &mut Context) -> Self {
         let mut asset_store = AssetStore::new(ctx, settings.title.clone()).unwrap();
         let mut logging_engine = LoggingEngine::new();
         let mut audio_engine = AudioEngine::new();
@@ -80,7 +80,7 @@ impl GameEngine {
         self.fps_tracker.push_back(delta);
     }
 }
-impl EventHandler for GameEngine {
+impl<G: Game> EventHandler for GameEngine<G> {
     #[inline]
     fn update(&mut self, mut ctx: &mut Context) {
         let start_of_frame = miniquad::date::now();

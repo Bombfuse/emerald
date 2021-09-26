@@ -69,7 +69,10 @@ impl RenderingEngine {
         let texture = asset_store.get_texture(&screen_texture_key).unwrap();
         let current_render_texture_key = screen_texture_key.clone();
         let mut render_passes = HashMap::new();
-        render_passes.insert(screen_texture_key.clone(), RenderPass::new(ctx, texture.inner, None));
+        render_passes.insert(
+            screen_texture_key.clone(),
+            RenderPass::new(ctx, texture.inner, None),
+        );
         let current_resolution = (w as usize, h as usize);
 
         RenderingEngine {
@@ -159,6 +162,7 @@ impl RenderingEngine {
         let (camera, camera_position) = get_camera_and_camera_position(world);
         let mut draw_queue = Vec::new();
 
+        #[cfg(feature = "aseprite")]
         for (_id, (aseprite, position)) in world.inner.query::<(&mut Aseprite, &Position)>().iter()
         {
             aseprite.update();
@@ -376,7 +380,10 @@ impl RenderingEngine {
     ) -> Result<(), EmeraldError> {
         if let Some(texture) = asset_store.get_texture(&texture_key) {
             if !self.render_passes.contains_key(&texture_key) {
-                self.render_passes.insert(texture_key.clone(), RenderPass::new(ctx, texture.inner, None));
+                self.render_passes.insert(
+                    texture_key.clone(),
+                    RenderPass::new(ctx, texture.inner, None),
+                );
             }
         } else {
             return Err(EmeraldError::new(format!(

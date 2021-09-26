@@ -41,7 +41,7 @@ pub(crate) struct AssetStore {
         HashMap<String, crate::assets::hotreload::HotReloadMetadata>,
 }
 impl AssetStore {
-    pub fn new(ctx: &mut Context, game_name: String) -> Result<Self, EmeraldError> {
+    pub fn new(ctx: &mut Context, _game_name: String) -> Result<Self, EmeraldError> {
         let mut texture_key_map = HashMap::new();
         let default_texture = Texture::default(ctx).unwrap();
         texture_key_map.insert(TextureKey::default(), 0);
@@ -51,11 +51,12 @@ impl AssetStore {
 
         let asset_folder_root = String::from(DEFAULT_ASSET_FOLDER);
 
-        #[cfg(not(target_os="windows"))]
+        #[cfg(not(target_os = "windows"))]
         let user_data_folder_root = String::from(DEFAULT_USER_DATA_FOLDER);
 
-        #[cfg(target_os="windows")]
-        let user_data_folder_root = String::from(format!("{}/{}/", get_app_data_directory(), game_name));
+        #[cfg(target_os = "windows")]
+        let user_data_folder_root =
+            String::from(format!("{}/{}/", get_app_data_directory(), _game_name));
 
         if !Path::new(&user_data_folder_root).exists() {
             create_dir(&user_data_folder_root)?;
@@ -354,16 +355,14 @@ fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
     Ok(contents)
 }
 
-
-#[cfg(not(target_os="windows"))]
+#[cfg(not(target_os = "windows"))]
 fn get_app_data_directory() -> String {
     String::from(DEFAULT_USER_DATA_FOLDER)
 }
 
-
 // Source
 // https://github.com/dirs-dev/dirs-sys-rs/blob/main/src/lib.rs
-#[cfg(target_os="windows")]
+#[cfg(target_os = "windows")]
 fn get_app_data_directory() -> String {
     use std::ffi::OsString;
     use std::os::windows::ffi::OsStringExt;

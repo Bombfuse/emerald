@@ -39,22 +39,22 @@ pub(crate) trait Mixer {
     fn post_update(&mut self) -> Result<(), EmeraldError>;
 }
 
-#[cfg(not(feature="audio"))]
+#[cfg(not(feature = "audio"))]
 pub(crate) fn new_mixer() -> Result<Box<dyn Mixer>, EmeraldError> {
     let mixer = BackendMixer::new()?;
 
     Ok(mixer)
 }
 
-#[cfg(feature="audio")]
+#[cfg(feature = "audio")]
 use std::sync::{Arc, Mutex};
 
-#[cfg(feature="audio")]
+#[cfg(feature = "audio")]
 static mut KIRA_AUDIO_MANAGER: Option<Arc<Mutex<AudioManager>>> = None;
 
-#[cfg(feature="audio")]
+#[cfg(feature = "audio")]
 pub(crate) fn new_mixer() -> Result<Box<dyn Mixer>, EmeraldError> {
-    use kira::manager::{AudioManagerSettings};
+    use kira::manager::AudioManagerSettings;
 
     unsafe {
         if KIRA_AUDIO_MANAGER.is_none() {
@@ -68,12 +68,14 @@ pub(crate) fn new_mixer() -> Result<Box<dyn Mixer>, EmeraldError> {
 
         if let Some(audio_manager) = &mut KIRA_AUDIO_MANAGER {
             let mixer = BackendMixer::new(audio_manager.clone())?;
-            
+
             return Ok(mixer);
         }
     }
 
-    Err(EmeraldError::new("Unable to find or creat the kira audio manager"))
+    Err(EmeraldError::new(
+        "Unable to find or creat the kira audio manager",
+    ))
 }
 
 pub struct MixerHandler<'a> {

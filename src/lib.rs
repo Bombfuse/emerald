@@ -2,7 +2,7 @@
     rust_2018_compatibility,
     rust_2018_idioms,
     future_incompatible,
-    nonstandard_style,
+    nonstandard_style
 )]
 
 pub mod assets;
@@ -36,7 +36,7 @@ pub use rapier2d;
 pub use rapier2d::{
     crossbeam,
     dynamics::{RigidBody, RigidBodyBuilder, RigidBodyHandle},
-    geometry::{Collider, ColliderBuilder, ColliderHandle, InteractionGroups},
+    geometry::{Collider, ColliderBuilder, ColliderHandle, InteractionGroups, Ray},
     na as nalgebra,
     na::Vector2,
     parry,
@@ -62,7 +62,10 @@ pub use gamepad::{Button, Joystick};
 
 use miniquad::{conf, UserData};
 
-pub fn start(game: Box<dyn Game>, settings: GameSettings) {
+pub fn start<G>(game: G, settings: GameSettings)
+where
+    G: Game + 'static,
+{
     let config = conf::Conf {
         window_title: settings.title.clone(),
         window_width: settings.render_settings.resolution.0 as i32,

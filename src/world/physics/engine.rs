@@ -30,6 +30,7 @@ pub struct PhysicsEngine {
     entity_collisions: HashMap<Entity, Vec<Entity>>,
     entity_intersections: HashMap<Entity, Vec<Entity>>,
     physics_hooks: Box<dyn PhysicsHooks<RigidBodySet, ColliderSet>>,
+    query_pipeline: QueryPipeline,
 }
 
 impl PhysicsEngine {
@@ -48,6 +49,7 @@ impl PhysicsEngine {
         let event_handler = ChannelEventCollector::new(intersection_send, contact_send);
         let physics_hooks = Box::new(());
         let ccd_solver = CCDSolver::new();
+        let query_pipeline = QueryPipeline::new();
 
         PhysicsEngine {
             colliders,
@@ -70,6 +72,7 @@ impl PhysicsEngine {
             entity_collisions: HashMap::new(),
             entity_intersections: HashMap::new(),
             physics_hooks,
+            query_pipeline,
         }
     }
 
@@ -93,6 +96,12 @@ impl PhysicsEngine {
         );
 
         self.integration_parameters.dt = dt;
+    }
+
+    #[inline]
+    pub(crate) fn update_query_pipeline(&mut self) {
+        self.query_pipeline
+            .update(&self.island_manager, &self.bodies, &self.colliders);
     }
 
     #[inline]
@@ -261,6 +270,52 @@ impl PhysicsEngine {
         }
 
         Vec::new()
+    }
+
+    #[inline]
+    pub fn cast_ray(&mut self, ray_cast_query: RayCastQuery<'_>) -> Option<Entity> {
+        if let Some((handle, _toi)) = self.query_pipeline.cast_ray(
+            &self.colliders,
+            &ray_cast_query.ray,
+            ray_cast_query.max_toi,
+            ray_cast_query.solid,
+            ray_cast_query.interaction_groups,
+            ray_cast_query.filter,
+        ) {
+            return self.get_entity_from_collider(handle);
+        }
+
+        None
+    }
+
+    #[inline]
+    pub fn cast_shape(&mut self, shape: &dyn Shape, shape_cast_query: ShapeCastQuery<'_>) -> Option<Entity> {
+        let pos = Isometry::new(Vector2::new(shape_cast_query.position.x, shape_cast_query.position.y), 0.0);
+
+        if let Some((handle, _hit)) = self.query_pipeline.cast_shape(
+            &self.colliders,
+            &pos,
+            &shape_cast_query.velocity,
+            shape,
+            shape_cast_query.max_toi,
+            shape_cast_query.interaction_groups,
+            shape_cast_query.filter,
+        ) {
+            return self.get_entity_from_collider(handle);
+        }
+
+        None
+    }
+
+    #[inline]
+    fn get_entity_from_collider(&self, collider: ColliderHandle) -> Option<Entity> {
+        if let Some(rbh) = self.collider_body.get(&collider) {
+            if let Some(entity) = self.body_entities.get(rbh) {
+                return Some(entity.clone());
+            }
+        }
+
+        None
     }
 
     /// Builds the described rigid body for the given entity.
