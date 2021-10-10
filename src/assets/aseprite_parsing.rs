@@ -18,3 +18,20 @@ pub fn byte(buf_reader: &mut BufReader<File>) -> Result<u8, EmeraldError> {
 pub fn short(buf_reader: &mut BufReader<File>) -> Result<i16, EmeraldError> {
     buf_reader.read_i16::<LittleEndian>().map_err(|e| e.into())
 }
+
+pub enum ChunkType {
+    OldPalette04,
+    OldPalette11,
+    Layer,
+    Cel,
+    CelExtra,
+    ColorProfile,
+    ExternalFiles,
+    Mask,
+    Path,
+    Tags,
+    Palette,
+    UserData,
+    Slice,
+    Tileset,
+}

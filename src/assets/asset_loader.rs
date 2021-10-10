@@ -155,6 +155,8 @@ impl<'a> AssetLoader<'a> {
     }
 
     pub fn aseprite(&mut self, path: &Path) -> Result<(), EmeraldError> {
+        const FRAME_HEADER_SIZE: i64 = 16;
+        const CHUNK_HEADER_SIZE: usize = 6;
         // aseprite file specs: https://github.com/aseprite/aseprite/blob/main/docs/ase-file-specs.md
         use byteorder::ReadBytesExt;
         let file = File::open(&path)?;
@@ -191,7 +193,7 @@ impl<'a> AssetLoader<'a> {
 
         let frames = {
             for frame_index in 0..frames_count {
-                let frame_btyes = dword(&mut reader)?;
+                let frame_bytes = dword(&mut reader)?;
                 let magic_number = word(&mut reader)?;
                 if magic_number != 0xF1FA {
                     return Err(EmeraldError {
@@ -208,6 +210,34 @@ impl<'a> AssetLoader<'a> {
                 } else {
                     new_chunk_count
                 };
+
+                for chunk in 0..chunks_count {
+                    let chunk_size = dword(&mut reader)?;
+                    let chunk_type_code = word(&mut reader)?;
+                    let chunk_type = match chunk_type_code {
+                        0x0004 => Ok(ChunkType::OldPalette04),
+                        0x0011 => Ok(ChunkType::OldPalette11),
+                        0x2004 => Ok(ChunkType::Layer),
+                        0x2005 => Ok(ChunkType::Cel),
+                        0x2006 => Ok(ChunkType::CelExtra),
+                        0x2007 => Ok(ChunkType::ColorProfile),
+                        0x2008 => Ok(ChunkType::ExternalFiles),
+                        0x2016 => Ok(ChunkType::Mask),
+                        0x2017 => Ok(ChunkType::Path),
+                        0x2018 => Ok(ChunkType::Tags),
+                        0x2019 => Ok(ChunkType::Palette),
+                        0x2020 => Ok(ChunkType::UserData),
+                        0x2022 => Ok(ChunkType::Slice),
+                        0x2023 => Ok(ChunkType::Tileset),
+                        _ => Err(EmeraldError {
+                            message: format!("Invalid chunk type: {}", chunk_type_code),
+                        }),
+                    };
+
+                    let chunk_data_bytes = chunk_size as usize - CHUNK_HEADER_SIZE;
+                    let mut data = vec![0_u8; chunk_data_bytes];
+                    reader.read_exact(&mut data)?;
+                }
 
                 // for chunk_index in 0..chunks {
                 //     let offset = word(&mut reader)?.into();
