@@ -22,7 +22,11 @@ impl Game for MyGame {
 
         aseprite.play_and_loop("smile");
 
+        let mut a2 = aseprite.clone();
+        a2.play("smile");
+
         emd.world().spawn((aseprite, Position::new(64.0, 64.0)));
+        emd.world().spawn((a2, Position::new(-64.0, 64.0)));
     }
 
     fn update(&mut self, mut emd: Emerald) {
