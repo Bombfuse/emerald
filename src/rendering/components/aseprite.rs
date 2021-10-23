@@ -62,6 +62,10 @@ impl Aseprite {
         self.current_tag.name.clone()
     }
 
+    pub fn get_elapsed_time(&self) -> f32 {
+        self.elapsed_time
+    }
+
     /// Returns the length of the animation given in seconds.
     /// Returns 0.0 if the animation doesn't exist.
     pub fn get_anim_length<T: Into<String>>(&self, name: T) -> f32 {
