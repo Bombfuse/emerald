@@ -11,6 +11,7 @@ pub struct Aseprite {
     pub(crate) current_tag: AsepriteTag,
     pub(crate) sprite: Sprite,
     pub(crate) elapsed_time: f32,
+    pub(crate) total_anim_elapsed_time: f32,
     pub(crate) is_looping: bool,
     frame_counter: usize,
 
@@ -42,6 +43,7 @@ impl Aseprite {
         let aseprite = Aseprite {
             data,
             elapsed_time: 0.0,
+            total_anim_elapsed_time: 0.0,
             frame_counter: 0,
             current_tag: AsepriteTag::default(),
             sprite,
@@ -63,7 +65,7 @@ impl Aseprite {
     }
 
     pub fn get_elapsed_time(&self) -> f32 {
-        self.elapsed_time
+        self.total_anim_elapsed_time
     }
 
     /// Returns the length of the animation given in seconds.
@@ -105,8 +107,7 @@ impl Aseprite {
         // TODO(bombfuse): Requested animation couldn't be found
         if self.current_tag.name != new_animation {}
 
-        self.elapsed_time = 0.0;
-        self.frame_counter = 0;
+        self.reset();
     }
 
     pub fn play_and_loop<T: Into<String>>(&mut self, new_animation: T) {
@@ -116,8 +117,7 @@ impl Aseprite {
             return;
         }
 
-        self.elapsed_time = 0.0;
-        self.frame_counter = 0;
+        self.reset();
 
         for tag in &self.data.meta.frame_tags {
             if tag.name == new_animation {
@@ -127,11 +127,18 @@ impl Aseprite {
         }
     }
 
+    fn reset(&mut self) {
+        self.elapsed_time = 0.0;
+        self.total_anim_elapsed_time = 0.0;
+        self.frame_counter = 0;
+    }
+
     /// !!! WARNING !!!
     /// I have exposed this function to the user in case they choose to toy around with animation speed.
     /// Manually adding delta time may produce undesirable results. Or desirable results, up to you.
     pub fn add_delta(&mut self, delta: f32) {
         self.elapsed_time += delta;
+        self.total_anim_elapsed_time += delta;
         let frame = self.get_frame();
         let duration = frame.duration as f32 / 1000.0;
 
