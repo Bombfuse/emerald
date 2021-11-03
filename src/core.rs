@@ -26,7 +26,7 @@ pub struct Emerald<'a> {
     logging_engine: &'a mut LoggingEngine,
     input_engine: &'a mut InputEngine,
     world_engine: &'a mut WorldEngine,
-    asset_store: &'a mut AssetStore,
+    pub(crate) asset_store: &'a mut AssetStore,
 }
 impl<'a> Emerald<'a> {
     #[inline]
