@@ -200,6 +200,26 @@ impl RenderingEngine {
                 });
             }
         }
+        
+        for (_id, (ui_button, position)) in world.inner.query::<(&UIButton, &Position)>().iter() {
+            let sprite = if ui_button.is_pressed() {
+                Sprite::from_texture(ui_button.pressed_texture.clone())
+            } else {
+                Sprite::from_texture(ui_button.unpressed_texture.clone())
+            };
+
+            if is_in_view(&sprite, position, &camera, &screen_size) {
+                let drawable = Drawable::Sprite {
+                    sprite: sprite.clone(),
+                };
+
+                draw_queue.push(DrawCommand {
+                    drawable,
+                    position: *position,
+                    z_index: ui_button.z_index,
+                });
+            }
+        }
 
         for (_id, (color_rect, position)) in world.inner.query::<(&ColorRect, &Position)>().iter() {
             let drawable = Drawable::ColorRect {
