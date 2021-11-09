@@ -9,6 +9,7 @@ pub use engine::GameEngine;
 pub use error::*;
 pub use game::*;
 pub use game_settings::*;
+use gamepad::Button;
 
 use crate::assets::*;
 use crate::audio::*;
@@ -162,6 +163,14 @@ impl<'a> Emerald<'a> {
         self.input_engine.mouse_to_touch = enabled;
     }
 
+    #[inline]
+    pub fn set_key_pressed(&mut self, keycode: KeyCode, is_pressed: bool) {
+        if is_pressed {
+            self.input_engine.set_key_down(keycode, false);
+        } else  {
+            self.input_engine.set_key_up(keycode);
+        }
+    }
     // ************************************* //
 
     // ************* World API ************* //

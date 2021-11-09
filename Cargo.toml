@@ -23,9 +23,9 @@ audio = ["kira"]
 image = { version = "0.23.14", default-features = false, features = [ "png" ] }
 glam = { version = "0.17.1", default-features = false, features = ["libm"] }
 quad-rand = "0.2.1"
-fontdue = "0.5.2"
-nanoserde = "0.1.28"
-hecs = { version = "0.6.0", default-features = false }
+fontdue = "0.6.2"
+nanoserde = "0.1.29"
+hecs = { version = "0.6.5", default-features = false }
 nalgebra =  { version = "0.29.0" }
 
 # Optionals
@@ -34,11 +34,11 @@ gamepad = { version = "0.1.1", optional = true }
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
 miniquad = { version = "0.3.0-alpha.37", features = [ "log-impl" ] }
-kira = { version= "0.5.2", optional = true, default-features = false, features = ["ogg", "flac", "wav"] }
+kira = { version= "0.5.3", optional = true, default-features = false, features = ["ogg", "flac", "wav"] }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 miniquad = "0.3.0-alpha.37"
-kira = { version= "0.5.2", optional = true }
+kira = { version= "0.5.3", optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 sapp-android = "0.1.8"
