@@ -4,7 +4,6 @@ use crate::core::*;
 use crate::input::*;
 use crate::logging::*;
 use crate::rendering::*;
-use crate::world::*;
 
 use miniquad::*;
 use std::collections::VecDeque;
@@ -16,7 +15,6 @@ pub struct GameEngine<G: Game> {
     input_engine: InputEngine,
     logging_engine: LoggingEngine,
     rendering_engine: RenderingEngine,
-    world_engine: WorldEngine,
     last_instant: f64,
     fps_tracker: VecDeque<f64>,
     asset_store: AssetStore,
@@ -29,9 +27,6 @@ impl<G: Game> GameEngine<G> {
         let mut input_engine = InputEngine::new();
         let mut rendering_engine =
             RenderingEngine::new(&mut ctx, settings.render_settings, &mut asset_store);
-        let mut world_engine = WorldEngine::new();
-
-        world_engine.push(EmeraldWorld::new());
 
         let delta = 0.0;
         let starting_amount = 50;
@@ -45,7 +40,6 @@ impl<G: Game> GameEngine<G> {
             &mut ctx,
             &mut audio_engine,
             &mut input_engine,
-            &mut world_engine,
             &mut logging_engine,
             &mut rendering_engine,
             &mut asset_store,
@@ -61,7 +55,6 @@ impl<G: Game> GameEngine<G> {
             input_engine,
             logging_engine,
             rendering_engine,
-            world_engine,
             last_instant,
             asset_store,
         }
@@ -95,7 +88,6 @@ impl<G: Game> EventHandler for GameEngine<G> {
             &mut ctx,
             &mut self.audio_engine,
             &mut self.input_engine,
-            &mut self.world_engine,
             &mut self.logging_engine,
             &mut self.rendering_engine,
             &mut self.asset_store,
@@ -161,7 +153,6 @@ impl<G: Game> EventHandler for GameEngine<G> {
             &mut ctx,
             &mut self.audio_engine,
             &mut self.input_engine,
-            &mut self.world_engine,
             &mut self.logging_engine,
             &mut self.rendering_engine,
             &mut self.asset_store,

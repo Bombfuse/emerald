@@ -15,6 +15,7 @@ pub fn main() {
             e1: None,
             e2: None,
             e3: None,
+            world: EmeraldWorld::new(),
         },
         settings,
     )
@@ -36,13 +37,13 @@ pub struct PhysicsGroupsExample {
     e1: Option<Entity>,
     e2: Option<Entity>,
     e3: Option<Entity>,
+    world: EmeraldWorld,
 }
 impl Game for PhysicsGroupsExample {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
 
-        let (entity1, body1) = emd
-            .world()
+        let (entity1, body1) = self.world
             .spawn_with_body(
                 (
                     Position::new(0.0, 40.0),
@@ -52,20 +53,19 @@ impl Game for PhysicsGroupsExample {
             )
             .unwrap();
 
-        emd.world().physics().build_collider(
+        self.world.physics().build_collider(
             body1,
             ColliderBuilder::cuboid(16.0, 8.0).collision_groups(GROUP_ONE),
         );
 
-        emd.world().physics().build_collider(
+        self.world.physics().build_collider(
             body1,
             ColliderBuilder::cuboid(16.0, 8.0)
                 .collision_groups(GROUP_ONE)
                 .sensor(true),
         );
 
-        let (entity2, body2) = emd
-            .world()
+        let (entity2, body2) = self.world
             .spawn_with_body(
                 (
                     Position::new(0.0, 0.0),
@@ -76,13 +76,12 @@ impl Game for PhysicsGroupsExample {
             )
             .unwrap();
 
-        emd.world().physics().build_collider(
+        self.world.physics().build_collider(
             body2,
             ColliderBuilder::cuboid(16.0, 8.0).collision_groups(GROUP_TWO),
         );
 
-        let (entity3, body3) = emd
-            .world()
+        let (entity3, body3) = self.world
             .spawn_with_body(
                 (
                     Position::new(0.0, 80.0),
@@ -92,7 +91,7 @@ impl Game for PhysicsGroupsExample {
             )
             .unwrap();
 
-        emd.world().physics().build_collider(
+        self.world.physics().build_collider(
             body3,
             ColliderBuilder::cuboid(16.0, 8.0).collision_groups(GROUP_TWO),
         );
@@ -101,11 +100,17 @@ impl Game for PhysicsGroupsExample {
         self.e2 = Some(entity2);
         self.e3 = Some(entity3);
 
-        emd.world().physics().set_gravity(Vector2::new(0.0, -18.8));
+        self.world.physics().set_gravity(Vector2::new(0.0, -18.8));
     }
 
-    fn update(&mut self, mut emd: Emerald) {
+    fn update(&mut self, emd: Emerald) {
         let delta = emd.delta();
-        emd.world().physics().step(delta);
+        self.world.physics().step(delta);
+    }
+
+    fn draw(&mut self, mut emd: Emerald<'_>) {
+        emd.graphics().begin().unwrap();
+        emd.graphics().draw_world(&mut self.world).unwrap();
+        emd.graphics().render().unwrap();
     }
 }

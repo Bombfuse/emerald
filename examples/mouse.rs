@@ -6,6 +6,7 @@ pub fn main() {
         position: Position::zero(),
         background: ColorRect::new(BLACK, 0, 0),
         screen_center: Position::zero(),
+        world: EmeraldWorld::new(),
     };
     emerald::start(game, GameSettings::default())
 }
@@ -15,6 +16,7 @@ pub struct MouseExample {
     position: Position,
     background: ColorRect,
     screen_center: Position,
+    world: EmeraldWorld,
 }
 
 impl Game for MouseExample {
@@ -22,7 +24,7 @@ impl Game for MouseExample {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
 
         if let Ok(sprite) = emd.loader().sprite("bunny.png") {
-            emd.world().spawn((sprite, Position::new(16.0, 16.0)));
+            self.world.spawn((sprite, Position::new(16.0, 16.0)));
         }
 
         emd.touches_to_mouse(true);
@@ -64,7 +66,7 @@ impl Game for MouseExample {
         self.screen_center = Position::new(width / 2.0, height / 2.0);
         self.background = ColorRect::new(flash, width as u32, height as u32);
 
-        for (_, (pos, _)) in emd.world().query::<(&mut Position, &mut Sprite)>().iter() {
+        for (_, (pos, _)) in self.world.query::<(&mut Position, &mut Sprite)>().iter() {
             // It's important to convert coordinates to the physical world space.
             *pos = self.position - self.screen_center;
         }
@@ -76,12 +78,7 @@ impl Game for MouseExample {
         emd.graphics()
             .draw_color_rect(&self.background, &self.screen_center);
         emd.graphics().draw_color_rect(&self.rect, &self.position);
-
-        if let Some(mut world) = emd.pop_world() {
-            emd.graphics().draw_world(&mut world).unwrap();
-            emd.push_world(world);
-        }
-
+        emd.graphics().draw_world(&mut self.world).unwrap();
         emd.graphics().render().unwrap();
     }
 }

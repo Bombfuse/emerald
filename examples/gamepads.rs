@@ -7,17 +7,19 @@ pub fn main() {
         ..Default::default()
     };
     settings.render_settings = render_settings;
-    emerald::start(GamepadExample {}, settings)
+    emerald::start(GamepadExample { world: EmeraldWorld::new() }, settings)
 }
 
-pub struct GamepadExample;
+pub struct GamepadExample  {
+    world: EmeraldWorld,
+}
 impl Game for GamepadExample {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
 
         match emd.loader().sprite("bunny.png") {
             Ok(sprite) => {
-                emd.world().spawn((sprite, Position::new(16.0, 16.0)));
+                self.world.spawn((sprite, Position::new(16.0, 16.0)));
             }
             Err(_) => {}
         };
@@ -46,7 +48,7 @@ impl Game for GamepadExample {
         velocity.x = direction.0 * speed;
         velocity.y = direction.1 * speed;
 
-        for (_, (position, sprite)) in emd.world().query::<(&mut Position, &mut Sprite)>().iter() {
+        for (_, (position, sprite)) in self.world.query::<(&mut Position, &mut Sprite)>().iter() {
             if input.is_button_just_pressed(Button::North) {
                 sprite.scale *= 2.0;
             } else if input.is_button_just_pressed(Button::South) {
@@ -60,5 +62,11 @@ impl Game for GamepadExample {
             position.x += delta * velocity.x;
             position.y += delta * velocity.y;
         }
+    }
+
+    fn draw(&mut self, mut emd: Emerald<'_>) {
+        emd.graphics().begin().unwrap();
+        emd.graphics().draw_world(&mut self.world).unwrap();
+        emd.graphics().render().unwrap();
     }
 }
