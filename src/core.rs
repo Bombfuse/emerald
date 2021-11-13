@@ -9,14 +9,12 @@ pub use engine::GameEngine;
 pub use error::*;
 pub use game::*;
 pub use game_settings::*;
-use gamepad::Button;
 
 use crate::assets::*;
 use crate::audio::*;
 use crate::input::*;
 use crate::logging::*;
 use crate::rendering::*;
-use crate::world::*;
 
 pub struct Emerald<'a> {
     delta: f32,
@@ -26,7 +24,6 @@ pub struct Emerald<'a> {
     rendering_engine: &'a mut RenderingEngine,
     logging_engine: &'a mut LoggingEngine,
     input_engine: &'a mut InputEngine,
-    world_engine: &'a mut WorldEngine,
     pub(crate) asset_store: &'a mut AssetStore,
 }
 impl<'a> Emerald<'a> {
@@ -37,7 +34,6 @@ impl<'a> Emerald<'a> {
         quad_ctx: &'a mut miniquad::Context,
         audio_engine: &'a mut AudioEngine,
         input_engine: &'a mut InputEngine,
-        world_engine: &'a mut WorldEngine,
         logging_engine: &'a mut LoggingEngine,
         rendering_engine: &'a mut RenderingEngine,
         asset_store: &'a mut AssetStore,
@@ -50,7 +46,6 @@ impl<'a> Emerald<'a> {
             rendering_engine,
             input_engine,
             logging_engine,
-            world_engine,
             asset_store,
         }
     }
@@ -170,28 +165,6 @@ impl<'a> Emerald<'a> {
         } else  {
             self.input_engine.set_key_up(keycode);
         }
-    }
-    // ************************************* //
-
-    // ************* World API ************* //
-    #[inline]
-    pub fn world(&mut self) -> &mut EmeraldWorld {
-        self.world_engine.world()
-    }
-
-    #[inline]
-    pub fn world_ref(&self) -> &EmeraldWorld {
-        self.world_engine.world_ref()
-    }
-
-    #[inline]
-    pub fn pop_world(&mut self) -> Option<EmeraldWorld> {
-        self.world_engine.pop()
-    }
-
-    #[inline]
-    pub fn push_world(&mut self, world: EmeraldWorld) {
-        self.world_engine.push(world)
     }
     // ************************************* //
 }

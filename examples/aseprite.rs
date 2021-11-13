@@ -7,10 +7,12 @@ pub fn main() {
         ..Default::default()
     };
     settings.render_settings = render_settings;
-    emerald::start(MyGame {}, settings)
+    emerald::start(MyGame { world: EmeraldWorld::new() }, settings)
 }
 
-pub struct MyGame;
+pub struct MyGame {
+    world: EmeraldWorld,
+}
 impl Game for MyGame {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
@@ -25,17 +27,19 @@ impl Game for MyGame {
         let mut a2 = aseprite.clone();
         a2.play("smile");
 
-        emd.world().spawn((aseprite, Position::new(64.0, 64.0)));
-        emd.world().spawn((a2, Position::new(-64.0, 64.0)));
+        self.world.spawn((aseprite, Position::new(64.0, 64.0)));
+        self.world.spawn((a2, Position::new(-64.0, 64.0)));
     }
 
-    fn update(&mut self, mut emd: Emerald) {
-        let world = emd.pop_world();
+    fn update(&mut self, emd: Emerald) {
         let delta = emd.delta();
 
-        if let Some(mut world) = world {
-            aseprite_update_system(&mut world, delta);
-            emd.push_world(world);
-        }
+        aseprite_update_system(&mut self.world, delta);
+    }
+
+    fn draw(&mut self, mut emd: Emerald) {
+        emd.graphics().begin().unwrap();
+        emd.graphics().draw_world(&mut self.world).unwrap();
+        emd.graphics().render().unwrap();
     }
 }

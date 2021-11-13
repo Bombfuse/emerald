@@ -14,6 +14,7 @@ pub fn main() {
         MyGame {
             elapsed_time_cube: 0.0,
             elapsed_time_round: 0.0,
+            world: EmeraldWorld::new(),
         },
         settings,
     )
@@ -31,6 +32,7 @@ pub struct Controller {}
 pub struct MyGame {
     elapsed_time_cube: f32,
     elapsed_time_round: f32,
+    world: EmeraldWorld,
 }
 impl MyGame {
     fn spawn_bunny_cube(&mut self, position: Position, emd: &mut Emerald) {
@@ -62,16 +64,15 @@ impl MyGame {
         velocity: Velocity,
     ) {
         let sprite = emd.loader().sprite("bunny.png").unwrap();
-        let entity = emd.world().spawn((sprite, position));
-        let body = emd
-            .world()
+        let entity = self.world.spawn((sprite, position));
+        let body = self.world
             .physics()
             .build_body(
                 entity,
                 RigidBodyBuilder::new_dynamic().linvel(Vector2::new(velocity.dx, velocity.dy)), // Fling it up and to the right
             )
             .unwrap();
-        emd.world().physics().build_collider(body, collider_builder);
+        self.world.physics().build_collider(body, collider_builder);
     }
 }
 impl Game for MyGame {
@@ -92,28 +93,26 @@ impl Game for MyGame {
         ];
 
         for border in borders {
-            let (_, border_body) = emd
-                .world()
+            let (_, border_body) = self.world
                 .spawn_with_body(
                     (border.0,),
                     RigidBodyBuilder::new_static()
                         .translation(Vector2::new(border.0.x, border.0.y)),
                 )
                 .unwrap();
-            emd.world().physics().build_collider(
+            self.world.physics().build_collider(
                 border_body,
                 ColliderBuilder::cuboid((border.1).0, (border.1).1),
             );
         }
-        emd.world().physics().set_gravity(Vector2::new(0.0, -98.0));
+        self.world.physics().set_gravity(Vector2::new(0.0, -98.0));
 
         let size = Vector2::new(64.0, 16.0);
         let mut color_rect = ColorRect::new(WHITE, size.x as u32, size.y as u32);
         color_rect.z_index = 10.0;
 
         // Spawn controller
-        let (_, body_handle) = emd
-            .world()
+        let (_, body_handle) = self.world
             .spawn_with_body(
                 (
                     Controller {},
@@ -124,7 +123,7 @@ impl Game for MyGame {
                 RigidBodyBuilder::new_kinematic_position_based().can_sleep(false),
             )
             .unwrap();
-        emd.world().physics().build_collider(
+        self.world.physics().build_collider(
             body_handle,
             ColliderBuilder::cuboid(size.x / 2.0, size.y / 2.0),
         );
@@ -136,7 +135,7 @@ impl Game for MyGame {
         self.elapsed_time_round += emd.delta() as f32;
         let mut input = emd.input();
 
-        for (_, (position, _)) in emd.world().query::<(&mut Position, &Controller)>().iter() {
+        for (_, (position, _)) in self.world.query::<(&mut Position, &Controller)>().iter() {
             if input.is_key_pressed(KeyCode::Up) {
                 position.y += delta * 80.0;
             } else if input.is_key_pressed(KeyCode::Down) {
@@ -160,16 +159,13 @@ impl Game for MyGame {
             self.spawn_bunny_round(Position::new(0.0, RES_HEIGHT / 2.0 - 12.0), &mut emd);
         }
 
-        emd.world().physics().step(delta);
+        self.world.physics().step(delta);
     }
 
     fn draw(&mut self, mut emd: Emerald) {
         emd.graphics().begin().unwrap();
 
-        if let Some(mut world) = emd.pop_world() {
-            emd.graphics().draw_world(&mut world).unwrap();
-            emd.push_world(world);
-        }
+        emd.graphics().draw_world(&mut self.world).unwrap();
 
         {
             let fps = emd.fps() as u8;

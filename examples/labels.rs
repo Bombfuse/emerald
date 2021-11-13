@@ -1,12 +1,14 @@
 use emerald::*;
 
 pub fn main() {
-    emerald::start(GamepadExample {}, GameSettings::default())
+    emerald::start(GamepadExample { world: EmeraldWorld::new() }, GameSettings::default())
 }
 
 pub struct ElapsedTime(f32);
 
-pub struct GamepadExample;
+pub struct GamepadExample {
+    world: EmeraldWorld,
+}
 impl Game for GamepadExample {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
@@ -22,14 +24,14 @@ impl Game for GamepadExample {
         let mut right_label = left_aligned_label.clone();
         right_label.horizontal_align = HorizontalAlign::Right;
 
-        emd.world().spawn((
+        self.world.spawn((
             ElapsedTime(0.0),
             Position::new(0.0, 0.0),
             left_aligned_label,
         ));
-        emd.world()
+        self.world
             .spawn((ElapsedTime(0.0), Position::new(0.0, 300.0), centered_label));
-        emd.world()
+        self.world
             .spawn((ElapsedTime(0.0), Position::new(0.0, -300.0), right_label));
     }
 
@@ -37,7 +39,7 @@ impl Game for GamepadExample {
         let mut input = emd.input();
 
         for (_, (label, _elapsed_time)) in
-            emd.world().query::<(&mut Label, &mut ElapsedTime)>().iter()
+            self.world.query::<(&mut Label, &mut ElapsedTime)>().iter()
         {
             if input.is_key_just_pressed(KeyCode::A) {
                 label.scale *= 0.5;
@@ -49,5 +51,11 @@ impl Game for GamepadExample {
                 label.max_width = Some(400.0);
             }
         }
+    }
+
+    fn draw(&mut self, mut emd: Emerald<'_>) {
+        emd.graphics().begin().unwrap();
+        emd.graphics().draw_world(&mut self.world).unwrap();
+        emd.graphics().render().unwrap();
     }
 }
