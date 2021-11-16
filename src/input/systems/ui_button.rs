@@ -17,9 +17,14 @@ pub fn ui_button_system(emd: &mut Emerald<'_>, world: &mut EmeraldWorld) {
         world,
     );
 
+    let touch_world_positions: HashMap<u64, Position> = touches.iter().map(|(id, touch_state)| {
+        let sc = (screen_size.0 as u32, screen_size.1 as u32);
+        (*id, screen_position_to_world_position(sc, &touch_state.position, world))
+    }).collect();
+
     for (_, (ui_button, position)) in world.query::<(&mut UIButton, &Position)>().iter() {
         let button_check = is_position_inside_button(emd, &ui_button, &position, &mouse_position)
-            || check_touches_overlap_button(emd, touches, &ui_button, &position);
+            || check_touches_overlap_button(emd, touches, &touch_world_positions, &ui_button, &position);
 
         if button_check {
             let press = mouse.left.is_pressed
@@ -42,11 +47,18 @@ pub fn ui_button_system(emd: &mut Emerald<'_>, world: &mut EmeraldWorld) {
 fn check_touches_overlap_button(
     emd: &mut Emerald<'_>,
     touches: &HashMap<u64, TouchState>,
+    touch_world_positions: &HashMap<u64, Position>,
     ui_button: &UIButton,
     ui_button_position: &Position,
 ) -> bool {
-    touches.iter().any(|(_key, touch)| {
-        is_position_inside_button(emd, &ui_button, &ui_button_position, &touch.position)
+    touches.iter().any(|(id, _touch)| {
+        let mut is_inside = false;
+
+        if let Some(position) = touch_world_positions.get(id) {
+            is_inside = is_position_inside_button(emd, &ui_button, &ui_button_position, position);
+        }
+
+        is_inside
     })
 }
 
