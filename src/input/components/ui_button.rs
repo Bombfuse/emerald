@@ -50,4 +50,9 @@ impl UIButton {
         self.was_pressed = self.is_pressed;
         self.is_pressed = false;
     }
+
+    pub fn reset(&mut self) {
+        self.is_pressed = false;
+        self.was_pressed = false;
+    }
 }
