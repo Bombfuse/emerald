@@ -289,8 +289,15 @@ impl PhysicsEngine {
     }
 
     #[inline]
-    pub fn cast_shape(&mut self, shape: &dyn Shape, shape_cast_query: ShapeCastQuery<'_>) -> Option<Entity> {
-        let pos = Isometry::new(Vector2::new(shape_cast_query.position.x, shape_cast_query.position.y), 0.0);
+    pub fn cast_shape(
+        &mut self,
+        shape: &dyn Shape,
+        shape_cast_query: ShapeCastQuery<'_>,
+    ) -> Option<Entity> {
+        let pos = Isometry::new(
+            Vector2::new(shape_cast_query.position.x, shape_cast_query.position.y),
+            0.0,
+        );
 
         if let Some((handle, _hit)) = self.query_pipeline.cast_shape(
             &self.colliders,

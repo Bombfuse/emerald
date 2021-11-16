@@ -7,10 +7,15 @@ pub fn main() {
         ..Default::default()
     };
     settings.render_settings = render_settings;
-    emerald::start(GamepadExample { world: EmeraldWorld::new() }, settings)
+    emerald::start(
+        GamepadExample {
+            world: EmeraldWorld::new(),
+        },
+        settings,
+    )
 }
 
-pub struct GamepadExample  {
+pub struct GamepadExample {
     world: EmeraldWorld,
 }
 impl Game for GamepadExample {

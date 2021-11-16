@@ -6,13 +6,10 @@ use std::{
 use kira::{
     instance::{handle::InstanceHandle, InstanceSettings, InstanceState},
     manager::AudioManager,
-
     sound::{handle::SoundHandle, SoundId},
 };
 
 use crate::{AssetStore, EmeraldError, Mixer, SoundInstanceId, SoundKey};
-
-
 
 pub(crate) struct KiraMixer {
     inner: Arc<Mutex<AudioManager>>,

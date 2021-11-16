@@ -52,7 +52,7 @@ impl Game for TouchExample {
             }
         }
     }
-    
+
     fn draw(&mut self, mut emd: Emerald<'_>) {
         emd.graphics().begin().unwrap();
         emd.graphics().draw_world(&mut self.world).unwrap();

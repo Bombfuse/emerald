@@ -1,7 +1,12 @@
 use emerald::*;
 
 pub fn main() {
-    emerald::start(HotreloadExample { world: EmeraldWorld::new() }, GameSettings::default())
+    emerald::start(
+        HotreloadExample {
+            world: EmeraldWorld::new(),
+        },
+        GameSettings::default(),
+    )
 }
 
 pub struct HotreloadExample {

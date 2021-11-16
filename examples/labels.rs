@@ -1,7 +1,12 @@
 use emerald::*;
 
 pub fn main() {
-    emerald::start(GamepadExample { world: EmeraldWorld::new() }, GameSettings::default())
+    emerald::start(
+        GamepadExample {
+            world: EmeraldWorld::new(),
+        },
+        GameSettings::default(),
+    )
 }
 
 pub struct ElapsedTime(f32);
