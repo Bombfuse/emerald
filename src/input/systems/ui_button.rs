@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    screen_position_to_world_position, Emerald, EmeraldWorld, Position, TouchState,
-    UIButton,
+    screen_position_to_world_position, Emerald, EmeraldWorld, Position, TouchState, UIButton,
 };
 
 /// Updates the status of UI Buttons.
@@ -23,12 +22,10 @@ pub fn ui_button_system(emd: &mut Emerald<'_>, world: &mut EmeraldWorld) {
             || check_touches_overlap_button(emd, touches, &ui_button, &position);
 
         if button_check {
-            let press = (mouse.left.is_just_pressed()
-                || (ui_button.is_pressed() && mouse.left.is_pressed))
-                || touches.iter().any(|(_key, touch_state)|
-                    (touch_state.is_just_pressed()
-                        || (touch_state.is_pressed() && ui_button.is_pressed()))
-                );
+            let press = mouse.left.is_pressed
+                || touches
+                    .iter()
+                    .any(|(_key, touch_state)| touch_state.is_pressed());
 
             if press {
                 ui_button.press();
