@@ -81,4 +81,10 @@ impl<'a> GraphicsHandler<'a> {
 
         Ok(())
     }
+
+    pub fn set_window_size(&mut self, x: u32, y: u32) -> Result<(), EmeraldError> {
+        self.quad_ctx.set_window_size(x, y);
+
+        Ok(())
+    }
 }
