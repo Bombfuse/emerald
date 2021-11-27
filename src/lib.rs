@@ -72,6 +72,7 @@ where
         window_height: settings.render_settings.resolution.1 as i32,
         fullscreen: settings.render_settings.fullscreen,
         high_dpi: settings.render_settings.high_dpi,
+        window_resizable: settings.render_settings.resizable_window,
         ..Default::default()
     };
 
