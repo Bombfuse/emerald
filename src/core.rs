@@ -162,7 +162,7 @@ impl<'a> Emerald<'a> {
     pub fn set_key_pressed(&mut self, keycode: KeyCode, is_pressed: bool) {
         if is_pressed {
             self.input_engine.set_key_down(keycode, false);
-        } else  {
+        } else {
             self.input_engine.set_key_up(keycode);
         }
     }

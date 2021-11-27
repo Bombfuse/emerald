@@ -1,6 +1,6 @@
 use nalgebra::{Point2, Vector2};
 use rapier2d::{
-    parry::{query::Ray},
+    parry::query::Ray,
     prelude::{ColliderHandle, InteractionGroups},
 };
 

@@ -200,7 +200,7 @@ impl RenderingEngine {
                 });
             }
         }
-        
+
         for (_id, (ui_button, position)) in world.inner.query::<(&UIButton, &Position)>().iter() {
             let sprite = if ui_button.is_pressed() {
                 Sprite::from_texture(ui_button.pressed_texture.clone())

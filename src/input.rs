@@ -1,24 +1,27 @@
 mod button_state;
+mod components;
 mod engine;
 mod handler;
 mod mouse_state;
-mod touch_state;
-mod components;
 mod systems;
+mod touch_state;
 
 pub use button_state::*;
+pub use components::*;
 pub(crate) use engine::*;
 pub use handler::*;
 pub use miniquad::KeyCode;
 pub use mouse_state::*;
-pub use components::*;
 pub use systems::*;
 pub use touch_state::*;
 
 use crate::{EmeraldWorld, Position};
 
-
-pub fn screen_position_to_world_position(screen_size: (u32, u32), screen_position: &Position, world: &mut EmeraldWorld) -> Position {
+pub fn screen_position_to_world_position(
+    screen_size: (u32, u32),
+    screen_position: &Position,
+    world: &mut EmeraldWorld,
+) -> Position {
     let mut p = screen_position.clone();
     // let mut camera = Camera::default();
     let mut camera_pos = Position::zero();

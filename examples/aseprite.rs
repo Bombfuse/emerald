@@ -7,7 +7,12 @@ pub fn main() {
         ..Default::default()
     };
     settings.render_settings = render_settings;
-    emerald::start(MyGame { world: EmeraldWorld::new() }, settings)
+    emerald::start(
+        MyGame {
+            world: EmeraldWorld::new(),
+        },
+        settings,
+    )
 }
 
 pub struct MyGame {

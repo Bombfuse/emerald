@@ -1,6 +1,5 @@
 use crate::{Rectangle, TextureKey};
 
-
 pub struct UIButton {
     pub pressed_texture: TextureKey,
     pub unpressed_texture: TextureKey,
@@ -10,7 +9,6 @@ pub struct UIButton {
 
     /// Custom bounding box for the unpressed area of the button, overwrites the usage of the texture for the box.
     pub custom_unpressed_bounding_box: Option<Rectangle>,
-
 
     pub(crate) is_pressed: bool,
     pub(crate) was_pressed: bool,
@@ -30,9 +28,15 @@ impl UIButton {
         }
     }
 
-    pub fn is_pressed(&self) -> bool { self.is_pressed }
-    pub fn is_just_pressed(&self) -> bool { self.is_pressed && !self.was_pressed }
-    pub fn is_just_released(&self) -> bool { !self.is_pressed && self.was_pressed }
+    pub fn is_pressed(&self) -> bool {
+        self.is_pressed
+    }
+    pub fn is_just_pressed(&self) -> bool {
+        self.is_pressed && !self.was_pressed
+    }
+    pub fn is_just_released(&self) -> bool {
+        !self.is_pressed && self.was_pressed
+    }
 
     /// Presses the button
     pub fn press(&mut self) {

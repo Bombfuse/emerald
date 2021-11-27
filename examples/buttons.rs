@@ -7,7 +7,12 @@ pub fn main() {
         ..Default::default()
     };
     settings.render_settings = render_settings;
-    emerald::start(MyGame { world: EmeraldWorld::new() }, settings)
+    emerald::start(
+        MyGame {
+            world: EmeraldWorld::new(),
+        },
+        settings,
+    )
 }
 
 pub struct MyGame {
@@ -20,9 +25,18 @@ impl Game for MyGame {
         let pressed = emd.loader().texture("button_pressed.png").unwrap();
         emd.touches_to_mouse(true);
 
-        self.world.spawn((Position::zero(), UIButton::new(pressed.clone(), unpressed.clone())));
-        self.world.spawn((Position::new(320.0, 180.0), UIButton::new(pressed.clone(), unpressed.clone())));
-        self.world.spawn((Position::new(-320.0, -180.0), UIButton::new(pressed.clone(), unpressed.clone())));
+        self.world.spawn((
+            Position::zero(),
+            UIButton::new(pressed.clone(), unpressed.clone()),
+        ));
+        self.world.spawn((
+            Position::new(320.0, 180.0),
+            UIButton::new(pressed.clone(), unpressed.clone()),
+        ));
+        self.world.spawn((
+            Position::new(-320.0, -180.0),
+            UIButton::new(pressed.clone(), unpressed.clone()),
+        ));
     }
 
     fn update(&mut self, mut emd: Emerald) {

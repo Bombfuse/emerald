@@ -43,7 +43,8 @@ impl Game for PhysicsGroupsExample {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
 
-        let (entity1, body1) = self.world
+        let (entity1, body1) = self
+            .world
             .spawn_with_body(
                 (
                     Position::new(0.0, 40.0),
@@ -65,7 +66,8 @@ impl Game for PhysicsGroupsExample {
                 .sensor(true),
         );
 
-        let (entity2, body2) = self.world
+        let (entity2, body2) = self
+            .world
             .spawn_with_body(
                 (
                     Position::new(0.0, 0.0),
@@ -81,7 +83,8 @@ impl Game for PhysicsGroupsExample {
             ColliderBuilder::cuboid(16.0, 8.0).collision_groups(GROUP_TWO),
         );
 
-        let (entity3, body3) = self.world
+        let (entity3, body3) = self
+            .world
             .spawn_with_body(
                 (
                     Position::new(0.0, 80.0),

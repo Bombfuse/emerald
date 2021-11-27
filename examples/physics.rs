@@ -65,7 +65,8 @@ impl MyGame {
     ) {
         let sprite = emd.loader().sprite("bunny.png").unwrap();
         let entity = self.world.spawn((sprite, position));
-        let body = self.world
+        let body = self
+            .world
             .physics()
             .build_body(
                 entity,
@@ -93,7 +94,8 @@ impl Game for MyGame {
         ];
 
         for border in borders {
-            let (_, border_body) = self.world
+            let (_, border_body) = self
+                .world
                 .spawn_with_body(
                     (border.0,),
                     RigidBodyBuilder::new_static()
@@ -112,7 +114,8 @@ impl Game for MyGame {
         color_rect.z_index = 10.0;
 
         // Spawn controller
-        let (_, body_handle) = self.world
+        let (_, body_handle) = self
+            .world
             .spawn_with_body(
                 (
                     Controller {},
