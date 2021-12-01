@@ -19,7 +19,7 @@ pub(crate) struct KiraMixer {
     sound_instance_uid: usize,
 }
 impl KiraMixer {
-    pub fn new(inner: Arc<Mutex<AudioManager>>) -> Result<Box<dyn Mixer>, EmeraldError> {
+    pub fn new(inner: Arc<Mutex<AudioManager>>) -> Result<Box<dyn Mixer + Send + Sync>, EmeraldError> {
         Ok(Box::new(KiraMixer {
             inner,
             sound_handles: HashMap::new(),
