@@ -1,6 +1,6 @@
 use crate::EmeraldError;
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(not(debug_assertions), target_arch = "wasm32"))]
 use miniquad::{error, info, warn};
 
 #[cfg(all(

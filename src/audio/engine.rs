@@ -2,7 +2,7 @@ use crate::{audio::*, EmeraldError};
 use std::collections::HashMap;
 
 pub(crate) struct AudioEngine {
-    mixers: HashMap<String, Box<dyn Mixer>>,
+    mixers: HashMap<String, ThreadSafeMixer>,
 }
 impl AudioEngine {
     pub(crate) fn new() -> Self {
@@ -14,7 +14,7 @@ impl AudioEngine {
     pub(crate) fn mixer<T: Into<String>>(
         &mut self,
         mixer_name: T,
-    ) -> Result<&mut Box<dyn Mixer>, EmeraldError> {
+    ) -> Result<&mut ThreadSafeMixer, EmeraldError> {
         let mixer_name: String = mixer_name.into();
 
         if !self.mixers.contains_key(&mixer_name) {

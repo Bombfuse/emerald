@@ -13,6 +13,12 @@ mod dummy;
 #[cfg(not(feature = "audio"))]
 use dummy::DummyMixer as BackendMixer;
 
+#[cfg(target_arch = "wasm32")]
+pub(crate) type ThreadSafeMixer = Box<dyn Mixer>;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) type ThreadSafeMixer = Box<dyn Mixer + Send + Sync>;
+
 pub(crate) trait Mixer {
     fn play(
         &mut self,
@@ -40,7 +46,7 @@ pub(crate) trait Mixer {
 }
 
 #[cfg(not(feature = "audio"))]
-pub(crate) fn new_mixer() -> Result<Box<dyn Mixer>, EmeraldError> {
+pub(crate) fn new_mixer() -> Result<ThreadSafeMixer, EmeraldError> {
     let mixer = BackendMixer::new()?;
 
     Ok(mixer)
@@ -53,7 +59,7 @@ use std::sync::{Arc, Mutex};
 static mut KIRA_AUDIO_MANAGER: Option<Arc<Mutex<AudioManager>>> = None;
 
 #[cfg(feature = "audio")]
-pub(crate) fn new_mixer() -> Result<Box<dyn Mixer>, EmeraldError> {
+pub(crate) fn new_mixer() -> Result<ThreadSafeMixer, EmeraldError> {
     use kira::manager::AudioManagerSettings;
 
     unsafe {
@@ -79,11 +85,11 @@ pub(crate) fn new_mixer() -> Result<Box<dyn Mixer>, EmeraldError> {
 }
 
 pub struct MixerHandler<'a> {
-    inner: &'a mut Box<dyn Mixer>,
+    inner: &'a mut ThreadSafeMixer,
     asset_store: &'a mut AssetStore,
 }
 impl<'a> MixerHandler<'a> {
-    pub(crate) fn new(inner: &'a mut Box<dyn Mixer>, asset_store: &'a mut AssetStore) -> Self {
+    pub(crate) fn new(inner: &'a mut ThreadSafeMixer, asset_store: &'a mut AssetStore) -> Self {
         MixerHandler { inner, asset_store }
     }
 
