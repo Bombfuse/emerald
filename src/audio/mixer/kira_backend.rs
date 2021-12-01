@@ -9,7 +9,7 @@ use kira::{
     sound::{handle::SoundHandle, SoundId},
 };
 
-use crate::{AssetStore, EmeraldError, Mixer, SoundInstanceId, SoundKey};
+use crate::{AssetStore, EmeraldError, Mixer, SoundInstanceId, SoundKey, ThreadSafeMixer};
 
 pub(crate) struct KiraMixer {
     inner: Arc<Mutex<AudioManager>>,
@@ -19,7 +19,7 @@ pub(crate) struct KiraMixer {
     sound_instance_uid: usize,
 }
 impl KiraMixer {
-    pub fn new(inner: Arc<Mutex<AudioManager>>) -> Result<Box<dyn Mixer + Send + Sync>, EmeraldError> {
+    pub fn new(inner: Arc<Mutex<AudioManager>>) -> Result<ThreadSafeMixer, EmeraldError> {
         Ok(Box::new(KiraMixer {
             inner,
             sound_handles: HashMap::new(),

@@ -13,6 +13,10 @@ mod dummy;
 #[cfg(not(feature = "audio"))]
 use dummy::DummyMixer as BackendMixer;
 
+#[cfg(target_arch = "wasm32")]
+pub(crate) type ThreadSafeMixer = Box<dyn Mixer>;
+
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) type ThreadSafeMixer = Box<dyn Mixer + Send + Sync>;
 
 pub(crate) trait Mixer {

@@ -355,11 +355,6 @@ fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
     Ok(contents)
 }
 
-#[cfg(not(target_os = "windows"))]
-fn get_app_data_directory() -> String {
-    String::from(DEFAULT_USER_DATA_FOLDER)
-}
-
 // Source
 // https://github.com/dirs-dev/dirs-sys-rs/blob/main/src/lib.rs
 #[cfg(target_os = "windows")]
