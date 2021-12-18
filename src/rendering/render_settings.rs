@@ -12,7 +12,7 @@ pub enum ScreenScalar {
     Stretch,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct RenderSettings {
     pub background_color: Color,
     pub fullscreen: bool,
