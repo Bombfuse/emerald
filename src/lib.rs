@@ -61,6 +61,7 @@ pub use gamepad;
 pub use gamepad::{Button, Joystick};
 
 use miniquad::{conf, UserData};
+pub use miniquad::conf::Icon;
 
 pub fn start<G>(game: G, settings: GameSettings)
 where
@@ -73,6 +74,7 @@ where
         fullscreen: settings.render_settings.fullscreen,
         high_dpi: settings.render_settings.high_dpi,
         window_resizable: settings.render_settings.resizable_window,
+        icon: settings.render_settings.icon,
         ..Default::default()
     };
 

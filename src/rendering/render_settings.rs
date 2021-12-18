@@ -19,6 +19,7 @@ pub struct RenderSettings {
     pub resolution: (u32, u32),
     pub high_dpi: bool,
     pub resizable_window: bool,
+    pub icon: Option<miniquad::conf::Icon>,
 }
 impl Default for RenderSettings {
     fn default() -> RenderSettings {
@@ -28,6 +29,7 @@ impl Default for RenderSettings {
             resolution: (800, 600),
             high_dpi: false,
             resizable_window: true,
+            icon: None,
         }
     }
 }
