@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct GameSettings {
     pub title: String,
     pub render_settings: RenderSettings,
