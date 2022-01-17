@@ -12,13 +12,14 @@ pub enum ScreenScalar {
     Stretch,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct RenderSettings {
     pub background_color: Color,
     pub fullscreen: bool,
     pub resolution: (u32, u32),
     pub high_dpi: bool,
     pub resizable_window: bool,
+    pub icon: Option<Icon>,
 }
 impl Default for RenderSettings {
     fn default() -> RenderSettings {
@@ -28,6 +29,7 @@ impl Default for RenderSettings {
             resolution: (800, 600),
             high_dpi: false,
             resizable_window: true,
+            icon: None,
         }
     }
 }
