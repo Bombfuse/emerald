@@ -73,6 +73,7 @@ where
         fullscreen: settings.render_settings.fullscreen,
         high_dpi: settings.render_settings.high_dpi,
         window_resizable: settings.render_settings.resizable_window,
+        icon: settings.render_settings.icon.clone(),
         ..Default::default()
     };
 

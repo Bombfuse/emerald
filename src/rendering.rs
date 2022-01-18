@@ -14,3 +14,4 @@ pub use render_settings::*;
 pub(crate) use shaders::*;
 pub use texture::TextureKey;
 pub(crate) use texture::*;
+pub use miniquad::conf::Icon;

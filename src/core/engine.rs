@@ -26,7 +26,7 @@ impl<G: Game> GameEngine<G> {
         let mut audio_engine = AudioEngine::new();
         let mut input_engine = InputEngine::new();
         let mut rendering_engine =
-            RenderingEngine::new(&mut ctx, settings.render_settings, &mut asset_store);
+            RenderingEngine::new(&mut ctx, settings.render_settings.clone(), &mut asset_store);
 
         let delta = 0.0;
         let starting_amount = 50;
