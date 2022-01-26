@@ -66,16 +66,14 @@ pub fn start<G>(game: G, settings: GameSettings)
 where
     G: Game + 'static,
 {
-    let config = conf::Conf {
-        window_title: settings.title.clone(),
-        window_width: settings.render_settings.resolution.0 as i32,
-        window_height: settings.render_settings.resolution.1 as i32,
-        fullscreen: settings.render_settings.fullscreen,
-        high_dpi: settings.render_settings.high_dpi,
-        window_resizable: settings.render_settings.resizable_window,
-        icon: settings.render_settings.icon.clone(),
-        ..Default::default()
-    };
+    let mut config = conf::Conf::default();
+    config.window_title = settings.title.clone();
+    config.window_width = settings.render_settings.resolution.0 as i32;
+    config.window_height = settings.render_settings.resolution.1 as i32;
+    config.fullscreen = settings.render_settings.fullscreen;
+    config.high_dpi = settings.render_settings.high_dpi;
+    config.window_resizable = settings.render_settings.resizable_window;
+    config.icon = settings.render_settings.icon.clone();
 
     miniquad::start(config, move |mut ctx| {
         UserData::owning(GameEngine::new(game, settings, &mut ctx), ctx)
