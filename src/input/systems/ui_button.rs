@@ -17,14 +17,26 @@ pub fn ui_button_system(emd: &mut Emerald<'_>, world: &mut EmeraldWorld) {
         world,
     );
 
-    let touch_world_positions: HashMap<u64, Position> = touches.iter().map(|(id, touch_state)| {
-        let sc = (screen_size.0 as u32, screen_size.1 as u32);
-        (*id, screen_position_to_world_position(sc, &touch_state.position, world))
-    }).collect();
+    let touch_world_positions: HashMap<u64, Position> = touches
+        .iter()
+        .map(|(id, touch_state)| {
+            let sc = (screen_size.0 as u32, screen_size.1 as u32);
+            (
+                *id,
+                screen_position_to_world_position(sc, &touch_state.position, world),
+            )
+        })
+        .collect();
 
     for (_, (ui_button, position)) in world.query::<(&mut UIButton, &Position)>().iter() {
         let button_check = is_position_inside_button(emd, &ui_button, &position, &mouse_position)
-            || check_touches_overlap_button(emd, touches, &touch_world_positions, &ui_button, &position);
+            || check_touches_overlap_button(
+                emd,
+                touches,
+                &touch_world_positions,
+                &ui_button,
+                &position,
+            );
 
         if button_check {
             let press = mouse.left.is_pressed
