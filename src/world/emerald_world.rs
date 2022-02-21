@@ -62,11 +62,6 @@ impl EmeraldWorld {
         cam
     }
 
-    // TODO(bombfuse): Load an ecs world and physics world into this one.
-    pub fn merge(&mut self, _world: EmeraldWorld) -> Result<(), EmeraldError> {
-        Ok(())
-    }
-
     pub fn spawn(&mut self, components: impl DynamicBundle) -> Entity {
         self.inner.spawn(components)
     }
@@ -121,6 +116,45 @@ impl EmeraldWorld {
 
     pub fn reserve_entity(&self) -> Entity {
         self.inner.reserve_entity()
+    }
+
+    /// Whether `entity` still exists
+    pub fn contains(&self, entity: Entity) -> bool {
+        self.inner.contains(entity)
+    }
+
+    /// Prepare a query against a single entity, using dynamic borrow checking
+    ///
+    /// Prefer [`query_one_mut`](Self::query_one_mut) when concurrent access to the [`World`] is not
+    /// required.
+    ///
+    /// Call [`get`](QueryOne::get) on the resulting [`QueryOne`] to actually execute the query. The
+    /// [`QueryOne`] value is responsible for releasing the dynamically-checked borrow made by
+    /// `get`, so it can't be dropped while references returned by `get` are live.
+    ///
+    /// Handy for accessing multiple components simultaneously.
+    pub fn query_one<Q: Query>(&self, entity: Entity) -> Result<QueryOne<'_, Q>, NoSuchEntity> {
+        self.inner.query_one::<Q>(entity)
+    }
+    
+    /// Query a single entity in a uniquely borrow world
+    ///
+    /// Like [`query_one`](Self::query_one), but faster because dynamic borrow checks can be
+    /// skipped. Note that, unlike [`query_one`](Self::query_one), on success this returns the
+    /// query's results directly.
+    pub fn query_one_mut<Q: Query>(
+        &mut self,
+        entity: Entity,
+    ) -> Result<QueryItem<'_, Q>, QueryOneError> {
+        self.inner.query_one_mut::<Q>(entity)
+    }
+
+    pub fn insert_one(
+        &mut self,
+        entity: Entity,
+        component: impl Component,
+    ) -> Result<(), NoSuchEntity> {
+        self.inner.insert(entity, (component,))
     }
 
     pub fn insert(

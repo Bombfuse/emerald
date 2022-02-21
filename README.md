@@ -12,18 +12,18 @@ The api is simple and powerful, giving you direct access to physics, audio, grap
 
 ## Supported Platforms
 <div>
-    <img alt="OpenGL" src="./assets/opengl.svg" width=32>
-    <img alt="MacOS" src="./assets/apple.svg" width=32>
-    <img alt="Linux" src="./assets/linux.svg" width=32>
-    <img alt="Windows" src="./assets/windows.svg" width=32>
-    <img alt="RaspberryPi" src="./assets/raspberrypi.svg" width=32>
-    <img alt="HTML5" src="./assets/webassembly.svg" width=32>
+    <img alt="OpenGL" src="opengl.svg" width=32>
+    <img alt="MacOS" src="apple.svg" width=32>
+    <img alt="Linux" src="linux.svg" width=32>
+    <img alt="Windows" src="windows.svg" width=32>
+    <img alt="RaspberryPi" src="raspberrypi.svg" width=32>
+    <img alt="HTML5" src="webassembly.svg" width=32>
 </div>
 
 
 --- Work in progress ---
 <div>
-    <img alt="Android" src="./assets/android.svg" width=32>
+    <img alt="Android" src="android.svg" width=32>
 </div>
 --------------------------
 
@@ -32,11 +32,11 @@ The api is simple and powerful, giving you direct access to physics, audio, grap
 ## Asset Loading
 ```rust
 let my_sprite = emd.loader()
-    .sprite("./assets/my_sprite.png")
+    .sprite("my_sprite.png")
     .unwrap();
 
 let my_audio = emd.loader()
-    .sound("./assets/my_sound.wav")
+    .sound("my_sound.wav")
     .unwrap();
 ```
 
@@ -94,7 +94,7 @@ fn draw(&mut self, mut emd: Emerald) {
 
 ## Audio
 ```rust
-let my_sound = emd.loader().sound("./assets/sounds/my_song.ogg")?;
+let my_sound = emd.loader().sound("sounds/my_song.ogg")?;
 
 emd.audio().mixer("background_music")?.play_and_loop(my_sound);
 ```
@@ -119,7 +119,7 @@ Emerald has built in aseprite loading and rendering. Simply load in the texture 
 
 ```rust
 let mut aseprite = emd.loader()
-    .aseprite("./assets/my_texture.png", "./assets/my_animation.json").unwrap();
+    .aseprite("my_texture.png", "my_animation.json").unwrap();
 
 aseprite.play("some_aseprite_animation");
 
@@ -127,7 +127,7 @@ emd.world().spawn((aseprite, Position::zero()));
 ```
 
 Export settings
-![Preferred export settings](./assets/aseprite_settings.png)
+![Preferred export settings](aseprite_settings.png)
 
 
 
@@ -153,15 +153,15 @@ fn initialize(&mut self, mut emd: Emerald) {
     {
         emd.loader()
             .pack_bytes(
-                "./assets/bunny.png",
-                include_bytes!("../assets/bunny.png").to_vec()
+                "bunny.png",
+                include_bytes!(".bunny.png").to_vec()
             );
     }
 
     /// We can now load texture/sprites via the normal Api,
     /// regardless of which platform we're targeting.
     let sprite = emd.loader()
-        .sprite("./assets/bunny.png")
+        .sprite("bunny.png")
         .unwrap();
     
     let mut position = Position::new(0.0, 0.0);
