@@ -72,6 +72,12 @@ impl<'a> Emerald<'a> {
         self.delta
     }
 
+    /// WARNING: This overrides the delta value set by the emerald engine.
+    #[inline]
+    pub fn set_delta(&mut self, delta: f32) {
+        self.delta = delta;
+    }
+
     /// Time since Epoch
     #[inline]
     pub fn now(&self) -> f64 {
