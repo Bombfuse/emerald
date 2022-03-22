@@ -13,7 +13,7 @@ pub fn main() {
 
     emerald::start(
         MyGame {
-            pos: Position::new(320.0, 160.0),
+            pos: Transform::from_translation((320.0, 160.0)),
             scale: 1.0,
             render_texture: None,
         },
@@ -22,7 +22,7 @@ pub fn main() {
 }
 
 pub struct MyGame {
-    pos: Position,
+    pos: Transform,
     scale: f32,
     render_texture: Option<TextureKey>,
 }
@@ -43,19 +43,19 @@ impl Game for MyGame {
         let speed = 150.0;
 
         if input.is_key_pressed(KeyCode::Left) {
-            self.pos.x -= speed * delta;
+            self.pos.translation.x -= speed * delta;
         }
 
         if input.is_key_pressed(KeyCode::Right) {
-            self.pos.x += speed * delta;
+            self.pos.translation.x += speed * delta;
         }
 
         if input.is_key_pressed(KeyCode::Up) {
-            self.pos.y += speed * delta;
+            self.pos.translation.y += speed * delta;
         }
 
         if input.is_key_pressed(KeyCode::Down) {
-            self.pos.y -= speed * delta;
+            self.pos.translation.y -= speed * delta;
         }
 
         if input.is_key_just_pressed(KeyCode::A) {
@@ -78,11 +78,11 @@ impl Game for MyGame {
         let rabbit = emd.loader().sprite("bunny.png").unwrap();
         emd.graphics().draw_color_rect(
             &ColorRect::new(WHITE, 500 * 500, 500 * 500),
-            &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32),
+            &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
         );
         emd.graphics().draw_sprite(
             &rabbit,
-            &Position::new((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32),
+            &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
         );
 
         let texture_key = emd.graphics().render_texture().unwrap();

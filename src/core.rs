@@ -1,10 +1,11 @@
-mod components;
-mod engine;
-mod error;
-mod game;
-mod game_settings;
+pub mod components;
+pub mod engine;
+pub mod error;
+pub mod game;
+pub mod game_settings;
 
 pub use components::*;
+pub use components::transform::*;
 pub use engine::GameEngine;
 pub use error::*;
 pub use game::*;
@@ -97,9 +98,7 @@ impl<'a> Emerald<'a> {
     pub fn quit(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            if self.audio_engine.clear().is_err() {
-                //ignore
-            }
+            self.audio_engine.clear().ok();
         }
 
         self.quad_ctx.quit()

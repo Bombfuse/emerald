@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{transform::Transform, EmeraldError, AssetStore, EmeraldWorld, RenderingEngine, Sprite, Label, ColorRect, TextureKey};
 use miniquad::Context;
 
 pub struct GraphicsHandler<'a> {
@@ -34,22 +34,22 @@ impl<'a> GraphicsHandler<'a> {
         )
     }
 
-    pub fn draw_sprite(&mut self, sprite: &Sprite, pos: &Position) {
+    pub fn draw_sprite(&mut self, sprite: &Sprite, transform: &Transform) {
         self.rendering_engine
-            .draw_sprite(&mut self.quad_ctx, &mut self.asset_store, sprite, pos)
+            .draw_sprite(&mut self.quad_ctx, &mut self.asset_store, sprite, &transform.translation)
     }
 
-    pub fn draw_label(&mut self, label: &Label, pos: &Position) -> Result<(), EmeraldError> {
+    pub fn draw_label(&mut self, label: &Label, transform: &Transform) -> Result<(), EmeraldError> {
         self.rendering_engine
-            .draw_label(&mut self.quad_ctx, &mut self.asset_store, label, pos)
+            .draw_label(&mut self.quad_ctx, &mut self.asset_store, label, &transform.translation)
     }
 
-    pub fn draw_color_rect(&mut self, color_rect: &ColorRect, pos: &Position) {
+    pub fn draw_color_rect(&mut self, color_rect: &ColorRect, transform: &Transform) {
         self.rendering_engine.draw_color_rect(
             &mut self.quad_ctx,
             &mut self.asset_store,
             color_rect,
-            pos,
+            &transform.translation,
         )
     }
 

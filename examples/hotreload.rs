@@ -18,7 +18,7 @@ impl Game for HotreloadExample {
         let mut sprite = emd.loader().sprite("hotreload_bunny.png").unwrap();
         sprite.scale.x = 5.0;
         sprite.scale.y = 5.0;
-        self.world.spawn((sprite, Position::zero()));
+        self.world.spawn((sprite, Transform::default()));
     }
 
     fn update(&mut self, mut emd: Emerald) {

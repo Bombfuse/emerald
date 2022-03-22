@@ -78,7 +78,7 @@ impl InputHandler {
             _ => &mut self.mouse.middle,
         };
 
-        self.mouse.position = last_touch.position;
+        self.mouse.translation = last_touch.translation;
         match last_touch.phase {
             TouchPhase::Started => {
                 button.was_pressed = false;
@@ -110,7 +110,7 @@ impl InputHandler {
         self.touches.insert(
             id,
             TouchState {
-                position: self.mouse.position,
+                translation: self.mouse.translation,
                 previous,
                 phase,
             },

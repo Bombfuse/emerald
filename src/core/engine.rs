@@ -118,7 +118,7 @@ impl<G: Game> EventHandler for GameEngine<G> {
     #[inline]
     fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32) {
         let y = ctx.screen_size().1 - y;
-        self.input_engine.set_mouse_position(x, y)
+        self.input_engine.set_mouse_translation(x, y)
     }
 
     #[inline]

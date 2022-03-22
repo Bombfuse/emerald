@@ -26,15 +26,15 @@ impl Game for MyGame {
         emd.touches_to_mouse(true);
 
         self.world.spawn((
-            Position::zero(),
+            Transform::default(),
             UIButton::new(pressed.clone(), unpressed.clone()),
         ));
         self.world.spawn((
-            Position::new(320.0, 180.0),
+            Transform::from_translation((320.0, 180.0)),
             UIButton::new(pressed.clone(), unpressed.clone()),
         ));
         self.world.spawn((
-            Position::new(-320.0, -180.0),
+            Transform::from_translation((-320.0, -180.0)),
             UIButton::new(pressed.clone(), unpressed.clone()),
         ));
     }

@@ -29,12 +29,12 @@ impl Game for TouchExample {
         let touches = input.touches();
 
         let screen = emd.screen_size();
-        let screen_center = Position::new(screen.0 / 2.0, screen.1 / 2.0);
+        let screen_center = Transform::from_translation((screen.0 / 2.0, screen.1 / 2.0));
 
         for (&id, touch) in touches {
-            let bunny_position = touch.position - screen_center;
+            let bunny_position = touch.translation - screen_center.translation;
             if touch.is_just_pressed() {
-                let components: (Sprite, Position) = (self.sprite.clone().unwrap(), bunny_position);
+                let components: (Sprite, Transform) = (self.sprite.clone().unwrap(), Transform::from_translation(bunny_position));
                 self.bunnies.insert(id, self.world.spawn(components));
             } else if touch.is_just_released() {
                 if let Some(x) = self.bunnies.remove(&id) {
@@ -45,9 +45,9 @@ impl Game for TouchExample {
                     .bunnies
                     .get(&id)
                     .copied()
-                    .and_then(|ent| self.world.get_mut::<Position>(ent).ok());
+                    .and_then(|ent| self.world.get_mut::<Transform>(ent).ok());
                 if let Some(mut bunny) = bunny {
-                    *bunny = bunny_position;
+                    bunny.translation = bunny_position;
                 }
             }
         }

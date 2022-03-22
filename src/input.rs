@@ -15,31 +15,28 @@ pub use mouse_state::*;
 pub use systems::*;
 pub use touch_state::*;
 
-use crate::{EmeraldWorld, Position};
+use crate::{EmeraldWorld, transform::Translation};
 
-pub fn screen_position_to_world_position(
+
+/// Returns a world translation equivalent to the given point on a given screen.
+pub fn screen_translation_to_world_translation(
     screen_size: (u32, u32),
-    screen_position: &Position,
+    screen_translation: &Translation,
     world: &mut EmeraldWorld,
-) -> Position {
-    let mut p = screen_position.clone();
-    // let mut camera = Camera::default();
-    let mut camera_pos = Position::zero();
+) -> Translation {
+    let mut p = screen_translation.clone();
+    let mut camera_pos = Translation::default();
 
     if let Some(id) = world.get_active_camera() {
-        if let Ok(pos) = world.get_mut::<Position>(id.clone()) {
+        if let Ok(pos) = world.get_mut::<Translation>(id.clone()) {
             camera_pos.x = pos.x;
             camera_pos.y = pos.y;
         }
-
-        // if let Ok(c) = world.get_mut::<Camera>(id) {
-        //     camera = c.clone();
-        // }
     }
 
     // TODO(bombfuse): take the camera zoom level into account when translating
-    p.x = (screen_size.0 as f32) / -2.0 + screen_position.x + camera_pos.x;
-    p.y = (screen_size.1 as f32) / -2.0 + screen_position.y + camera_pos.y;
+    p.x = (screen_size.0 as f32) / -2.0 + screen_translation.x + camera_pos.x;
+    p.y = (screen_size.1 as f32) / -2.0 + screen_translation.y + camera_pos.y;
 
     p
 }

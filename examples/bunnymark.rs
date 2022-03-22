@@ -36,13 +36,13 @@ impl Game for BunnymarkGame {
 
         let sprite = emd.loader().sprite("bunny.png").unwrap();
 
-        let mut position = Position::new(0.0, 0.0);
+        let mut transform = Transform::default();
 
         self.count = 1000;
         self.world.spawn_batch((0..1000).map(|_| {
-            position.x += 6.0;
-            position.y += 1.0;
-            (position, sprite.clone(), Velocity::new(5.0, 3.0))
+            transform.translation.x += 6.0;
+            transform.translation.y += 1.0;
+            (transform, sprite.clone(), Velocity::new(5.0, 3.0))
         }));
     }
 
@@ -55,43 +55,43 @@ impl Game for BunnymarkGame {
             let mut sprite = emd.loader().sprite("bunny.png").unwrap();
             sprite.offset = Vector2::new(-10.0, 0.0);
 
-            let mut position = Position::new(0.0, 0.0);
+            let mut transform = Transform::default();
             self.count += 1000;
             self.world.spawn_batch((0..1000).map(|_| {
-                position.x += 6.0;
-                position.y += 1.0;
+                transform.translation.x += 6.0;
+                transform.translation.y += 1.0;
 
-                (position, sprite.clone(), Velocity::new(5.0, 3.0))
+                (transform, sprite.clone(), Velocity::new(5.0, 3.0))
             }));
         }
 
-        for (_, (_, mut position, mut vel)) in self
+        for (_, (_, mut transform, mut vel)) in self
             .world
-            .query::<(&Sprite, &mut Position, &mut Velocity)>()
+            .query::<(&Sprite, &mut Transform, &mut Velocity)>()
             .iter()
         {
-            if position.x >= screen_width / 2.0 - sprite_width / 2.0 {
-                position.x = screen_width / 2.0 - sprite_width / 2.0;
+            if transform.translation.x >= screen_width / 2.0 - sprite_width / 2.0 {
+                transform.translation.x = screen_width / 2.0 - sprite_width / 2.0;
                 vel.x *= -1.0;
             }
 
-            if position.x <= -screen_width / 2.0 {
-                position.x = -screen_width / 2.0;
+            if transform.translation.x <= -screen_width / 2.0 {
+                transform.translation.x = -screen_width / 2.0;
                 vel.x *= -1.0;
             }
 
-            if position.y >= screen_height / 2.0 - sprite_width {
-                position.y = screen_height / 2.0 - sprite_width;
+            if transform.translation.y >= screen_height / 2.0 - sprite_width {
+                transform.translation.y = screen_height / 2.0 - sprite_width;
                 vel.y = -3.0;
             }
 
-            if position.y <= -screen_height / 2.0 {
-                position.y = -screen_height / 2.0;
+            if transform.translation.y <= -screen_height / 2.0 {
+                transform.translation.y = -screen_height / 2.0;
                 vel.y = 3.0;
             }
 
-            position.x += vel.x;
-            position.y += vel.y;
+            transform.translation.x += vel.x;
+            transform.translation.y += vel.y;
         }
     }
 
@@ -104,10 +104,10 @@ impl Game for BunnymarkGame {
         let bunnycount_label = Label::new(format!("{} bunnies", (self.count)), font, 40);
 
         emd.graphics()
-            .draw_label(&label, &Position::new(500.0, 500.0))
+            .draw_label(&label, &Transform::from_translation((500.0, 500.0)))
             .unwrap();
         emd.graphics()
-            .draw_label(&bunnycount_label, &Position::new(500.0, 100.0))
+            .draw_label(&bunnycount_label, &Transform::from_translation((500.0, 100.0)))
             .unwrap();
 
         emd.graphics().render().unwrap();

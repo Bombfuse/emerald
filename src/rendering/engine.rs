@@ -1,5 +1,6 @@
-use crate::rendering::components::*;
+use crate::{rendering::components::*, transform::Translation};
 use crate::rendering::*;
+use crate::transform::Transform;
 use crate::world::*;
 use crate::*;
 
@@ -159,15 +160,15 @@ impl RenderingEngine {
             self.current_resolution.0 as f32,
             self.current_resolution.1 as f32,
         );
-        let (camera, camera_position) = get_camera_and_camera_position(world);
+        let (camera, camera_transform) = get_camera_and_camera_transform(world);
         let mut draw_queue = Vec::new();
 
         #[cfg(feature = "aseprite")]
-        for (_id, (aseprite, position)) in world.inner.query::<(&mut Aseprite, &Position)>().iter()
+        for (_id, (aseprite, transform)) in world.inner.query::<(&mut Aseprite, &Transform)>().iter()
         {
             aseprite.update();
 
-            if is_in_view(&aseprite.sprite, position, &camera, &screen_size) {
+            if is_in_view(&aseprite.sprite, transform, &camera, &screen_size) {
                 let drawable = Drawable::Aseprite {
                     sprite: aseprite.sprite.clone(),
                     offset: aseprite.offset,
@@ -181,66 +182,66 @@ impl RenderingEngine {
 
                 draw_queue.push(DrawCommand {
                     drawable,
-                    position: *position,
+                    transform: *transform,
                     z_index: aseprite.z_index,
                 });
             }
         }
 
-        for (_id, (sprite, position)) in world.inner.query::<(&Sprite, &Position)>().iter() {
-            if is_in_view(sprite, position, &camera, &screen_size) {
+        for (_id, (sprite, transform)) in world.inner.query::<(&Sprite, &Transform)>().iter() {
+            if is_in_view(sprite, transform, &camera, &screen_size) {
                 let drawable = Drawable::Sprite {
                     sprite: sprite.clone(),
                 };
 
                 draw_queue.push(DrawCommand {
                     drawable,
-                    position: *position,
+                    transform: *transform,
                     z_index: sprite.z_index,
                 });
             }
         }
 
-        for (_id, (ui_button, position)) in world.inner.query::<(&UIButton, &Position)>().iter() {
+        for (_id, (ui_button, transform)) in world.inner.query::<(&UIButton, &Transform)>().iter() {
             let sprite = if ui_button.is_pressed() {
                 Sprite::from_texture(ui_button.pressed_texture.clone())
             } else {
                 Sprite::from_texture(ui_button.unpressed_texture.clone())
             };
 
-            if is_in_view(&sprite, position, &camera, &screen_size) {
+            if is_in_view(&sprite, transform, &camera, &screen_size) {
                 let drawable = Drawable::Sprite {
                     sprite: sprite.clone(),
                 };
 
                 draw_queue.push(DrawCommand {
                     drawable,
-                    position: *position,
+                    transform: *transform,
                     z_index: ui_button.z_index,
                 });
             }
         }
 
-        for (_id, (color_rect, position)) in world.inner.query::<(&ColorRect, &Position)>().iter() {
+        for (_id, (color_rect, transform)) in world.inner.query::<(&ColorRect, &Transform)>().iter() {
             let drawable = Drawable::ColorRect {
                 color_rect: *color_rect,
             };
 
             draw_queue.push(DrawCommand {
                 drawable,
-                position: *position,
+                transform: *transform,
                 z_index: color_rect.z_index,
             });
         }
 
-        for (_, (label, position)) in world.query::<(&Label, &Position)>().iter() {
+        for (_, (label, transform)) in world.query::<(&Label, &Transform)>().iter() {
             let drawable = Drawable::Label {
                 label: label.clone(),
             };
 
             draw_queue.push(DrawCommand {
                 drawable,
-                position: *position,
+                transform: *transform,
                 z_index: label.z_index,
             })
         }
@@ -249,16 +250,16 @@ impl RenderingEngine {
 
         for draw_command in draw_queue {
             let position = {
-                let mut pos = draw_command.position - camera_position;
+                let mut translation = draw_command.transform.translation - camera_transform.translation;
 
                 if camera.centered {
-                    pos = pos + Position::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
+                    translation = translation + Translation::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
                 }
 
-                pos.x += camera.offset.x;
-                pos.y += camera.offset.y;
+                translation.x += camera.offset.x;
+                translation.y += camera.offset.y;
 
-                pos
+                translation
             };
 
             match draw_command.drawable {
@@ -317,28 +318,28 @@ impl RenderingEngine {
             ..Default::default()
         };
         color_rect.color = collider_color;
-        let (camera, camera_position) = get_camera_and_camera_position(world);
+        let (camera, camera_transform) = get_camera_and_camera_transform(world);
 
         for (_id, body_handle) in world.inner.query::<&RigidBodyHandle>().iter() {
             if let Some(body) = world.physics_engine.bodies.get(*body_handle) {
                 for collider_handle in body.colliders() {
                     if let Some(collider) = world.physics_engine.colliders.get(*collider_handle) {
                         let aabb = collider.compute_aabb();
-                        let pos = Position::new(aabb.center().coords.x, aabb.center().coords.y);
+                        let body_translation = Translation::new(aabb.center().coords.x, aabb.center().coords.y);
                         color_rect.width = aabb.half_extents().x as u32 * 2;
                         color_rect.height = aabb.half_extents().y as u32 * 2;
 
-                        let position = {
-                            let mut pos = pos - camera_position;
+                        let translation = {
+                            let mut translation = body_translation - camera_transform.translation;
 
                             if camera.centered {
-                                pos = pos + Position::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
+                                translation = translation + Translation::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
                             }
 
-                            pos
+                            translation
                         };
 
-                        self.draw_color_rect(&mut ctx, asset_store, &color_rect, &position);
+                        self.draw_color_rect(&mut ctx, asset_store, &color_rect, &translation);
                     }
                 }
             }
@@ -446,8 +447,8 @@ impl RenderingEngine {
         });
         let sprite = Sprite::from_texture(texture_key);
         let (w, h) = ctx.screen_size();
-        let position = Position::new(w as f32 / 2.0, h as f32 / 2.0);
-        self.draw_sprite(ctx, asset_store, &sprite, &position);
+        let translation = Translation::new(w as f32 / 2.0, h as f32 / 2.0);
+        self.draw_sprite(ctx, asset_store, &sprite, &translation);
         ctx.end_render_pass();
 
         Ok(())
@@ -469,7 +470,7 @@ impl RenderingEngine {
         mut ctx: &mut Context,
         mut asset_store: &mut AssetStore,
         label: &Label,
-        position: &Position,
+        position: &Translation,
     ) -> Result<(), EmeraldError> {
         self.layout.reset(&LayoutSettings {
             max_width: label.max_width,
@@ -629,7 +630,7 @@ impl RenderingEngine {
         mut ctx: &mut Context,
         mut asset_store: &mut AssetStore,
         color_rect: &ColorRect,
-        position: &Position,
+        translation: &Translation,
     ) {
         ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
 
@@ -642,7 +643,7 @@ impl RenderingEngine {
         }
 
         let real_scale = Vec2::new(width as f32, height as f32);
-        let real_position = Vec2::new(position.x + offset.x, position.y + offset.y);
+        let real_position = Vec2::new(translation.x + offset.x, translation.y + offset.y);
 
         draw_texture(
             &self.settings,
@@ -673,7 +674,7 @@ impl RenderingEngine {
         scale: &Vector2<f32>,
         color: &Color,
         z_index: f32,
-        position: &Position,
+        position: &Translation,
     ) {
         if !visible {
             return;
@@ -731,7 +732,7 @@ impl RenderingEngine {
         mut ctx: &mut Context,
         mut asset_store: &mut AssetStore,
         sprite: &Sprite,
-        position: &Position,
+        position: &Translation,
     ) {
         if !sprite.visible {
             return;
@@ -832,7 +833,7 @@ fn draw_texture(
 #[inline]
 fn is_in_view(
     _sprite: &Sprite,
-    _pos: &Position,
+    _pos: &Transform,
     _camera: &Camera,
     _screen_size: &(f32, f32),
 ) -> bool {
@@ -840,9 +841,9 @@ fn is_in_view(
 }
 
 #[inline]
-fn get_camera_and_camera_position(world: &EmeraldWorld) -> (Camera, Position) {
+fn get_camera_and_camera_transform(world: &EmeraldWorld) -> (Camera, Transform) {
     let mut cam = Camera::default();
-    let mut cam_position = Position::new(0.0, 0.0);
+    let mut cam_transform = Transform::from_translation((0.0, 0.0));
     let mut entity_holding_camera: Option<Entity> = None;
 
     for (id, camera) in world.query::<&Camera>().iter() {
@@ -853,12 +854,12 @@ fn get_camera_and_camera_position(world: &EmeraldWorld) -> (Camera, Position) {
     }
 
     if let Some(entity) = entity_holding_camera {
-        if let Ok(position) = world.get_mut::<Position>(entity) {
-            cam_position = *position;
+        if let Ok(transform) = world.get_mut::<Transform>(entity) {
+            cam_transform = *transform;
         }
     }
 
-    (cam, cam_position)
+    (cam, cam_transform)
 }
 
 #[derive(Clone)]
@@ -887,7 +888,7 @@ enum Drawable {
 #[derive(Clone)]
 struct DrawCommand {
     pub drawable: Drawable,
-    pub position: Position,
+    pub transform: Transform,
     pub z_index: f32,
 }
 

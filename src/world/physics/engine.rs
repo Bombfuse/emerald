@@ -1,5 +1,7 @@
 use crate::*;
 
+use crate::core::components::transform::Transform;
+
 use rapier2d::na::Isometry2;
 use rapier2d::prelude::*;
 
@@ -295,7 +297,7 @@ impl PhysicsEngine {
         shape_cast_query: ShapeCastQuery<'_>,
     ) -> Option<Entity> {
         let pos = Isometry::new(
-            Vector2::new(shape_cast_query.position.x, shape_cast_query.position.y),
+            Vector2::new(shape_cast_query.origin_translation.x, shape_cast_query.origin_translation.y),
             0.0,
         );
 
@@ -335,7 +337,7 @@ impl PhysicsEngine {
         world: &mut World,
     ) -> Result<RigidBodyHandle, EmeraldError> {
         let handle: Result<RigidBodyHandle, EmeraldError> = {
-            let position = match world.get::<Position>(entity) {
+            let transform = match world.get::<Transform>(entity) {
                 Ok(pos) => Ok(pos),
                 Err(_e) => Err(EmeraldError::new(
                     "Unable to build a body for an entity without a position",
@@ -343,7 +345,7 @@ impl PhysicsEngine {
             }?;
 
             let body = builder
-                .translation(Vector2::new(position.x, position.y))
+                .translation(Vector2::new(transform.translation.x, transform.translation.y))
                 .build();
             let handle = self.bodies.insert(body);
             self.entity_bodies.insert(entity, handle);
@@ -464,42 +466,42 @@ impl PhysicsEngine {
 
     #[inline]
     pub(crate) fn sync_physics_world_to_game_world(&mut self, world: &mut hecs::World) {
-        for (_id, (pos, rbh)) in world.query::<(&mut Position, &RigidBodyHandle)>().iter() {
-            self.sync_physics_position_to_entity_position(pos, *rbh);
+        for (_id, (transform, rbh)) in world.query::<(&mut Transform, &RigidBodyHandle)>().iter() {
+            self.sync_physics_position_to_entity_position(transform, *rbh);
         }
     }
 
     #[inline]
     pub(crate) fn sync_game_world_to_physics_world(&mut self, world: &mut hecs::World) {
-        for (_id, (pos, rbh)) in world.query::<(&mut Position, &RigidBodyHandle)>().iter() {
-            self.sync_entity_position_to_physics_position(pos, *rbh);
+        for (_id, (transform, rbh)) in world.query::<(&mut Transform, &RigidBodyHandle)>().iter() {
+            self.sync_entity_position_to_physics_position(transform, *rbh);
         }
     }
 
     #[inline]
     fn sync_entity_position_to_physics_position(
         &mut self,
-        mut pos: &mut Position,
+        mut transform: &mut Transform,
         body_handle: RigidBodyHandle,
     ) {
-        if let Some(transform) = self.bodies.get(body_handle) {
-            let translation = transform.position().translation;
-            pos.x = translation.x;
-            pos.y = translation.y;
+        if let Some(body_transform) = self.bodies.get(body_handle) {
+            let translation = body_transform.position().translation;
+            transform.translation.x = translation.x;
+            transform.translation.y = translation.y;
         }
     }
 
     #[inline]
     fn sync_physics_position_to_entity_position(
         &mut self,
-        pos: &Position,
+        transform: &Transform,
         body_handle: RigidBodyHandle,
     ) {
         if let Some(body) = self.bodies.get_mut(body_handle) {
             if body.is_kinematic() {
-                body.set_next_kinematic_position(Isometry2::translation(pos.x, pos.y))
+                body.set_next_kinematic_position(Isometry2::translation(transform.translation.x, transform.translation.y))
             } else {
-                body.set_position(Isometry2::translation(pos.x, pos.y), false)
+                body.set_position(Isometry2::translation(transform.translation.x, transform.translation.y), false)
             }
         }
     }
