@@ -1,4 +1,4 @@
-use crate::{transform::Transform, EmeraldError, AssetStore, EmeraldWorld, RenderingEngine, Sprite, Label, ColorRect, TextureKey};
+use crate::{transform::Transform, EmeraldError, AssetStore, EmeraldWorld, RenderingEngine, Sprite, Label, ColorRect, TextureKey, DrawCommand, Drawable};
 use miniquad::Context;
 
 pub struct GraphicsHandler<'a> {
@@ -25,7 +25,7 @@ impl<'a> GraphicsHandler<'a> {
     }
 
     #[cfg(feature = "physics")]
-    pub fn draw_colliders(&mut self, world: &mut EmeraldWorld, color: crate::Color) {
+    pub fn draw_colliders(&mut self, world: &mut EmeraldWorld, color: crate::Color) -> Result<(), EmeraldError> {
         self.rendering_engine.draw_colliders(
             &mut self.quad_ctx,
             &mut self.asset_store,
@@ -34,23 +34,34 @@ impl<'a> GraphicsHandler<'a> {
         )
     }
 
-    pub fn draw_sprite(&mut self, sprite: &Sprite, transform: &Transform) {
-        self.rendering_engine
-            .draw_sprite(&mut self.quad_ctx, &mut self.asset_store, sprite, &transform.translation)
+    pub fn draw_sprite(&mut self, sprite: &Sprite, transform: &Transform) -> Result<(), EmeraldError> {
+        self.rendering_engine.push_draw_command(DrawCommand {
+            drawable: Drawable::Sprite {
+                sprite: sprite.clone(),
+            },
+            transform: *transform,
+            z_index: sprite.z_index,
+        })
     }
 
     pub fn draw_label(&mut self, label: &Label, transform: &Transform) -> Result<(), EmeraldError> {
-        self.rendering_engine
-            .draw_label(&mut self.quad_ctx, &mut self.asset_store, label, &transform.translation)
+        self.rendering_engine.push_draw_command(DrawCommand {
+            drawable: Drawable::Label {
+                label: label.clone(),
+            },
+            transform: *transform,
+            z_index: label.z_index,
+        })
     }
 
-    pub fn draw_color_rect(&mut self, color_rect: &ColorRect, transform: &Transform) {
-        self.rendering_engine.draw_color_rect(
-            &mut self.quad_ctx,
-            &mut self.asset_store,
-            color_rect,
-            &transform.translation,
-        )
+    pub fn draw_color_rect(&mut self, color_rect: &ColorRect, transform: &Transform) -> Result<(), EmeraldError> {
+        self.rendering_engine.push_draw_command(DrawCommand {
+            drawable: Drawable::ColorRect {
+                color_rect: *color_rect,
+            },
+            transform: *transform,
+            z_index: color_rect.z_index,
+        })
     }
 
     /// Begin drawing to the screen

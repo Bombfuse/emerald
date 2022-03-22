@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use emerald::*;
 
 const RES_WIDTH: f32 = 640.0;

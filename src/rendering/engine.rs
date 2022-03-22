@@ -7,7 +7,7 @@ use crate::*;
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
 use glam::{Mat4, Vec2, Vec4};
 use miniquad::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 const EMERALD_TEXTURE_PIPELINE_NAME: &str = "emerald_default_texture_pipline";
 
@@ -25,6 +25,8 @@ pub(crate) struct RenderingEngine {
     render_passes: HashMap<TextureKey, RenderPass>,
     current_render_texture_key: TextureKey,
     current_resolution: (usize, usize),
+
+    draw_queue: VecDeque<DrawCommand>,
 }
 impl RenderingEngine {
     pub(crate) fn new(
@@ -86,6 +88,7 @@ impl RenderingEngine {
             screen_texture_key,
             current_render_texture_key,
             current_resolution,
+            draw_queue: VecDeque::new(),
         }
     }
 
@@ -248,8 +251,8 @@ impl RenderingEngine {
 
         draw_queue.sort_by(|a, b| a.z_index.partial_cmp(&b.z_index).unwrap());
 
-        for draw_command in draw_queue {
-            let position = {
+        for mut draw_command in draw_queue {
+            let translation = {
                 let mut translation = draw_command.transform.translation - camera_transform.translation;
 
                 if camera.centered {
@@ -262,39 +265,8 @@ impl RenderingEngine {
                 translation
             };
 
-            match draw_command.drawable {
-                Drawable::Aseprite {
-                    sprite,
-                    rotation,
-                    offset,
-                    centered,
-                    visible,
-                    scale,
-                    color,
-                    z_index,
-                } => self.draw_aseprite(
-                    &mut ctx,
-                    asset_store,
-                    &sprite,
-                    rotation,
-                    &offset,
-                    centered,
-                    visible,
-                    &scale,
-                    &color,
-                    z_index,
-                    &position,
-                ),
-                Drawable::Sprite { sprite } => {
-                    self.draw_sprite(&mut ctx, asset_store, &sprite, &position)
-                }
-                Drawable::ColorRect { color_rect } => {
-                    self.draw_color_rect(&mut ctx, asset_store, &color_rect, &position)
-                }
-                Drawable::Label { label } => {
-                    self.draw_label(&mut ctx, asset_store, &label, &position)?
-                }
-            }
+            draw_command.transform.translation = translation;
+            self.push_draw_command(draw_command);
         }
 
         Ok(())
@@ -308,7 +280,7 @@ impl RenderingEngine {
         asset_store: &mut AssetStore,
         world: &mut EmeraldWorld,
         collider_color: Color,
-    ) {
+    ) -> Result<(), EmeraldError> {
         let screen_size = (
             self.current_resolution.0 as f32,
             self.current_resolution.1 as f32,
@@ -339,11 +311,17 @@ impl RenderingEngine {
                             translation
                         };
 
-                        self.draw_color_rect(&mut ctx, asset_store, &color_rect, &translation);
+                        self.push_draw_command(DrawCommand {
+                            drawable:  Drawable::ColorRect { color_rect },
+                            transform: Transform::from_translation(translation),
+                            z_index: 0.0,
+                        })?;
                     }
                 }
             }
         }
+
+        Ok(())
     }
 
     #[inline]
@@ -438,6 +416,8 @@ impl RenderingEngine {
         ctx: &mut Context,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
+        self.consume_draw_queue(ctx, asset_store)?;
+        
         let texture_key = self.render_texture(ctx, asset_store)?;
 
         ctx.begin_default_pass(PassAction::Clear {
@@ -458,11 +438,62 @@ impl RenderingEngine {
     pub(crate) fn render_texture(
         &mut self,
         ctx: &mut Context,
-        _asset_store: &mut AssetStore,
+        asset_store: &mut AssetStore,
     ) -> Result<TextureKey, EmeraldError> {
+        self.consume_draw_queue(ctx, asset_store)?;
         ctx.end_render_pass();
 
         Ok(self.current_render_texture_key.clone())
+    }
+
+    #[inline]
+    pub fn push_draw_command(&mut self, draw_command: DrawCommand) -> Result<(), EmeraldError> {
+        self.draw_queue.push_front(draw_command);
+
+        Ok(())
+    }
+
+    #[inline]
+    fn consume_draw_queue(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+        while let Some(draw_command) = self.draw_queue.pop_back() {
+            let translation = draw_command.transform.translation;
+
+            match draw_command.drawable {
+                Drawable::Aseprite {
+                    sprite,
+                    rotation,
+                    offset,
+                    centered,
+                    visible,
+                    scale,
+                    color,
+                    z_index,
+                } => self.draw_aseprite(
+                    ctx,
+                    asset_store,
+                    &sprite,
+                    rotation,
+                    &offset,
+                    centered,
+                    visible,
+                    &scale,
+                    &color,
+                    z_index,
+                    &translation,
+                ),
+                Drawable::Sprite { sprite } => {
+                    self.draw_sprite(ctx, asset_store, &sprite, &translation)
+                }
+                Drawable::ColorRect { color_rect } => {
+                    self.draw_color_rect(ctx, asset_store, &color_rect, &translation)
+                }
+                Drawable::Label { label } => {
+                    self.draw_label(ctx, asset_store, &label, &translation)?
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub(crate) fn draw_label(
@@ -863,7 +894,7 @@ fn get_camera_and_camera_transform(world: &EmeraldWorld) -> (Camera, Transform) 
 }
 
 #[derive(Clone)]
-enum Drawable {
+pub(crate) enum Drawable {
     Aseprite {
         sprite: Sprite,
         rotation: f32,
@@ -886,7 +917,7 @@ enum Drawable {
 }
 
 #[derive(Clone)]
-struct DrawCommand {
+pub(crate) struct DrawCommand {
     pub drawable: Drawable,
     pub transform: Transform,
     pub z_index: f32,
