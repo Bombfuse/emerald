@@ -12,18 +12,18 @@ The api is simple and powerful, giving you direct access to physics, audio, grap
 
 ## Supported Platforms
 <div>
-    <img alt="OpenGL" src="opengl.svg" width=32>
-    <img alt="MacOS" src="apple.svg" width=32>
-    <img alt="Linux" src="linux.svg" width=32>
-    <img alt="Windows" src="windows.svg" width=32>
-    <img alt="RaspberryPi" src="raspberrypi.svg" width=32>
-    <img alt="HTML5" src="webassembly.svg" width=32>
+    <img alt="OpenGL" src="assets/opengl.svg" width=32>
+    <img alt="MacOS" src="assets/apple.svg" width=32>
+    <img alt="Linux" src="assets/linux.svg" width=32>
+    <img alt="Windows" src="assets/windows.svg" width=32>
+    <img alt="RaspberryPi" src="assets/raspberrypi.svg" width=32>
+    <img alt="HTML5" src="assets/webassembly.svg" width=32>
 </div>
 
 
 --- Work in progress ---
 <div>
-    <img alt="Android" src="android.svg" width=32>
+    <img alt="Android" src="assets/android.svg" width=32>
 </div>
 --------------------------
 
@@ -45,7 +45,7 @@ let my_audio = emd.loader()
 
 ### Creating Bodies
 ```rust
-    let entity = emd.world().spawn((Position::new(0.0, 0.0)));
+    let entity = emd.world().spawn((Transform::from_translation((0.0, 0.0))));
 
     let body_handle = emd.world().physics().build_body(
         entity,
@@ -61,7 +61,7 @@ let my_audio = emd.loader()
     // You can alternatively build both the entity and body at once.
     let (entity, body_handle) = emd.world()
         .spawn_with_body(
-            (Position::new(0.0, 0.0)),
+            (Transform::from_translation((0.0, 0.0))),
             RigidBodyBuilder::dynamic()
         )?;
 ```
@@ -164,15 +164,16 @@ fn initialize(&mut self, mut emd: Emerald) {
         .sprite("bunny.png")
         .unwrap();
     
-    let mut position = Position::new(0.0, 0.0);
+    // Default transform at 0.0, 0.0
+    let mut transform = Transform::default();
 
     self.count = 1000;
     emd.world().spawn_batch(
         (0..1000).map(|_| {
-            position.x += 6.0;
-            position.y += 1.0;
+            transform.translation.x += 6.0;
+            transform.translation.y += 1.0;
             let mut s = sprite.clone();
-            (position.clone(), s, Vel { x: 5.0, y: 3.0 })
+            (transform.clone(), s, Vel { x: 5.0, y: 3.0 })
         })
     );
 }
