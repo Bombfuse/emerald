@@ -31,13 +31,13 @@ impl Game for GamepadExample {
 
         self.world.spawn((
             ElapsedTime(0.0),
-            Position::new(0.0, 0.0),
+            Transform::default(),
             left_aligned_label,
         ));
         self.world
-            .spawn((ElapsedTime(0.0), Position::new(0.0, 300.0), centered_label));
+            .spawn((ElapsedTime(0.0), Transform::from_translation((0.0, 300.0)), centered_label));
         self.world
-            .spawn((ElapsedTime(0.0), Position::new(0.0, -300.0), right_label));
+            .spawn((ElapsedTime(0.0), Transform::from_translation((0.0, -300.0)), right_label));
     }
 
     fn update(&mut self, mut emd: Emerald) {

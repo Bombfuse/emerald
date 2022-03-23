@@ -1,4 +1,4 @@
-use emerald::*;
+use emerald::{transform::Transform, GameSettings, RenderSettings, EmeraldWorld, Game, Emerald, aseprite_update_system};
 
 pub fn main() {
     let mut settings = GameSettings::default();
@@ -32,8 +32,8 @@ impl Game for MyGame {
         let mut a2 = aseprite.clone();
         a2.play("smile");
 
-        self.world.spawn((aseprite, Position::new(64.0, 64.0)));
-        self.world.spawn((a2, Position::new(-64.0, 64.0)));
+        self.world.spawn((aseprite, Transform::from_translation((64.0, 64.0))));
+        self.world.spawn((a2, Transform::from_translation((-64.0, 64.0))));
     }
 
     fn update(&mut self, emd: Emerald) {

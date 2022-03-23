@@ -73,7 +73,7 @@ impl Game for Example {
 
         let volume_label = Label::new(format!("Volume: {:05.2}", volume), font, 48);
         emd.graphics()
-            .draw_label(&volume_label, &Position::new(240.0, 180.0))
+            .draw_label(&volume_label, &Transform::from_translation((240.0, 180.0)))
             .unwrap();
 
         emd.graphics().render().unwrap();

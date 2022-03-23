@@ -23,7 +23,7 @@ impl Game for RaycastExample {
             .spawn_with_body(
                 (
                     sprite.clone(),
-                    Position::new(200.0, 0.0),
+                    Transform::from_translation((200.0, 0.0)),
                     String::from("entity on the right"),
                 ),
                 RigidBodyBuilder::new_static(),
@@ -34,7 +34,7 @@ impl Game for RaycastExample {
             .spawn_with_body(
                 (
                     sprite.clone(),
-                    Position::new(-200.0, 0.0),
+                    Transform::from_translation((-200.0, 0.0)),
                     String::from("entity on the left"),
                 ),
                 RigidBodyBuilder::new_static(),
@@ -45,7 +45,7 @@ impl Game for RaycastExample {
             .spawn_with_body(
                 (
                     sprite.clone(),
-                    Position::new(90.0, 200.0),
+                    Transform::from_translation((90.0, 200.0)),
                     String::from("entity on the top"),
                 ),
                 RigidBodyBuilder::new_static(),
@@ -56,7 +56,7 @@ impl Game for RaycastExample {
             .spawn_with_body(
                 (
                     sprite.clone(),
-                    Position::new(-40.0, -200.0),
+                    Transform::from_translation((-40.0, -200.0)),
                     String::from("entity on the bottom"),
                 ),
                 RigidBodyBuilder::new_static(),
@@ -116,7 +116,7 @@ impl Game for RaycastExample {
                 &shape,
                 ShapeCastQuery {
                     velocity: vel,
-                    position: Position::zero(),
+                    origin_translation: Translation::default(),
                     max_toi: 30.0,
                     ..ShapeCastQuery::default()
                 },

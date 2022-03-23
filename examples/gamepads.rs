@@ -24,7 +24,7 @@ impl Game for GamepadExample {
 
         match emd.loader().sprite("bunny.png") {
             Ok(sprite) => {
-                self.world.spawn((sprite, Position::new(16.0, 16.0)));
+                self.world.spawn((sprite, Transform::from_translation((16.0, 16.0))));
             }
             Err(_) => {}
         };
@@ -35,7 +35,6 @@ impl Game for GamepadExample {
         let mut input = emd.input();
         let mut velocity = Vector2::new(0.0, 0.0);
         let speed = 500.0;
-
         let mut direction = input.joystick(Joystick::Left);
 
         if input.is_button_pressed(Button::DPadNorth) {
@@ -53,7 +52,7 @@ impl Game for GamepadExample {
         velocity.x = direction.0 * speed;
         velocity.y = direction.1 * speed;
 
-        for (_, (position, sprite)) in self.world.query::<(&mut Position, &mut Sprite)>().iter() {
+        for (_, (transform, sprite)) in self.world.query::<(&mut Transform, &mut Sprite)>().iter() {
             if input.is_button_just_pressed(Button::North) {
                 sprite.scale *= 2.0;
             } else if input.is_button_just_pressed(Button::South) {
@@ -64,8 +63,8 @@ impl Game for GamepadExample {
                 sprite.visible = !sprite.visible;
             }
 
-            position.x += delta * velocity.x;
-            position.y += delta * velocity.y;
+            transform.translation.x += delta * velocity.x;
+            transform.translation.y += delta * velocity.y;
         }
     }
 

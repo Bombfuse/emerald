@@ -1,4 +1,4 @@
-use crate::{input::*, EmeraldError, Position};
+use crate::{input::*, EmeraldError};
 
 #[cfg(feature = "gamepads")]
 use gamepad::{GamepadEngine, GamepadState};
@@ -110,19 +110,19 @@ impl InputEngine {
     }
 
     #[inline]
-    pub fn set_mouse_position(&mut self, x: f32, y: f32) {
-        self.mouse.position = Position::new(x, y);
+    pub fn set_mouse_translation(&mut self, x: f32, y: f32) {
+        self.mouse.translation = Translation::new(x, y);
     }
 
     #[inline]
     pub fn set_mouse_down(&mut self, button: MouseButton, x: f32, y: f32) {
-        self.set_mouse_position(x, y);
+        self.set_mouse_translation(x, y);
         self.set_mouse_pressed(button, true);
     }
 
     #[inline]
     pub fn set_mouse_up(&mut self, button: MouseButton, x: f32, y: f32) {
-        self.set_mouse_position(x, y);
+        self.set_mouse_translation(x, y);
         self.set_mouse_pressed(button, false);
     }
 
@@ -140,7 +140,7 @@ impl InputEngine {
     #[inline]
     pub fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
         let touch = self.touches.entry(id).or_default();
-        touch.position = Position::new(x, y);
+        touch.translation = Translation::new(x, y);
         touch.phase = phase;
     }
 }

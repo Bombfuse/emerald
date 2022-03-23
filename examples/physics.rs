@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use emerald::*;
 
 const RES_WIDTH: f32 = 640.0;
@@ -35,18 +37,18 @@ pub struct MyGame {
     world: EmeraldWorld,
 }
 impl MyGame {
-    fn spawn_bunny_cube(&mut self, position: Position, emd: &mut Emerald) {
+    fn spawn_bunny_cube(&mut self, transform: Transform, emd: &mut Emerald) {
         self.spawn_bunny(
-            position,
+            transform,
             emd,
             ColliderBuilder::cuboid(6.0, 6.0),
             Velocity { dx: 75.0, dy: 50.0 },
         );
     }
 
-    fn spawn_bunny_round(&mut self, position: Position, emd: &mut Emerald) {
+    fn spawn_bunny_round(&mut self, transform: Transform, emd: &mut Emerald) {
         self.spawn_bunny(
-            position,
+            transform,
             emd,
             ColliderBuilder::ball(6.0),
             Velocity {
@@ -58,20 +60,20 @@ impl MyGame {
 
     fn spawn_bunny(
         &mut self,
-        position: Position,
+        transform: Transform,
         emd: &mut Emerald,
         collider_builder: ColliderBuilder,
         velocity: Velocity,
     ) {
         let sprite = emd.loader().sprite("bunny.png").unwrap();
-        let entity = self.world.spawn((sprite, position));
+        let entity = self.world.spawn((sprite, transform));
         let body = self
             .world
             .physics()
             .build_body(
                 entity,
                 RigidBodyBuilder::new_dynamic().linvel(Vector2::new(velocity.dx, velocity.dy)), // Fling it up and to the right
-            )
+            ) 
             .unwrap();
         self.world.physics().build_collider(body, collider_builder);
     }
@@ -82,13 +84,13 @@ impl Game for MyGame {
 
         let borders = vec![
             (
-                Position::new(0.0, RES_HEIGHT / -2.0),
+                Transform::from_translation((0.0, RES_HEIGHT / -2.0)),
                 (RES_WIDTH / 2.0, 3.0),
             ),
-            (Position::new(0.0, RES_HEIGHT / 2.0), (RES_WIDTH / 2.0, 3.0)),
-            (Position::new(RES_WIDTH / 2.0, 0.0), (3.0, RES_HEIGHT / 2.0)),
+            (Transform::from_translation((0.0, RES_HEIGHT / 2.0)), (RES_WIDTH / 2.0, 3.0)),
+            (Transform::from_translation((RES_WIDTH / 2.0, 0.0)), (3.0, RES_HEIGHT / 2.0)),
             (
-                Position::new(RES_WIDTH / -2.0, 0.0),
+                Transform::from_translation((RES_WIDTH / -2.0, 0.0)),
                 (3.0, RES_HEIGHT / 2.0),
             ),
         ];
@@ -99,7 +101,7 @@ impl Game for MyGame {
                 .spawn_with_body(
                     (border.0,),
                     RigidBodyBuilder::new_static()
-                        .translation(Vector2::new(border.0.x, border.0.y)),
+                        .translation(Vector2::new(border.0.translation.x, border.0.translation.y)),
                 )
                 .unwrap();
             self.world.physics().build_collider(
@@ -120,7 +122,7 @@ impl Game for MyGame {
                 (
                     Controller {},
                     Velocity { dx: 0.0, dy: 0.0 },
-                    Position::new(0.0, 0.0),
+                    Transform::default(),
                     color_rect,
                 ),
                 RigidBodyBuilder::new_kinematic_position_based().can_sleep(false),
@@ -138,28 +140,28 @@ impl Game for MyGame {
         self.elapsed_time_round += emd.delta() as f32;
         let mut input = emd.input();
 
-        for (_, (position, _)) in self.world.query::<(&mut Position, &Controller)>().iter() {
+        for (_, (transform, _)) in self.world.query::<(&mut Transform, &Controller)>().iter() {
             if input.is_key_pressed(KeyCode::Up) {
-                position.y += delta * 80.0;
+                transform.translation.y += delta * 80.0;
             } else if input.is_key_pressed(KeyCode::Down) {
-                position.y += delta * -80.0;
+                transform.translation.y += delta * -80.0;
             }
 
             if input.is_key_pressed(KeyCode::Left) {
-                position.x += delta * -80.0;
+                transform.translation.x += delta * -80.0;
             } else if input.is_key_pressed(KeyCode::Right) {
-                position.x += delta * 80.0;
+                transform.translation.x += delta * 80.0;
             }
         }
 
         if self.elapsed_time_cube > 0.05 {
             self.elapsed_time_cube = 0.0;
-            self.spawn_bunny_cube(Position::new(0.0, RES_HEIGHT / 2.0 - 12.0), &mut emd);
+            self.spawn_bunny_cube(Transform::from_translation((0.0, RES_HEIGHT / 2.0 - 12.0)), &mut emd);
         }
 
         if self.elapsed_time_round > 0.05 {
             self.elapsed_time_round = 0.0;
-            self.spawn_bunny_round(Position::new(0.0, RES_HEIGHT / 2.0 - 12.0), &mut emd);
+            self.spawn_bunny_round(Transform::from_translation((0.0, RES_HEIGHT / 2.0 - 12.0)), &mut emd);
         }
 
         self.world.physics().step(delta);
@@ -176,7 +178,7 @@ impl Game for MyGame {
             let mut label = Label::new(format!("FPS: {}", fps), font, 24);
             label.centered = false;
             emd.graphics()
-                .draw_label(&label, &Position::new(24.0, RES_HEIGHT as f32 - 10.0))
+                .draw_label(&label, &Transform::from_translation((24.0, RES_HEIGHT as f32 - 10.0)))
                 .unwrap();
         }
         // emd.graphics().draw_colliders(Color::new(255, 0, 0, 130));

@@ -1,10 +1,10 @@
 use miniquad::TouchPhase;
 
-use crate::Position;
+use crate::{transform::Translation};
 
 #[derive(Debug, Clone, Copy)]
 pub struct TouchState {
-    pub position: Position,
+    pub translation: Translation,
     pub previous: TouchPhase,
     pub phase: TouchPhase,
 }
@@ -12,7 +12,7 @@ pub struct TouchState {
 impl Default for TouchState {
     fn default() -> Self {
         TouchState {
-            position: Position::zero(),
+            translation: Translation::default(),
             previous: TouchPhase::Cancelled,
             phase: TouchPhase::Cancelled,
         }

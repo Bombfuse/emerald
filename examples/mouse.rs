@@ -3,9 +3,9 @@ use emerald::*;
 pub fn main() {
     let game = MouseExample {
         rect: ColorRect::new(BLACK, 0, 0),
-        position: Position::zero(),
+        transform: Transform::default(),
         background: ColorRect::new(BLACK, 0, 0),
-        screen_center: Position::zero(),
+        screen_center: Translation::default(),
         world: EmeraldWorld::new(),
     };
     emerald::start(game, GameSettings::default())
@@ -13,9 +13,9 @@ pub fn main() {
 
 pub struct MouseExample {
     rect: ColorRect,
-    position: Position,
+    transform: Transform,
     background: ColorRect,
-    screen_center: Position,
+    screen_center: Translation,
     world: EmeraldWorld,
 }
 
@@ -24,7 +24,7 @@ impl Game for MouseExample {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
 
         if let Ok(sprite) = emd.loader().sprite("bunny.png") {
-            self.world.spawn((sprite, Position::new(16.0, 16.0)));
+            self.world.spawn((sprite, Transform::from_translation((16.0, 16.0))));
         }
 
         emd.touches_to_mouse(true);
@@ -32,11 +32,9 @@ impl Game for MouseExample {
 
     fn update(&mut self, mut emd: Emerald) {
         let mouse = emd.input().mouse();
-
         let (width, height) = emd.screen_size();
-        self.position.x = mouse.position.x;
-        self.position.y = mouse.position.y;
-
+        self.transform.translation.x = mouse.translation.x;
+        self.transform.translation.y = mouse.translation.y;
         let mut color = Color::new(0, 0, 0, 255);
         let mut flash = Color::new(128, 128, 128, 128);
 
@@ -63,12 +61,12 @@ impl Game for MouseExample {
 
         self.rect = ColorRect::new(color, 40, 40);
 
-        self.screen_center = Position::new(width / 2.0, height / 2.0);
+        self.screen_center = Translation::new(width / 2.0, height / 2.0);
         self.background = ColorRect::new(flash, width as u32, height as u32);
 
-        for (_, (pos, _)) in self.world.query::<(&mut Position, &mut Sprite)>().iter() {
+        for (_, (transform, _)) in self.world.query::<(&mut Transform, &mut Sprite)>().iter() {
             // It's important to convert coordinates to the physical world space.
-            *pos = self.position - self.screen_center;
+            *transform = self.transform - Transform::from_translation(self.screen_center);
         }
     }
 
@@ -76,8 +74,8 @@ impl Game for MouseExample {
         emd.graphics().begin().unwrap();
 
         emd.graphics()
-            .draw_color_rect(&self.background, &self.screen_center);
-        emd.graphics().draw_color_rect(&self.rect, &self.position);
+            .draw_color_rect(&self.background, &Transform::from_translation(self.screen_center));
+        emd.graphics().draw_color_rect(&self.rect, &self.transform);
         emd.graphics().draw_world(&mut self.world).unwrap();
         emd.graphics().render().unwrap();
     }

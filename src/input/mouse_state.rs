@@ -1,9 +1,9 @@
-use crate::{ButtonState, Position};
+use crate::{ButtonState, transform::Translation};
 
 /// State of mouse over last few frames
 #[derive(Clone, Copy, Debug, Default)]
 pub struct MouseState {
-    pub position: Position,
+    pub translation: Translation,
     pub left: ButtonState,
     pub middle: ButtonState,
     pub right: ButtonState,

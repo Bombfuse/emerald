@@ -14,7 +14,7 @@ impl Game for SpritesExample {
         self.world = Some(EmeraldWorld::new());
 
         if let Some(world) = &mut self.world {
-            world.spawn((sprite, Position::zero()));
+            world.spawn((sprite, Transform::default()));
         }
     }
 

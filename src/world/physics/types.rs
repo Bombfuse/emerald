@@ -4,7 +4,7 @@ use rapier2d::{
     prelude::{ColliderHandle, InteractionGroups},
 };
 
-use crate::Position;
+use crate::transform::Translation;
 
 /// # Parameters
 /// - `ray`: the ray to cast.
@@ -40,7 +40,7 @@ impl<'a> Default for RayCastQuery<'a> {
 
 pub struct ShapeCastQuery<'a> {
     /// The origin position that the shape will be cast from.
-    pub position: Position,
+    pub origin_translation: Translation,
     /// The directional velocity the shape will move at during the cast.
     pub velocity: Vector2<f32>,
     pub max_toi: f32,
@@ -50,7 +50,7 @@ pub struct ShapeCastQuery<'a> {
 impl<'a> Default for ShapeCastQuery<'a> {
     fn default() -> ShapeCastQuery<'a> {
         ShapeCastQuery {
-            position: Position::new(0.0, 0.0),
+            origin_translation: Translation::new(0.0, 0.0),
             velocity: Vector2::new(0.0, 0.0),
             max_toi: 4.0,
             filter: None,

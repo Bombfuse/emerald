@@ -47,7 +47,7 @@ impl Game for PhysicsGroupsExample {
             .world
             .spawn_with_body(
                 (
-                    Position::new(0.0, 40.0),
+                    Transform::from_translation((0.0, 40.0)),
                     ColorRect::new(Color::new(0, 0, 255, 255), 32, 16),
                 ),
                 RigidBodyBuilder::new_dynamic(),
@@ -70,7 +70,7 @@ impl Game for PhysicsGroupsExample {
             .world
             .spawn_with_body(
                 (
-                    Position::new(0.0, 0.0),
+                    Transform::from_translation((0.0, 0.0)),
                     ColorRect::new(Color::new(0, 255, 0, 255), 32, 16),
                 ),
                 RigidBodyBuilder::new_kinematic_position_based()
@@ -87,7 +87,7 @@ impl Game for PhysicsGroupsExample {
             .world
             .spawn_with_body(
                 (
-                    Position::new(0.0, 80.0),
+                    Transform::from_translation((0.0, 80.0)),
                     ColorRect::new(Color::new(0, 255, 0, 255), 32, 16),
                 ),
                 RigidBodyBuilder::new_dynamic(),
