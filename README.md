@@ -127,7 +127,7 @@ emd.world().spawn((aseprite, Position::zero()));
 ```
 
 Export settings
-![Preferred export settings](aseprite_settings.png)
+![Preferred export settings](assets/aseprite_settings.png)
 
 
 
