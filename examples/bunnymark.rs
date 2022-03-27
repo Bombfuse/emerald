@@ -20,7 +20,7 @@ pub fn main() {
     emerald::start(
         BunnymarkGame {
             count: 0,
-            world: EmeraldWorld::new(),
+            world: World::new(),
         },
         settings,
     )
@@ -28,7 +28,7 @@ pub fn main() {
 
 pub struct BunnymarkGame {
     count: u64,
-    world: EmeraldWorld,
+    world: World,
 }
 impl Game for BunnymarkGame {
     fn initialize(&mut self, mut emd: Emerald) {

@@ -6,7 +6,7 @@ pub fn main() {
         transform: Transform::default(),
         background: ColorRect::new(BLACK, 0, 0),
         screen_center: Translation::default(),
-        world: EmeraldWorld::new(),
+        world: World::new(),
     };
     emerald::start(game, GameSettings::default())
 }
@@ -16,7 +16,7 @@ pub struct MouseExample {
     transform: Transform,
     background: ColorRect,
     screen_center: Translation,
-    world: EmeraldWorld,
+    world: World,
 }
 
 impl Game for MouseExample {
@@ -74,8 +74,8 @@ impl Game for MouseExample {
         emd.graphics().begin().unwrap();
 
         emd.graphics()
-            .draw_color_rect(&self.background, &Transform::from_translation(self.screen_center));
-        emd.graphics().draw_color_rect(&self.rect, &self.transform);
+            .draw_color_rect(&self.background, &Transform::from_translation(self.screen_center)).ok();
+        emd.graphics().draw_color_rect(&self.rect, &self.transform).ok();
         emd.graphics().draw_world(&mut self.world).unwrap();
         emd.graphics().render().unwrap();
     }

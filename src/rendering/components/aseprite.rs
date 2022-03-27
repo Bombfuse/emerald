@@ -161,7 +161,7 @@ impl Aseprite {
     }
 }
 
-pub fn aseprite_update_system(world: &mut EmeraldWorld, delta: f32) {
+pub fn aseprite_update_system(world: &mut World, delta: f32) {
     for (_, aseprite) in world.query::<&mut Aseprite>().iter() {
         aseprite.add_delta(delta);
     }

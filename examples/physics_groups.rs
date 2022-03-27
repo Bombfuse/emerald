@@ -15,7 +15,7 @@ pub fn main() {
             e1: None,
             e2: None,
             e3: None,
-            world: EmeraldWorld::new(),
+            world: World::new(),
         },
         settings,
     )
@@ -37,7 +37,7 @@ pub struct PhysicsGroupsExample {
     e1: Option<Entity>,
     e2: Option<Entity>,
     e3: Option<Entity>,
-    world: EmeraldWorld,
+    world: World,
 }
 impl Game for PhysicsGroupsExample {
     fn initialize(&mut self, mut emd: Emerald) {

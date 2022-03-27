@@ -6,7 +6,7 @@ pub fn main() {
     let game = TouchExample {
         bunnies: HashMap::new(),
         sprite: None,
-        world: EmeraldWorld::new(),
+        world: World::new(),
     };
     emerald::start(game, GameSettings::default())
 }
@@ -14,7 +14,7 @@ pub fn main() {
 pub struct TouchExample {
     bunnies: HashMap<u64, Entity>,
     sprite: Option<Sprite>,
-    world: EmeraldWorld,
+    world: World,
 }
 
 impl Game for TouchExample {

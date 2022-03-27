@@ -4,14 +4,14 @@ use nalgebra::Point2;
 pub fn main() {
     emerald::start(
         RaycastExample {
-            world: EmeraldWorld::new(),
+            world: World::new(),
         },
         GameSettings::default(),
     )
 }
 
 pub struct RaycastExample {
-    world: EmeraldWorld,
+    world: World,
 }
 impl Game for RaycastExample {
     fn initialize(&mut self, mut emd: Emerald) {

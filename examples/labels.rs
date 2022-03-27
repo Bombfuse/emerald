@@ -3,7 +3,7 @@ use emerald::*;
 pub fn main() {
     emerald::start(
         GamepadExample {
-            world: EmeraldWorld::new(),
+            world: World::new(),
         },
         GameSettings::default(),
     )
@@ -12,7 +12,7 @@ pub fn main() {
 pub struct ElapsedTime(f32);
 
 pub struct GamepadExample {
-    world: EmeraldWorld,
+    world: World,
 }
 impl Game for GamepadExample {
     fn initialize(&mut self, mut emd: Emerald) {

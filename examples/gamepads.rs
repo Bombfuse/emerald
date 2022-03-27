@@ -9,14 +9,14 @@ pub fn main() {
     settings.render_settings = render_settings;
     emerald::start(
         GamepadExample {
-            world: EmeraldWorld::new(),
+            world: World::new(),
         },
         settings,
     )
 }
 
 pub struct GamepadExample {
-    world: EmeraldWorld,
+    world: World,
 }
 impl Game for GamepadExample {
     fn initialize(&mut self, mut emd: Emerald) {

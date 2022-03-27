@@ -49,8 +49,7 @@ pub use nalgebra;
 pub use nalgebra::Vector2;
 
 // General re-exports for compatibility
-pub use hecs;
-pub use hecs::*;
+pub use hecs::{Entity};
 
 pub use nanoserde;
 pub use quad_rand as rand;

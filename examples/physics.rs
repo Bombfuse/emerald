@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use emerald::*;
 
 const RES_WIDTH: f32 = 640.0;
@@ -16,7 +14,7 @@ pub fn main() {
         MyGame {
             elapsed_time_cube: 0.0,
             elapsed_time_round: 0.0,
-            world: EmeraldWorld::new(),
+            world: World::new(),
         },
         settings,
     )
@@ -34,7 +32,7 @@ pub struct Controller {}
 pub struct MyGame {
     elapsed_time_cube: f32,
     elapsed_time_round: f32,
-    world: EmeraldWorld,
+    world: World,
 }
 impl MyGame {
     fn spawn_bunny_cube(&mut self, transform: Transform, emd: &mut Emerald) {

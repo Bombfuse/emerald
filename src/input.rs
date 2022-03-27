@@ -15,14 +15,14 @@ pub use mouse_state::*;
 pub use systems::*;
 pub use touch_state::*;
 
-use crate::{EmeraldWorld, transform::Translation};
+use crate::{World, transform::Translation};
 
 
 /// Returns a world translation equivalent to the given point on a given screen.
 pub fn screen_translation_to_world_translation(
     screen_size: (u32, u32),
     screen_translation: &Translation,
-    world: &mut EmeraldWorld,
+    world: &mut World,
 ) -> Translation {
     let mut p = screen_translation.clone();
     let mut camera_pos = Translation::default();

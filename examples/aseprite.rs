@@ -1,4 +1,4 @@
-use emerald::{transform::Transform, GameSettings, RenderSettings, EmeraldWorld, Game, Emerald, aseprite_update_system};
+use emerald::{transform::Transform, GameSettings, RenderSettings, World, Game, Emerald, aseprite_update_system};
 
 pub fn main() {
     let mut settings = GameSettings::default();
@@ -9,14 +9,14 @@ pub fn main() {
     settings.render_settings = render_settings;
     emerald::start(
         MyGame {
-            world: EmeraldWorld::new(),
+            world: World::new(),
         },
         settings,
     )
 }
 
 pub struct MyGame {
-    world: EmeraldWorld,
+    world: World,
 }
 impl Game for MyGame {
     fn initialize(&mut self, mut emd: Emerald) {
