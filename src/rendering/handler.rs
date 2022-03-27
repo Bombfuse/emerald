@@ -1,4 +1,4 @@
-use crate::{transform::Transform, EmeraldError, AssetStore, EmeraldWorld, RenderingEngine, Sprite, Label, ColorRect, TextureKey, DrawCommand, Drawable};
+use crate::{transform::Transform, EmeraldError, AssetStore, World, RenderingEngine, Sprite, Label, ColorRect, TextureKey, DrawCommand, Drawable};
 use miniquad::Context;
 
 pub struct GraphicsHandler<'a> {
@@ -19,16 +19,14 @@ impl<'a> GraphicsHandler<'a> {
         }
     }
 
-    pub fn draw_world(&mut self, world: &mut EmeraldWorld) -> Result<(), EmeraldError> {
+    pub fn draw_world(&mut self, world: &mut World) -> Result<(), EmeraldError> {
         self.rendering_engine
-            .draw_world(&mut self.quad_ctx, &mut self.asset_store, world)
+            .draw_world(world)
     }
 
     #[cfg(feature = "physics")]
-    pub fn draw_colliders(&mut self, world: &mut EmeraldWorld, color: crate::Color) -> Result<(), EmeraldError> {
+    pub fn draw_colliders(&mut self, world: &mut World, color: crate::Color) -> Result<(), EmeraldError> {
         self.rendering_engine.draw_colliders(
-            &mut self.quad_ctx,
-            &mut self.asset_store,
             world,
             color,
         )

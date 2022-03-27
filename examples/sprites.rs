@@ -5,13 +5,13 @@ pub fn main() {
 }
 
 pub struct SpritesExample {
-    world: Option<EmeraldWorld>,
+    world: Option<World>,
 }
 impl Game for SpritesExample {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
         let sprite = emd.loader().sprite("bunny.png").unwrap();
-        self.world = Some(EmeraldWorld::new());
+        self.world = Some(World::new());
 
         if let Some(world) = &mut self.world {
             world.spawn((sprite, Transform::default()));

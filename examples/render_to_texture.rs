@@ -79,11 +79,11 @@ impl Game for MyGame {
         emd.graphics().draw_color_rect(
             &ColorRect::new(WHITE, 500 * 500, 500 * 500),
             &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
-        );
+        ).ok();
         emd.graphics().draw_sprite(
             &rabbit,
             &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
-        );
+        ).ok();
 
         let texture_key = emd.graphics().render_texture().unwrap();
 
@@ -101,7 +101,7 @@ impl Game for MyGame {
         screen_sprite.scale.y = self.scale;
 
         emd.graphics().begin().unwrap();
-        emd.graphics().draw_sprite(&screen_sprite, &self.pos);
+        emd.graphics().draw_sprite(&screen_sprite, &self.pos).ok();
         emd.graphics().render().unwrap();
 
         println!("screen draw: {:?}", e - now);

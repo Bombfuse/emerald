@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use crate::{
-    screen_translation_to_world_translation, Emerald, EmeraldWorld, TouchState, UIButton, transform::{Transform, Translation},
+    screen_translation_to_world_translation, Emerald, World, TouchState, UIButton, transform::{Transform, Translation},
 };
 
 /// Updates the status of UI Buttons.
 /// Presses the button if the user has pressed it, etc...
-pub fn ui_button_system(emd: &mut Emerald<'_>, world: &mut EmeraldWorld) {
+pub fn ui_button_system(emd: &mut Emerald<'_>, world: &mut World) {
     let input = emd.input();
     let mouse = input.mouse();
     let touches = input.touches();

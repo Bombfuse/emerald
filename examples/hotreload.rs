@@ -3,14 +3,14 @@ use emerald::*;
 pub fn main() {
     emerald::start(
         HotreloadExample {
-            world: EmeraldWorld::new(),
+            world: World::new(),
         },
         GameSettings::default(),
     )
 }
 
 pub struct HotreloadExample {
-    world: EmeraldWorld,
+    world: World,
 }
 impl Game for HotreloadExample {
     fn initialize(&mut self, mut emd: Emerald) {

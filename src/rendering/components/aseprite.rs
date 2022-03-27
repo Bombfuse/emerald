@@ -93,38 +93,42 @@ impl Aseprite {
         0.0
     }
 
-    pub fn play<T: Into<String>>(&mut self, new_animation: T) {
+    pub fn play<T: Into<String>>(&mut self, new_animation: T) -> Result<(), EmeraldError> {
         self.is_looping = false;
-        let new_animation: String = new_animation.into();
+        self.reset();
+        self.set_tag(new_animation)
+    }
 
-        for tag in &self.data.meta.frame_tags {
-            if tag.name == new_animation {
-                self.current_tag = tag.clone();
+    pub fn play_and_loop<T: Into<String>>(&mut self, new_animation: T) -> Result<(), EmeraldError> {
+        self.is_looping = true;
+        self.reset();
+        self.set_tag(new_animation)
+    }
+
+    fn set_tag<T: Into<String>>(&mut self, animation_name: T) -> Result<(), EmeraldError> {
+        let animation_name: String = animation_name.into();
+
+        if let Some(tag) = self.get_tag(animation_name.clone()) {
+            self.current_tag = tag;
+        } else {
+            return Err(EmeraldError::new(format!("Animation {} does not exist.", animation_name)));
+        }
+
+        Ok(())
+    }
+
+    fn get_tag<T: Into<String>>(&mut self, name: T) -> Option<AsepriteTag> {
+        let name: String = name.into();
+        let mut tag = None;
+
+        for t in &self.data.meta.frame_tags {
+            if t.name == name {
+                tag = Some(t.clone());
                 break;
             }
         }
 
-        // TODO(bombfuse): Requested animation couldn't be found
-        if self.current_tag.name != new_animation {}
-
-        self.reset();
-    }
-
-    pub fn play_and_loop<T: Into<String>>(&mut self, new_animation: T) {
-        self.is_looping = true;
-        let new_animation: String = new_animation.into();
-        if self.current_tag.name == new_animation {
-            return;
-        }
-
-        self.reset();
-
-        for tag in &self.data.meta.frame_tags {
-            if tag.name == new_animation {
-                self.current_tag = tag.clone();
-                return;
-            }
-        }
+        tag
     }
 
     fn reset(&mut self) {
@@ -133,9 +137,6 @@ impl Aseprite {
         self.frame_counter = 0;
     }
 
-    /// !!! WARNING !!!
-    /// I have exposed this function to the user in case they choose to toy around with animation speed.
-    /// Manually adding delta time may produce undesirable results. Or desirable results, up to you.
     pub fn add_delta(&mut self, delta: f32) {
         self.elapsed_time += delta;
         self.total_anim_elapsed_time += delta;
@@ -161,7 +162,7 @@ impl Aseprite {
     }
 }
 
-pub fn aseprite_update_system(world: &mut EmeraldWorld, delta: f32) {
+pub fn aseprite_update_system(world: &mut World, delta: f32) {
     for (_, aseprite) in world.query::<&mut Aseprite>().iter() {
         aseprite.add_delta(delta);
     }

@@ -155,9 +155,7 @@ impl RenderingEngine {
     #[inline]
     pub fn draw_world(
         &mut self,
-        mut ctx: &mut Context,
-        asset_store: &mut AssetStore,
-        world: &mut EmeraldWorld,
+        world: &mut World,
     ) -> Result<(), EmeraldError> {
         let screen_size = (
             self.current_resolution.0 as f32,
@@ -266,7 +264,7 @@ impl RenderingEngine {
             };
 
             draw_command.transform.translation = translation;
-            self.push_draw_command(draw_command);
+            self.push_draw_command(draw_command)?;
         }
 
         Ok(())
@@ -276,9 +274,7 @@ impl RenderingEngine {
     #[cfg(feature = "physics")]
     pub fn draw_colliders(
         &mut self,
-        mut ctx: &mut Context,
-        asset_store: &mut AssetStore,
-        world: &mut EmeraldWorld,
+        world: &mut World,
         collider_color: Color,
     ) -> Result<(), EmeraldError> {
         let screen_size = (
@@ -872,7 +868,7 @@ fn is_in_view(
 }
 
 #[inline]
-fn get_camera_and_camera_transform(world: &EmeraldWorld) -> (Camera, Transform) {
+fn get_camera_and_camera_transform(world: &World) -> (Camera, Transform) {
     let mut cam = Camera::default();
     let mut cam_transform = Transform::from_translation((0.0, 0.0));
     let mut entity_holding_camera: Option<Entity> = None;
