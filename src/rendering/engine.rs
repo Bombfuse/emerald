@@ -8,7 +8,6 @@ use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
 use glam::{Mat4, Vec2, Vec4};
 use miniquad::*;
 use std::collections::{HashMap, VecDeque};
-use std::time::Duration;
 
 const EMERALD_TEXTURE_PIPELINE_NAME: &str = "emerald_default_texture_pipline";
 
