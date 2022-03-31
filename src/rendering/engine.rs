@@ -454,7 +454,6 @@ impl RenderingEngine {
     fn consume_draw_queue(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
         ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
 
-        let now = miniquad::date::now();
         while let Some(draw_command) = self.draw_queue.pop_back() {
             let translation = draw_command.transform.translation;
 
@@ -492,8 +491,6 @@ impl RenderingEngine {
                 }
             }
         }
-        let end = miniquad::date::now();
-        println!("{:?}us", Duration::from_secs_f64(end - now).as_micros());
         Ok(())
     }
 
