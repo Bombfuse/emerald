@@ -451,6 +451,8 @@ impl RenderingEngine {
 
     #[inline]
     fn consume_draw_queue(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+        ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
+
         while let Some(draw_command) = self.draw_queue.pop_back() {
             let translation = draw_command.transform.translation;
 
@@ -488,7 +490,6 @@ impl RenderingEngine {
                 }
             }
         }
-
         Ok(())
     }
 
@@ -541,7 +542,6 @@ impl RenderingEngine {
             Option<f32>, // max_width
         )> = Vec::new();
 
-        ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
 
         let mut remaining_char_count = label.visible_characters;
         if label.visible_characters < 0 {
@@ -659,8 +659,6 @@ impl RenderingEngine {
         color_rect: &ColorRect,
         translation: &Translation,
     ) {
-        ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
-
         let (width, height) = (color_rect.width, color_rect.height);
         let mut offset = color_rect.offset;
 
@@ -707,7 +705,6 @@ impl RenderingEngine {
             return;
         }
 
-        ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
         let texture = asset_store.get_texture(&sprite.texture_key).unwrap();
         let mut target = Rectangle::new(
             sprite.target.x / texture.width as f32,
@@ -765,7 +762,6 @@ impl RenderingEngine {
             return;
         }
 
-        ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
         let texture = asset_store.get_texture(&sprite.texture_key).unwrap();
         let mut target = Rectangle::new(
             sprite.target.x / texture.width as f32,
