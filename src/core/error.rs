@@ -12,12 +12,18 @@ impl EmeraldError {
     }
 }
 
+impl std::fmt::Display for EmeraldError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
 // Kira audio backend error translations
 #[cfg(feature = "audio")]
 impl std::convert::From<kira::CommandError> for EmeraldError {
     fn from(e: kira::CommandError) -> EmeraldError {
         EmeraldError {
-            message: e.to_string(),
+            message: format!("kira::ComandError {:?}", &e.to_string()),
         }
     }
 }
@@ -26,7 +32,7 @@ impl std::convert::From<kira::CommandError> for EmeraldError {
 impl std::convert::From<kira::manager::error::SetupError> for EmeraldError {
     fn from(e: kira::manager::error::SetupError) -> EmeraldError {
         EmeraldError {
-            message: e.to_string(),
+            message: format!("kira::manager::error::SetupError {:?}", &e.to_string()),
         }
     }
 }
@@ -34,7 +40,7 @@ impl std::convert::From<kira::manager::error::SetupError> for EmeraldError {
 impl std::convert::From<kira::manager::error::AddSoundError> for EmeraldError {
     fn from(e: kira::manager::error::AddSoundError) -> EmeraldError {
         EmeraldError {
-            message: e.to_string(),
+            message: format!("kira::manager::error::SetupError {:?}", &e.to_string()),
         }
     }
 }
@@ -43,21 +49,15 @@ impl std::convert::From<kira::manager::error::AddSoundError> for EmeraldError {
 impl std::convert::From<kira::sound::error::SoundFromFileError> for EmeraldError {
     fn from(e: kira::sound::error::SoundFromFileError) -> EmeraldError {
         EmeraldError {
-            message: e.to_string(),
+            message: format!("kira::manager::error::SetupError {:?}", &e.to_string()),
         }
-    }
-}
-
-impl std::fmt::Display for EmeraldError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
     }
 }
 
 impl std::convert::From<image::ImageError> for EmeraldError {
     fn from(e: image::ImageError) -> EmeraldError {
         EmeraldError {
-            message: e.to_string(),
+            message: format!("image::ImageError {:?}", &e.to_string()),
         }
     }
 }
@@ -65,7 +65,7 @@ impl std::convert::From<image::ImageError> for EmeraldError {
 impl std::convert::From<nanoserde::DeJsonErr> for EmeraldError {
     fn from(e: nanoserde::DeJsonErr) -> EmeraldError {
         EmeraldError {
-            message: e.to_string(),
+            message: format!("nanoserde::DeJsonErr {:?}", &e.to_string()),
         }
     }
 }
@@ -73,7 +73,7 @@ impl std::convert::From<nanoserde::DeJsonErr> for EmeraldError {
 impl std::convert::From<std::io::Error> for EmeraldError {
     fn from(e: std::io::Error) -> EmeraldError {
         EmeraldError {
-            message: e.to_string(),
+            message: format!("std::io::Error {:?}", &e.to_string()),
         }
     }
 }
@@ -88,7 +88,7 @@ impl std::convert::From<&str> for EmeraldError {
 impl std::convert::From<std::string::FromUtf8Error> for EmeraldError {
     fn from(e: std::string::FromUtf8Error) -> EmeraldError {
         EmeraldError {
-            message: e.to_string(),
+            message: format!("std::string::FromUtf8Error {:?}", &e.to_string()),
         }
     }
 }
@@ -97,7 +97,7 @@ impl std::convert::From<std::string::FromUtf8Error> for EmeraldError {
 impl std::convert::From<crossbeam::channel::TryRecvError> for EmeraldError {
     fn from(e: crossbeam::channel::TryRecvError) -> EmeraldError {
         EmeraldError {
-            message: e.to_string(),
+            message: format!("crossbeam::channel::TryRecvError {:?}", &e.to_string()),
         }
     }
 }
@@ -113,7 +113,7 @@ impl std::convert::From<std::ffi::OsString> for EmeraldError {
 impl std::convert::From<hecs::NoSuchEntity> for EmeraldError {
     fn from(e: hecs::NoSuchEntity) -> EmeraldError {
         EmeraldError {
-            message: e.to_string(),
+            message: format!("hecs::NoSuchEntity {:?}", &e.to_string()),
         }
     }
 }
@@ -121,7 +121,7 @@ impl std::convert::From<hecs::NoSuchEntity> for EmeraldError {
 impl std::convert::From<hecs::ComponentError> for EmeraldError {
     fn from(e: hecs::ComponentError) -> EmeraldError {
         EmeraldError {
-            message: e.to_string(),
+            message: format!("hecs::ComponentError {:?}", &e.to_string()),
         }
     }
 }
