@@ -58,6 +58,7 @@ impl AssetStore {
         let user_data_folder_root =
             String::from(format!("{}/{}/", get_app_data_directory(), _game_name));
 
+        #[cfg(target_arch = "wasm32")]
         if !Path::new(&user_data_folder_root).exists() {
             create_dir(&user_data_folder_root)?;
         }
