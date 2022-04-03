@@ -169,7 +169,7 @@ impl RenderingEngine {
         {
             aseprite.update();
 
-            if is_in_view(&aseprite.sprite, transform, &camera, &camera_transform, &screen_size) {
+            if is_in_view(&self.settings, &aseprite.sprite, transform, &camera, &camera_transform, &screen_size) {
                 let drawable = Drawable::Aseprite {
                     sprite: aseprite.sprite.clone(),
                     offset: aseprite.offset,
@@ -190,7 +190,7 @@ impl RenderingEngine {
         }
 
         for (_id, (sprite, transform)) in world.inner.query::<(&Sprite, &Transform)>().iter() {
-            if is_in_view(sprite, transform, &camera, &camera_transform, &screen_size) {
+            if is_in_view(&self.settings, sprite, transform, &camera, &camera_transform, &screen_size) {
                 let drawable = Drawable::Sprite {
                     sprite: sprite.clone(),
                 };
@@ -210,7 +210,7 @@ impl RenderingEngine {
                 Sprite::from_texture(ui_button.unpressed_texture.clone())
             };
 
-            if is_in_view(&sprite, transform, &camera, &camera_transform, &screen_size) {
+            if is_in_view(&self.settings, &sprite, transform, &camera, &camera_transform, &screen_size) {
                 let drawable = Drawable::Sprite {
                     sprite: sprite.clone(),
                 };
@@ -855,12 +855,18 @@ fn draw_texture(
 
 #[inline]
 fn is_in_view(
+    settings: &RenderSettings,
     sprite: &Sprite,
     sprite_transform: &Transform,
     camera: &Camera,
     camera_transform: &Transform,
     screen_size: &(f32, f32),
 ) -> bool {
+    // No need to do culling checks
+    if !settings.frustrum_culling {
+        return true;
+    }
+
     // Build a rectangle representing the visual size of the sprite
     let mut sprite_visible_bounds = sprite.target.clone();
 
