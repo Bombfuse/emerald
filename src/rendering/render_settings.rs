@@ -1,17 +1,5 @@
 use crate::*;
 
-#[derive(Clone, Copy, Debug)]
-pub enum ScreenScalar {
-    /// Perform no automatic scaling
-    None,
-
-    /// Keep the initial aspect ratio, providing black borders
-    Keep,
-
-    /// Stretch to fill screen
-    Stretch,
-}
-
 #[derive(Clone, Debug)]
 pub struct RenderSettings {
     pub background_color: Color,
@@ -20,6 +8,9 @@ pub struct RenderSettings {
     pub high_dpi: bool,
     pub resizable_window: bool,
     pub icon: Option<Icon>,
+
+    // Whether or not the game engine should automatically cull sprites that are not in camera view
+    pub frustrum_culling: bool,
 }
 impl Default for RenderSettings {
     fn default() -> RenderSettings {
@@ -30,6 +21,7 @@ impl Default for RenderSettings {
             high_dpi: false,
             resizable_window: true,
             icon: None,
+            frustrum_culling: true,
         }
     }
 }

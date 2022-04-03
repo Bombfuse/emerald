@@ -25,4 +25,9 @@ impl Rectangle {
     pub fn is_zero_sized(self) -> bool {
         self.width == 0.0 && self.height == 0.0
     }
+
+    /// Whether or not the given rectangle and this rectangle intersect
+    pub fn intersects_with(&self, other: &Rectangle) -> bool {
+        self.x <= (other.x + other.width) && (self.x + self.width) >= other.x && self.y <= other.y + other.height && self.y + self.height >= other.y
+    }
 }
