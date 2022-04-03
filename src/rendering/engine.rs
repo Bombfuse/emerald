@@ -169,7 +169,7 @@ impl RenderingEngine {
         {
             aseprite.update();
 
-            if is_in_view(&aseprite.sprite, transform, &camera, &screen_size) {
+            if is_in_view(&aseprite.sprite, transform, &camera, &camera_transform, &screen_size) {
                 let drawable = Drawable::Aseprite {
                     sprite: aseprite.sprite.clone(),
                     offset: aseprite.offset,
@@ -190,7 +190,7 @@ impl RenderingEngine {
         }
 
         for (_id, (sprite, transform)) in world.inner.query::<(&Sprite, &Transform)>().iter() {
-            if is_in_view(sprite, transform, &camera, &screen_size) {
+            if is_in_view(sprite, transform, &camera, &camera_transform, &screen_size) {
                 let drawable = Drawable::Sprite {
                     sprite: sprite.clone(),
                 };
@@ -210,7 +210,7 @@ impl RenderingEngine {
                 Sprite::from_texture(ui_button.unpressed_texture.clone())
             };
 
-            if is_in_view(&sprite, transform, &camera, &screen_size) {
+            if is_in_view(&sprite, transform, &camera, &camera_transform, &screen_size) {
                 let drawable = Drawable::Sprite {
                     sprite: sprite.clone(),
                 };
@@ -855,12 +855,29 @@ fn draw_texture(
 
 #[inline]
 fn is_in_view(
-    _sprite: &Sprite,
-    _pos: &Transform,
-    _camera: &Camera,
-    _screen_size: &(f32, f32),
+    sprite: &Sprite,
+    sprite_transform: &Transform,
+    camera: &Camera,
+    camera_transform: &Transform,
+    screen_size: &(f32, f32),
 ) -> bool {
-    true
+    // Build a rectangle representing the visual size of the sprite
+    let mut sprite_visible_bounds = sprite.target.clone();
+
+    // Take the sprite's scale factor into account
+    sprite_visible_bounds.width *= sprite.scale.x;
+    sprite_visible_bounds.height *= sprite.scale.y;
+
+    // Set the visibility rect at the position of the sprite
+    sprite_visible_bounds.x = sprite_transform.translation.x;
+    sprite_visible_bounds.y = sprite_transform.translation.y;
+
+    // Anything inside of this region should be drawn, it represents the camera view
+    let mut camera_view_region = Rectangle::new(camera_transform.translation.x - screen_size.0 / 2.0, camera_transform.translation.y - screen_size.1 / 2.0, screen_size.0, screen_size.1);
+    camera_view_region.width *= camera.zoom;
+    camera_view_region.height *= camera.zoom;
+
+    camera_view_region.intersects_with(&sprite_visible_bounds)
 }
 
 #[inline]
