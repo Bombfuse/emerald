@@ -169,7 +169,7 @@ impl RenderingEngine {
         {
             aseprite.update();
 
-            if is_in_view(&self.settings, &aseprite.sprite, transform, &camera, &camera_transform, &screen_size) {
+            if is_sprite_in_view(&self.settings, &aseprite.sprite, transform, &camera, &camera_transform, &screen_size) {
                 let drawable = Drawable::Aseprite {
                     sprite: aseprite.sprite.clone(),
                     offset: aseprite.offset,
@@ -190,7 +190,7 @@ impl RenderingEngine {
         }
 
         for (_id, (sprite, transform)) in world.inner.query::<(&Sprite, &Transform)>().iter() {
-            if is_in_view(&self.settings, sprite, transform, &camera, &camera_transform, &screen_size) {
+            if is_sprite_in_view(&self.settings, sprite, transform, &camera, &camera_transform, &screen_size) {
                 let drawable = Drawable::Sprite {
                     sprite: sprite.clone(),
                 };
@@ -210,7 +210,7 @@ impl RenderingEngine {
                 Sprite::from_texture(ui_button.unpressed_texture.clone())
             };
 
-            if is_in_view(&self.settings, &sprite, transform, &camera, &camera_transform, &screen_size) {
+            if is_sprite_in_view(&self.settings, &sprite, transform, &camera, &camera_transform, &screen_size) {
                 let drawable = Drawable::Sprite {
                     sprite: sprite.clone(),
                 };
@@ -224,15 +224,17 @@ impl RenderingEngine {
         }
 
         for (_id, (color_rect, transform)) in world.inner.query::<(&ColorRect, &Transform)>().iter() {
-            let drawable = Drawable::ColorRect {
-                color_rect: *color_rect,
-            };
-
-            draw_queue.push(DrawCommand {
-                drawable,
-                transform: *transform,
-                z_index: color_rect.z_index,
-            });
+            if is_color_rect_in_view(&self.settings, &color_rect, &transform, &camera, &camera_transform, &screen_size) {
+                let drawable = Drawable::ColorRect {
+                    color_rect: *color_rect,
+                };
+    
+                draw_queue.push(DrawCommand {
+                    drawable,
+                    transform: *transform,
+                    z_index: color_rect.z_index,
+                });
+            }
         }
 
         for (_, (label, transform)) in world.query::<(&Label, &Transform)>().iter() {
@@ -854,7 +856,36 @@ fn draw_texture(
 }
 
 #[inline]
-fn is_in_view(
+fn is_color_rect_in_view(
+    settings: &RenderSettings,
+    color_rect: &ColorRect,
+    color_rect_transform: &Transform,
+    camera: &Camera,
+    camera_transform: &Transform,
+    screen_size: &(f32, f32),
+) -> bool {
+    // No need to do culling checks
+    if !settings.frustrum_culling {
+        return true;
+    }
+
+    // Build a rectangle representing the visual size of the sprite
+    let mut color_rect_visible_bounds = Rectangle::new(color_rect_transform.translation.x, color_rect_transform.translation.y, color_rect.width as f32, color_rect.height as f32);
+    if color_rect.centered {
+        color_rect_visible_bounds.x -= color_rect.width as f32 / 2.0;
+        color_rect_visible_bounds.y -= color_rect.width as f32 / 2.0;
+    }
+
+    // Anything inside of this region should be drawn, it represents the camera view
+    let mut camera_view_region = Rectangle::new(camera_transform.translation.x - screen_size.0 / 2.0, camera_transform.translation.y - screen_size.1 / 2.0, screen_size.0, screen_size.1);
+    camera_view_region.width *= camera.zoom;
+    camera_view_region.height *= camera.zoom;
+
+    camera_view_region.intersects_with(&color_rect_visible_bounds)
+}
+
+#[inline]
+fn is_sprite_in_view(
     settings: &RenderSettings,
     sprite: &Sprite,
     sprite_transform: &Transform,
