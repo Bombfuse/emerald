@@ -886,7 +886,7 @@ fn is_color_rect_in_view(
 
 #[inline]
 fn is_sprite_in_view(
-    settings: &RenderSettings,
+     settings: &RenderSettings,
     sprite: &Sprite,
     sprite_transform: &Transform,
     camera: &Camera,
