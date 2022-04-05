@@ -900,14 +900,19 @@ fn is_sprite_in_view(
 
     // Build a rectangle representing the visual size of the sprite
     let mut sprite_visible_bounds = sprite.target.clone();
+    // Set the visibility rect at the position of the sprite
+    sprite_visible_bounds.x = sprite_transform.translation.x;
+    sprite_visible_bounds.y = sprite_transform.translation.y;
+    
+    if sprite.centered {
+        sprite_visible_bounds.x -= sprite.target.width as f32 / 2.0;
+        sprite_visible_bounds.y -= sprite.target.height as f32 / 2.0;
+    }
 
     // Take the sprite's scale factor into account
     sprite_visible_bounds.width *= sprite.scale.x;
     sprite_visible_bounds.height *= sprite.scale.y;
 
-    // Set the visibility rect at the position of the sprite
-    sprite_visible_bounds.x = sprite_transform.translation.x;
-    sprite_visible_bounds.y = sprite_transform.translation.y;
 
     // Anything inside of this region should be drawn, it represents the camera view
     let mut camera_view_region = Rectangle::new(camera_transform.translation.x - screen_size.0 / 2.0, camera_transform.translation.y - screen_size.1 / 2.0, screen_size.0, screen_size.1);
