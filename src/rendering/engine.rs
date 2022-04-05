@@ -873,7 +873,7 @@ fn is_color_rect_in_view(
     let mut color_rect_visible_bounds = Rectangle::new(color_rect_transform.translation.x, color_rect_transform.translation.y, color_rect.width as f32, color_rect.height as f32);
     if color_rect.centered {
         color_rect_visible_bounds.x -= color_rect.width as f32 / 2.0;
-        color_rect_visible_bounds.y -= color_rect.width as f32 / 2.0;
+        color_rect_visible_bounds.y -= color_rect.height as f32 / 2.0;
     }
 
     // Anything inside of this region should be drawn, it represents the camera view
