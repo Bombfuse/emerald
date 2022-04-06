@@ -24,7 +24,8 @@ impl Game for MouseExample {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
 
         if let Ok(sprite) = emd.loader().sprite("bunny.png") {
-            self.world.spawn((sprite, Transform::from_translation((16.0, 16.0))));
+            self.world
+                .spawn((sprite, Transform::from_translation((16.0, 16.0))));
         }
 
         emd.touches_to_mouse(true);
@@ -74,8 +75,14 @@ impl Game for MouseExample {
         emd.graphics().begin().unwrap();
 
         emd.graphics()
-            .draw_color_rect(&self.background, &Transform::from_translation(self.screen_center)).ok();
-        emd.graphics().draw_color_rect(&self.rect, &self.transform).ok();
+            .draw_color_rect(
+                &self.background,
+                &Transform::from_translation(self.screen_center),
+            )
+            .ok();
+        emd.graphics()
+            .draw_color_rect(&self.rect, &self.transform)
+            .ok();
         emd.graphics().draw_world(&mut self.world).unwrap();
         emd.graphics().render().unwrap();
     }

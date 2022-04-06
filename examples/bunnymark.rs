@@ -107,7 +107,10 @@ impl Game for BunnymarkGame {
             .draw_label(&label, &Transform::from_translation((500.0, 500.0)))
             .unwrap();
         emd.graphics()
-            .draw_label(&bunnycount_label, &Transform::from_translation((500.0, 100.0)))
+            .draw_label(
+                &bunnycount_label,
+                &Transform::from_translation((500.0, 100.0)),
+            )
             .unwrap();
 
         emd.graphics().render().unwrap();

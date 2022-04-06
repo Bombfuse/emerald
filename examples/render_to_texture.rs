@@ -76,14 +76,18 @@ impl Game for MyGame {
             .unwrap();
 
         let rabbit = emd.loader().sprite("bunny.png").unwrap();
-        emd.graphics().draw_color_rect(
-            &ColorRect::new(WHITE, 500 * 500, 500 * 500),
-            &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
-        ).ok();
-        emd.graphics().draw_sprite(
-            &rabbit,
-            &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
-        ).ok();
+        emd.graphics()
+            .draw_color_rect(
+                &ColorRect::new(WHITE, 500 * 500, 500 * 500),
+                &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
+            )
+            .ok();
+        emd.graphics()
+            .draw_sprite(
+                &rabbit,
+                &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
+            )
+            .ok();
 
         let texture_key = emd.graphics().render_texture().unwrap();
 

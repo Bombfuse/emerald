@@ -111,7 +111,10 @@ impl Aseprite {
         if let Some(tag) = self.get_tag(animation_name.clone()) {
             self.current_tag = tag;
         } else {
-            return Err(EmeraldError::new(format!("Animation {} does not exist.", animation_name)));
+            return Err(EmeraldError::new(format!(
+                "Animation {} does not exist.",
+                animation_name
+            )));
         }
 
         Ok(())

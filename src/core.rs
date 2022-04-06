@@ -4,8 +4,8 @@ pub mod error;
 pub mod game;
 pub mod game_settings;
 
-pub use components::*;
 pub use components::transform::*;
+pub use components::*;
 pub use engine::GameEngine;
 pub use error::*;
 pub use game::*;

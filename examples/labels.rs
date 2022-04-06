@@ -29,15 +29,18 @@ impl Game for GamepadExample {
         let mut right_label = left_aligned_label.clone();
         right_label.horizontal_align = HorizontalAlign::Right;
 
+        self.world
+            .spawn((ElapsedTime(0.0), Transform::default(), left_aligned_label));
         self.world.spawn((
             ElapsedTime(0.0),
-            Transform::default(),
-            left_aligned_label,
+            Transform::from_translation((0.0, 300.0)),
+            centered_label,
         ));
-        self.world
-            .spawn((ElapsedTime(0.0), Transform::from_translation((0.0, 300.0)), centered_label));
-        self.world
-            .spawn((ElapsedTime(0.0), Transform::from_translation((0.0, -300.0)), right_label));
+        self.world.spawn((
+            ElapsedTime(0.0),
+            Transform::from_translation((0.0, -300.0)),
+            right_label,
+        ));
     }
 
     fn update(&mut self, mut emd: Emerald) {

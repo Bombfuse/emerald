@@ -1,6 +1,6 @@
 use miniquad::TouchPhase;
 
-use crate::{transform::Translation};
+use crate::transform::Translation;
 
 #[derive(Debug, Clone, Copy)]
 pub struct TouchState {

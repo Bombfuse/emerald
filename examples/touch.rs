@@ -34,7 +34,10 @@ impl Game for TouchExample {
         for (&id, touch) in touches {
             let bunny_position = touch.translation - screen_center.translation;
             if touch.is_just_pressed() {
-                let components: (Sprite, Transform) = (self.sprite.clone().unwrap(), Transform::from_translation(bunny_position));
+                let components: (Sprite, Transform) = (
+                    self.sprite.clone().unwrap(),
+                    Transform::from_translation(bunny_position),
+                );
                 self.bunnies.insert(id, self.world.spawn(components));
             } else if touch.is_just_released() {
                 if let Some(x) = self.bunnies.remove(&id) {
