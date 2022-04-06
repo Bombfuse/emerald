@@ -445,8 +445,6 @@ impl RenderingEngine {
         ctx: &mut Context,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
-        self.consume_draw_queue(ctx, asset_store)?;
-
         let texture_key = self.render_texture(ctx, asset_store)?;
 
         ctx.begin_default_pass(PassAction::Clear {
