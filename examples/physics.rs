@@ -71,7 +71,7 @@ impl MyGame {
             .build_body(
                 entity,
                 RigidBodyBuilder::new_dynamic().linvel(Vector2::new(velocity.dx, velocity.dy)), // Fling it up and to the right
-            ) 
+            )
             .unwrap();
         self.world.physics().build_collider(body, collider_builder);
     }
@@ -85,8 +85,14 @@ impl Game for MyGame {
                 Transform::from_translation((0.0, RES_HEIGHT / -2.0)),
                 (RES_WIDTH / 2.0, 3.0),
             ),
-            (Transform::from_translation((0.0, RES_HEIGHT / 2.0)), (RES_WIDTH / 2.0, 3.0)),
-            (Transform::from_translation((RES_WIDTH / 2.0, 0.0)), (3.0, RES_HEIGHT / 2.0)),
+            (
+                Transform::from_translation((0.0, RES_HEIGHT / 2.0)),
+                (RES_WIDTH / 2.0, 3.0),
+            ),
+            (
+                Transform::from_translation((RES_WIDTH / 2.0, 0.0)),
+                (3.0, RES_HEIGHT / 2.0),
+            ),
             (
                 Transform::from_translation((RES_WIDTH / -2.0, 0.0)),
                 (3.0, RES_HEIGHT / 2.0),
@@ -154,12 +160,18 @@ impl Game for MyGame {
 
         if self.elapsed_time_cube > 0.05 {
             self.elapsed_time_cube = 0.0;
-            self.spawn_bunny_cube(Transform::from_translation((0.0, RES_HEIGHT / 2.0 - 12.0)), &mut emd);
+            self.spawn_bunny_cube(
+                Transform::from_translation((0.0, RES_HEIGHT / 2.0 - 12.0)),
+                &mut emd,
+            );
         }
 
         if self.elapsed_time_round > 0.05 {
             self.elapsed_time_round = 0.0;
-            self.spawn_bunny_round(Transform::from_translation((0.0, RES_HEIGHT / 2.0 - 12.0)), &mut emd);
+            self.spawn_bunny_round(
+                Transform::from_translation((0.0, RES_HEIGHT / 2.0 - 12.0)),
+                &mut emd,
+            );
         }
 
         self.world.physics().step(delta);
@@ -176,7 +188,10 @@ impl Game for MyGame {
             let mut label = Label::new(format!("FPS: {}", fps), font, 24);
             label.centered = false;
             emd.graphics()
-                .draw_label(&label, &Transform::from_translation((24.0, RES_HEIGHT as f32 - 10.0)))
+                .draw_label(
+                    &label,
+                    &Transform::from_translation((24.0, RES_HEIGHT as f32 - 10.0)),
+                )
                 .unwrap();
         }
         // emd.graphics().draw_colliders(Color::new(255, 0, 0, 130));

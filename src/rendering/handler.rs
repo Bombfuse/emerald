@@ -1,4 +1,7 @@
-use crate::{transform::Transform, EmeraldError, AssetStore, World, RenderingEngine, Sprite, Label, ColorRect, TextureKey, DrawCommand, Drawable};
+use crate::{
+    transform::Transform, AssetStore, ColorRect, DrawCommand, Drawable, EmeraldError, Label,
+    RenderingEngine, Sprite, TextureKey, World,
+};
 use miniquad::Context;
 
 pub struct GraphicsHandler<'a> {
@@ -20,19 +23,23 @@ impl<'a> GraphicsHandler<'a> {
     }
 
     pub fn draw_world(&mut self, world: &mut World) -> Result<(), EmeraldError> {
-        self.rendering_engine
-            .draw_world(world)
+        self.rendering_engine.draw_world(world)
     }
 
     #[cfg(feature = "physics")]
-    pub fn draw_colliders(&mut self, world: &mut World, color: crate::Color) -> Result<(), EmeraldError> {
-        self.rendering_engine.draw_colliders(
-            world,
-            color,
-        )
+    pub fn draw_colliders(
+        &mut self,
+        world: &mut World,
+        color: crate::Color,
+    ) -> Result<(), EmeraldError> {
+        self.rendering_engine.draw_colliders(world, color)
     }
 
-    pub fn draw_sprite(&mut self, sprite: &Sprite, transform: &Transform) -> Result<(), EmeraldError> {
+    pub fn draw_sprite(
+        &mut self,
+        sprite: &Sprite,
+        transform: &Transform,
+    ) -> Result<(), EmeraldError> {
         self.rendering_engine.push_draw_command(DrawCommand {
             drawable: Drawable::Sprite {
                 sprite: sprite.clone(),
@@ -52,7 +59,11 @@ impl<'a> GraphicsHandler<'a> {
         })
     }
 
-    pub fn draw_color_rect(&mut self, color_rect: &ColorRect, transform: &Transform) -> Result<(), EmeraldError> {
+    pub fn draw_color_rect(
+        &mut self,
+        color_rect: &ColorRect,
+        transform: &Transform,
+    ) -> Result<(), EmeraldError> {
         self.rendering_engine.push_draw_command(DrawCommand {
             drawable: Drawable::ColorRect {
                 color_rect: *color_rect,

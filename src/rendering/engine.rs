@@ -1,8 +1,8 @@
-use crate::{rendering::components::*, transform::Translation};
 use crate::rendering::*;
 use crate::transform::Transform;
 use crate::world::*;
 use crate::*;
+use crate::{rendering::components::*, transform::Translation};
 
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
 use glam::{Mat4, Vec2, Vec4};
@@ -153,10 +153,7 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn draw_world(
-        &mut self,
-        world: &mut World,
-    ) -> Result<(), EmeraldError> {
+    pub fn draw_world(&mut self, world: &mut World) -> Result<(), EmeraldError> {
         let screen_size = (
             self.current_resolution.0 as f32,
             self.current_resolution.1 as f32,
@@ -165,11 +162,19 @@ impl RenderingEngine {
         let mut draw_queue = Vec::new();
 
         #[cfg(feature = "aseprite")]
-        for (_id, (aseprite, transform)) in world.inner.query::<(&mut Aseprite, &Transform)>().iter()
+        for (_id, (aseprite, transform)) in
+            world.inner.query::<(&mut Aseprite, &Transform)>().iter()
         {
             aseprite.update();
 
-            if is_sprite_in_view(&self.settings, &aseprite.sprite, transform, &camera, &camera_transform, &screen_size) {
+            if is_sprite_in_view(
+                &self.settings,
+                &aseprite.sprite,
+                transform,
+                &camera,
+                &camera_transform,
+                &screen_size,
+            ) {
                 let drawable = Drawable::Aseprite {
                     sprite: aseprite.sprite.clone(),
                     offset: aseprite.offset,
@@ -190,7 +195,14 @@ impl RenderingEngine {
         }
 
         for (_id, (sprite, transform)) in world.inner.query::<(&Sprite, &Transform)>().iter() {
-            if is_sprite_in_view(&self.settings, sprite, transform, &camera, &camera_transform, &screen_size) {
+            if is_sprite_in_view(
+                &self.settings,
+                sprite,
+                transform,
+                &camera,
+                &camera_transform,
+                &screen_size,
+            ) {
                 let drawable = Drawable::Sprite {
                     sprite: sprite.clone(),
                 };
@@ -210,7 +222,14 @@ impl RenderingEngine {
                 Sprite::from_texture(ui_button.unpressed_texture.clone())
             };
 
-            if is_sprite_in_view(&self.settings, &sprite, transform, &camera, &camera_transform, &screen_size) {
+            if is_sprite_in_view(
+                &self.settings,
+                &sprite,
+                transform,
+                &camera,
+                &camera_transform,
+                &screen_size,
+            ) {
                 let drawable = Drawable::Sprite {
                     sprite: sprite.clone(),
                 };
@@ -223,12 +242,20 @@ impl RenderingEngine {
             }
         }
 
-        for (_id, (color_rect, transform)) in world.inner.query::<(&ColorRect, &Transform)>().iter() {
-            if is_color_rect_in_view(&self.settings, &color_rect, &transform, &camera, &camera_transform, &screen_size) {
+        for (_id, (color_rect, transform)) in world.inner.query::<(&ColorRect, &Transform)>().iter()
+        {
+            if is_color_rect_in_view(
+                &self.settings,
+                &color_rect,
+                &transform,
+                &camera,
+                &camera_transform,
+                &screen_size,
+            ) {
                 let drawable = Drawable::ColorRect {
                     color_rect: *color_rect,
                 };
-    
+
                 draw_queue.push(DrawCommand {
                     drawable,
                     transform: *transform,
@@ -253,10 +280,12 @@ impl RenderingEngine {
 
         for mut draw_command in draw_queue {
             let translation = {
-                let mut translation = draw_command.transform.translation - camera_transform.translation;
+                let mut translation =
+                    draw_command.transform.translation - camera_transform.translation;
 
                 if camera.centered {
-                    translation = translation + Translation::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
+                    translation =
+                        translation + Translation::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
                 }
 
                 translation.x += camera.offset.x;
@@ -295,7 +324,8 @@ impl RenderingEngine {
                 for collider_handle in body.colliders() {
                     if let Some(collider) = world.physics_engine.colliders.get(*collider_handle) {
                         let aabb = collider.compute_aabb();
-                        let body_translation = Translation::new(aabb.center().coords.x, aabb.center().coords.y);
+                        let body_translation =
+                            Translation::new(aabb.center().coords.x, aabb.center().coords.y);
                         color_rect.width = aabb.half_extents().x as u32 * 2;
                         color_rect.height = aabb.half_extents().y as u32 * 2;
 
@@ -303,14 +333,15 @@ impl RenderingEngine {
                             let mut translation = body_translation - camera_transform.translation;
 
                             if camera.centered {
-                                translation = translation + Translation::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
+                                translation = translation
+                                    + Translation::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
                             }
 
                             translation
                         };
 
                         self.push_draw_command(DrawCommand {
-                            drawable:  Drawable::ColorRect { color_rect },
+                            drawable: Drawable::ColorRect { color_rect },
                             transform: Transform::from_translation(translation),
                             z_index: 0.0,
                         })?;
@@ -415,7 +446,7 @@ impl RenderingEngine {
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
         self.consume_draw_queue(ctx, asset_store)?;
-        
+
         let texture_key = self.render_texture(ctx, asset_store)?;
 
         ctx.begin_default_pass(PassAction::Clear {
@@ -452,7 +483,11 @@ impl RenderingEngine {
     }
 
     #[inline]
-    fn consume_draw_queue(&mut self, ctx: &mut Context, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+    fn consume_draw_queue(
+        &mut self,
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+    ) -> Result<(), EmeraldError> {
         ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
 
         while let Some(draw_command) = self.draw_queue.pop_back() {
@@ -543,7 +578,6 @@ impl RenderingEngine {
             bool,        // Visible
             Option<f32>, // max_width
         )> = Vec::new();
-
 
         let mut remaining_char_count = label.visible_characters;
         if label.visible_characters < 0 {
@@ -870,14 +904,24 @@ fn is_color_rect_in_view(
     }
 
     // Build a rectangle representing the visual size of the sprite
-    let mut color_rect_visible_bounds = Rectangle::new(color_rect_transform.translation.x, color_rect_transform.translation.y, color_rect.width as f32, color_rect.height as f32);
+    let mut color_rect_visible_bounds = Rectangle::new(
+        color_rect_transform.translation.x,
+        color_rect_transform.translation.y,
+        color_rect.width as f32,
+        color_rect.height as f32,
+    );
     if color_rect.centered {
         color_rect_visible_bounds.x -= color_rect.width as f32 / 2.0;
         color_rect_visible_bounds.y -= color_rect.height as f32 / 2.0;
     }
 
     // Anything inside of this region should be drawn, it represents the camera view
-    let mut camera_view_region = Rectangle::new(camera_transform.translation.x - screen_size.0 / 2.0, camera_transform.translation.y - screen_size.1 / 2.0, screen_size.0, screen_size.1);
+    let mut camera_view_region = Rectangle::new(
+        camera_transform.translation.x - screen_size.0 / 2.0,
+        camera_transform.translation.y - screen_size.1 / 2.0,
+        screen_size.0,
+        screen_size.1,
+    );
     camera_view_region.width *= camera.zoom;
     camera_view_region.height *= camera.zoom;
 
@@ -886,7 +930,7 @@ fn is_color_rect_in_view(
 
 #[inline]
 fn is_sprite_in_view(
-     settings: &RenderSettings,
+    settings: &RenderSettings,
     sprite: &Sprite,
     sprite_transform: &Transform,
     camera: &Camera,
@@ -903,7 +947,7 @@ fn is_sprite_in_view(
     // Set the visibility rect at the position of the sprite
     sprite_visible_bounds.x = sprite_transform.translation.x;
     sprite_visible_bounds.y = sprite_transform.translation.y;
-    
+
     if sprite.centered {
         sprite_visible_bounds.x -= sprite.target.width as f32 / 2.0;
         sprite_visible_bounds.y -= sprite.target.height as f32 / 2.0;
@@ -913,9 +957,13 @@ fn is_sprite_in_view(
     sprite_visible_bounds.width *= sprite.scale.x;
     sprite_visible_bounds.height *= sprite.scale.y;
 
-
     // Anything inside of this region should be drawn, it represents the camera view
-    let mut camera_view_region = Rectangle::new(camera_transform.translation.x - screen_size.0 / 2.0, camera_transform.translation.y - screen_size.1 / 2.0, screen_size.0, screen_size.1);
+    let mut camera_view_region = Rectangle::new(
+        camera_transform.translation.x - screen_size.0 / 2.0,
+        camera_transform.translation.y - screen_size.1 / 2.0,
+        screen_size.0,
+        screen_size.1,
+    );
     camera_view_region.width *= camera.zoom;
     camera_view_region.height *= camera.zoom;
 

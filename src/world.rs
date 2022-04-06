@@ -4,7 +4,10 @@ pub mod physics;
 use crate::rendering::components::Camera;
 use crate::EmeraldError;
 
-use hecs::{Entity, DynamicBundle, SpawnBatchIter, Bundle, NoSuchEntity, QueryBorrow, Query, Component, RefMut, Ref, QueryOne, QueryItem};
+use hecs::{
+    Bundle, Component, DynamicBundle, Entity, NoSuchEntity, Query, QueryBorrow, QueryItem,
+    QueryOne, Ref, RefMut, SpawnBatchIter,
+};
 
 #[cfg(feature = "physics")]
 use crate::world::physics::*;
@@ -95,7 +98,10 @@ impl World {
 
         match self.inner.despawn(entity.clone()) {
             Ok(()) => Ok(()),
-            Err(e) => Err(EmeraldError::new(format!("Error despawning entity {:?}. {:?}", entity, e)))
+            Err(e) => Err(EmeraldError::new(format!(
+                "Error despawning entity {:?}. {:?}",
+                entity, e
+            ))),
         }
     }
 
@@ -115,14 +121,20 @@ impl World {
     pub fn get_mut<T: Component>(&self, entity: Entity) -> Result<RefMut<'_, T>, EmeraldError> {
         match self.inner.get_mut::<T>(entity.clone()) {
             Ok(component_ref) => Ok(component_ref),
-            Err(e) => Err(EmeraldError::new(format!("Error getting component for entity {:?}. {:?}", entity, e)))
+            Err(e) => Err(EmeraldError::new(format!(
+                "Error getting component for entity {:?}. {:?}",
+                entity, e
+            ))),
         }
     }
 
     pub fn get<T: Component>(&self, entity: Entity) -> Result<Ref<'_, T>, EmeraldError> {
         match self.inner.get::<T>(entity.clone()) {
             Ok(component_ref) => Ok(component_ref),
-            Err(e) => Err(EmeraldError::new(format!("Error getting component for entity {:?}. {:?}", entity, e)))
+            Err(e) => Err(EmeraldError::new(format!(
+                "Error getting component for entity {:?}. {:?}",
+                entity, e
+            ))),
         }
     }
 
@@ -148,10 +160,13 @@ impl World {
     pub fn query_one<Q: Query>(&self, entity: Entity) -> Result<QueryOne<'_, Q>, EmeraldError> {
         match self.inner.query_one::<Q>(entity.clone()) {
             Ok(component_ref) => Ok(component_ref),
-            Err(e) => Err(EmeraldError::new(format!("Error querying for entity {:?}. {:?}", entity, e)))
+            Err(e) => Err(EmeraldError::new(format!(
+                "Error querying for entity {:?}. {:?}",
+                entity, e
+            ))),
         }
     }
-    
+
     /// Query a single entity in a uniquely borrow world
     ///
     /// Like [`query_one`](Self::query_one), but faster because dynamic borrow checks can be
@@ -163,7 +178,10 @@ impl World {
     ) -> Result<QueryItem<'_, Q>, EmeraldError> {
         match self.inner.query_one_mut::<Q>(entity.clone()) {
             Ok(component_ref) => Ok(component_ref),
-            Err(e) => Err(EmeraldError::new(format!("Error querying for entity {:?}. {:?}", entity, e)))
+            Err(e) => Err(EmeraldError::new(format!(
+                "Error querying for entity {:?}. {:?}",
+                entity, e
+            ))),
         }
     }
 
@@ -186,14 +204,20 @@ impl World {
     pub fn remove<T: Bundle + 'static>(&mut self, entity: Entity) -> Result<T, EmeraldError> {
         match self.inner.remove::<T>(entity.clone()) {
             Ok(removed_bundle) => Ok(removed_bundle),
-            Err(e) => Err(EmeraldError::new(format!("Error removing bundle for entity {:?}. {:?}", entity, e)))
+            Err(e) => Err(EmeraldError::new(format!(
+                "Error removing bundle for entity {:?}. {:?}",
+                entity, e
+            ))),
         }
     }
 
     pub fn remove_one<T: Component>(&mut self, entity: Entity) -> Result<T, EmeraldError> {
         match self.inner.remove_one::<T>(entity.clone()) {
             Ok(removed_component) => Ok(removed_component),
-            Err(e) => Err(EmeraldError::new(format!("Error removing component for entity {:?}. {:?}", entity, e)))
+            Err(e) => Err(EmeraldError::new(format!(
+                "Error removing component for entity {:?}. {:?}",
+                entity, e
+            ))),
         }
     }
 

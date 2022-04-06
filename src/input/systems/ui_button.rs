@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use crate::{
-    screen_translation_to_world_translation, Emerald, World, TouchState, UIButton, transform::{Transform, Translation},
+    screen_translation_to_world_translation,
+    transform::{Transform, Translation},
+    Emerald, TouchState, UIButton, World,
 };
 
 /// Updates the status of UI Buttons.
@@ -29,14 +31,15 @@ pub fn ui_button_system(emd: &mut Emerald<'_>, world: &mut World) {
         .collect();
 
     for (_, (ui_button, transform)) in world.query::<(&mut UIButton, &Transform)>().iter() {
-        let button_check = is_translation_inside_button(emd, &ui_button, &transform, &mouse_position)
-            || check_touches_overlap_button(
-                emd,
-                touches,
-                &touch_world_positions,
-                &ui_button,
-                &transform,
-            );
+        let button_check =
+            is_translation_inside_button(emd, &ui_button, &transform, &mouse_position)
+                || check_touches_overlap_button(
+                    emd,
+                    touches,
+                    &touch_world_positions,
+                    &ui_button,
+                    &transform,
+                );
 
         if button_check {
             let press = mouse.left.is_pressed
@@ -67,13 +70,13 @@ fn check_touches_overlap_button(
         let mut is_inside = false;
 
         if let Some(position) = touch_world_positions.get(id) {
-            is_inside = is_translation_inside_button(emd, &ui_button, &ui_button_transform, position);
+            is_inside =
+                is_translation_inside_button(emd, &ui_button, &ui_button_transform, position);
         }
 
         is_inside
     })
 }
-
 
 // TODO: take into account the scale and rotation of the button.
 fn is_translation_inside_button(
@@ -95,7 +98,8 @@ fn is_translation_inside_button(
             && (translation.x <= ui_button_transform.translation.x + texture.width as f32 / 2.0)
         {
             if (translation.y >= ui_button_transform.translation.y - texture.height as f32 / 2.0)
-                && (translation.y <= ui_button_transform.translation.y + texture.height as f32 / 2.0)
+                && (translation.y
+                    <= ui_button_transform.translation.y + texture.height as f32 / 2.0)
             {
                 is_inside = true;
             }

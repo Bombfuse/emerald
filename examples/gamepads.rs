@@ -24,7 +24,8 @@ impl Game for GamepadExample {
 
         match emd.loader().sprite("bunny.png") {
             Ok(sprite) => {
-                self.world.spawn((sprite, Transform::from_translation((16.0, 16.0))));
+                self.world
+                    .spawn((sprite, Transform::from_translation((16.0, 16.0))));
             }
             Err(_) => {}
         };

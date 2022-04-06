@@ -15,8 +15,7 @@ pub use mouse_state::*;
 pub use systems::*;
 pub use touch_state::*;
 
-use crate::{World, transform::Translation};
-
+use crate::{transform::Translation, World};
 
 /// Returns a world translation equivalent to the given point on a given screen.
 pub fn screen_translation_to_world_translation(

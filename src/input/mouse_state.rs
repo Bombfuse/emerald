@@ -1,4 +1,4 @@
-use crate::{ButtonState, transform::Translation};
+use crate::{transform::Translation, ButtonState};
 
 /// State of mouse over last few frames
 #[derive(Clone, Copy, Debug, Default)]

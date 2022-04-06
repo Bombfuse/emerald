@@ -297,7 +297,10 @@ impl PhysicsEngine {
         shape_cast_query: ShapeCastQuery<'_>,
     ) -> Option<Entity> {
         let pos = Isometry::new(
-            Vector2::new(shape_cast_query.origin_translation.x, shape_cast_query.origin_translation.y),
+            Vector2::new(
+                shape_cast_query.origin_translation.x,
+                shape_cast_query.origin_translation.y,
+            ),
             0.0,
         );
 
@@ -345,7 +348,10 @@ impl PhysicsEngine {
             }?;
 
             let body = builder
-                .translation(Vector2::new(transform.translation.x, transform.translation.y))
+                .translation(Vector2::new(
+                    transform.translation.x,
+                    transform.translation.y,
+                ))
                 .build();
             let handle = self.bodies.insert(body);
             self.entity_bodies.insert(entity, handle);
@@ -499,9 +505,15 @@ impl PhysicsEngine {
     ) {
         if let Some(body) = self.bodies.get_mut(body_handle) {
             if body.is_kinematic() {
-                body.set_next_kinematic_position(Isometry2::translation(transform.translation.x, transform.translation.y))
+                body.set_next_kinematic_position(Isometry2::translation(
+                    transform.translation.x,
+                    transform.translation.y,
+                ))
             } else {
-                body.set_position(Isometry2::translation(transform.translation.x, transform.translation.y), false)
+                body.set_position(
+                    Isometry2::translation(transform.translation.x, transform.translation.y),
+                    false,
+                )
             }
         }
     }
