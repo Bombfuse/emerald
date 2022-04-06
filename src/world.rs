@@ -19,13 +19,18 @@ pub struct World {
     pub(crate) physics_engine: PhysicsEngine,
     pub(crate) inner: hecs::World,
 }
-impl World {
-    pub fn new() -> Self {
+impl Default for World {
+    fn default() -> Self {
         World {
             #[cfg(feature = "physics")]
             physics_engine: PhysicsEngine::new(),
             inner: hecs::World::default(),
         }
+    }
+}
+impl World {
+    pub fn new() -> Self {
+        Default::default()
     }
 
     /// Disable all cameras then set the camera on the given entity as active.
