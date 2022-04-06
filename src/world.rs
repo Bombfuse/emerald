@@ -56,16 +56,9 @@ impl World {
 
     #[inline]
     pub fn get_active_camera(&self) -> Option<Entity> {
-        let mut cam = None;
-
-        for (id, camera) in self.query::<&Camera>().iter() {
-            if camera.is_active {
-                cam = Some(id);
-                break;
-            }
-        }
-
-        cam
+        self.query::<&Camera>()
+            .iter()
+            .find_map(|(entity, camera)| if camera.is_active { Some(entity) } else { None })
     }
 
     pub fn spawn(&mut self, components: impl DynamicBundle) -> Entity {

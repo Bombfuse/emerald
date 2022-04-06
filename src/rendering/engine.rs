@@ -972,24 +972,17 @@ fn is_sprite_in_view(
 
 #[inline]
 fn get_camera_and_camera_transform(world: &World) -> (Camera, Transform) {
-    let mut cam = Camera::default();
-    let mut cam_transform = Transform::from_translation((0.0, 0.0));
-    let mut entity_holding_camera: Option<Entity> = None;
-
-    for (id, camera) in world.query::<&Camera>().iter() {
-        if camera.is_active {
-            cam = *camera;
-            entity_holding_camera = Some(id);
-        }
-    }
-
-    if let Some(entity) = entity_holding_camera {
-        if let Ok(transform) = world.get_mut::<Transform>(entity) {
-            cam_transform = *transform;
-        }
-    }
-
-    (cam, cam_transform)
+    world
+        .query::<(&Camera, Option<&Transform>)>()
+        .iter()
+        .find_map(|(_entity, (camera, transform))| {
+            if camera.is_active {
+                Some((*camera, transform.copied().unwrap_or_default()))
+            } else {
+                None
+            }
+        })
+        .unwrap_or_default()
 }
 
 #[derive(Clone)]
