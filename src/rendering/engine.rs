@@ -902,8 +902,9 @@ fn get_camera_view_region(
         screen_width,
         screen_height,
     );
-    region.width *= camera.zoom;
-    region.height *= camera.zoom;
+    // When zoom is higher, then the area that we can display is smaller.
+    region.width /= camera.zoom;
+    region.height /= camera.zoom;
     region
 }
 
