@@ -890,6 +890,34 @@ fn draw_texture(
 }
 
 #[inline]
+fn get_camera_view_region(
+    camera: &Camera,
+    camera_transform: &Transform,
+    screen_size: &(f32, f32),
+) -> Rectangle {
+    let (screen_width, screen_height) = *screen_size;
+    let mut region = Rectangle::new(
+        camera_transform.translation.x - screen_width / 2.0,
+        camera_transform.translation.y - screen_height / 2.0,
+        screen_width,
+        screen_height,
+    );
+    region.width *= camera.zoom;
+    region.height *= camera.zoom;
+    region
+}
+
+#[inline]
+fn is_rect_in_view_region(
+    rect: Rectangle,
+    camera: &Camera,
+    camera_transform: &Transform,
+    screen_size: &(f32, f32),
+) -> bool {
+    get_camera_view_region(camera, camera_transform, screen_size).intersects_with(&rect)
+}
+
+#[inline]
 fn is_color_rect_in_view(
     settings: &RenderSettings,
     color_rect: &ColorRect,
@@ -915,17 +943,12 @@ fn is_color_rect_in_view(
         color_rect_visible_bounds.y -= color_rect.height as f32 / 2.0;
     }
 
-    // Anything inside of this region should be drawn, it represents the camera view
-    let mut camera_view_region = Rectangle::new(
-        camera_transform.translation.x - screen_size.0 / 2.0,
-        camera_transform.translation.y - screen_size.1 / 2.0,
-        screen_size.0,
-        screen_size.1,
-    );
-    camera_view_region.width *= camera.zoom;
-    camera_view_region.height *= camera.zoom;
-
-    camera_view_region.intersects_with(&color_rect_visible_bounds)
+    is_rect_in_view_region(
+        color_rect_visible_bounds,
+        camera,
+        camera_transform,
+        screen_size,
+    )
 }
 
 #[inline]
@@ -957,17 +980,7 @@ fn is_sprite_in_view(
     sprite_visible_bounds.width *= sprite.scale.x;
     sprite_visible_bounds.height *= sprite.scale.y;
 
-    // Anything inside of this region should be drawn, it represents the camera view
-    let mut camera_view_region = Rectangle::new(
-        camera_transform.translation.x - screen_size.0 / 2.0,
-        camera_transform.translation.y - screen_size.1 / 2.0,
-        screen_size.0,
-        screen_size.1,
-    );
-    camera_view_region.width *= camera.zoom;
-    camera_view_region.height *= camera.zoom;
-
-    camera_view_region.intersects_with(&sprite_visible_bounds)
+    is_rect_in_view_region(sprite_visible_bounds, camera, camera_transform, screen_size)
 }
 
 #[inline]
