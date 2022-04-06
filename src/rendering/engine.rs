@@ -337,6 +337,9 @@ impl RenderingEngine {
                                     + Translation::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
                             }
 
+                            translation.x += camera.offset.x;
+                            translation.y += camera.offset.y;
+
                             translation
                         };
 
