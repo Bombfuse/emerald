@@ -25,6 +25,7 @@ pub(crate) struct RenderingEngine {
     render_passes: HashMap<TextureKey, RenderPass>,
     current_render_texture_key: TextureKey,
     current_resolution: (usize, usize),
+    current_camera_zoom: f32,
 
     draw_queue: VecDeque<DrawCommand>,
 }
@@ -88,6 +89,7 @@ impl RenderingEngine {
             screen_texture_key,
             current_render_texture_key,
             current_resolution,
+            current_camera_zoom: 1.0,
             draw_queue: VecDeque::new(),
         }
     }
@@ -159,6 +161,7 @@ impl RenderingEngine {
             self.current_resolution.1 as f32,
         );
         let (camera, camera_transform) = get_camera_and_camera_transform(world);
+        self.current_camera_zoom = camera.zoom;
         let mut draw_queue = Vec::new();
 
         #[cfg(feature = "aseprite")]
@@ -284,8 +287,10 @@ impl RenderingEngine {
                     draw_command.transform.translation - camera_transform.translation;
 
                 if camera.centered {
-                    translation =
-                        translation + Translation::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
+                    let mut screen_center = Vec2::from(screen_size) / 2.0;
+                    screen_center /= self.current_camera_zoom;
+                    translation.x += screen_center.x;
+                    translation.y += screen_center.y;
                 }
 
                 translation.x += camera.offset.x;
@@ -333,8 +338,10 @@ impl RenderingEngine {
                             let mut translation = body_translation - camera_transform.translation;
 
                             if camera.centered {
-                                translation = translation
-                                    + Translation::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
+                                let mut screen_center = Vec2::from(screen_size) / 2.0;
+                                screen_center /= self.current_camera_zoom;
+                                translation.x += screen_center.x;
+                                translation.y += screen_center.y;
                             }
 
                             translation.x += camera.offset.x;
@@ -457,8 +464,8 @@ impl RenderingEngine {
         });
         let sprite = Sprite::from_texture(texture_key);
         let (w, h) = ctx.screen_size();
-        let translation = Translation::new(w as f32 / 2.0, h as f32 / 2.0);
-        self.draw_sprite(ctx, asset_store, &sprite, &translation);
+        let translation = Translation::new(w / 2.0, h / 2.0);
+        self.draw_sprite(ctx, asset_store, &sprite, &translation, 1.0);
         ctx.end_render_pass();
 
         Ok(())
@@ -517,9 +524,13 @@ impl RenderingEngine {
                     z_index,
                     &translation,
                 ),
-                Drawable::Sprite { sprite } => {
-                    self.draw_sprite(ctx, asset_store, &sprite, &translation)
-                }
+                Drawable::Sprite { sprite } => self.draw_sprite(
+                    ctx,
+                    asset_store,
+                    &sprite,
+                    &translation,
+                    self.current_camera_zoom,
+                ),
                 Drawable::ColorRect { color_rect } => {
                     self.draw_color_rect(ctx, asset_store, &color_rect, &translation)
                 }
@@ -681,6 +692,7 @@ impl RenderingEngine {
                     target,
                     color,
                     self.current_resolution,
+                    self.current_camera_zoom,
                 );
             }
         }
@@ -720,6 +732,7 @@ impl RenderingEngine {
             Rectangle::new(0.0, 0.0, 1.0, 1.0),
             color_rect.color,
             self.current_resolution,
+            self.current_camera_zoom,
         )
     }
 
@@ -784,6 +797,7 @@ impl RenderingEngine {
             target,
             *color,
             self.current_resolution,
+            self.current_camera_zoom,
         )
     }
 
@@ -794,6 +808,7 @@ impl RenderingEngine {
         mut asset_store: &mut AssetStore,
         sprite: &Sprite,
         position: &Translation,
+        camera_zoom: f32,
     ) {
         if !sprite.visible {
             return;
@@ -841,6 +856,7 @@ impl RenderingEngine {
             target,
             sprite.color,
             self.current_resolution,
+            camera_zoom,
         )
     }
 }
@@ -859,15 +875,15 @@ fn draw_texture(
     source: Rectangle,
     color: Color,
     resolution: (usize, usize),
+    camera_zoom: f32,
 ) {
-    position.x = position.x.floor() + 0.375;
-    position.y = position.y.floor() + 0.375;
+    position = position.floor() + Vec2::splat(0.375);
 
     let projection = Mat4::orthographic_rh_gl(
         0.0,
-        resolution.0 as f32,
+        resolution.0 as f32 / camera_zoom,
         0.0,
-        resolution.1 as f32,
+        resolution.1 as f32 / camera_zoom,
         -1.0,
         1.0,
     );
@@ -896,17 +912,16 @@ fn get_camera_view_region(
     camera_transform: &Transform,
     screen_size: &(f32, f32),
 ) -> Rectangle {
-    let (screen_width, screen_height) = *screen_size;
-    let mut region = Rectangle::new(
+    let (mut screen_width, mut screen_height) = *screen_size;
+    // When zoom is higher, then the area that we can display is smaller.
+    screen_width /= camera.zoom;
+    screen_height /= camera.zoom;
+    Rectangle::new(
         camera_transform.translation.x - screen_width / 2.0,
         camera_transform.translation.y - screen_height / 2.0,
         screen_width,
         screen_height,
-    );
-    // When zoom is higher, then the area that we can display is smaller.
-    region.width /= camera.zoom;
-    region.height /= camera.zoom;
-    region
+    )
 }
 
 #[inline]
