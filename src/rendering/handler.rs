@@ -23,7 +23,7 @@ impl<'a> GraphicsHandler<'a> {
     }
 
     pub fn draw_world(&mut self, world: &mut World) -> Result<(), EmeraldError> {
-        self.rendering_engine.draw_world(world)
+        self.rendering_engine.draw_world(world, &mut self.asset_store)
     }
 
     #[cfg(feature = "physics")]

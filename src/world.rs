@@ -1,6 +1,8 @@
 #[cfg(feature = "physics")]
 pub mod physics;
 
+use std::{collections::HashMap};
+
 use crate::rendering::components::Camera;
 use crate::EmeraldError;
 
@@ -26,6 +28,45 @@ impl World {
             physics_engine: PhysicsEngine::new(),
             inner: hecs::World::default(),
         }
+    }
+
+    // TODO: Make entity ids, rigid body handles, and collider handles unique across all worlds. Then we can remove the HashMap of OldEntity -> NewEntity.
+    /// Absorbs another world into this one. Resets and changes the Entity ids of the other worlds, when they are merged into this world.
+    /// All entities are placed into this world at their current transform.
+    /// The camera of the primary world will remain the current camera.
+    /// If physics is enabled, will keep its own physics settings.
+    /// Returns a map of OldEntity -> NewEntity. If you have components that store Entity references, use this map to update your references.
+    pub fn merge(&mut self, mut other_world: World) -> Result<HashMap<Entity, Entity>, EmeraldError> {
+        let mut entity_id_shift_map = HashMap::new();
+        let other_entities = other_world.inner.iter().map(|entity_ref| entity_ref.entity()).collect::<Vec<Entity>>();
+        
+        for old_id in other_entities {
+            match other_world.inner.take(old_id.clone()) {
+                Err(_) => return Err(EmeraldError::new(format!("Entity {:?} does not exist, cannot merge.", old_id))),
+                Ok(bundle) => {
+                    let new_id = self.inner.spawn(bundle);
+                    entity_id_shift_map.insert(old_id.clone(), new_id.clone());
+
+                    let mut colliders = Vec::new();
+                    for c_id in other_world.physics_engine.get_colliders(old_id.clone()) {
+                        if let Some(collider) = other_world.physics_engine.remove_collider(c_id) {
+                            colliders.push(collider);
+                        }
+                    }
+        
+                    if let Some(rigid_body) = other_world.physics_engine.remove_body(old_id.clone()) {
+                        let new_rbh = self.physics_engine.add_body(new_id.clone(), rigid_body, &mut self.inner)?;
+        
+                        for collider in colliders {
+                            self.physics_engine.add_collider(new_rbh, collider);
+                        }
+                    }
+        
+                }
+            }
+        }
+
+        Ok(entity_id_shift_map)
     }
 
     /// Disable all cameras then set the camera on the given entity as active.
