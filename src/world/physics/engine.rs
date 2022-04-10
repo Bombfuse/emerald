@@ -417,7 +417,7 @@ impl PhysicsEngine {
         let collider = builder
             .active_events(ActiveEvents::CONTACT_EVENTS | ActiveEvents::INTERSECTION_EVENTS)
             .build();
-            
+
         self.add_collider(body_handle, collider)
     }
 

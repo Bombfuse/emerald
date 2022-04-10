@@ -27,11 +27,20 @@ impl Game for WorldMergingExample {
 
         if input.is_key_just_pressed(KeyCode::A) {
             let amount = 100;
-            let world = build_other_world(&mut emd, Transform::from_translation((100.0, 100.0)), amount).unwrap();
+            let world = build_other_world(
+                &mut emd,
+                Transform::from_translation((100.0, 100.0)),
+                amount,
+            )
+            .unwrap();
             let now = emd.now();
             self.world.merge(world).unwrap();
             let after = emd.now();
-            println!("merged {} bunnies in {:?}us", amount, Duration::from_secs_f64(after - now).as_micros());
+            println!(
+                "merged {} bunnies in {:?}us",
+                amount,
+                Duration::from_secs_f64(after - now).as_micros()
+            );
         }
 
         self.world.physics().step(emd.delta());
@@ -44,19 +53,35 @@ impl Game for WorldMergingExample {
     }
 }
 
-fn build_other_world(emd: &mut Emerald, offset: Transform, amount: i32) -> Result<World, EmeraldError> {
+fn build_other_world(
+    emd: &mut Emerald,
+    offset: Transform,
+    amount: i32,
+) -> Result<World, EmeraldError> {
     let mut world = World::new();
     let sprite = emd.loader().sprite("bunny.png")?;
     let amount = (amount as f32).sqrt() as usize;
 
     for x in 0..amount {
         for y in 0..amount {
-            let (_entity, rbh) = world.spawn_with_body((
-                Transform::from_translation((x as f32 * 30.0 - 300.0, y as f32 * 30.0 - 300.0)) + offset,
-                sprite.clone()
-            ), RigidBodyBuilder::new_dynamic().can_sleep(false).linvel(Vector2::new(10.0, 10.0))).unwrap();
-    
-            world.physics().build_collider(rbh, ColliderBuilder::cuboid(1.0, 1.0));
+            let (_entity, rbh) = world
+                .spawn_with_body(
+                    (
+                        Transform::from_translation((
+                            x as f32 * 30.0 - 300.0,
+                            y as f32 * 30.0 - 300.0,
+                        )) + offset,
+                        sprite.clone(),
+                    ),
+                    RigidBodyBuilder::new_dynamic()
+                        .can_sleep(false)
+                        .linvel(Vector2::new(10.0, 10.0)),
+                )
+                .unwrap();
+
+            world
+                .physics()
+                .build_collider(rbh, ColliderBuilder::cuboid(1.0, 1.0));
         }
     }
 

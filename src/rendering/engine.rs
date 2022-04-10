@@ -153,7 +153,11 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn draw_world(&mut self, world: &mut World, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+    pub fn draw_world(
+        &mut self,
+        world: &mut World,
+        asset_store: &mut AssetStore,
+    ) -> Result<(), EmeraldError> {
         let screen_size = (
             self.current_resolution.0 as f32,
             self.current_resolution.1 as f32,
