@@ -1,3 +1,5 @@
+use glam::{vec2, Vec2};
+use nalgebra::{Isometry2, Translation2};
 use nanoserde::DeJson;
 
 /// The core piece of an entity, determines it's transformative state and position in the world.
@@ -106,9 +108,39 @@ impl Default for Translation {
         Translation::new(0.0, 0.0)
     }
 }
-impl Into<Translation> for (f32, f32) {
-    fn into(self) -> Translation {
-        Translation::new(self.0, self.1)
+impl From<Vec2> for Translation {
+    #[inline]
+    fn from(v: Vec2) -> Self {
+        Self::new(v.x, v.y)
+    }
+}
+impl From<Translation> for Vec2 {
+    #[inline]
+    fn from(t: Translation) -> Self {
+        vec2(t.x, t.y)
+    }
+}
+impl From<Translation2<f32>> for Translation {
+    #[inline]
+    fn from(t: Translation2<f32>) -> Self {
+        Self::from(Vec2::from(t))
+    }
+}
+impl From<Translation> for Translation2<f32> {
+    #[inline]
+    fn from(t: Translation) -> Self {
+        Self::from(Vec2::from(t))
+    }
+}
+impl From<Translation> for Isometry2<f32> {
+    #[inline]
+    fn from(t: Translation) -> Self {
+        Self::from(Translation2::from(t))
+    }
+}
+impl From<(f32, f32)> for Translation {
+    fn from((x, y): (f32, f32)) -> Self {
+        Translation::new(x, y)
     }
 }
 impl std::ops::Sub for Translation {
