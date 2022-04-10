@@ -330,29 +330,14 @@ impl PhysicsEngine {
         None
     }
 
-    /// Builds the described rigid body for the given entity.
-    /// Fails if the entity does not have a position or if the handle is unable to be inserted into the ECS world.
     #[inline]
-    pub(crate) fn build_body(
+    pub(crate) fn add_body(
         &mut self,
         entity: Entity,
-        builder: RigidBodyBuilder,
+        body: RigidBody,
         world: &mut World,
     ) -> Result<RigidBodyHandle, EmeraldError> {
         let handle: Result<RigidBodyHandle, EmeraldError> = {
-            let transform = match world.get::<Transform>(entity) {
-                Ok(pos) => Ok(pos),
-                Err(_e) => Err(EmeraldError::new(
-                    "Unable to build a body for an entity without a position",
-                )),
-            }?;
-
-            let body = builder
-                .translation(Vector2::new(
-                    transform.translation.x,
-                    transform.translation.y,
-                ))
-                .build();
             let handle = self.bodies.insert(body);
             self.entity_bodies.insert(entity, handle);
             self.body_entities.insert(handle, entity);
@@ -372,15 +357,42 @@ impl PhysicsEngine {
         }
     }
 
+    /// Builds the described rigid body for the given entity.
+    /// Fails if the entity does not have a position or if the handle is unable to be inserted into the ECS world.
     #[inline]
-    pub(crate) fn build_collider(
+    pub(crate) fn build_body(
+        &mut self,
+        entity: Entity,
+        builder: RigidBodyBuilder,
+        world: &mut World,
+    ) -> Result<RigidBodyHandle, EmeraldError> {
+        let transform = {
+            let transform = match world.get_mut::<Transform>(entity.clone()) {
+                Ok(pos) => Ok(pos),
+                Err(_e) => Err(EmeraldError::new(
+                    "Unable to build a body for an entity without a position",
+                )),
+            }?;
+
+            transform.clone()
+        };
+
+        let body = builder
+            .translation(Vector2::new(
+                transform.translation.x,
+                transform.translation.y,
+            ))
+            .build();
+
+        self.add_body(entity, body, world)
+    }
+
+    #[inline]
+    pub(crate) fn add_collider(
         &mut self,
         body_handle: RigidBodyHandle,
-        builder: ColliderBuilder,
+        collider: Collider,
     ) -> ColliderHandle {
-        let collider = builder
-            .active_events(ActiveEvents::CONTACT_EVENTS | ActiveEvents::INTERSECTION_EVENTS)
-            .build();
         let handle = self
             .colliders
             .insert_with_parent(collider, body_handle, &mut self.bodies);
@@ -394,6 +406,19 @@ impl PhysicsEngine {
         }
 
         handle
+    }
+
+    #[inline]
+    pub(crate) fn build_collider(
+        &mut self,
+        body_handle: RigidBodyHandle,
+        builder: ColliderBuilder,
+    ) -> ColliderHandle {
+        let collider = builder
+            .active_events(ActiveEvents::CONTACT_EVENTS | ActiveEvents::INTERSECTION_EVENTS)
+            .build();
+            
+        self.add_collider(body_handle, collider)
     }
 
     #[inline]

@@ -153,7 +153,7 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn draw_world(&mut self, world: &mut World) -> Result<(), EmeraldError> {
+    pub fn draw_world(&mut self, world: &mut World, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
         let screen_size = (
             self.current_resolution.0 as f32,
             self.current_resolution.1 as f32,
@@ -168,6 +168,7 @@ impl RenderingEngine {
             aseprite.update();
 
             if is_sprite_in_view(
+                asset_store,
                 &self.settings,
                 &aseprite.sprite,
                 transform,
@@ -196,6 +197,7 @@ impl RenderingEngine {
 
         for (_id, (sprite, transform)) in world.inner.query::<(&Sprite, &Transform)>().iter() {
             if is_sprite_in_view(
+                asset_store,
                 &self.settings,
                 sprite,
                 transform,
@@ -223,6 +225,7 @@ impl RenderingEngine {
             };
 
             if is_sprite_in_view(
+                asset_store,
                 &self.settings,
                 &sprite,
                 transform,
@@ -905,8 +908,8 @@ fn is_color_rect_in_view(
 
     // Build a rectangle representing the visual size of the sprite
     let mut color_rect_visible_bounds = Rectangle::new(
-        color_rect_transform.translation.x,
-        color_rect_transform.translation.y,
+        color_rect_transform.translation.x + color_rect.offset.x,
+        color_rect_transform.translation.y + color_rect.offset.y,
         color_rect.width as f32,
         color_rect.height as f32,
     );
@@ -930,6 +933,7 @@ fn is_color_rect_in_view(
 
 #[inline]
 fn is_sprite_in_view(
+    asset_store: &mut AssetStore,
     settings: &RenderSettings,
     sprite: &Sprite,
     sprite_transform: &Transform,
@@ -944,9 +948,17 @@ fn is_sprite_in_view(
 
     // Build a rectangle representing the visual size of the sprite
     let mut sprite_visible_bounds = sprite.target.clone();
+
+    if sprite_visible_bounds.is_zero_sized() {
+        if let Some(texture) = asset_store.get_texture(&sprite.texture_key) {
+            sprite_visible_bounds.width = texture.width as f32;
+            sprite_visible_bounds.height = texture.height as f32;
+        }
+    }
+
     // Set the visibility rect at the position of the sprite
-    sprite_visible_bounds.x = sprite_transform.translation.x;
-    sprite_visible_bounds.y = sprite_transform.translation.y;
+    sprite_visible_bounds.x = sprite_transform.translation.x + sprite.offset.x;
+    sprite_visible_bounds.y = sprite_transform.translation.y + sprite.offset.y;
 
     if sprite.centered {
         sprite_visible_bounds.x -= sprite.target.width as f32 / 2.0;
