@@ -28,6 +28,8 @@ pub use logging::*;
 #[cfg(feature = "physics")]
 pub use crate::world::physics::*;
 
+pub use glam;
+
 // physics/math/collision re-exports
 #[cfg(feature = "physics")]
 pub use rapier2d;
