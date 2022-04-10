@@ -163,3 +163,16 @@ impl std::ops::Add for Translation {
         }
     }
 }
+impl std::ops::AddAssign for Translation {
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
+
+impl std::ops::SubAssign for Translation {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
+    }
+}
