@@ -67,7 +67,7 @@ impl Scale {
 }
 impl Default for Scale {
     fn default() -> Self {
-        Scale::new(0.0, 0.0)
+        Scale::new(1.0, 1.0)
     }
 }
 impl std::ops::Sub for Scale {
