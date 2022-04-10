@@ -65,7 +65,7 @@ impl Game for BunnymarkGame {
             }));
         }
 
-        for (_, (_, mut transform, mut vel)) in self
+        for (_, (_, transform, mut vel)) in self
             .world
             .query::<(&Sprite, &mut Transform, &mut Velocity)>()
             .iter()

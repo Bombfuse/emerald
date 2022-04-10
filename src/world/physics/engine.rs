@@ -512,7 +512,7 @@ impl PhysicsEngine {
     #[inline]
     fn sync_entity_position_to_physics_position(
         &mut self,
-        mut transform: &mut Transform,
+        transform: &mut Transform,
         body_handle: RigidBodyHandle,
     ) {
         if let Some(body_transform) = self.bodies.get(body_handle) {
