@@ -2,7 +2,7 @@ use crate::*;
 
 use crate::core::components::transform::Transform;
 
-use rapier2d::na::Isometry2;
+use glam::Vec2;
 use rapier2d::prelude::*;
 
 use crate::crossbeam;
@@ -296,13 +296,7 @@ impl PhysicsEngine {
         shape: &dyn Shape,
         shape_cast_query: ShapeCastQuery<'_>,
     ) -> Option<Entity> {
-        let pos = Isometry::new(
-            Vector2::new(
-                shape_cast_query.origin_translation.x,
-                shape_cast_query.origin_translation.y,
-            ),
-            0.0,
-        );
+        let pos = Isometry::from(shape_cast_query.origin_translation);
 
         if let Some((handle, _hit)) = self.query_pipeline.cast_shape(
             &self.colliders,
@@ -378,10 +372,7 @@ impl PhysicsEngine {
         };
 
         let body = builder
-            .translation(Vector2::new(
-                transform.translation.x,
-                transform.translation.y,
-            ))
+            .translation(Vec2::from(transform.translation).into())
             .build();
 
         self.add_body(entity, body, world)
@@ -517,8 +508,7 @@ impl PhysicsEngine {
     ) {
         if let Some(body_transform) = self.bodies.get(body_handle) {
             let translation = body_transform.position().translation;
-            transform.translation.x = translation.x;
-            transform.translation.y = translation.y;
+            transform.translation = translation.into();
         }
     }
 
@@ -530,15 +520,9 @@ impl PhysicsEngine {
     ) {
         if let Some(body) = self.bodies.get_mut(body_handle) {
             if body.is_kinematic() {
-                body.set_next_kinematic_position(Isometry2::translation(
-                    transform.translation.x,
-                    transform.translation.y,
-                ))
+                body.set_next_kinematic_position(transform.translation.into())
             } else {
-                body.set_position(
-                    Isometry2::translation(transform.translation.x, transform.translation.y),
-                    false,
-                )
+                body.set_position(transform.translation.into(), false)
             }
         }
     }

@@ -5,7 +5,7 @@ use crate::*;
 use crate::{rendering::components::*, transform::Translation};
 
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
-use glam::{Mat4, Vec2, Vec4};
+use glam::{vec2, Mat4, Vec2, Vec4};
 use miniquad::*;
 use std::collections::{HashMap, VecDeque};
 
@@ -295,8 +295,7 @@ impl RenderingEngine {
                         translation + Translation::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
                 }
 
-                translation.x += camera.offset.x;
-                translation.y += camera.offset.y;
+                translation += Translation::from(camera.offset);
 
                 translation
             };
@@ -331,8 +330,7 @@ impl RenderingEngine {
                 for collider_handle in body.colliders() {
                     if let Some(collider) = world.physics_engine.colliders.get(*collider_handle) {
                         let aabb = collider.compute_aabb();
-                        let body_translation =
-                            Translation::new(aabb.center().coords.x, aabb.center().coords.y);
+                        let body_translation = Translation::from(Vec2::from(aabb.center().coords));
                         color_rect.width = aabb.half_extents().x as u32 * 2;
                         color_rect.height = aabb.half_extents().y as u32 * 2;
 
@@ -628,10 +626,9 @@ impl RenderingEngine {
                         label.scale * target.width * font_texture_width as f32,
                         label.scale * target.height * font_texture_height as f32 * -1.0,
                     );
-                    let real_position = Vec2::new(
-                        position.x + label.offset.x + left_coord,
-                        position.y + label.offset.y - top_coord,
-                    );
+                    let real_position = Vec2::from(*position)
+                        + Vec2::from(label.offset)
+                        + vec2(left_coord, -top_coord);
 
                     if remaining_char_count > 0 {
                         draw_calls.push((
@@ -711,7 +708,7 @@ impl RenderingEngine {
         }
 
         let real_scale = Vec2::new(width as f32, height as f32);
-        let real_position = Vec2::new(translation.x + offset.x, translation.y + offset.y);
+        let real_position = Vec2::from(*translation) + Vec2::from(offset);
 
         draw_texture(
             &self.settings,
@@ -760,22 +757,22 @@ impl RenderingEngine {
             target = Rectangle::new(0.0, 0.0, 1.0, 1.0);
         }
 
-        let mut offset = *offset;
+        let mut offset = Vec2::from(*offset);
         if centered {
-            if sprite.target.is_zero_sized() {
-                offset.x -= scale.x * texture.width as f32 / 2.0;
-                offset.y -= scale.y * texture.height as f32 / 2.0;
+            let size = if sprite.target.is_zero_sized() {
+                vec2(texture.width.into(), texture.height.into())
             } else {
-                offset.x -= scale.x * sprite.target.width / 2.0;
-                offset.y -= scale.y * sprite.target.height / 2.0;
-            }
+                vec2(sprite.target.width, sprite.target.height)
+            };
+
+            offset -= Vec2::from(*scale) * size / 2.0;
         }
 
         let real_scale = Vec2::new(
             scale.x * target.width * (f32::from(texture.width)),
             scale.y * target.height * (f32::from(texture.height)),
         );
-        let real_position = Vec2::new(position.x + offset.x, position.y + offset.y);
+        let real_position = Vec2::from(*position) + offset;
 
         draw_texture(
             &self.settings,
@@ -866,8 +863,7 @@ fn draw_texture(
     color: Color,
     resolution: (usize, usize),
 ) {
-    position.x = position.x.floor() + 0.375;
-    position.y = position.y.floor() + 0.375;
+    position = position.floor() + Vec2::splat(0.375);
 
     let projection = Mat4::orthographic_rh_gl(
         0.0,

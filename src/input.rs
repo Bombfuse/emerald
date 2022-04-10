@@ -23,19 +23,13 @@ pub fn screen_translation_to_world_translation(
     screen_translation: &Translation,
     world: &mut World,
 ) -> Translation {
-    let mut p = screen_translation.clone();
-    let mut camera_pos = Translation::default();
-
-    if let Some(id) = world.get_active_camera() {
-        if let Ok(pos) = world.get_mut::<Translation>(id.clone()) {
-            camera_pos.x = pos.x;
-            camera_pos.y = pos.y;
-        }
-    }
+    let camera_pos = world
+        .get_active_camera()
+        .and_then(|id| world.get_mut::<Translation>(id.clone()).ok())
+        .map(|pos| *pos)
+        .unwrap_or_default();
 
     // TODO(bombfuse): take the camera zoom level into account when translating
-    p.x = (screen_size.0 as f32) / -2.0 + screen_translation.x + camera_pos.x;
-    p.y = (screen_size.1 as f32) / -2.0 + screen_translation.y + camera_pos.y;
-
-    p
+    let screen_size = Translation::new(screen_size.0 as f32, screen_size.1 as f32);
+    Translation::from(screen_size * -0.5) + *screen_translation + camera_pos
 }
