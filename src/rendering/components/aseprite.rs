@@ -184,7 +184,8 @@ pub mod types {
 
     #[derive(Copy, Clone, Debug, DeJson)]
     pub struct AseSize {
-        pub(crate) w: u32,
+        #[nserde(rename = "w")]
+        pub(crate) _w: u32,
         pub(crate) h: u32,
     }
 
@@ -199,7 +200,8 @@ pub mod types {
         pub(crate) name: String,
         pub(crate) from: u32,
         pub(crate) to: u32,
-        pub(crate) direction: String,
+        #[nserde(rename = "direction")]
+        pub(crate) _direction: String,
     }
     impl Default for AsepriteTag {
         fn default() -> AsepriteTag {
@@ -207,7 +209,7 @@ pub mod types {
                 name: String::from(""),
                 from: 0,
                 to: 0,
-                direction: String::from("forward"),
+                _direction: String::from("forward"),
             }
         }
     }
@@ -215,20 +217,24 @@ pub mod types {
     #[derive(Copy, Clone, Debug, DeJson)]
     pub struct AsepriteFrame {
         pub(crate) frame: AseRect,
-        rotated: bool,
-        trimmed: bool,
+        #[nserde(rename = "rotated")]
+        _rotated: bool,
+        #[nserde(rename = "trimmed")]
+        _trimmed: bool,
         pub(crate) duration: u32,
         #[nserde(rename = "spriteSourceSize")]
-        sprite_source_size: AseRect,
+        _sprite_source_size: AseRect,
         #[nserde(rename = "sourceSize")]
-        source_size: AseSize,
+        _source_size: AseSize,
     }
 
     #[derive(Clone, Debug, DeJson)]
     pub struct AsepriteMeta {
-        format: String,
+        #[nserde(rename = "format")]
+        _format: String,
         pub(crate) size: AseSize,
-        scale: String,
+        #[nserde(rename = "scale")]
+        _scale: String,
         #[nserde(rename = "frameTags")]
         pub(crate) frame_tags: Vec<AsepriteTag>,
     }
