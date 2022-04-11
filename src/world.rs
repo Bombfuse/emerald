@@ -1,7 +1,7 @@
 #[cfg(feature = "physics")]
 pub mod physics;
 
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use crate::rendering::components::Camera;
 use crate::EmeraldError;
@@ -36,13 +36,25 @@ impl World {
     /// The camera of the primary world will remain the current camera.
     /// If physics is enabled, will keep its own physics settings.
     /// Returns a map of OldEntity -> NewEntity. If you have components that store Entity references, use this map to update your references.
-    pub fn merge(&mut self, mut other_world: World) -> Result<HashMap<Entity, Entity>, EmeraldError> {
+    pub fn merge(
+        &mut self,
+        mut other_world: World,
+    ) -> Result<HashMap<Entity, Entity>, EmeraldError> {
         let mut entity_id_shift_map = HashMap::new();
-        let other_entities = other_world.inner.iter().map(|entity_ref| entity_ref.entity()).collect::<Vec<Entity>>();
-        
+        let other_entities = other_world
+            .inner
+            .iter()
+            .map(|entity_ref| entity_ref.entity())
+            .collect::<Vec<Entity>>();
+
         for old_id in other_entities {
             match other_world.inner.take(old_id.clone()) {
-                Err(_) => return Err(EmeraldError::new(format!("Entity {:?} does not exist, cannot merge.", old_id))),
+                Err(_) => {
+                    return Err(EmeraldError::new(format!(
+                        "Entity {:?} does not exist, cannot merge.",
+                        old_id
+                    )))
+                }
                 Ok(bundle) => {
                     let new_id = self.inner.spawn(bundle);
                     entity_id_shift_map.insert(old_id.clone(), new_id.clone());
@@ -53,15 +65,19 @@ impl World {
                             colliders.push(collider);
                         }
                     }
-        
-                    if let Some(rigid_body) = other_world.physics_engine.remove_body(old_id.clone()) {
-                        let new_rbh = self.physics_engine.add_body(new_id.clone(), rigid_body, &mut self.inner)?;
-        
+
+                    if let Some(rigid_body) = other_world.physics_engine.remove_body(old_id.clone())
+                    {
+                        let new_rbh = self.physics_engine.add_body(
+                            new_id.clone(),
+                            rigid_body,
+                            &mut self.inner,
+                        )?;
+
                         for collider in colliders {
                             self.physics_engine.add_collider(new_rbh, collider);
                         }
                     }
-        
                 }
             }
         }

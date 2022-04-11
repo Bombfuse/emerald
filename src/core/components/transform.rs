@@ -1,3 +1,5 @@
+use glam::{vec2, Vec2};
+use nalgebra::{Isometry2, Translation2, Vector2};
 use nanoserde::DeJson;
 
 /// The core piece of an entity, determines it's transformative state and position in the world.
@@ -67,7 +69,7 @@ impl Scale {
 }
 impl Default for Scale {
     fn default() -> Self {
-        Scale::new(0.0, 0.0)
+        Scale::new(1.0, 1.0)
     }
 }
 impl std::ops::Sub for Scale {
@@ -106,11 +108,73 @@ impl Default for Translation {
         Translation::new(0.0, 0.0)
     }
 }
-impl Into<Translation> for (f32, f32) {
-    fn into(self) -> Translation {
-        Translation::new(self.0, self.1)
+impl From<Vec2> for Translation {
+    #[inline]
+    fn from(v: Vec2) -> Self {
+        Self::new(v.x, v.y)
     }
 }
+impl From<Translation> for Vec2 {
+    #[inline]
+    fn from(t: Translation) -> Self {
+        vec2(t.x, t.y)
+    }
+}
+
+macro_rules! impl_translation_from_other_type_via {
+    ($from_type:ty, $via_type:ty) => {
+        impl From<$from_type> for Translation {
+            #[inline]
+            fn from(x: $from_type) -> Self {
+                Self::from(<$via_type>::from(x))
+            }
+        }
+    };
+}
+
+macro_rules! impl_translation_to_other_type_via {
+    ($other_type:ty, $via_type:ty) => {
+        impl From<Translation> for $other_type {
+            #[inline]
+            fn from(t: Translation) -> Self {
+                Self::from(<$via_type>::from(t))
+            }
+        }
+    };
+}
+
+impl_translation_from_other_type_via!(Vector2<f32>, Vec2);
+impl_translation_to_other_type_via!(Vector2<f32>, Vec2);
+
+impl_translation_from_other_type_via!(Translation2<f32>, Vec2);
+impl_translation_to_other_type_via!(Translation2<f32>, Vec2);
+
+impl_translation_to_other_type_via!(Isometry2<f32>, Translation2<f32>);
+
+impl From<(f32, f32)> for Translation {
+    fn from((x, y): (f32, f32)) -> Self {
+        Translation::new(x, y)
+    }
+}
+
+impl std::ops::Add for Translation {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl std::ops::AddAssign for Translation {
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
+
 impl std::ops::Sub for Translation {
     type Output = Self;
 
@@ -121,13 +185,46 @@ impl std::ops::Sub for Translation {
         }
     }
 }
-impl std::ops::Add for Translation {
+
+impl std::ops::SubAssign for Translation {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
+    }
+}
+
+impl std::ops::Mul<f32> for Translation {
     type Output = Self;
 
-    fn add(self, other: Self) -> Self::Output {
+    fn mul(self, scalar: f32) -> Self::Output {
         Self {
-            x: self.x + other.x,
-            y: self.y + other.y,
+            x: self.x * scalar,
+            y: self.y * scalar,
         }
+    }
+}
+
+impl std::ops::MulAssign<f32> for Translation {
+    fn mul_assign(&mut self, scalar: f32) {
+        self.x *= scalar;
+        self.y *= scalar;
+    }
+}
+
+impl std::ops::Div<f32> for Translation {
+    type Output = Self;
+
+    fn div(self, scalar: f32) -> Self::Output {
+        Self {
+            x: self.x / scalar,
+            y: self.y / scalar,
+        }
+    }
+}
+
+impl std::ops::DivAssign<f32> for Translation {
+    fn div_assign(&mut self, scalar: f32) {
+        self.x /= scalar;
+        self.y /= scalar;
     }
 }
