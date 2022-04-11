@@ -165,123 +165,20 @@ impl RenderingEngine {
         let (camera, camera_transform) = get_camera_and_camera_transform(world);
         let mut draw_queue = Vec::new();
 
+        let cmd_adder = DrawCommandAdder::new(self, world);
+
         #[cfg(feature = "aseprite")]
-        for (_id, (aseprite, transform)) in
-            world.inner.query::<(&mut Aseprite, &Transform)>().iter()
-        {
+        for (_, aseprite) in world.inner.query::<&mut Aseprite>().into_iter() {
             aseprite.update();
-
-            if is_sprite_in_view(
-                asset_store,
-                &self.settings,
-                &aseprite.sprite,
-                transform,
-                &camera,
-                &camera_transform,
-                &screen_size,
-            ) {
-                let drawable = Drawable::Aseprite {
-                    sprite: aseprite.sprite.clone(),
-                    offset: aseprite.offset,
-                    scale: aseprite.scale,
-                    centered: aseprite.centered,
-                    color: aseprite.color,
-                    rotation: aseprite.rotation,
-                    z_index: aseprite.z_index,
-                    visible: aseprite.visible,
-                };
-
-                draw_queue.push(DrawCommand {
-                    drawable,
-                    transform: *transform,
-                    z_index: aseprite.z_index,
-                });
-            }
         }
 
-        for (_id, (sprite, transform)) in world.inner.query::<(&Sprite, &Transform)>().iter() {
-            if is_sprite_in_view(
-                asset_store,
-                &self.settings,
-                sprite,
-                transform,
-                &camera,
-                &camera_transform,
-                &screen_size,
-            ) {
-                let drawable = Drawable::Sprite {
-                    sprite: sprite.clone(),
-                };
+        #[cfg(feature = "aseprite")]
+        cmd_adder.add_draw_commands::<Aseprite>(&mut draw_queue, world, asset_store);
 
-                draw_queue.push(DrawCommand {
-                    drawable,
-                    transform: *transform,
-                    z_index: sprite.z_index,
-                });
-            }
-        }
-
-        for (_id, (ui_button, transform)) in world.inner.query::<(&UIButton, &Transform)>().iter() {
-            let sprite = if ui_button.is_pressed() {
-                Sprite::from_texture(ui_button.pressed_texture.clone())
-            } else {
-                Sprite::from_texture(ui_button.unpressed_texture.clone())
-            };
-
-            if is_sprite_in_view(
-                asset_store,
-                &self.settings,
-                &sprite,
-                transform,
-                &camera,
-                &camera_transform,
-                &screen_size,
-            ) {
-                let drawable = Drawable::Sprite {
-                    sprite: sprite.clone(),
-                };
-
-                draw_queue.push(DrawCommand {
-                    drawable,
-                    transform: *transform,
-                    z_index: ui_button.z_index,
-                });
-            }
-        }
-
-        for (_id, (color_rect, transform)) in world.inner.query::<(&ColorRect, &Transform)>().iter()
-        {
-            if is_color_rect_in_view(
-                &self.settings,
-                &color_rect,
-                &transform,
-                &camera,
-                &camera_transform,
-                &screen_size,
-            ) {
-                let drawable = Drawable::ColorRect {
-                    color_rect: *color_rect,
-                };
-
-                draw_queue.push(DrawCommand {
-                    drawable,
-                    transform: *transform,
-                    z_index: color_rect.z_index,
-                });
-            }
-        }
-
-        for (_, (label, transform)) in world.query::<(&Label, &Transform)>().iter() {
-            let drawable = Drawable::Label {
-                label: label.clone(),
-            };
-
-            draw_queue.push(DrawCommand {
-                drawable,
-                transform: *transform,
-                z_index: label.z_index,
-            })
-        }
+        cmd_adder.add_draw_commands::<Sprite>(&mut draw_queue, world, asset_store);
+        cmd_adder.add_draw_commands::<UIButton>(&mut draw_queue, world, asset_store);
+        cmd_adder.add_draw_commands::<ColorRect>(&mut draw_queue, world, asset_store);
+        cmd_adder.add_draw_commands::<Label>(&mut draw_queue, world, asset_store);
 
         draw_queue.sort_by(|a, b| a.z_index.partial_cmp(&b.z_index).unwrap());
 
@@ -893,96 +790,6 @@ fn draw_texture(
 }
 
 #[inline]
-fn is_color_rect_in_view(
-    settings: &RenderSettings,
-    color_rect: &ColorRect,
-    color_rect_transform: &Transform,
-    camera: &Camera,
-    camera_transform: &Transform,
-    screen_size: &(f32, f32),
-) -> bool {
-    // No need to do culling checks
-    if !settings.frustrum_culling {
-        return true;
-    }
-
-    // Build a rectangle representing the visual size of the sprite
-    let mut color_rect_visible_bounds = Rectangle::new(
-        color_rect_transform.translation.x + color_rect.offset.x,
-        color_rect_transform.translation.y + color_rect.offset.y,
-        color_rect.width as f32,
-        color_rect.height as f32,
-    );
-    if color_rect.centered {
-        color_rect_visible_bounds.x -= color_rect.width as f32 / 2.0;
-        color_rect_visible_bounds.y -= color_rect.height as f32 / 2.0;
-    }
-
-    // Anything inside of this region should be drawn, it represents the camera view
-    let mut camera_view_region = Rectangle::new(
-        camera_transform.translation.x - screen_size.0 / 2.0,
-        camera_transform.translation.y - screen_size.1 / 2.0,
-        screen_size.0,
-        screen_size.1,
-    );
-    camera_view_region.width *= camera.zoom;
-    camera_view_region.height *= camera.zoom;
-
-    camera_view_region.intersects_with(&color_rect_visible_bounds)
-}
-
-#[inline]
-fn is_sprite_in_view(
-    asset_store: &mut AssetStore,
-    settings: &RenderSettings,
-    sprite: &Sprite,
-    sprite_transform: &Transform,
-    camera: &Camera,
-    camera_transform: &Transform,
-    screen_size: &(f32, f32),
-) -> bool {
-    // No need to do culling checks
-    if !settings.frustrum_culling {
-        return true;
-    }
-
-    // Build a rectangle representing the visual size of the sprite
-    let mut sprite_visible_bounds = sprite.target.clone();
-
-    if sprite_visible_bounds.is_zero_sized() {
-        if let Some(texture) = asset_store.get_texture(&sprite.texture_key) {
-            sprite_visible_bounds.width = texture.width as f32;
-            sprite_visible_bounds.height = texture.height as f32;
-        }
-    }
-
-    // Set the visibility rect at the position of the sprite
-    sprite_visible_bounds.x = sprite_transform.translation.x + sprite.offset.x;
-    sprite_visible_bounds.y = sprite_transform.translation.y + sprite.offset.y;
-
-    if sprite.centered {
-        sprite_visible_bounds.x -= sprite.target.width as f32 / 2.0;
-        sprite_visible_bounds.y -= sprite.target.height as f32 / 2.0;
-    }
-
-    // Take the sprite's scale factor into account
-    sprite_visible_bounds.width *= sprite.scale.x;
-    sprite_visible_bounds.height *= sprite.scale.y;
-
-    // Anything inside of this region should be drawn, it represents the camera view
-    let mut camera_view_region = Rectangle::new(
-        camera_transform.translation.x - screen_size.0 / 2.0,
-        camera_transform.translation.y - screen_size.1 / 2.0,
-        screen_size.0,
-        screen_size.1,
-    );
-    camera_view_region.width *= camera.zoom;
-    camera_view_region.height *= camera.zoom;
-
-    camera_view_region.intersects_with(&sprite_visible_bounds)
-}
-
-#[inline]
 fn get_camera_and_camera_transform(world: &World) -> (Camera, Transform) {
     let mut cam = Camera::default();
     let mut cam_transform = Transform::from_translation((0.0, 0.0));
@@ -1027,11 +834,233 @@ pub(crate) enum Drawable {
     },
 }
 
+trait ToDrawable {
+    /// Returns a rectangle representing the visual size of this drawable, if a
+    /// culling check should be performed. `None` can be returned to skip the
+    /// culling check.
+    fn get_visible_bounds(
+        &self,
+        transform: &Transform,
+        asset_store: &mut AssetStore,
+    ) -> Option<Rectangle>;
+
+    fn to_drawable(&self) -> Drawable;
+
+    fn z_index(&self) -> f32;
+}
+
+#[cfg(feature = "aseprite")]
+impl ToDrawable for Aseprite {
+    fn get_visible_bounds(
+        &self,
+        transform: &Transform,
+        asset_store: &mut AssetStore,
+    ) -> Option<Rectangle> {
+        self.sprite.get_visible_bounds(transform, asset_store)
+    }
+
+    fn to_drawable(&self) -> Drawable {
+        Drawable::Aseprite {
+            sprite: self.sprite.clone(),
+            offset: self.offset,
+            scale: self.scale,
+            centered: self.centered,
+            color: self.color,
+            rotation: self.rotation,
+            z_index: self.z_index,
+            visible: self.visible,
+        }
+    }
+
+    fn z_index(&self) -> f32 {
+        self.z_index
+    }
+}
+
+impl ToDrawable for Sprite {
+    fn get_visible_bounds(
+        &self,
+        transform: &Transform,
+        asset_store: &mut AssetStore,
+    ) -> Option<Rectangle> {
+        let mut bounds = self.target.clone();
+
+        if bounds.is_zero_sized() {
+            if let Some(texture) = asset_store.get_texture(&self.texture_key) {
+                bounds.width = texture.width as f32;
+                bounds.height = texture.height as f32;
+            }
+        }
+
+        // Set the visibility rect at the position of the sprite
+        bounds.x = transform.translation.x + self.offset.x;
+        bounds.y = transform.translation.y + self.offset.y;
+
+        if self.centered {
+            bounds.x -= self.target.width as f32 / 2.0;
+            bounds.y -= self.target.height as f32 / 2.0;
+        }
+
+        // Take the sprite's scale factor into account
+        bounds.width *= self.scale.x;
+        bounds.height *= self.scale.y;
+
+        Some(bounds)
+    }
+
+    fn to_drawable(&self) -> Drawable {
+        Drawable::Sprite {
+            sprite: self.clone(),
+        }
+    }
+
+    fn z_index(&self) -> f32 {
+        self.z_index
+    }
+}
+
+impl ToDrawable for UIButton {
+    fn get_visible_bounds(
+        &self,
+        transform: &Transform,
+        asset_store: &mut AssetStore,
+    ) -> Option<Rectangle> {
+        let sprite = Sprite::from_texture(self.current_texture().clone());
+        sprite.get_visible_bounds(transform, asset_store)
+    }
+
+    fn to_drawable(&self) -> Drawable {
+        Drawable::Sprite {
+            sprite: Sprite::from_texture(self.current_texture().clone()),
+        }
+    }
+
+    fn z_index(&self) -> f32 {
+        self.z_index
+    }
+}
+
+impl ToDrawable for ColorRect {
+    fn get_visible_bounds(
+        &self,
+        transform: &Transform,
+        _asset_store: &mut AssetStore,
+    ) -> Option<Rectangle> {
+        let mut bounds = Rectangle::new(
+            transform.translation.x + self.offset.x,
+            transform.translation.y + self.offset.y,
+            self.width as f32,
+            self.height as f32,
+        );
+        if self.centered {
+            bounds.x -= self.width as f32 / 2.0;
+            bounds.y -= self.height as f32 / 2.0;
+        }
+        Some(bounds)
+    }
+
+    fn to_drawable(&self) -> Drawable {
+        Drawable::ColorRect { color_rect: *self }
+    }
+
+    fn z_index(&self) -> f32 {
+        self.z_index
+    }
+}
+
+impl ToDrawable for Label {
+    fn get_visible_bounds(
+        &self,
+        _transform: &Transform,
+        _asset_store: &mut AssetStore,
+    ) -> Option<Rectangle> {
+        None
+    }
+
+    fn to_drawable(&self) -> Drawable {
+        Drawable::Label {
+            label: self.clone(),
+        }
+    }
+
+    fn z_index(&self) -> f32 {
+        self.z_index
+    }
+}
+
 #[derive(Clone)]
 pub(crate) struct DrawCommand {
     pub drawable: Drawable,
     pub transform: Transform,
     pub z_index: f32,
+}
+
+struct DrawCommandAdder {
+    /// Bounds for culling checks, or None if no culling checks should be
+    /// performed.
+    camera_bounds: Option<Rectangle>,
+}
+
+impl DrawCommandAdder {
+    fn new(engine: &RenderingEngine, world: &World) -> Self {
+        let camera_bounds = if engine.settings.frustrum_culling {
+            let screen_size = (
+                engine.current_resolution.0 as f32,
+                engine.current_resolution.1 as f32,
+            );
+
+            let (camera, camera_transform) = get_camera_and_camera_transform(world);
+            let mut camera_view_region = Rectangle::new(
+                camera_transform.translation.x - screen_size.0 / 2.0,
+                camera_transform.translation.y - screen_size.1 / 2.0,
+                screen_size.0,
+                screen_size.1,
+            );
+            camera_view_region.width *= camera.zoom;
+            camera_view_region.height *= camera.zoom;
+
+            Some(camera_view_region)
+        } else {
+            None
+        };
+
+        Self { camera_bounds }
+    }
+
+    fn add_draw_commands<'a, D>(
+        &self,
+        draw_queue: &mut Vec<DrawCommand>,
+        world: &'a World,
+        asset_store: &mut AssetStore,
+    ) where
+        D: hecs::Component + ToDrawable + 'a,
+    {
+        draw_queue.extend(
+            world
+                .query::<(&D, &Transform)>()
+                .into_iter()
+                .filter(|(_entity, (to_drawable, transform))| {
+                    if let Some(camera_bounds) = self.camera_bounds {
+                        if let Some(drawable_bounds) =
+                            to_drawable.get_visible_bounds(transform, asset_store)
+                        {
+                            return camera_bounds.intersects_with(&drawable_bounds);
+                        }
+                    }
+
+                    true
+                })
+                .map(|(_entity, (to_drawable, transform))| {
+                    let drawable = to_drawable.to_drawable();
+
+                    DrawCommand {
+                        drawable,
+                        transform: *transform,
+                        z_index: to_drawable.z_index(),
+                    }
+                }),
+        );
+    }
 }
 
 #[inline]

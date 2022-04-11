@@ -59,4 +59,12 @@ impl UIButton {
         self.is_pressed = false;
         self.was_pressed = false;
     }
+
+    pub(crate) fn current_texture(&self) -> &TextureKey {
+        if self.is_pressed() {
+            &self.pressed_texture
+        } else {
+            &self.unpressed_texture
+        }
+    }
 }
