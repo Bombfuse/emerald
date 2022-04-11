@@ -156,16 +156,7 @@ impl From<(f32, f32)> for Translation {
         Translation::new(x, y)
     }
 }
-impl std::ops::Sub for Translation {
-    type Output = Self;
 
-    fn sub(self, other: Self) -> Self::Output {
-        Self {
-            x: self.x - other.x,
-            y: self.y - other.y,
-        }
-    }
-}
 impl std::ops::Add for Translation {
     type Output = Self;
 
@@ -176,6 +167,7 @@ impl std::ops::Add for Translation {
         }
     }
 }
+
 impl std::ops::AddAssign for Translation {
     fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
@@ -183,9 +175,56 @@ impl std::ops::AddAssign for Translation {
     }
 }
 
+impl std::ops::Sub for Translation {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self::Output {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
+}
+
 impl std::ops::SubAssign for Translation {
     fn sub_assign(&mut self, rhs: Self) {
         self.x -= rhs.x;
         self.y -= rhs.y;
+    }
+}
+
+impl std::ops::Mul<f32> for Translation {
+    type Output = Self;
+
+    fn mul(self, scalar: f32) -> Self::Output {
+        Self {
+            x: self.x * scalar,
+            y: self.y * scalar,
+        }
+    }
+}
+
+impl std::ops::MulAssign<f32> for Translation {
+    fn mul_assign(&mut self, scalar: f32) {
+        self.x *= scalar;
+        self.y *= scalar;
+    }
+}
+
+impl std::ops::Div<f32> for Translation {
+    type Output = Self;
+
+    fn div(self, scalar: f32) -> Self::Output {
+        Self {
+            x: self.x / scalar,
+            y: self.y / scalar,
+        }
+    }
+}
+
+impl std::ops::DivAssign<f32> for Translation {
+    fn div_assign(&mut self, scalar: f32) {
+        self.x /= scalar;
+        self.y /= scalar;
     }
 }
