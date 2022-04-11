@@ -1,5 +1,5 @@
 use glam::{vec2, Vec2};
-use nalgebra::{Isometry2, Translation2};
+use nalgebra::{Isometry2, Translation2, Vector2};
 use nanoserde::DeJson;
 
 /// The core piece of an entity, determines it's transformative state and position in the world.
@@ -142,6 +142,9 @@ macro_rules! impl_translation_to_other_type_via {
         }
     };
 }
+
+impl_translation_from_other_type_via!(Vector2<f32>, Vec2);
+impl_translation_to_other_type_via!(Vector2<f32>, Vec2);
 
 impl_translation_from_other_type_via!(Translation2<f32>, Vec2);
 impl_translation_to_other_type_via!(Translation2<f32>, Vec2);
