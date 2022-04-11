@@ -120,24 +120,34 @@ impl From<Translation> for Vec2 {
         vec2(t.x, t.y)
     }
 }
-impl From<Translation2<f32>> for Translation {
-    #[inline]
-    fn from(t: Translation2<f32>) -> Self {
-        Self::from(Vec2::from(t))
-    }
+
+macro_rules! impl_translation_from_other_type_via {
+    ($from_type:ty, $via_type:ty) => {
+        impl From<$from_type> for Translation {
+            #[inline]
+            fn from(x: $from_type) -> Self {
+                Self::from(<$via_type>::from(x))
+            }
+        }
+    };
 }
-impl From<Translation> for Translation2<f32> {
-    #[inline]
-    fn from(t: Translation) -> Self {
-        Self::from(Vec2::from(t))
-    }
+
+macro_rules! impl_translation_to_other_type_via {
+    ($other_type:ty, $via_type:ty) => {
+        impl From<Translation> for $other_type {
+            #[inline]
+            fn from(t: Translation) -> Self {
+                Self::from(<$via_type>::from(t))
+            }
+        }
+    };
 }
-impl From<Translation> for Isometry2<f32> {
-    #[inline]
-    fn from(t: Translation) -> Self {
-        Self::from(Translation2::from(t))
-    }
-}
+
+impl_translation_from_other_type_via!(Translation2<f32>, Vec2);
+impl_translation_to_other_type_via!(Translation2<f32>, Vec2);
+
+impl_translation_to_other_type_via!(Isometry2<f32>, Translation2<f32>);
+
 impl From<(f32, f32)> for Translation {
     fn from((x, y): (f32, f32)) -> Self {
         Translation::new(x, y)
