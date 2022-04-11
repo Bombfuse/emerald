@@ -30,10 +30,10 @@ impl Game for MyGame {
             .aseprite_with_animations("smiley.png", "smiley.json")
             .unwrap();
 
-        aseprite.play_and_loop("smile");
+        aseprite.play_and_loop("smile").unwrap();
 
         let mut a2 = aseprite.clone();
-        a2.play("smile");
+        a2.play("smile").unwrap();
 
         self.world
             .spawn((aseprite, Transform::from_translation((64.0, 64.0))));
