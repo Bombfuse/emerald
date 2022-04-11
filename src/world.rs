@@ -21,13 +21,18 @@ pub struct World {
     pub(crate) physics_engine: PhysicsEngine,
     pub(crate) inner: hecs::World,
 }
-impl World {
-    pub fn new() -> Self {
+impl Default for World {
+    fn default() -> Self {
         World {
             #[cfg(feature = "physics")]
             physics_engine: PhysicsEngine::new(),
             inner: hecs::World::default(),
         }
+    }
+}
+impl World {
+    pub fn new() -> Self {
+        Default::default()
     }
 
     // TODO: Make entity ids, rigid body handles, and collider handles unique across all worlds. Then we can remove the HashMap of OldEntity -> NewEntity.
