@@ -102,12 +102,7 @@ impl Aseprite {
             .tags
             .iter()
             .find(|tag| tag.name == name)
-            .map(|tag| {
-                (tag.from..=tag.to)
-                    .filter_map(|i| self.data.frames.get(i))
-                    .map(|frame| frame.duration)
-                    .sum()
-            })
+            .map(|tag| tag.duration)
             .unwrap_or(0.0)
     }
 
@@ -148,9 +143,27 @@ impl Aseprite {
         self.frame_counter = 0;
     }
 
-    pub fn add_delta(&mut self, delta: f32) {
-        self.elapsed_time += delta;
+    pub fn add_delta(&mut self, mut delta: f32) {
         self.total_anim_elapsed_time += delta;
+
+        let tag_duration = self
+            .get_current_tag()
+            .map(|tag| tag.duration)
+            .unwrap_or_default();
+        if delta >= tag_duration {
+            if self.is_looping {
+                // Skip entire loops when looping.
+                delta %= tag_duration;
+            } else {
+                // We don't need to process any more than the maximum length.
+                delta = tag_duration;
+            }
+        }
+        // Avoid an infinite loop if user passed f32::INFINITY
+        if !delta.is_normal() {
+            return;
+        }
+        self.elapsed_time += delta;
 
         let num_frames_in_tag = self
             .get_current_tag()
@@ -257,25 +270,30 @@ struct Tag {
     name: String,
     from: usize,
     to: usize,
+    duration: f32,
 }
 
 impl Tag {
-    fn from_asefile(tag: &asefile::Tag) -> Self {
+    fn new(name: String, from: usize, to: usize, frames: &[Frame]) -> Self {
         Self {
-            name: tag.name().to_owned(),
-            from: tag.from_frame() as usize,
-            to: tag.to_frame() as usize,
+            name,
+            from,
+            to,
+            duration: frames[from..=to].iter().map(|frame| frame.duration).sum(),
         }
     }
-}
 
-impl From<json_types::AsepriteTag> for Tag {
-    fn from(tag: json_types::AsepriteTag) -> Self {
-        Self {
-            name: tag.name,
-            from: tag.from as usize,
-            to: tag.to as usize,
-        }
+    fn from_asefile(tag: &asefile::Tag, frames: &[Frame]) -> Self {
+        Self::new(
+            tag.name().to_owned(),
+            tag.from_frame() as usize,
+            tag.to_frame() as usize,
+            frames,
+        )
+    }
+
+    fn from_json(tag: json_types::AsepriteTag, frames: &[Frame]) -> Self {
+        Self::new(tag.name, tag.from as usize, tag.to as usize, frames)
     }
 }
 
@@ -344,7 +362,7 @@ impl AsepriteData {
         path: &str,
         aseprite: asefile::AsepriteFile,
     ) -> Result<Self, EmeraldError> {
-        let frames = (0..aseprite.num_frames())
+        let frames: Vec<Frame> = (0..aseprite.num_frames())
             .map(|frame_index| {
                 let frame = aseprite.frame(frame_index);
                 Frame::from_asefile(ctx, asset_store, path, frame_index, frame)
@@ -352,7 +370,7 @@ impl AsepriteData {
             .collect::<Result<_, EmeraldError>>()?;
 
         let tags = (0..aseprite.num_tags())
-            .map(|i| Tag::from_asefile(aseprite.tag(i)))
+            .map(|i| Tag::from_asefile(aseprite.tag(i), &frames))
             .collect();
 
         Ok(Self { frames, tags })
@@ -360,7 +378,7 @@ impl AsepriteData {
 
     fn from_sprite_and_json(sprite: Sprite, json_data: json_types::AsepriteData) -> Self {
         let sheet_size = &json_data.meta.size;
-        let frames = json_data
+        let frames: Vec<Frame> = json_data
             .frames
             .into_iter()
             .map(|frame| Frame::from_sprite_and_json(sprite.clone(), sheet_size, frame))
@@ -370,7 +388,7 @@ impl AsepriteData {
             .meta
             .frame_tags
             .into_iter()
-            .map(Tag::from)
+            .map(|tag| Tag::from_json(tag, &frames))
             .collect();
 
         Self { frames, tags }
