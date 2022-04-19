@@ -73,24 +73,20 @@ impl Aseprite {
     pub fn get_anim_length<T: AsRef<str>>(&self, name: T) -> f32 {
         let name: &str = name.as_ref();
 
-        for tag in &self.data.meta.frame_tags {
-            if tag.name == name {
-                let mut total_time = 0;
-                let mut i = tag.from;
+        self.data
+            .meta
+            .frame_tags
+            .iter()
+            .find(|tag| tag.name == name)
+            .map(|tag| {
+                let total_time: u32 = (tag.from..=tag.to)
+                    .filter_map(|i| self.data.frames.get(i as usize))
+                    .map(|frame| frame.duration)
+                    .sum();
 
-                while i <= tag.to {
-                    if let Some(frame) = self.data.frames.get(i as usize) {
-                        total_time += frame.duration;
-                    }
-
-                    i += 1;
-                }
-
-                return total_time as f32 / 1000.0;
-            }
-        }
-
-        0.0
+                total_time as f32 / 1000.0
+            })
+            .unwrap_or(0.0)
     }
 
     pub fn play<T: AsRef<str>>(&mut self, new_animation: T) -> Result<(), EmeraldError> {
@@ -121,16 +117,12 @@ impl Aseprite {
     }
 
     fn get_tag(&mut self, name: &str) -> Option<AsepriteTag> {
-        let mut tag = None;
-
-        for t in &self.data.meta.frame_tags {
-            if t.name == name {
-                tag = Some(t.clone());
-                break;
-            }
-        }
-
-        tag
+        self.data
+            .meta
+            .frame_tags
+            .iter()
+            .find(|tag| tag.name == name)
+            .cloned()
     }
 
     fn reset(&mut self) {
