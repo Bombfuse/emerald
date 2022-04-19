@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
 
@@ -7,7 +9,7 @@ use types::*;
 
 #[derive(Clone, Debug)]
 pub struct Aseprite {
-    pub(crate) data: AsepriteData,
+    pub(crate) data: Arc<AsepriteData>,
     pub(crate) current_tag: AsepriteTag,
     pub(crate) sprite: Sprite,
     pub(crate) elapsed_time: f32,
@@ -39,6 +41,7 @@ impl Aseprite {
     pub(crate) fn new(sprite: Sprite, animation_data: Vec<u8>) -> Result<Aseprite, EmeraldError> {
         let json = String::from_utf8(animation_data)?;
         let data: AsepriteData = DeJson::deserialize_json(&json)?;
+        let data = Arc::new(data);
 
         let aseprite = Aseprite {
             data,
