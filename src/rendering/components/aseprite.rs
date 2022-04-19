@@ -70,8 +70,8 @@ impl Aseprite {
 
     /// Returns the length of the animation given in seconds.
     /// Returns 0.0 if the animation doesn't exist.
-    pub fn get_anim_length<T: Into<String>>(&self, name: T) -> f32 {
-        let name: String = name.into();
+    pub fn get_anim_length<T: AsRef<str>>(&self, name: T) -> f32 {
+        let name: &str = name.as_ref();
 
         for tag in &self.data.meta.frame_tags {
             if tag.name == name {
@@ -93,22 +93,22 @@ impl Aseprite {
         0.0
     }
 
-    pub fn play<T: Into<String>>(&mut self, new_animation: T) -> Result<(), EmeraldError> {
+    pub fn play<T: AsRef<str>>(&mut self, new_animation: T) -> Result<(), EmeraldError> {
         self.is_looping = false;
         self.reset();
         self.set_tag(new_animation)
     }
 
-    pub fn play_and_loop<T: Into<String>>(&mut self, new_animation: T) -> Result<(), EmeraldError> {
+    pub fn play_and_loop<T: AsRef<str>>(&mut self, new_animation: T) -> Result<(), EmeraldError> {
         self.is_looping = true;
         self.reset();
         self.set_tag(new_animation)
     }
 
-    fn set_tag<T: Into<String>>(&mut self, animation_name: T) -> Result<(), EmeraldError> {
-        let animation_name: String = animation_name.into();
+    fn set_tag<T: AsRef<str>>(&mut self, animation_name: T) -> Result<(), EmeraldError> {
+        let animation_name: &str = animation_name.as_ref();
 
-        if let Some(tag) = self.get_tag(animation_name.clone()) {
+        if let Some(tag) = self.get_tag(animation_name) {
             self.current_tag = tag;
         } else {
             return Err(EmeraldError::new(format!(
@@ -120,8 +120,7 @@ impl Aseprite {
         Ok(())
     }
 
-    fn get_tag<T: Into<String>>(&mut self, name: T) -> Option<AsepriteTag> {
-        let name: String = name.into();
+    fn get_tag(&mut self, name: &str) -> Option<AsepriteTag> {
         let mut tag = None;
 
         for t in &self.data.meta.frame_tags {
