@@ -168,11 +168,6 @@ impl RenderingEngine {
         let cmd_adder = DrawCommandAdder::new(self, world);
 
         #[cfg(feature = "aseprite")]
-        for (_, aseprite) in world.inner.query::<&mut Aseprite>().into_iter() {
-            aseprite.update();
-        }
-
-        #[cfg(feature = "aseprite")]
         cmd_adder.add_draw_commands::<Aseprite>(&mut draw_queue, world, asset_store);
 
         cmd_adder.add_draw_commands::<Sprite>(&mut draw_queue, world, asset_store);
@@ -856,12 +851,12 @@ impl ToDrawable for Aseprite {
         transform: &Transform,
         asset_store: &mut AssetStore,
     ) -> Option<Rectangle> {
-        self.sprite.get_visible_bounds(transform, asset_store)
+        self.get_sprite().get_visible_bounds(transform, asset_store)
     }
 
     fn to_drawable(&self) -> Drawable {
         Drawable::Aseprite {
-            sprite: self.sprite.clone(),
+            sprite: self.get_sprite().clone(),
             offset: self.offset,
             scale: self.scale,
             centered: self.centered,
