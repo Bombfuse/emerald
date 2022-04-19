@@ -38,9 +38,9 @@ impl Aseprite {
             Rectangle::new(target.x as f32, real_y, target.w as f32, target.h as f32);
     }
 
-    pub(crate) fn new(sprite: Sprite, animation_data: Vec<u8>) -> Result<Aseprite, EmeraldError> {
-        let json = String::from_utf8(animation_data)?;
-        let data: AsepriteData = DeJson::deserialize_json(&json)?;
+    pub(crate) fn new(sprite: Sprite, animation_json: Vec<u8>) -> Result<Aseprite, EmeraldError> {
+        let animation_json = std::str::from_utf8(&animation_json)?;
+        let data: AsepriteData = DeJson::deserialize_json(animation_json)?;
         let data = Arc::new(data);
 
         let aseprite = Aseprite {
