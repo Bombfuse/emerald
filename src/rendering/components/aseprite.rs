@@ -185,7 +185,7 @@ pub fn aseprite_update_system(world: &mut World, delta: f32) {
     }
 }
 
-pub mod types {
+pub(crate) mod types {
     use nanoserde::DeJson;
 
     #[derive(Copy, Clone, Debug, DeJson)]
