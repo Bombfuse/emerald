@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
 
@@ -7,8 +9,8 @@ use types::*;
 
 #[derive(Clone, Debug)]
 pub struct Aseprite {
-    pub(crate) data: AsepriteData,
-    pub(crate) current_tag: AsepriteTag,
+    pub(crate) data: Arc<AsepriteData>,
+    pub(crate) current_tag_index: Option<usize>,
     pub(crate) sprite: Sprite,
     pub(crate) elapsed_time: f32,
     pub(crate) total_anim_elapsed_time: f32,
@@ -36,16 +38,17 @@ impl Aseprite {
             Rectangle::new(target.x as f32, real_y, target.w as f32, target.h as f32);
     }
 
-    pub(crate) fn new(sprite: Sprite, animation_data: Vec<u8>) -> Result<Aseprite, EmeraldError> {
-        let json = String::from_utf8(animation_data)?;
-        let data: AsepriteData = DeJson::deserialize_json(&json)?;
+    pub(crate) fn new(sprite: Sprite, animation_json: Vec<u8>) -> Result<Aseprite, EmeraldError> {
+        let animation_json = std::str::from_utf8(&animation_json)?;
+        let data: AsepriteData = DeJson::deserialize_json(animation_json)?;
+        let data = Arc::new(data);
 
         let aseprite = Aseprite {
             data,
             elapsed_time: 0.0,
             total_anim_elapsed_time: 0.0,
             frame_counter: 0,
-            current_tag: AsepriteTag::default(),
+            current_tag_index: None,
             sprite,
             is_looping: false,
             rotation: 0.0,
@@ -60,8 +63,15 @@ impl Aseprite {
         Ok(aseprite)
     }
 
-    pub fn get_animation_name(&self) -> String {
-        self.current_tag.name.clone()
+    fn get_current_tag(&self) -> Option<&AsepriteTag> {
+        self.current_tag_index
+            .map(|idx| &self.data.meta.frame_tags[idx])
+    }
+
+    pub fn get_animation_name(&self) -> &str {
+        self.get_current_tag()
+            .map(|tag| tag.name.as_str())
+            .unwrap_or("")
     }
 
     pub fn get_elapsed_time(&self) -> f32 {
@@ -70,46 +80,42 @@ impl Aseprite {
 
     /// Returns the length of the animation given in seconds.
     /// Returns 0.0 if the animation doesn't exist.
-    pub fn get_anim_length<T: Into<String>>(&self, name: T) -> f32 {
-        let name: String = name.into();
+    pub fn get_anim_length<T: AsRef<str>>(&self, name: T) -> f32 {
+        let name: &str = name.as_ref();
 
-        for tag in &self.data.meta.frame_tags {
-            if tag.name == name {
-                let mut total_time = 0;
-                let mut i = tag.from;
+        self.data
+            .meta
+            .frame_tags
+            .iter()
+            .find(|tag| tag.name == name)
+            .map(|tag| {
+                let total_time: u32 = (tag.from..=tag.to)
+                    .filter_map(|i| self.data.frames.get(i as usize))
+                    .map(|frame| frame.duration)
+                    .sum();
 
-                while i <= tag.to {
-                    if let Some(frame) = self.data.frames.get(i as usize) {
-                        total_time += frame.duration;
-                    }
-
-                    i += 1;
-                }
-
-                return total_time as f32 / 1000.0;
-            }
-        }
-
-        0.0
+                total_time as f32 / 1000.0
+            })
+            .unwrap_or(0.0)
     }
 
-    pub fn play<T: Into<String>>(&mut self, new_animation: T) -> Result<(), EmeraldError> {
+    pub fn play<T: AsRef<str>>(&mut self, new_animation: T) -> Result<(), EmeraldError> {
         self.is_looping = false;
         self.reset();
         self.set_tag(new_animation)
     }
 
-    pub fn play_and_loop<T: Into<String>>(&mut self, new_animation: T) -> Result<(), EmeraldError> {
+    pub fn play_and_loop<T: AsRef<str>>(&mut self, new_animation: T) -> Result<(), EmeraldError> {
         self.is_looping = true;
         self.reset();
         self.set_tag(new_animation)
     }
 
-    fn set_tag<T: Into<String>>(&mut self, animation_name: T) -> Result<(), EmeraldError> {
-        let animation_name: String = animation_name.into();
+    fn set_tag<T: AsRef<str>>(&mut self, animation_name: T) -> Result<(), EmeraldError> {
+        let animation_name: &str = animation_name.as_ref();
 
-        if let Some(tag) = self.get_tag(animation_name.clone()) {
-            self.current_tag = tag;
+        if let Some(idx) = self.find_tag(animation_name) {
+            self.current_tag_index = Some(idx);
         } else {
             return Err(EmeraldError::new(format!(
                 "Animation {} does not exist.",
@@ -120,18 +126,12 @@ impl Aseprite {
         Ok(())
     }
 
-    fn get_tag<T: Into<String>>(&mut self, name: T) -> Option<AsepriteTag> {
-        let name: String = name.into();
-        let mut tag = None;
-
-        for t in &self.data.meta.frame_tags {
-            if t.name == name {
-                tag = Some(t.clone());
-                break;
-            }
-        }
-
-        tag
+    fn find_tag(&self, name: &str) -> Option<usize> {
+        self.data
+            .meta
+            .frame_tags
+            .iter()
+            .position(|tag| tag.name == name)
     }
 
     fn reset(&mut self) {
@@ -143,25 +143,39 @@ impl Aseprite {
     pub fn add_delta(&mut self, delta: f32) {
         self.elapsed_time += delta;
         self.total_anim_elapsed_time += delta;
-        let frame = self.get_frame();
-        let duration = frame.duration as f32 / 1000.0;
 
-        while self.elapsed_time >= duration {
+        let num_frames_in_tag: u32 = self
+            .get_current_tag()
+            .map(|tag| tag.to - tag.from)
+            .unwrap_or_default();
+
+        loop {
+            let frame = self.get_frame();
+            let duration = frame.duration as f32 / 1000.0;
+            if self.elapsed_time < duration {
+                break;
+            }
+
             self.elapsed_time -= duration;
             self.frame_counter += 1;
 
-            if self.frame_counter as u32 > (self.current_tag.to - self.current_tag.from) {
+            if self.frame_counter as u32 > num_frames_in_tag {
                 if self.is_looping {
                     self.frame_counter = 0;
                 } else {
-                    self.frame_counter = (self.current_tag.to - self.current_tag.from) as usize;
+                    self.frame_counter = num_frames_in_tag as usize;
                 }
             }
         }
     }
 
     fn get_frame(&self) -> &AsepriteFrame {
-        &self.data.frames[self.current_tag.from as usize + self.frame_counter]
+        let cur_tag_start: u32 = self
+            .get_current_tag()
+            .map(|tag| tag.from)
+            .unwrap_or_default();
+
+        &self.data.frames[cur_tag_start as usize + self.frame_counter]
     }
 }
 

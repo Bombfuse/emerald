@@ -85,6 +85,14 @@ impl std::convert::From<&str> for EmeraldError {
     }
 }
 
+impl std::convert::From<std::str::Utf8Error> for EmeraldError {
+    fn from(e: std::str::Utf8Error) -> EmeraldError {
+        EmeraldError {
+            message: format!("std::str::Utf8Error {:?}", &e.to_string()),
+        }
+    }
+}
+
 impl std::convert::From<std::string::FromUtf8Error> for EmeraldError {
     fn from(e: std::string::FromUtf8Error) -> EmeraldError {
         EmeraldError {
