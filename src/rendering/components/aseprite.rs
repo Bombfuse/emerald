@@ -60,8 +60,8 @@ impl Aseprite {
         Ok(aseprite)
     }
 
-    pub fn get_animation_name(&self) -> String {
-        self.current_tag.name.clone()
+    pub fn get_animation_name(&self) -> &str {
+        &self.current_tag.name
     }
 
     pub fn get_elapsed_time(&self) -> f32 {
