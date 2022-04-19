@@ -143,15 +143,19 @@ impl Aseprite {
     pub fn add_delta(&mut self, delta: f32) {
         self.elapsed_time += delta;
         self.total_anim_elapsed_time += delta;
-        let frame = self.get_frame();
-        let duration = frame.duration as f32 / 1000.0;
 
         let num_frames_in_tag: u32 = self
             .get_current_tag()
             .map(|tag| tag.to - tag.from)
             .unwrap_or_default();
 
-        while self.elapsed_time >= duration {
+        loop {
+            let frame = self.get_frame();
+            let duration = frame.duration as f32 / 1000.0;
+            if self.elapsed_time < duration {
+                break;
+            }
+
             self.elapsed_time -= duration;
             self.frame_counter += 1;
 
