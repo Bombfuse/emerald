@@ -115,15 +115,21 @@ for (id, (sprite, mut position)) in emd.world().query::<(&Sprite, &mut Position)
 
 ## [Aseprite](https://www.aseprite.org/)
 
-Emerald has built in aseprite loading and rendering. Simply load in the texture and animation file, then tell it which animations to play.
+Emerald has built in aseprite loading and rendering. Simply load in the file, then tell it which animations to play.
 
 ```rust
-let mut aseprite = emd.loader()
-    .aseprite("my_texture.png", "my_animation.json").unwrap();
+let mut aseprite = emd.loader().aseprite("my_sprite.aseprite").unwrap();
 
 aseprite.play("some_aseprite_animation");
 
 emd.world().spawn((aseprite, Position::zero()));
+```
+
+Alternatively, Emerald can load a sprite sheet exported from aseprite.
+
+```rust
+let mut aseprite = emd.loader()
+    .aseprite_with_animations("my_texture.png", "my_animation.json").unwrap();
 ```
 
 Export settings
