@@ -1,8 +1,10 @@
+use std::convert::TryInto;
 use std::sync::Arc;
 
 use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
 
+use miniquad::Context;
 use nanoserde::DeJson;
 
 #[derive(Clone, Debug)]
@@ -27,13 +29,31 @@ impl Aseprite {
         &self.get_frame().sprite
     }
 
-    pub(crate) fn new(sprite: Sprite, animation_json: Vec<u8>) -> Result<Aseprite, EmeraldError> {
+    pub(crate) fn new(
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+        path: &str,
+        data: Vec<u8>,
+    ) -> Result<Self, EmeraldError> {
+        let aseprite = asefile::AsepriteFile::read(std::io::Cursor::new(data))?;
+        let data = AsepriteData::from_asefile(ctx, asset_store, path, aseprite)?;
+        Ok(Self::from_data(data))
+    }
+
+    pub(crate) fn from_exported(
+        sprite: Sprite,
+        animation_json: Vec<u8>,
+    ) -> Result<Self, EmeraldError> {
         let animation_json = std::str::from_utf8(&animation_json)?;
         let json_data: json_types::AsepriteData = DeJson::deserialize_json(animation_json)?;
         let data = AsepriteData::from_sprite_and_json(sprite, json_data);
+        Ok(Self::from_data(data))
+    }
+
+    fn from_data(data: AsepriteData) -> Self {
         let data = Arc::new(data);
 
-        let aseprite = Aseprite {
+        Self {
             data,
             elapsed_time: 0.0,
             total_anim_elapsed_time: 0.0,
@@ -47,9 +67,7 @@ impl Aseprite {
             centered: true,
             z_index: 0.0,
             visible: true,
-        };
-
-        Ok(aseprite)
+        }
     }
 
     fn get_current_tag(&self) -> Option<&Tag> {
@@ -241,6 +259,16 @@ struct Tag {
     to: usize,
 }
 
+impl Tag {
+    fn from_asefile(tag: &asefile::Tag) -> Self {
+        Self {
+            name: tag.name().to_owned(),
+            from: tag.from_frame() as usize,
+            to: tag.to_frame() as usize,
+        }
+    }
+}
+
 impl From<json_types::AsepriteTag> for Tag {
     fn from(tag: json_types::AsepriteTag) -> Self {
         Self {
@@ -258,6 +286,36 @@ struct Frame {
 }
 
 impl Frame {
+    fn from_asefile(
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+        path: &str,
+        frame_index: u32,
+        frame: asefile::Frame<'_>,
+    ) -> Result<Self, EmeraldError> {
+        let image = frame.image();
+        let image = image::imageops::flip_vertical(&image);
+        let texture_key = {
+            let mut key = path.to_owned();
+            key.push('#');
+            key.push_str(&frame_index.to_string());
+            TextureKey::new(key)
+        };
+        let texture = Texture::from_rgba8(
+            ctx,
+            texture_key.clone(),
+            image.width().try_into().unwrap(),
+            image.height().try_into().unwrap(),
+            &image,
+        )?;
+        asset_store.insert_texture(texture_key.clone(), texture);
+
+        Ok(Self {
+            sprite: Sprite::from_texture(texture_key),
+            duration: frame.duration() as f32 / 1000.0,
+        })
+    }
+
     fn from_sprite_and_json(
         mut sprite: Sprite,
         sheet_size: &json_types::AseSize,
@@ -280,6 +338,26 @@ pub(crate) struct AsepriteData {
 }
 
 impl AsepriteData {
+    fn from_asefile(
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+        path: &str,
+        aseprite: asefile::AsepriteFile,
+    ) -> Result<Self, EmeraldError> {
+        let frames = (0..aseprite.num_frames())
+            .map(|frame_index| {
+                let frame = aseprite.frame(frame_index);
+                Frame::from_asefile(ctx, asset_store, path, frame_index, frame)
+            })
+            .collect::<Result<_, EmeraldError>>()?;
+
+        let tags = (0..aseprite.num_tags())
+            .map(|i| Tag::from_asefile(aseprite.tag(i)))
+            .collect();
+
+        Ok(Self { frames, tags })
+    }
+
     fn from_sprite_and_json(sprite: Sprite, json_data: json_types::AsepriteData) -> Self {
         let sheet_size = &json_data.meta.size;
         let frames = json_data

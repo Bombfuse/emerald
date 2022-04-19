@@ -27,8 +27,8 @@ impl<'a> AssetLoader<'a> {
     }
 
     /// Retrieves bytes from the assets directory of the game
-    pub fn asset_bytes<T: Into<String>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
-        let path: String = file_path.into();
+    pub fn asset_bytes<T: AsRef<str>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
+        let path: &str = file_path.as_ref();
         if let Some(bytes) = self.asset_store.get_asset_bytes(&path) {
             return Ok(bytes);
         }
@@ -39,8 +39,8 @@ impl<'a> AssetLoader<'a> {
     }
 
     /// Retrieves bytes from a file in the user directory of the game
-    pub fn user_bytes<T: Into<String>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
-        let path: String = file_path.into();
+    pub fn user_bytes<T: AsRef<str>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
+        let path: &str = file_path.as_ref();
         if let Some(bytes) = self.asset_store.get_user_bytes(&path) {
             return Ok(bytes);
         }
@@ -50,19 +50,19 @@ impl<'a> AssetLoader<'a> {
     }
 
     /// Loads bytes from given path as a string
-    pub fn string<T: Into<String>>(&mut self, file_path: T) -> Result<String, EmeraldError> {
+    pub fn string<T: AsRef<str>>(&mut self, file_path: T) -> Result<String, EmeraldError> {
         let bytes = self.asset_bytes(file_path)?;
         let string = String::from_utf8(bytes)?;
 
         Ok(string)
     }
 
-    pub fn font<T: Into<String>>(
+    pub fn font<T: AsRef<str>>(
         &mut self,
         file_path: T,
         font_size: u32,
     ) -> Result<FontKey, EmeraldError> {
-        let file_path: String = file_path.into();
+        let file_path: &str = file_path.as_ref();
         let key = FontKey::new(file_path.clone(), font_size);
 
         if self.asset_store.get_font(&key).is_some() {
@@ -97,25 +97,35 @@ impl<'a> AssetLoader<'a> {
         Ok(key)
     }
 
+    /// Loads a `.aseprite` file.
     #[cfg(feature = "aseprite")]
-    pub fn aseprite_with_animations<T: Into<String>>(
+    pub fn aseprite<T: AsRef<str>>(&mut self, path: T) -> Result<Aseprite, EmeraldError> {
+        let path = path.as_ref();
+        let data = self.asset_bytes(path)?;
+        Aseprite::new(self.quad_ctx, self.asset_store, path, data)
+    }
+
+    /// Loads an exported Aseprite sprite sheet. The animations json file should
+    /// have been exported in the "Array" mode.
+    #[cfg(feature = "aseprite")]
+    pub fn aseprite_with_animations<T: AsRef<str>>(
         &mut self,
         path_to_texture: T,
         path_to_animations: T,
     ) -> Result<Aseprite, EmeraldError> {
-        let texture_path: String = path_to_texture.into();
-        let animation_path: String = path_to_animations.into();
+        let texture_path: &str = path_to_texture.as_ref();
+        let animation_path: &str = path_to_animations.as_ref();
 
         let aseprite_data = self.asset_bytes(animation_path)?;
 
         let sprite = self.sprite(texture_path)?;
-        let aseprite = Aseprite::new(sprite, aseprite_data)?;
+        let aseprite = Aseprite::from_exported(sprite, aseprite_data)?;
 
         Ok(aseprite)
     }
 
-    pub fn texture<T: Into<String>>(&mut self, path: T) -> Result<TextureKey, EmeraldError> {
-        let path: String = path.into();
+    pub fn texture<T: AsRef<str>>(&mut self, path: T) -> Result<TextureKey, EmeraldError> {
+        let path: &str = path.as_ref();
         let key = TextureKey::new(path.clone());
 
         if self.asset_store.get_texture(&key).is_some() {
@@ -137,8 +147,8 @@ impl<'a> AssetLoader<'a> {
             .create_render_texture(w, h, &mut self.quad_ctx, &mut self.asset_store)
     }
 
-    pub fn sprite<T: Into<String>>(&mut self, path: T) -> Result<Sprite, EmeraldError> {
-        let path: String = path.into();
+    pub fn sprite<T: AsRef<str>>(&mut self, path: T) -> Result<Sprite, EmeraldError> {
+        let path: &str = path.as_ref();
         let texture_key = self.texture(path)?;
 
         Ok(Sprite::from_texture(texture_key))
@@ -146,8 +156,8 @@ impl<'a> AssetLoader<'a> {
 
     /// Load the sound at the given path into the given mixer.
     /// Returns the sound handle to play the sound with.
-    pub fn sound<T: Into<String>>(&mut self, path: T) -> Result<SoundKey, EmeraldError> {
-        let path: String = path.into();
+    pub fn sound<T: AsRef<str>>(&mut self, path: T) -> Result<SoundKey, EmeraldError> {
+        let path: &str = path.as_ref();
         let file_path = std::path::Path::new(&path);
         let sound_format = match file_path.extension().and_then(OsStr::to_str) {
             Some("wav") => SoundFormat::Wav,
@@ -180,8 +190,8 @@ impl<'a> AssetLoader<'a> {
         Ok(())
     }
 
-    pub fn preload_texture<T: Into<String>>(&mut self, name: T) -> Result<(), EmeraldError> {
-        let name: String = name.into();
+    pub fn preload_texture<T: AsRef<str>>(&mut self, name: T) -> Result<(), EmeraldError> {
+        let name: &str = name.as_ref();
 
         if let Ok(_sprite) = self.sprite(name.clone()) {
             return Ok(());
@@ -214,7 +224,7 @@ pub(crate) mod hotreload {
         pub asset_type: HotReloadAssetType,
     }
 
-    pub(crate) fn on_insert_texture(asset_store: &mut AssetStore, texture_path: String) {
+    pub(crate) fn on_insert_texture(asset_store: &mut AssetStore, texture_path: &str) {
         match std::fs::metadata(&texture_path) {
             Ok(metadata) => {
                 if let Ok(system_time) = metadata.modified() {
