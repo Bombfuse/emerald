@@ -1,17 +1,16 @@
+use std::convert::TryInto;
 use std::sync::Arc;
 
 use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
 
+use miniquad::Context;
 use nanoserde::DeJson;
-
-use types::*;
 
 #[derive(Clone, Debug)]
 pub struct Aseprite {
     pub(crate) data: Arc<AsepriteData>,
     pub(crate) current_tag_index: Option<usize>,
-    pub(crate) sprite: Sprite,
     pub(crate) elapsed_time: f32,
     pub(crate) total_anim_elapsed_time: f32,
     pub(crate) is_looping: bool,
@@ -26,30 +25,40 @@ pub struct Aseprite {
     pub z_index: f32,
 }
 impl Aseprite {
-    /// Update the inner sprite to reflect the state of the Aseprite.
-    /// This should be done before each time the Aseprite is drawn.
-    pub(crate) fn update(&mut self) {
-        let sheet_size = &self.data.meta.size;
-        let frame = self.get_frame();
-        let target = &frame.frame;
-        let real_y = (sheet_size.h - target.y - target.h) as f32;
-
-        self.sprite.target =
-            Rectangle::new(target.x as f32, real_y, target.w as f32, target.h as f32);
+    pub(crate) fn get_sprite(&self) -> &Sprite {
+        &self.get_frame().sprite
     }
 
-    pub(crate) fn new(sprite: Sprite, animation_json: Vec<u8>) -> Result<Aseprite, EmeraldError> {
+    pub(crate) fn new(
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+        path: &str,
+        data: Vec<u8>,
+    ) -> Result<Self, EmeraldError> {
+        let aseprite = asefile::AsepriteFile::read(std::io::Cursor::new(data))?;
+        let data = AsepriteData::from_asefile(ctx, asset_store, path, aseprite)?;
+        Ok(Self::from_data(data))
+    }
+
+    pub(crate) fn from_exported(
+        sprite: Sprite,
+        animation_json: Vec<u8>,
+    ) -> Result<Self, EmeraldError> {
         let animation_json = std::str::from_utf8(&animation_json)?;
-        let data: AsepriteData = DeJson::deserialize_json(animation_json)?;
+        let json_data: json_types::AsepriteData = DeJson::deserialize_json(animation_json)?;
+        let data = AsepriteData::from_sprite_and_json(sprite, json_data);
+        Ok(Self::from_data(data))
+    }
+
+    fn from_data(data: AsepriteData) -> Self {
         let data = Arc::new(data);
 
-        let aseprite = Aseprite {
+        Self {
             data,
             elapsed_time: 0.0,
             total_anim_elapsed_time: 0.0,
             frame_counter: 0,
             current_tag_index: None,
-            sprite,
             is_looping: false,
             rotation: 0.0,
             scale: Vector2::new(1.0, 1.0),
@@ -58,14 +67,20 @@ impl Aseprite {
             centered: true,
             z_index: 0.0,
             visible: true,
-        };
-
-        Ok(aseprite)
+        }
     }
 
-    fn get_current_tag(&self) -> Option<&AsepriteTag> {
-        self.current_tag_index
-            .map(|idx| &self.data.meta.frame_tags[idx])
+    fn get_current_tag(&self) -> Option<&Tag> {
+        self.current_tag_index.map(|idx| &self.data.tags[idx])
+    }
+
+    fn get_frame(&self) -> &Frame {
+        let cur_tag_start = self
+            .get_current_tag()
+            .map(|tag| tag.from)
+            .unwrap_or_default();
+
+        &self.data.frames[cur_tag_start + self.frame_counter]
     }
 
     pub fn get_animation_name(&self) -> &str {
@@ -84,18 +99,10 @@ impl Aseprite {
         let name: &str = name.as_ref();
 
         self.data
-            .meta
-            .frame_tags
+            .tags
             .iter()
             .find(|tag| tag.name == name)
-            .map(|tag| {
-                let total_time: u32 = (tag.from..=tag.to)
-                    .filter_map(|i| self.data.frames.get(i as usize))
-                    .map(|frame| frame.duration)
-                    .sum();
-
-                total_time as f32 / 1000.0
-            })
+            .map(|tag| tag.duration)
             .unwrap_or(0.0)
     }
 
@@ -127,11 +134,7 @@ impl Aseprite {
     }
 
     fn find_tag(&self, name: &str) -> Option<usize> {
-        self.data
-            .meta
-            .frame_tags
-            .iter()
-            .position(|tag| tag.name == name)
+        self.data.tags.iter().position(|tag| tag.name == name)
     }
 
     fn reset(&mut self) {
@@ -140,42 +143,50 @@ impl Aseprite {
         self.frame_counter = 0;
     }
 
-    pub fn add_delta(&mut self, delta: f32) {
-        self.elapsed_time += delta;
+    pub fn add_delta(&mut self, mut delta: f32) {
         self.total_anim_elapsed_time += delta;
 
-        let num_frames_in_tag: u32 = self
+        let tag_duration = self
+            .get_current_tag()
+            .map(|tag| tag.duration)
+            .unwrap_or_default();
+        if delta >= tag_duration {
+            if self.is_looping {
+                // Skip entire loops when looping.
+                delta %= tag_duration;
+            } else {
+                // We don't need to process any more than the maximum length.
+                delta = tag_duration;
+            }
+        }
+        // Avoid an infinite loop if user passed f32::INFINITY
+        if !delta.is_normal() {
+            return;
+        }
+        self.elapsed_time += delta;
+
+        let num_frames_in_tag = self
             .get_current_tag()
             .map(|tag| tag.to - tag.from)
             .unwrap_or_default();
 
         loop {
             let frame = self.get_frame();
-            let duration = frame.duration as f32 / 1000.0;
-            if self.elapsed_time < duration {
+            if self.elapsed_time < frame.duration {
                 break;
             }
 
-            self.elapsed_time -= duration;
+            self.elapsed_time -= frame.duration;
             self.frame_counter += 1;
 
-            if self.frame_counter as u32 > num_frames_in_tag {
+            if self.frame_counter > num_frames_in_tag {
                 if self.is_looping {
                     self.frame_counter = 0;
                 } else {
-                    self.frame_counter = num_frames_in_tag as usize;
+                    self.frame_counter = num_frames_in_tag;
                 }
             }
         }
-    }
-
-    fn get_frame(&self) -> &AsepriteFrame {
-        let cur_tag_start: u32 = self
-            .get_current_tag()
-            .map(|tag| tag.from)
-            .unwrap_or_default();
-
-        &self.data.frames[cur_tag_start as usize + self.frame_counter]
     }
 }
 
@@ -185,7 +196,7 @@ pub fn aseprite_update_system(world: &mut World, delta: f32) {
     }
 }
 
-pub mod types {
+mod json_types {
     use nanoserde::DeJson;
 
     #[derive(Copy, Clone, Debug, DeJson)]
@@ -251,5 +262,135 @@ pub mod types {
         _scale: String,
         #[nserde(rename = "frameTags")]
         pub(crate) frame_tags: Vec<AsepriteTag>,
+    }
+}
+
+#[derive(Debug)]
+struct Tag {
+    name: String,
+    from: usize,
+    to: usize,
+    duration: f32,
+}
+
+impl Tag {
+    fn new(name: String, from: usize, to: usize, frames: &[Frame]) -> Self {
+        Self {
+            name,
+            from,
+            to,
+            duration: frames[from..=to].iter().map(|frame| frame.duration).sum(),
+        }
+    }
+
+    fn from_asefile(tag: &asefile::Tag, frames: &[Frame]) -> Self {
+        Self::new(
+            tag.name().to_owned(),
+            tag.from_frame() as usize,
+            tag.to_frame() as usize,
+            frames,
+        )
+    }
+
+    fn from_json(tag: json_types::AsepriteTag, frames: &[Frame]) -> Self {
+        Self::new(tag.name, tag.from as usize, tag.to as usize, frames)
+    }
+}
+
+#[derive(Debug)]
+struct Frame {
+    sprite: Sprite,
+    duration: f32,
+}
+
+impl Frame {
+    fn from_asefile(
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+        path: &str,
+        frame_index: u32,
+        frame: asefile::Frame<'_>,
+    ) -> Result<Self, EmeraldError> {
+        let image = frame.image();
+        let image = image::imageops::flip_vertical(&image);
+        let texture_key = {
+            let mut key = path.to_owned();
+            key.push('#');
+            key.push_str(&frame_index.to_string());
+            TextureKey::new(key)
+        };
+        let texture = Texture::from_rgba8(
+            ctx,
+            texture_key.clone(),
+            image.width().try_into().unwrap(),
+            image.height().try_into().unwrap(),
+            &image,
+        )?;
+        asset_store.insert_texture(texture_key.clone(), texture);
+
+        Ok(Self {
+            sprite: Sprite::from_texture(texture_key),
+            duration: frame.duration() as f32 / 1000.0,
+        })
+    }
+
+    fn from_sprite_and_json(
+        mut sprite: Sprite,
+        sheet_size: &json_types::AseSize,
+        frame: json_types::AsepriteFrame,
+    ) -> Self {
+        let target = &frame.frame;
+        let real_y = (sheet_size.h - target.y - target.h) as f32;
+        sprite.target = Rectangle::new(target.x as f32, real_y, target.w as f32, target.h as f32);
+
+        let duration = frame.duration as f32 / 1000.0;
+
+        Self { sprite, duration }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct AsepriteData {
+    frames: Vec<Frame>,
+    tags: Vec<Tag>,
+}
+
+impl AsepriteData {
+    fn from_asefile(
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+        path: &str,
+        aseprite: asefile::AsepriteFile,
+    ) -> Result<Self, EmeraldError> {
+        let frames: Vec<Frame> = (0..aseprite.num_frames())
+            .map(|frame_index| {
+                let frame = aseprite.frame(frame_index);
+                Frame::from_asefile(ctx, asset_store, path, frame_index, frame)
+            })
+            .collect::<Result<_, EmeraldError>>()?;
+
+        let tags = (0..aseprite.num_tags())
+            .map(|i| Tag::from_asefile(aseprite.tag(i), &frames))
+            .collect();
+
+        Ok(Self { frames, tags })
+    }
+
+    fn from_sprite_and_json(sprite: Sprite, json_data: json_types::AsepriteData) -> Self {
+        let sheet_size = &json_data.meta.size;
+        let frames: Vec<Frame> = json_data
+            .frames
+            .into_iter()
+            .map(|frame| Frame::from_sprite_and_json(sprite.clone(), sheet_size, frame))
+            .collect();
+
+        let tags = json_data
+            .meta
+            .frame_tags
+            .into_iter()
+            .map(|tag| Tag::from_json(tag, &frames))
+            .collect();
+
+        Self { frames, tags }
     }
 }
