@@ -892,8 +892,8 @@ impl ToDrawable for Sprite {
         bounds.y = transform.translation.y + self.offset.y;
 
         if self.centered {
-            bounds.x -= self.target.width as f32 / 2.0;
-            bounds.y -= self.target.height as f32 / 2.0;
+            bounds.x -= bounds.width as f32 / 2.0;
+            bounds.y -= bounds.height as f32 / 2.0;
         }
 
         // Take the sprite's scale factor into account
