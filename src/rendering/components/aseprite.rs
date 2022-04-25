@@ -169,9 +169,15 @@ impl Aseprite {
         let num_frames_in_tag = self
             .get_current_tag()
             .map(|tag| tag.num_frames())
-            .unwrap_or_default();
+            .unwrap_or(1);
 
         loop {
+            // If the animation has ended, don't increment the frame counter at
+            // all, to avoid overflow.
+            if !self.is_looping && self.frame_counter + 1 >= num_frames_in_tag {
+                break;
+            }
+
             let frame = self.get_frame();
             if self.elapsed_time < frame.duration {
                 break;
@@ -180,12 +186,9 @@ impl Aseprite {
             self.elapsed_time -= frame.duration;
             self.frame_counter += 1;
 
-            if self.frame_counter > num_frames_in_tag {
-                if self.is_looping {
-                    self.frame_counter = 0;
-                } else {
-                    self.frame_counter = num_frames_in_tag;
-                }
+            // Implement looping.
+            if self.is_looping && self.frame_counter >= num_frames_in_tag {
+                self.frame_counter = 0;
             }
         }
     }
