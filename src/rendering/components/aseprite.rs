@@ -4,6 +4,7 @@ use std::sync::Arc;
 use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
 
+use asefile::AnimationDirection;
 use miniquad::Context;
 use nanoserde::DeJson;
 
@@ -46,7 +47,7 @@ impl Aseprite {
     ) -> Result<Self, EmeraldError> {
         let animation_json = std::str::from_utf8(&animation_json)?;
         let json_data: json_types::AsepriteData = DeJson::deserialize_json(animation_json)?;
-        let data = AsepriteData::from_sprite_and_json(sprite, json_data);
+        let data = AsepriteData::from_sprite_and_json(sprite, json_data)?;
         Ok(Self::from_data(data))
     }
 
@@ -75,12 +76,12 @@ impl Aseprite {
     }
 
     fn get_frame(&self) -> &Frame {
-        let cur_tag_start = self
+        let index = self
             .get_current_tag()
-            .map(|tag| tag.from)
+            .map(|tag| tag.get_frame(self.frame_counter))
             .unwrap_or_default();
 
-        &self.data.frames[cur_tag_start + self.frame_counter]
+        &self.data.frames[index]
     }
 
     pub fn get_animation_name(&self) -> &str {
@@ -167,10 +168,16 @@ impl Aseprite {
 
         let num_frames_in_tag = self
             .get_current_tag()
-            .map(|tag| tag.to - tag.from)
-            .unwrap_or_default();
+            .map(|tag| tag.num_frames())
+            .unwrap_or(1);
 
         loop {
+            // If the animation has ended, don't increment the frame counter at
+            // all, to avoid overflow.
+            if !self.is_looping && self.frame_counter + 1 >= num_frames_in_tag {
+                break;
+            }
+
             let frame = self.get_frame();
             if self.elapsed_time < frame.duration {
                 break;
@@ -179,12 +186,9 @@ impl Aseprite {
             self.elapsed_time -= frame.duration;
             self.frame_counter += 1;
 
-            if self.frame_counter > num_frames_in_tag {
-                if self.is_looping {
-                    self.frame_counter = 0;
-                } else {
-                    self.frame_counter = num_frames_in_tag;
-                }
+            // Implement looping.
+            if self.is_looping && self.frame_counter >= num_frames_in_tag {
+                self.frame_counter = 0;
             }
         }
     }
@@ -225,18 +229,7 @@ mod json_types {
         pub(crate) name: String,
         pub(crate) from: u32,
         pub(crate) to: u32,
-        #[nserde(rename = "direction")]
-        pub(crate) _direction: String,
-    }
-    impl Default for AsepriteTag {
-        fn default() -> AsepriteTag {
-            AsepriteTag {
-                name: String::from(""),
-                from: 0,
-                to: 0,
-                _direction: String::from("forward"),
-            }
-        }
+        pub(crate) direction: String,
     }
 
     #[derive(Copy, Clone, Debug, DeJson)]
@@ -271,15 +264,46 @@ struct Tag {
     from: usize,
     to: usize,
     duration: f32,
+    direction: AnimationDirection,
 }
 
 impl Tag {
-    fn new(name: String, from: usize, to: usize, frames: &[Frame]) -> Self {
+    fn new(
+        name: String,
+        from: usize,
+        to: usize,
+        frames: &[Frame],
+        direction: AnimationDirection,
+    ) -> Self {
+        let duration = {
+            match direction {
+                AnimationDirection::Forward | AnimationDirection::Reverse => {
+                    frames[from..=to].iter().map(|frame| frame.duration).sum()
+                }
+
+                AnimationDirection::PingPong => {
+                    if from == to {
+                        frames[from].duration
+                    } else {
+                        let first_frame_duration = frames[from].duration;
+                        let last_frame_duration = frames[to].duration;
+                        let other_frames_duration = frames[(from + 1)..to]
+                            .iter()
+                            .map(|frame| frame.duration)
+                            .sum::<f32>();
+
+                        first_frame_duration + other_frames_duration * 2.0 + last_frame_duration
+                    }
+                }
+            }
+        };
+
         Self {
             name,
             from,
             to,
-            duration: frames[from..=to].iter().map(|frame| frame.duration).sum(),
+            duration,
+            direction,
         }
     }
 
@@ -289,11 +313,60 @@ impl Tag {
             tag.from_frame() as usize,
             tag.to_frame() as usize,
             frames,
+            tag.animation_direction(),
         )
     }
 
-    fn from_json(tag: json_types::AsepriteTag, frames: &[Frame]) -> Self {
-        Self::new(tag.name, tag.from as usize, tag.to as usize, frames)
+    fn from_json(tag: json_types::AsepriteTag, frames: &[Frame]) -> Result<Self, EmeraldError> {
+        let direction = match tag.direction.as_str() {
+            "forward" => AnimationDirection::Forward,
+            "reverse" => AnimationDirection::Reverse,
+            "pingpong" => AnimationDirection::PingPong,
+            _ => {
+                return Err(EmeraldError::new(format!(
+                    "Bad animation direction string {:?}",
+                    tag.direction,
+                )));
+            }
+        };
+
+        Ok(Self::new(
+            tag.name,
+            tag.from as usize,
+            tag.to as usize,
+            frames,
+            direction,
+        ))
+    }
+
+    fn num_frames(&self) -> usize {
+        match self.direction {
+            AnimationDirection::Forward | AnimationDirection::Reverse => self.to - self.from + 1,
+            AnimationDirection::PingPong => {
+                if self.from == self.to {
+                    1
+                } else {
+                    // Each direction of the animation doesn't include one of
+                    // the edges, so we use the (length - 1) times two.
+                    (self.to - self.from) * 2
+                }
+            }
+        }
+    }
+
+    fn get_frame(&self, index: usize) -> usize {
+        match self.direction {
+            AnimationDirection::Forward => self.from + index,
+            AnimationDirection::Reverse => self.to - index,
+            AnimationDirection::PingPong => {
+                let half_length = self.to - self.from;
+                if index < half_length {
+                    self.from + index
+                } else {
+                    self.to - (index - half_length)
+                }
+            }
+        }
     }
 }
 
@@ -376,7 +449,10 @@ impl AsepriteData {
         Ok(Self { frames, tags })
     }
 
-    fn from_sprite_and_json(sprite: Sprite, json_data: json_types::AsepriteData) -> Self {
+    fn from_sprite_and_json(
+        sprite: Sprite,
+        json_data: json_types::AsepriteData,
+    ) -> Result<Self, EmeraldError> {
         let sheet_size = &json_data.meta.size;
         let frames: Vec<Frame> = json_data
             .frames
@@ -389,8 +465,8 @@ impl AsepriteData {
             .frame_tags
             .into_iter()
             .map(|tag| Tag::from_json(tag, &frames))
-            .collect();
+            .collect::<Result<_, _>>()?;
 
-        Self { frames, tags }
+        Ok(Self { frames, tags })
     }
 }
