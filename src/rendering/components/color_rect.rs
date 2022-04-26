@@ -4,6 +4,7 @@ use crate::*;
 pub struct ColorRect {
     pub color: Color,
     pub offset: Vector2<f32>,
+    pub visible: bool,
     pub width: u32,
     pub height: u32,
     pub centered: bool,
@@ -25,6 +26,7 @@ impl Default for ColorRect {
         ColorRect {
             color: WHITE,
             offset: Vector2::new(0.0, 0.0),
+            visible: true,
             width: 32,
             height: 32,
             centered: true,
