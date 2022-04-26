@@ -14,6 +14,7 @@ pub struct UIButton {
     pub(crate) was_pressed: bool,
 
     pub z_index: f32,
+    pub visible: bool,
 }
 impl UIButton {
     pub fn new(pressed_texture: TextureKey, unpressed_texture: TextureKey) -> Self {
@@ -25,6 +26,7 @@ impl UIButton {
             is_pressed: false,
             was_pressed: false,
             z_index: 0.0,
+            visible: true,
         }
     }
 

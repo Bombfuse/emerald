@@ -591,6 +591,10 @@ impl RenderingEngine {
         color_rect: &ColorRect,
         translation: &Translation,
     ) {
+        if !color_rect.visible {
+            return;
+        }
+
         let (width, height) = (color_rect.width, color_rect.height);
         let mut offset = color_rect.offset;
 
@@ -925,9 +929,10 @@ impl ToDrawable for UIButton {
     }
 
     fn to_drawable(&self) -> Drawable {
-        Drawable::Sprite {
-            sprite: Sprite::from_texture(self.current_texture().clone()),
-        }
+        let mut sprite = Sprite::from_texture(self.current_texture().clone());
+        sprite.visible = self.visible;
+
+        Drawable::Sprite { sprite }
     }
 
     fn z_index(&self) -> f32 {
