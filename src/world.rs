@@ -64,30 +64,41 @@ impl World {
                     let new_id = self.inner.spawn(bundle);
                     entity_id_shift_map.insert(old_id.clone(), new_id.clone());
 
-                    let mut colliders = Vec::new();
-                    for c_id in other_world.physics_engine.get_colliders(old_id.clone()) {
-                        if let Some(collider) = other_world.physics_engine.remove_collider(c_id) {
-                            colliders.push(collider);
-                        }
-                    }
-
-                    if let Some(rigid_body) = other_world.physics_engine.remove_body(old_id.clone())
-                    {
-                        let new_rbh = self.physics_engine.add_body(
-                            new_id.clone(),
-                            rigid_body,
-                            &mut self.inner,
-                        )?;
-
-                        for collider in colliders {
-                            self.physics_engine.add_collider(new_rbh, collider);
-                        }
-                    }
+                    #[cfg(feature = "physics")]
+                    self.merge_physics_entity(&mut other_world.physics_engine, old_id, new_id)?;
                 }
             }
         }
 
         Ok(entity_id_shift_map)
+    }
+
+    /// Helper function for [`merge`]
+    #[cfg(feature = "physics")]
+    fn merge_physics_entity(
+        &mut self,
+        other_world_physics: &mut PhysicsEngine,
+        old_id: Entity,
+        new_id: Entity,
+    ) -> Result<(), EmeraldError> {
+        let mut colliders = Vec::new();
+        for c_id in other_world_physics.get_colliders(old_id.clone()) {
+            if let Some(collider) = other_world_physics.remove_collider(c_id) {
+                colliders.push(collider);
+            }
+        }
+
+        if let Some(rigid_body) = other_world_physics.remove_body(old_id.clone()) {
+            let new_rbh =
+                self.physics_engine
+                    .add_body(new_id.clone(), rigid_body, &mut self.inner)?;
+
+            for collider in colliders {
+                self.physics_engine.add_collider(new_rbh, collider);
+            }
+        }
+
+        Ok(())
     }
 
     /// Disable all cameras then set the camera on the given entity as active.
