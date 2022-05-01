@@ -1,4 +1,5 @@
 use crate::rendering::*;
+use crate::tilemap::Tilemap;
 use crate::transform::Transform;
 use crate::world::*;
 use crate::*;
@@ -170,6 +171,7 @@ impl RenderingEngine {
         #[cfg(feature = "aseprite")]
         cmd_adder.add_draw_commands::<Aseprite>(&mut draw_queue, world, asset_store);
 
+        cmd_adder.add_draw_commands::<Tilemap>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<Sprite>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<UIButton>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<ColorRect>(&mut draw_queue, world, asset_store);
@@ -391,6 +393,27 @@ impl RenderingEngine {
             let translation = draw_command.transform.translation;
 
             match draw_command.drawable {
+                Drawable::Tilemap {
+                    texture_key,
+                    tiles,
+                    tile_size,
+                    width,
+                    height,
+                    z_index,
+                    visible,
+                } => self.draw_tilemap(
+                    ctx,
+                    asset_store,
+                    texture_key,
+                    tiles,
+                    tile_size,
+                    width,
+                    height,
+                    z_index,
+                    visible,
+                    &translation,
+                ),
+
                 Drawable::Aseprite {
                     sprite,
                     rotation,
@@ -623,6 +646,64 @@ impl RenderingEngine {
     }
 
     #[inline]
+    pub(crate) fn draw_tilemap(
+        &mut self,
+        ctx: &mut Context,
+        asset_store: &mut AssetStore,
+        texture_key: TextureKey,
+        tiles: Vec<isize>,
+        tile_size: Vector2<usize>,
+        width: usize,
+        _height: usize,
+        _z_index: f32,
+        visible: bool,
+        translation: &Translation,
+    ) {
+        if !visible {
+            return;
+        }
+
+        let mut tileset_width = 0;
+
+        if let Some(texture) = asset_store.get_texture(&texture_key) {
+            tileset_width = texture.width as usize / tile_size.x;
+        }
+
+        let mut sprite = Sprite::from_texture(texture_key);
+
+        let tile_width = tile_size.x as f32;
+        let tile_height = tile_size.y as f32;
+
+        let mut x = 0;
+        let mut y = 0;
+        for tile in tiles {
+            if tile >= 0 {
+                let tile_id = tile as usize;
+
+                let tile_x = tile_id % tileset_width;
+                let tile_y = tile_id / tileset_width;
+
+                sprite.target = Rectangle::new(
+                    tile_x as f32 * tile_width,
+                    tile_y as f32 * tile_height,
+                    tile_width,
+                    tile_height,
+                );
+                let translation = translation.clone()
+                    + Translation::new(tile_width * x as f32, tile_height * y as f32);
+
+                self.draw_sprite(ctx, asset_store, &sprite, &translation);
+            }
+
+            x += 1;
+            if x >= width {
+                x = 0;
+                y += 1;
+            }
+        }
+    }
+
+    #[inline]
     pub(crate) fn draw_aseprite(
         &mut self,
         mut ctx: &mut Context,
@@ -831,6 +912,15 @@ pub(crate) enum Drawable {
     Label {
         label: Label,
     },
+    Tilemap {
+        texture_key: TextureKey,
+        tiles: Vec<isize>,
+        tile_size: Vector2<usize>,
+        width: usize,
+        height: usize,
+        visible: bool,
+        z_index: f32,
+    },
 }
 
 trait ToDrawable {
@@ -846,6 +936,51 @@ trait ToDrawable {
     fn to_drawable(&self) -> Drawable;
 
     fn z_index(&self) -> f32;
+}
+
+impl ToDrawable for Tilemap {
+    fn get_visible_bounds(
+        &self,
+        transform: &Transform,
+        _asset_store: &mut AssetStore,
+    ) -> Option<Rectangle> {
+        let width = self.width * self.tile_size.x;
+        let height = self.height * self.tile_size.y;
+        let visible_bounds = Rectangle::new(
+            transform.translation.x,
+            transform.translation.y,
+            width as f32,
+            height as f32,
+        );
+
+        Some(visible_bounds)
+    }
+
+    fn to_drawable(&self) -> Drawable {
+        Drawable::Tilemap {
+            texture_key: self.tilesheet.clone(),
+            tiles: self
+                .tiles
+                .iter()
+                .map(|tile| {
+                    if let Some(tile_id) = tile {
+                        *tile_id as isize
+                    } else {
+                        -1
+                    }
+                })
+                .collect(),
+            width: self.width,
+            height: self.height,
+            z_index: self.z_index,
+            visible: self.visible,
+            tile_size: self.tile_size.clone(),
+        }
+    }
+
+    fn z_index(&self) -> f32 {
+        self.z_index
+    }
 }
 
 #[cfg(feature = "aseprite")]
