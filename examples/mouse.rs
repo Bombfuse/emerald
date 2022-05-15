@@ -8,7 +8,7 @@ pub fn main() {
         screen_center: Translation::default(),
         world: World::new(),
     };
-    emerald::start(game, GameSettings::default())
+    emerald::start(Box::new(game), GameSettings::default())
 }
 
 pub struct MouseExample {

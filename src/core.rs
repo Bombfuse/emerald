@@ -17,27 +17,27 @@ use crate::input::*;
 use crate::logging::*;
 use crate::rendering::*;
 
-pub struct Emerald<'a> {
+pub struct Emerald<'a, 'b, 'c> {
     delta: f32,
     fps: f64,
-    audio_engine: &'a mut AudioEngine,
-    quad_ctx: &'a mut miniquad::Context,
-    rendering_engine: &'a mut RenderingEngine,
-    logging_engine: &'a mut LoggingEngine,
-    input_engine: &'a mut InputEngine,
-    pub(crate) asset_store: &'a mut AssetStore,
+    audio_engine: &'c mut AudioEngine,
+    quad_ctx: &'c mut miniquad::Context<'a, 'b>,
+    rendering_engine: &'c mut RenderingEngine,
+    logging_engine: &'c mut LoggingEngine,
+    input_engine: &'c mut InputEngine,
+    pub(crate) asset_store: &'c mut AssetStore,
 }
-impl<'a> Emerald<'a> {
+impl<'a, 'b, 'c> Emerald<'a, 'b, 'c> {
     #[inline]
     pub(crate) fn new(
         delta: f32,
         fps: f64,
-        quad_ctx: &'a mut miniquad::Context,
-        audio_engine: &'a mut AudioEngine,
-        input_engine: &'a mut InputEngine,
-        logging_engine: &'a mut LoggingEngine,
-        rendering_engine: &'a mut RenderingEngine,
-        asset_store: &'a mut AssetStore,
+        quad_ctx: &'c mut miniquad::Context<'a, 'b>,
+        audio_engine: &'c mut AudioEngine,
+        input_engine: &'c mut InputEngine,
+        logging_engine: &'c mut LoggingEngine,
+        rendering_engine: &'c mut RenderingEngine,
+        asset_store: &'c mut AssetStore,
     ) -> Self {
         Emerald {
             delta,
@@ -105,7 +105,7 @@ impl<'a> Emerald<'a> {
     }
     // *****************************************
 
-    pub fn graphics(&mut self) -> GraphicsHandler<'_> {
+    pub fn graphics(&mut self) -> GraphicsHandler<'a, 'b, '_> {
         GraphicsHandler::new(
             &mut self.quad_ctx,
             &mut self.asset_store,
@@ -115,7 +115,7 @@ impl<'a> Emerald<'a> {
 
     // ************* Asset API ************* //
     #[inline]
-    pub fn loader(&mut self) -> AssetLoader<'_> {
+    pub fn loader(&mut self) -> AssetLoader<'a, 'b, '_> {
         AssetLoader::new(
             &mut self.quad_ctx,
             &mut self.asset_store,

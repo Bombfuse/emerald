@@ -31,7 +31,7 @@ pub(crate) struct RenderingEngine {
 }
 impl RenderingEngine {
     pub(crate) fn new(
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         settings: RenderSettings,
         asset_store: &mut AssetStore,
     ) -> Self {
@@ -98,7 +98,7 @@ impl RenderingEngine {
         &mut self,
         w: usize,
         h: usize,
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
     ) -> Result<TextureKey, EmeraldError> {
         self.render_texture_counter += 1;
@@ -113,7 +113,7 @@ impl RenderingEngine {
     #[inline]
     pub(crate) fn pre_draw(
         &mut self,
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
         let (w, h) = ctx.screen_size();
@@ -129,7 +129,7 @@ impl RenderingEngine {
     #[inline]
     fn update_screen_texture_size(
         &mut self,
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         w: usize,
         h: usize,
         asset_store: &mut AssetStore,
@@ -148,7 +148,7 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub(crate) fn post_draw(&mut self, ctx: &mut Context, _asset_store: &mut AssetStore) {
+    pub(crate) fn post_draw(&mut self, ctx: &mut Context<'_, '_>, _asset_store: &mut AssetStore) {
         let (w, h) = ctx.screen_size();
         self.last_screen_size = (w as usize, h as usize);
     }
@@ -255,7 +255,7 @@ impl RenderingEngine {
     #[inline]
     pub(crate) fn begin(
         &mut self,
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
         self.current_render_texture_key = self.screen_texture_key.clone();
@@ -276,7 +276,7 @@ impl RenderingEngine {
     #[inline]
     pub(crate) fn begin_texture(
         &mut self,
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         texture_key: TextureKey,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
@@ -301,7 +301,7 @@ impl RenderingEngine {
     #[inline]
     fn begin_texture_pass(
         &mut self,
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
         texture_key: TextureKey,
     ) -> Result<(), EmeraldError> {
@@ -341,7 +341,7 @@ impl RenderingEngine {
     #[inline]
     pub(crate) fn render(
         &mut self,
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
         self.consume_draw_queue(ctx, asset_store)?;
@@ -365,7 +365,7 @@ impl RenderingEngine {
     #[inline]
     pub(crate) fn render_texture(
         &mut self,
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
     ) -> Result<TextureKey, EmeraldError> {
         self.consume_draw_queue(ctx, asset_store)?;
@@ -384,7 +384,7 @@ impl RenderingEngine {
     #[inline]
     fn consume_draw_queue(
         &mut self,
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
         ctx.apply_pipeline(self.pipelines.get(EMERALD_TEXTURE_PIPELINE_NAME).unwrap());
@@ -452,7 +452,7 @@ impl RenderingEngine {
 
     pub(crate) fn draw_label(
         &mut self,
-        mut ctx: &mut Context,
+        mut ctx: &mut Context<'_, '_>,
         mut asset_store: &mut AssetStore,
         label: &Label,
         position: &Translation,
@@ -609,7 +609,7 @@ impl RenderingEngine {
     #[inline]
     pub(crate) fn draw_color_rect(
         &mut self,
-        mut ctx: &mut Context,
+        mut ctx: &mut Context<'_, '_>,
         mut asset_store: &mut AssetStore,
         color_rect: &ColorRect,
         translation: &Translation,
@@ -648,7 +648,7 @@ impl RenderingEngine {
     #[inline]
     pub(crate) fn draw_tilemap(
         &mut self,
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
         texture_key: TextureKey,
         tiles: Vec<isize>,
@@ -706,7 +706,7 @@ impl RenderingEngine {
     #[inline]
     pub(crate) fn draw_aseprite(
         &mut self,
-        mut ctx: &mut Context,
+        mut ctx: &mut Context<'_, '_>,
         mut asset_store: &mut AssetStore,
         sprite: &Sprite,
         rotation: f32,
@@ -770,7 +770,7 @@ impl RenderingEngine {
     #[inline]
     pub(crate) fn draw_sprite(
         &mut self,
-        mut ctx: &mut Context,
+        mut ctx: &mut Context<'_, '_>,
         mut asset_store: &mut AssetStore,
         sprite: &Sprite,
         position: &Translation,
@@ -828,7 +828,7 @@ impl RenderingEngine {
 #[inline]
 fn draw_texture(
     _settings: &RenderSettings,
-    mut ctx: &mut Context,
+    mut ctx: &mut Context<'_, '_>,
     asset_store: &mut AssetStore,
     texture_key: &TextureKey,
     _z_index: f32,
@@ -1203,7 +1203,7 @@ pub(crate) fn create_render_texture(
     w: usize,
     h: usize,
     key: TextureKey,
-    ctx: &mut Context,
+    ctx: &mut Context<'_, '_>,
     asset_store: &mut AssetStore,
 ) -> Result<TextureKey, EmeraldError> {
     let color_img = miniquad::Texture::new_render_texture(

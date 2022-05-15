@@ -8,7 +8,7 @@ pub fn main() {
         sprite: None,
         world: World::new(),
     };
-    emerald::start(game, GameSettings::default())
+    emerald::start(Box::new(game), GameSettings::default())
 }
 
 pub struct TouchExample {
@@ -56,7 +56,7 @@ impl Game for TouchExample {
         }
     }
 
-    fn draw(&mut self, mut emd: Emerald<'_>) {
+    fn draw(&mut self, mut emd: Emerald) {
         emd.graphics().begin().unwrap();
         emd.graphics().draw_world(&mut self.world).unwrap();
         emd.graphics().render().unwrap();

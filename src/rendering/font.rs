@@ -105,7 +105,7 @@ impl Font {
 }
 
 pub(crate) fn cache_glyph(
-    mut ctx: &mut Context,
+    mut ctx: &mut Context<'_, '_>,
     asset_store: &mut AssetStore,
     font_key: &FontKey,
     glyph_key: GlyphRasterConfig,

@@ -61,12 +61,9 @@ pub use gamepad;
 #[cfg(feature = "gamepads")]
 pub use gamepad::{Button, Joystick};
 
-use miniquad::{conf, UserData};
+use miniquad::conf;
 
-pub fn start<G>(game: G, settings: GameSettings)
-where
-    G: Game + 'static,
-{
+pub fn start(game: Box<dyn Game>, settings: GameSettings) {
     let mut config = conf::Conf::default();
     config.window_title = settings.title.clone();
     config.window_width = settings.render_settings.resolution.0 as i32;
@@ -77,6 +74,6 @@ where
     config.icon = settings.render_settings.icon.clone();
 
     miniquad::start(config, move |mut ctx| {
-        UserData::owning(GameEngine::new(game, settings, &mut ctx), ctx)
+        Box::new(GameEngine::new(game, settings, &mut ctx))
     });
 }

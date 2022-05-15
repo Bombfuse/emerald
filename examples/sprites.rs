@@ -2,9 +2,9 @@ use emerald::*;
 
 pub fn main() {
     emerald::start(
-        SpritesExample {
+        Box::new(SpritesExample {
             world: World::new(),
-        },
+        }),
         GameSettings::default(),
     )
 }

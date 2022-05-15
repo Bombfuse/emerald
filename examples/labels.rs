@@ -2,9 +2,9 @@ use emerald::*;
 
 pub fn main() {
     emerald::start(
-        GamepadExample {
+        Box::new(GamepadExample {
             world: World::new(),
-        },
+        }),
         GameSettings::default(),
     )
 }
@@ -61,7 +61,7 @@ impl Game for GamepadExample {
         }
     }
 
-    fn draw(&mut self, mut emd: Emerald<'_>) {
+    fn draw(&mut self, mut emd: Emerald) {
         emd.graphics().begin().unwrap();
         emd.graphics().draw_world(&mut self.world).unwrap();
         emd.graphics().render().unwrap();

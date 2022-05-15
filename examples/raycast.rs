@@ -3,9 +3,9 @@ use nalgebra::Point2;
 
 pub fn main() {
     emerald::start(
-        RaycastExample {
+        Box::new(RaycastExample {
             world: World::new(),
-        },
+        }),
         GameSettings::default(),
     )
 }
