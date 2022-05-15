@@ -8,7 +8,7 @@ pub fn main() {
         ..Default::default()
     };
     settings.render_settings = render_settings;
-    emerald::start(Example {}, settings)
+    emerald::start(Box::new(Example {}), settings)
 }
 
 pub struct Example {}

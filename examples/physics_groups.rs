@@ -11,12 +11,12 @@ pub fn main() {
     };
     settings.render_settings = render_settings;
     emerald::start(
-        PhysicsGroupsExample {
+        Box::new(PhysicsGroupsExample {
             e1: None,
             e2: None,
             e3: None,
             world: World::new(),
-        },
+        }),
         settings,
     )
 }
@@ -111,7 +111,7 @@ impl Game for PhysicsGroupsExample {
         self.world.physics().step(delta);
     }
 
-    fn draw(&mut self, mut emd: Emerald<'_>) {
+    fn draw(&mut self, mut emd: Emerald) {
         emd.graphics().begin().unwrap();
         emd.graphics().draw_world(&mut self.world).unwrap();
         emd.graphics().render().unwrap();

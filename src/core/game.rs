@@ -1,9 +1,9 @@
 use crate::*;
 
 pub trait Game {
-    fn initialize(&mut self, _emd: Emerald<'_>) {}
-    fn update(&mut self, _emd: Emerald<'_>) {}
-    fn draw(&mut self, mut emd: Emerald<'_>) {
+    fn initialize(&mut self, _emd: Emerald<'_, '_, '_>) {}
+    fn update(&mut self, _emd: Emerald<'_, '_, '_>) {}
+    fn draw(&mut self, mut emd: Emerald<'_, '_, '_>) {
         emd.graphics().begin().unwrap();
         emd.graphics().render().unwrap();
     }

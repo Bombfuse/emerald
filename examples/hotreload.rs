@@ -2,9 +2,9 @@ use emerald::*;
 
 pub fn main() {
     emerald::start(
-        HotreloadExample {
+        Box::new(HotreloadExample {
             world: World::new(),
-        },
+        }),
         GameSettings::default(),
     )
 }

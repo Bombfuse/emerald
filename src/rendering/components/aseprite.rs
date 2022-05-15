@@ -31,7 +31,7 @@ impl Aseprite {
     }
 
     pub(crate) fn new(
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
         path: &str,
         data: Vec<u8>,
@@ -378,7 +378,7 @@ struct Frame {
 
 impl Frame {
     fn from_asefile(
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
         path: &str,
         frame_index: u32,
@@ -430,7 +430,7 @@ pub(crate) struct AsepriteData {
 
 impl AsepriteData {
     fn from_asefile(
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
         path: &str,
         aseprite: asefile::AsepriteFile,

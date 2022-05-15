@@ -2,9 +2,9 @@ use emerald::{tilemap::Tilemap, *};
 
 pub fn main() {
     emerald::start(
-        TilemapExample {
+        Box::new(TilemapExample {
             world: World::new(),
-        },
+        }),
         GameSettings::default(),
     )
 }

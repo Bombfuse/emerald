@@ -1,7 +1,7 @@
 use emerald::*;
 
 pub fn main() {
-    emerald::start(UserDataExample {}, GameSettings::default())
+    emerald::start(Box::new(UserDataExample {}), GameSettings::default())
 }
 
 pub struct UserDataExample {}

@@ -4,16 +4,16 @@ use crate::{
 };
 use miniquad::Context;
 
-pub struct GraphicsHandler<'a> {
-    quad_ctx: &'a mut Context,
-    asset_store: &'a mut AssetStore,
-    rendering_engine: &'a mut RenderingEngine,
+pub struct GraphicsHandler<'a, 'b, 'c> {
+    quad_ctx: &'c mut Context<'a, 'b>,
+    asset_store: &'c mut AssetStore,
+    rendering_engine: &'c mut RenderingEngine,
 }
-impl<'a> GraphicsHandler<'a> {
+impl<'a, 'b, 'c> GraphicsHandler<'a, 'b, 'c> {
     pub(crate) fn new(
-        quad_ctx: &'a mut Context,
-        asset_store: &'a mut AssetStore,
-        rendering_engine: &'a mut RenderingEngine,
+        quad_ctx: &'c mut Context<'a, 'b>,
+        asset_store: &'c mut AssetStore,
+        rendering_engine: &'c mut RenderingEngine,
     ) -> Self {
         GraphicsHandler {
             quad_ctx,

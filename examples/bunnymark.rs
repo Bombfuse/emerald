@@ -18,10 +18,10 @@ pub fn main() {
     let mut settings = GameSettings::default();
     settings.render_settings.resolution = (320 * 5, 180 * 5);
     emerald::start(
-        BunnymarkGame {
+        Box::new(BunnymarkGame {
             count: 0,
             world: World::new(),
-        },
+        }),
         settings,
     )
 }
@@ -95,7 +95,7 @@ impl Game for BunnymarkGame {
         }
     }
 
-    fn draw(&mut self, mut emd: Emerald<'_>) {
+    fn draw(&mut self, mut emd: Emerald) {
         emd.graphics().begin().unwrap();
         emd.graphics().draw_world(&mut self.world).unwrap();
 

@@ -8,9 +8,9 @@ pub fn main() {
     };
     settings.render_settings = render_settings;
     emerald::start(
-        MyGame {
+        Box::new(MyGame {
             world: World::new(),
-        },
+        }),
         settings,
     )
 }
@@ -43,7 +43,7 @@ impl Game for MyGame {
         ui_button_system(&mut emd, &mut self.world);
     }
 
-    fn draw(&mut self, mut emd: Emerald<'_>) {
+    fn draw(&mut self, mut emd: Emerald) {
         emd.graphics().begin().ok();
         emd.graphics().draw_world(&mut self.world).ok();
         emd.graphics().render().ok();

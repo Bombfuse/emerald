@@ -11,11 +11,11 @@ pub fn main() {
     };
     settings.render_settings = render_settings;
     emerald::start(
-        MyGame {
+        Box::new(MyGame {
             elapsed_time_cube: 0.0,
             elapsed_time_round: 0.0,
             world: World::new(),
-        },
+        }),
         settings,
     )
 }

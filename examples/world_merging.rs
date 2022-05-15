@@ -4,9 +4,9 @@ use emerald::*;
 
 pub fn main() {
     emerald::start(
-        WorldMergingExample {
+        Box::new(WorldMergingExample {
             world: World::new(),
-        },
+        }),
         GameSettings::default(),
     )
 }

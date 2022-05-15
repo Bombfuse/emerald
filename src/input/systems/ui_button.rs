@@ -8,7 +8,7 @@ use crate::{
 
 /// Updates the status of UI Buttons.
 /// Presses the button if the user has pressed it, etc...
-pub fn ui_button_system(emd: &mut Emerald<'_>, world: &mut World) {
+pub fn ui_button_system(emd: &mut Emerald<'_, '_, '_>, world: &mut World) {
     let input = emd.input();
     let mouse = input.mouse();
     let touches = input.touches();
@@ -60,7 +60,7 @@ pub fn ui_button_system(emd: &mut Emerald<'_>, world: &mut World) {
 }
 
 fn check_touches_overlap_button(
-    emd: &mut Emerald<'_>,
+    emd: &mut Emerald<'_, '_, '_>,
     touches: &HashMap<u64, TouchState>,
     touch_world_positions: &HashMap<u64, Translation>,
     ui_button: &UIButton,
@@ -80,7 +80,7 @@ fn check_touches_overlap_button(
 
 // TODO: take into account the scale and rotation of the button.
 fn is_translation_inside_button(
-    emd: &mut Emerald<'_>,
+    emd: &mut Emerald<'_, '_, '_>,
     ui_button: &UIButton,
     ui_button_transform: &Transform,
     translation: &Translation,

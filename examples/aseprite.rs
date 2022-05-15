@@ -11,9 +11,9 @@ pub fn main() {
     };
     settings.render_settings = render_settings;
     emerald::start(
-        MyGame {
+        Box::new(MyGame {
             world: World::new(),
-        },
+        }),
         settings,
     )
 }

@@ -18,14 +18,14 @@ pub struct Texture {
 }
 impl Texture {
     pub(crate) fn new(
-        mut ctx: &mut Context,
+        mut ctx: &mut Context<'_, '_>,
         key: TextureKey,
         data: Vec<u8>,
     ) -> Result<Self, EmeraldError> {
         Self::from_png_bytes(&mut ctx, key, &data)
     }
 
-    pub fn default(mut ctx: &mut Context) -> Result<Self, EmeraldError> {
+    pub fn default(mut ctx: &mut Context<'_, '_>) -> Result<Self, EmeraldError> {
         let pixels: [u8; 4 * 4 * 4] = [
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -44,7 +44,7 @@ impl Texture {
     }
 
     pub fn from_png_bytes(
-        ctx: &mut Context,
+        ctx: &mut Context<'_, '_>,
         key: TextureKey,
         bytes: &[u8],
     ) -> Result<Self, EmeraldError> {
@@ -59,7 +59,7 @@ impl Texture {
     }
 
     pub(crate) fn from_rgba8(
-        mut ctx: &mut Context,
+        mut ctx: &mut Context<'_, '_>,
         key: TextureKey,
         width: u16,
         height: u16,
@@ -71,7 +71,7 @@ impl Texture {
     }
 
     pub(crate) fn from_texture(
-        ctx: &mut miniquad::Context,
+        ctx: &mut miniquad::Context<'_, '_>,
         key: TextureKey,
         texture: miniquad::Texture,
     ) -> Result<Self, EmeraldError> {
@@ -102,7 +102,7 @@ impl Texture {
         })
     }
 
-    pub(crate) fn update(&mut self, ctx: &mut miniquad::Context, font_image: &FontImage) {
+    pub(crate) fn update(&mut self, ctx: &mut miniquad::Context<'_, '_>, font_image: &FontImage) {
         assert_eq!(self.inner.width, font_image.width as u32);
         assert_eq!(self.inner.height, font_image.height as u32);
 
