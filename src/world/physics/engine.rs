@@ -15,23 +15,22 @@ pub struct PhysicsEngine {
     pub(crate) colliders: ColliderSet,
     pub(crate) broad_phase: BroadPhase,
     pub(crate) narrow_phase: NarrowPhase,
-    pub(crate) joints: JointSet,
+    pub(crate) impulse_joints: ImpulseJointSet,
+    pub(crate) multibody_joints: MultibodyJointSet,
     pub(crate) island_manager: IslandManager,
     pipeline: PhysicsPipeline,
     pub(crate) gravity: Vector2<f32>,
     pub(crate) ccd_solver: CCDSolver,
     pub(crate) integration_parameters: IntegrationParameters,
     pub(crate) event_handler: ChannelEventCollector,
-    pub(crate) contact_recv: crossbeam::channel::Receiver<ContactEvent>,
-    pub(crate) intersection_recv: crossbeam::channel::Receiver<IntersectionEvent>,
+    pub(crate) event_recv: crossbeam::channel::Receiver<CollisionEvent>,
 
     entity_bodies: HashMap<Entity, RigidBodyHandle>,
     body_entities: HashMap<RigidBodyHandle, Entity>,
     body_colliders: HashMap<RigidBodyHandle, Vec<ColliderHandle>>,
     collider_body: HashMap<ColliderHandle, RigidBodyHandle>,
     entity_collisions: HashMap<Entity, Vec<Entity>>,
-    entity_intersections: HashMap<Entity, Vec<Entity>>,
-    physics_hooks: Box<dyn PhysicsHooks<RigidBodySet, ColliderSet>>,
+    physics_hooks: Box<dyn PhysicsHooks>,
     query_pipeline: QueryPipeline,
 }
 
@@ -39,16 +38,16 @@ impl PhysicsEngine {
     pub(crate) fn new() -> Self {
         let bodies = RigidBodySet::new();
         let colliders = ColliderSet::new();
-        let joints = JointSet::new();
+        let impulse_joints = ImpulseJointSet::new();
         let pipeline = PhysicsPipeline::new();
         let broad_phase = BroadPhase::new();
         let narrow_phase = NarrowPhase::new();
+        let multibody_joints = MultibodyJointSet::new();
         let island_manager = IslandManager::new();
 
         // Initialize the event collector.
-        let (contact_send, contact_recv) = crossbeam::channel::unbounded();
-        let (intersection_send, intersection_recv) = crossbeam::channel::unbounded();
-        let event_handler = ChannelEventCollector::new(intersection_send, contact_send);
+        let (event_send, event_recv) = crossbeam::channel::unbounded();
+        let event_handler = ChannelEventCollector::new(event_send);
         let physics_hooks = Box::new(());
         let ccd_solver = CCDSolver::new();
         let query_pipeline = QueryPipeline::new();
@@ -58,21 +57,20 @@ impl PhysicsEngine {
             bodies,
             broad_phase,
             narrow_phase,
-            joints,
+            impulse_joints,
+            multibody_joints,
             pipeline,
             gravity: Vector2::new(0.0, 0.0),
             island_manager,
             ccd_solver,
             integration_parameters: IntegrationParameters::default(),
-            contact_recv,
-            intersection_recv,
+            event_recv,
             event_handler,
             entity_bodies: HashMap::new(),
             body_entities: HashMap::new(),
             body_colliders: HashMap::new(),
             collider_body: HashMap::new(),
             entity_collisions: HashMap::new(),
-            entity_intersections: HashMap::new(),
             physics_hooks,
             query_pipeline,
         }
@@ -91,7 +89,8 @@ impl PhysicsEngine {
             &mut self.narrow_phase,
             &mut self.bodies,
             &mut self.colliders,
-            &mut self.joints,
+            &mut self.impulse_joints,
+            &mut self.multibody_joints,
             &mut self.ccd_solver,
             &(*self.physics_hooks),
             &self.event_handler,
@@ -111,9 +110,9 @@ impl PhysicsEngine {
         let mut started_contacts = Vec::new();
         let mut stopped_contacts = Vec::new();
 
-        while let Ok(contact_event) = self.contact_recv.try_recv() {
+        while let Ok(contact_event) = self.event_recv.try_recv() {
             match contact_event {
-                ContactEvent::Started(h1, h2) => {
+                CollisionEvent::Started(h1, h2, _flags) => {
                     if let (Some(collider_one), Some(collider_two)) =
                         (self.colliders.get(h1), self.colliders.get(h2))
                     {
@@ -129,7 +128,7 @@ impl PhysicsEngine {
                         }
                     }
                 }
-                ContactEvent::Stopped(h1, h2) => {
+                CollisionEvent::Stopped(h1, h2, _flags) => {
                     if let (Some(collider_one), Some(collider_two)) =
                         (self.colliders.get(h1), self.colliders.get(h2))
                     {
@@ -149,78 +148,16 @@ impl PhysicsEngine {
         }
 
         for started_contact in started_contacts {
-            self.add_body_contact(started_contact.0, started_contact.1);
+            self.add_collision(started_contact.0, started_contact.1);
         }
 
         for stopped_contact in stopped_contacts {
-            self.remove_body_contact(stopped_contact.0, stopped_contact.1);
+            self.remove_collision(stopped_contact.0, stopped_contact.1);
         }
     }
 
     #[inline]
-    pub(crate) fn consume_intersections(&mut self) {
-        let mut intersections = Vec::new();
-        let mut disjoints = Vec::new();
-
-        while let Ok(intersection_event) = self.intersection_recv.try_recv() {
-            if let (Some(collider_one), Some(collider_two)) = (
-                self.colliders.get(intersection_event.collider1),
-                self.colliders.get(intersection_event.collider2),
-            ) {
-                if let (Some(collider_parent_one), Some(collider_parent_two)) =
-                    (collider_one.parent(), collider_two.parent())
-                {
-                    if let (Some(entity_one), Some(entity_two)) = (
-                        self.body_entities.get(&collider_parent_one),
-                        self.body_entities.get(&collider_parent_two),
-                    ) {
-                        if intersection_event.intersecting {
-                            intersections.push((*entity_one, *entity_two));
-                        } else {
-                            disjoints.push((*entity_one, *entity_two));
-                        }
-                    }
-                }
-            }
-        }
-
-        for intersection in intersections {
-            self.add_sensor_intersection(intersection.0, intersection.1);
-        }
-
-        for disjoint in disjoints {
-            self.remove_sensor_intersection(disjoint.0, disjoint.1);
-        }
-    }
-
-    #[inline]
-    fn add_sensor_intersection(&mut self, entity_one: Entity, entity_two: Entity) {
-        let entity_one_collisions = self
-            .entity_intersections
-            .entry(entity_one)
-            .or_insert_with(Vec::new);
-        entity_one_collisions.push(entity_two);
-
-        let entity_two_collisions = self
-            .entity_intersections
-            .entry(entity_two)
-            .or_insert_with(Vec::new);
-        entity_two_collisions.push(entity_one);
-    }
-
-    #[inline]
-    fn remove_sensor_intersection(&mut self, entity_one: Entity, entity_two: Entity) {
-        if let Some(intersections) = self.entity_intersections.get_mut(&entity_one) {
-            intersections.retain(|&x| x != entity_two);
-        }
-
-        if let Some(intersections) = self.entity_intersections.get_mut(&entity_two) {
-            intersections.retain(|&x| x != entity_one);
-        }
-    }
-
-    #[inline]
-    fn add_body_contact(&mut self, entity_one: Entity, entity_two: Entity) {
+    fn add_collision(&mut self, entity_one: Entity, entity_two: Entity) {
         let entity_one_collisions = self
             .entity_collisions
             .entry(entity_one)
@@ -235,7 +172,7 @@ impl PhysicsEngine {
     }
 
     #[inline]
-    fn remove_body_contact(&mut self, entity_one: Entity, entity_two: Entity) {
+    fn remove_collision(&mut self, entity_one: Entity, entity_two: Entity) {
         if let Some(intersections) = self.entity_collisions.get_mut(&entity_one) {
             intersections.retain(|&x| x != entity_two);
         }
@@ -246,16 +183,7 @@ impl PhysicsEngine {
     }
 
     #[inline]
-    pub(crate) fn get_colliding_areas(&self, entity: Entity) -> Vec<Entity> {
-        if let Some(colliding_areas) = self.entity_intersections.get(&entity) {
-            return colliding_areas.clone();
-        }
-
-        Vec::new()
-    }
-
-    #[inline]
-    pub(crate) fn get_colliding_bodies(&self, entity: Entity) -> Vec<Entity> {
+    pub(crate) fn get_colliding_entities(&self, entity: Entity) -> Vec<Entity> {
         if let Some(colliding_bodies) = self.entity_collisions.get(&entity) {
             return colliding_bodies.clone();
         }
@@ -406,7 +334,7 @@ impl PhysicsEngine {
         builder: ColliderBuilder,
     ) -> ColliderHandle {
         let collider = builder
-            .active_events(ActiveEvents::CONTACT_EVENTS | ActiveEvents::INTERSECTION_EVENTS)
+            .active_events(ActiveEvents::COLLISION_EVENTS)
             .build();
 
         self.add_collider(body_handle, collider)
@@ -420,30 +348,19 @@ impl PhysicsEngine {
         }
 
         for body_entity in body_entities {
-            self.remove_body_contact(body_entity, entity);
-        }
-
-        let mut sensor_entities = Vec::new();
-        for e in self.entity_intersections.keys() {
-            sensor_entities.push(*e);
-        }
-        for sensor_entity in sensor_entities {
-            self.remove_sensor_intersection(entity, sensor_entity);
+            self.remove_collision(body_entity, entity);
         }
 
         if let Some(body_handle) = self.entity_bodies.remove(&entity) {
             self.body_entities.remove(&body_handle);
-            if let Some(colliders) = self.body_colliders.remove(&body_handle) {
-                for collider in colliders {
-                    self.remove_collider(collider);
-                }
-            }
 
             if let Some(body) = self.bodies.remove(
                 body_handle,
                 &mut self.island_manager,
                 &mut self.colliders,
-                &mut self.joints,
+                &mut self.impulse_joints,
+                &mut self.multibody_joints,
+                true,
             ) {
                 return Some(body);
             }

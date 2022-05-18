@@ -70,7 +70,7 @@ impl MyGame {
             .physics()
             .build_body(
                 entity,
-                RigidBodyBuilder::new_dynamic().linvel(Vector2::new(velocity.dx, velocity.dy)), // Fling it up and to the right
+                RigidBodyBuilder::dynamic().linvel(Vector2::new(velocity.dx, velocity.dy)), // Fling it up and to the right
             )
             .unwrap();
         self.world.physics().build_collider(body, collider_builder);
@@ -104,7 +104,7 @@ impl Game for MyGame {
                 .world
                 .spawn_with_body(
                     (border.0,),
-                    RigidBodyBuilder::new_static()
+                    RigidBodyBuilder::fixed()
                         .translation(Vector2::new(border.0.translation.x, border.0.translation.y)),
                 )
                 .unwrap();
@@ -129,7 +129,7 @@ impl Game for MyGame {
                     Transform::default(),
                     color_rect,
                 ),
-                RigidBodyBuilder::new_kinematic_position_based().can_sleep(false),
+                RigidBodyBuilder::kinematic_position_based().can_sleep(false),
             )
             .unwrap();
         self.world.physics().build_collider(

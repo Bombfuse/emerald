@@ -50,7 +50,7 @@ impl Game for PhysicsGroupsExample {
                     Transform::from_translation((0.0, 40.0)),
                     ColorRect::new(Color::new(0, 0, 255, 255), 32, 16),
                 ),
-                RigidBodyBuilder::new_dynamic(),
+                RigidBodyBuilder::dynamic(),
             )
             .unwrap();
 
@@ -90,7 +90,7 @@ impl Game for PhysicsGroupsExample {
                     Transform::from_translation((0.0, 80.0)),
                     ColorRect::new(Color::new(0, 255, 0, 255), 32, 16),
                 ),
-                RigidBodyBuilder::new_dynamic(),
+                RigidBodyBuilder::dynamic(),
             )
             .unwrap();
 

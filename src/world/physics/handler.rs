@@ -33,14 +33,25 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.build_collider(body_handle, desc)
     }
 
-    /// Retrieves the entities with bodies that are touching the rigid body of this entity.
-    pub fn get_colliding_bodies(&self, entity: Entity) -> Vec<Entity> {
-        self.physics_engine.get_colliding_bodies(entity)
+    /// Retrieves the entities with bodies that are touching the body of this entity.
+    /// This includes:
+    /// Collider <- Contact -> Collider
+    /// Collider <- Contact -> Sensor
+    /// Sensor <- Contact -> Sensor
+    pub fn get_colliding_entities(&self, entity: Entity) -> Vec<Entity> {
+        self.physics_engine.get_colliding_entities(entity)
     }
 
+    #[deprecated(note = "use `world.physics().get_colliding_bodies()` instead")]
+    /// Retrieves the entities with bodies that are touching the rigid body of this entity.
+    pub fn get_colliding_bodies(&self, entity: Entity) -> Vec<Entity> {
+        self.physics_engine.get_colliding_entities(entity)
+    }
+
+    #[deprecated(note = "use `world.physics().get_colliding_bodies()` instead")]
     /// Retrieves the entities with sensors that are touching this entity.
     pub fn get_colliding_areas(&self, entity: Entity) -> Vec<Entity> {
-        self.physics_engine.get_colliding_areas(entity)
+        self.physics_engine.get_colliding_entities(entity)
     }
 
     pub fn get_colliders(&self, entity: Entity) -> Vec<ColliderHandle> {
@@ -114,7 +125,6 @@ impl<'a> PhysicsHandler<'a> {
             .sync_game_world_to_physics_world(&mut self.world);
 
         self.physics_engine.consume_contacts();
-        self.physics_engine.consume_intersections();
         self.physics_engine.update_query_pipeline();
     }
 

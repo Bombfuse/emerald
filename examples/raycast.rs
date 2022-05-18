@@ -37,7 +37,7 @@ impl Game for RaycastExample {
                     Transform::from_translation((-200.0, 0.0)),
                     String::from("entity on the left"),
                 ),
-                RigidBodyBuilder::new_static(),
+                RigidBodyBuilder::fixed(),
             )
             .unwrap();
         let (_, rbh3) = self
@@ -48,7 +48,7 @@ impl Game for RaycastExample {
                     Transform::from_translation((90.0, 200.0)),
                     String::from("entity on the top"),
                 ),
-                RigidBodyBuilder::new_static(),
+                RigidBodyBuilder::fixed(),
             )
             .unwrap();
         let (_, rbh4) = self
@@ -59,7 +59,7 @@ impl Game for RaycastExample {
                     Transform::from_translation((-40.0, -200.0)),
                     String::from("entity on the bottom"),
                 ),
-                RigidBodyBuilder::new_static(),
+                RigidBodyBuilder::fixed(),
             )
             .unwrap();
 
