@@ -73,7 +73,7 @@ fn build_other_world(
                         )) + offset,
                         sprite.clone(),
                     ),
-                    RigidBodyBuilder::new_dynamic()
+                    RigidBodyBuilder::dynamic()
                         .can_sleep(false)
                         .linvel(Vector2::new(10.0, 10.0)),
                 )
