@@ -1,18 +1,21 @@
 use crate::*;
 
+pub type TileId = usize;
+
 #[derive(Clone)]
 pub struct Tilemap {
     pub(crate) width: usize,
     pub(crate) height: usize,
     pub(crate) tilesheet: TextureKey,
     pub(crate) tile_size: Vector2<usize>,
-    pub(crate) tiles: Vec<Option<usize>>,
+    pub(crate) tiles: Vec<Option<TileId>>,
     pub z_index: f32,
     pub visible: bool,
 }
 impl Tilemap {
     pub fn new(
         tilesheet: TextureKey,
+        // Size of a tile in the grid, in pixels
         tile_size: Vector2<usize>,
         width: usize,
         height: usize,
@@ -34,7 +37,7 @@ impl Tilemap {
         }
     }
 
-    pub fn get_tile(&mut self, x: usize, y: usize) -> Result<Option<usize>, EmeraldError> {
+    pub fn get_tile(&mut self, x: usize, y: usize) -> Result<Option<TileId>, EmeraldError> {
         let tile_index = self.get_index(x, y)?;
 
         if let Some(tile) = self.tiles.get_mut(tile_index) {
@@ -56,7 +59,7 @@ impl Tilemap {
         &mut self,
         x: usize,
         y: usize,
-        new_tile: Option<usize>,
+        new_tile: Option<TileId>,
     ) -> Result<(), EmeraldError> {
         let tile_index = self.get_index(x, y)?;
 
