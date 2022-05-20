@@ -1,3 +1,4 @@
+use crate::autotilemap::AutoTilemap;
 use crate::rendering::*;
 use crate::tilemap::Tilemap;
 use crate::transform::Transform;
@@ -171,6 +172,7 @@ impl RenderingEngine {
         #[cfg(feature = "aseprite")]
         cmd_adder.add_draw_commands::<Aseprite>(&mut draw_queue, world, asset_store);
 
+        cmd_adder.add_draw_commands::<AutoTilemap>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<Tilemap>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<Sprite>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<UIButton>(&mut draw_queue, world, asset_store);
@@ -980,6 +982,23 @@ impl ToDrawable for Tilemap {
 
     fn z_index(&self) -> f32 {
         self.z_index
+    }
+}
+impl ToDrawable for AutoTilemap {
+    fn get_visible_bounds(
+        &self,
+        transform: &Transform,
+        asset_store: &mut AssetStore,
+    ) -> Option<Rectangle> {
+        self.tilemap.get_visible_bounds(transform, asset_store)
+    }
+
+    fn to_drawable(&self) -> Drawable {
+        self.tilemap.to_drawable()
+    }
+
+    fn z_index(&self) -> f32 {
+        self.tilemap.z_index
     }
 }
 
