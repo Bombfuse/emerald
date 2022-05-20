@@ -88,10 +88,6 @@ impl AutoTileRuleset {
                 );
 
                 if self.grid[ruleset_x][ruleset_y] != autotile_ruleset_value {
-                    println!(
-                        "{:?} did not match expected {:?}",
-                        autotile_ruleset_value, self.grid[ruleset_x][ruleset_y]
-                    );
                     return false;
                 }
             }
@@ -165,7 +161,7 @@ impl AutoTilemap {
     }
 
     /// Bakes the inner tileset in accordance to the Autotilemap
-    /// feature(physics): Additionally bakes the colliders
+    /// TODO: feature(physics): Additionally bakes the colliders
     pub fn bake(&mut self) -> Result<(), EmeraldError> {
         for x in 0..self.width() {
             for y in 0..self.height() {
@@ -250,7 +246,6 @@ impl AutoTilemap {
             .iter()
             .find(|ruleset| ruleset.matches(&self.autotiles, self.width(), self.height(), x, y))
         {
-            println!("matching id {:?}", ruleset.tile_id);
             return Ok(Some(ruleset.tile_id));
         }
 
