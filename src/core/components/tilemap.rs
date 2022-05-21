@@ -1,18 +1,21 @@
 use crate::*;
 
+pub type TileId = usize;
+
 #[derive(Clone)]
 pub struct Tilemap {
     pub(crate) width: usize,
     pub(crate) height: usize,
     pub(crate) tilesheet: TextureKey,
     pub(crate) tile_size: Vector2<usize>,
-    pub(crate) tiles: Vec<Option<usize>>,
+    pub(crate) tiles: Vec<Option<TileId>>,
     pub z_index: f32,
     pub visible: bool,
 }
 impl Tilemap {
     pub fn new(
         tilesheet: TextureKey,
+        // Size of a tile in the grid, in pixels
         tile_size: Vector2<usize>,
         width: usize,
         height: usize,
@@ -34,10 +37,10 @@ impl Tilemap {
         }
     }
 
-    pub fn get_tile(&mut self, x: usize, y: usize) -> Result<Option<usize>, EmeraldError> {
-        let tile_index = self.get_index(x, y)?;
+    pub fn get_tile(&self, x: usize, y: usize) -> Result<Option<TileId>, EmeraldError> {
+        let tile_index = get_tilemap_index(x, y, self.width, self.height)?;
 
-        if let Some(tile) = self.tiles.get_mut(tile_index) {
+        if let Some(tile) = self.tiles.get(tile_index) {
             let tile = tile.map(|id| id);
 
             return Ok(tile);
@@ -56,9 +59,9 @@ impl Tilemap {
         &mut self,
         x: usize,
         y: usize,
-        new_tile: Option<usize>,
+        new_tile: Option<TileId>,
     ) -> Result<(), EmeraldError> {
-        let tile_index = self.get_index(x, y)?;
+        let tile_index = get_tilemap_index(x, y, self.width, self.height)?;
 
         if let Some(tile_id) = self.tiles.get_mut(tile_index) {
             *tile_id = new_tile;
@@ -90,22 +93,27 @@ impl Tilemap {
     pub fn set_tilesheet(&mut self, tilesheet: TextureKey) {
         self.tilesheet = tilesheet
     }
+}
 
-    fn get_index(&self, x: usize, y: usize) -> Result<usize, EmeraldError> {
-        if x >= self.width {
-            return Err(EmeraldError::new(format!(
-                "Given x: {} is outside the width of {}",
-                x, self.width
-            )));
-        }
-
-        if y >= self.height {
-            return Err(EmeraldError::new(format!(
-                "Given y: {} is outside the height of {}",
-                y, self.height
-            )));
-        }
-
-        Ok((y * self.width) + x)
+pub(crate) fn get_tilemap_index(
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+) -> Result<usize, EmeraldError> {
+    if x >= width {
+        return Err(EmeraldError::new(format!(
+            "Given x: {} is outside the width of {}",
+            x, width
+        )));
     }
+
+    if y >= height {
+        return Err(EmeraldError::new(format!(
+            "Given y: {} is outside the height of {}",
+            y, height
+        )));
+    }
+
+    Ok((y * width) + x)
 }
