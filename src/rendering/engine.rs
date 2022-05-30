@@ -66,9 +66,15 @@ impl RenderingEngine {
 
         let mut render_texture_counter = 0;
         let key = TextureKey::new(String::from(EMERALD_DEFAULT_RENDER_TARGET));
-        let (w, h) = ctx.screen_size();
-        let screen_texture_key =
-            create_render_texture(w as usize, h as usize, key, ctx, asset_store).unwrap();
+        let current_resolution = current_window_resolution(ctx);
+        let screen_texture_key = create_render_texture(
+            current_resolution.0,
+            current_resolution.1,
+            key,
+            ctx,
+            asset_store,
+        )
+        .unwrap();
         render_texture_counter += 1;
 
         let texture = asset_store.get_texture(&screen_texture_key).unwrap();
@@ -78,7 +84,6 @@ impl RenderingEngine {
             screen_texture_key.clone(),
             RenderPass::new(ctx, texture.inner, None),
         );
-        let current_resolution = (w as usize, h as usize);
 
         RenderingEngine {
             settings,
@@ -117,7 +122,7 @@ impl RenderingEngine {
         ctx: &mut Context<'_, '_>,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
-        let (w, h) = ctx.screen_size();
+        let (w, h) = current_window_resolution(ctx);
         let (prev_w, prev_h) = self.last_screen_size;
 
         if w as usize != prev_w || h as usize != prev_h {
@@ -150,8 +155,7 @@ impl RenderingEngine {
 
     #[inline]
     pub(crate) fn post_draw(&mut self, ctx: &mut Context<'_, '_>, _asset_store: &mut AssetStore) {
-        let (w, h) = ctx.screen_size();
-        self.last_screen_size = (w as usize, h as usize);
+        self.last_screen_size = current_window_resolution(ctx);
     }
 
     #[inline]
@@ -356,8 +360,9 @@ impl RenderingEngine {
             stencil: None,
         });
         let sprite = Sprite::from_texture(texture_key);
-        let (w, h) = ctx.screen_size();
+        let (w, h) = current_window_resolution(ctx);
         let translation = Translation::new(w as f32 / 2.0, h as f32 / 2.0);
+
         self.draw_sprite(ctx, asset_store, &sprite, &translation);
         ctx.end_render_pass();
 
@@ -842,7 +847,7 @@ fn draw_texture(
     color: Color,
     resolution: (usize, usize),
 ) {
-    position = position.floor() + Vec2::splat(0.375);
+    position = position.floor();
 
     let projection = Mat4::orthographic_rh_gl(
         0.0,
@@ -1240,4 +1245,11 @@ pub(crate) fn create_render_texture(
     asset_store.insert_texture(key.clone(), texture);
 
     Ok(key)
+}
+
+fn current_window_resolution(ctx: &mut Context<'_, '_>) -> (usize, usize) {
+    let (w, h) = ctx.screen_size();
+    let dpi_scale = ctx.dpi_scale();
+
+    ((w * dpi_scale) as usize, (h * dpi_scale) as usize)
 }
