@@ -1,10 +1,8 @@
-use std::{collections::HashMap, ops::Index};
-
 use nalgebra::Vector2;
 
 use crate::{
     tilemap::{get_tilemap_index, TileId, Tilemap},
-    Emerald, EmeraldError, TextureKey,
+    EmeraldError, TextureKey,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Hash)]
