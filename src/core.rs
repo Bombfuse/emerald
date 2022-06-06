@@ -87,7 +87,9 @@ impl<'a, 'b, 'c> Emerald<'a, 'b, 'c> {
 
     #[inline]
     pub fn screen_size(&self) -> (f32, f32) {
-        self.quad_ctx.screen_size()
+        let s = self.quad_ctx.screen_size();
+        let dpi = self.quad_ctx.dpi_scale();
+        (s.0 * dpi, s.1 * dpi)
     }
 
     #[inline]
