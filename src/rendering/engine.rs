@@ -847,7 +847,8 @@ fn draw_texture(
     color: Color,
     resolution: (usize, usize),
 ) {
-    position = position.floor();
+    // Bump position up by half a unit then floor, for pixel snap
+    position = Vec2::new((position.x + 0.5).floor(), (position.y + 0.5).floor());
 
     let projection = Mat4::orthographic_rh_gl(
         0.0,
