@@ -11,6 +11,7 @@ pub mod colors;
 pub mod core;
 pub mod input;
 pub mod logging;
+pub mod profiling;
 pub mod rendering;
 pub mod types;
 pub mod world;

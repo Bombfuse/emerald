@@ -18,6 +18,7 @@ pub struct GameEngine {
     last_instant: f64,
     fps_tracker: VecDeque<f64>,
     asset_store: AssetStore,
+    profile_cache: ProfileCache,
 }
 impl<'c> GameEngine {
     pub fn new(
@@ -31,6 +32,8 @@ impl<'c> GameEngine {
         let mut input_engine = InputEngine::new();
         let mut rendering_engine =
             RenderingEngine::new(&mut ctx, settings.render_settings.clone(), &mut asset_store);
+
+        let mut profile_cache = ProfileCache::new(Default::default());
 
         let delta = 0.0;
         let starting_amount = 50;
@@ -47,6 +50,7 @@ impl<'c> GameEngine {
             &mut logging_engine,
             &mut rendering_engine,
             &mut asset_store,
+            &mut profile_cache,
         );
 
         game.initialize(emd);
@@ -61,6 +65,7 @@ impl<'c> GameEngine {
             rendering_engine,
             last_instant,
             asset_store,
+            profile_cache,
         }
     }
 
@@ -95,6 +100,7 @@ impl<'a, 'b> EventHandler for GameEngine {
             &mut self.logging_engine,
             &mut self.rendering_engine,
             &mut self.asset_store,
+            &mut self.profile_cache,
         );
 
         self.game.update(emd);
@@ -179,6 +185,7 @@ impl<'a, 'b> EventHandler for GameEngine {
             &mut self.logging_engine,
             &mut self.rendering_engine,
             &mut self.asset_store,
+            &mut self.profile_cache,
         );
 
         self.game.draw(emd);
