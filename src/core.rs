@@ -15,6 +15,8 @@ use crate::assets::*;
 use crate::audio::*;
 use crate::input::*;
 use crate::logging::*;
+use crate::profiling::profile_cache::ProfileCache;
+use crate::profiling::profiler::Profiler;
 use crate::rendering::*;
 
 pub struct Emerald<'a, 'b, 'c> {
@@ -26,6 +28,7 @@ pub struct Emerald<'a, 'b, 'c> {
     logging_engine: &'c mut LoggingEngine,
     input_engine: &'c mut InputEngine,
     pub(crate) asset_store: &'c mut AssetStore,
+    profile_cache: &'c mut ProfileCache,
 }
 impl<'a, 'b, 'c> Emerald<'a, 'b, 'c> {
     #[inline]
@@ -38,6 +41,7 @@ impl<'a, 'b, 'c> Emerald<'a, 'b, 'c> {
         logging_engine: &'c mut LoggingEngine,
         rendering_engine: &'c mut RenderingEngine,
         asset_store: &'c mut AssetStore,
+        profile_cache: &'c mut ProfileCache,
     ) -> Self {
         Emerald {
             delta,
@@ -48,6 +52,7 @@ impl<'a, 'b, 'c> Emerald<'a, 'b, 'c> {
             input_engine,
             logging_engine,
             asset_store,
+            profile_cache,
         }
     }
 
@@ -113,6 +118,12 @@ impl<'a, 'b, 'c> Emerald<'a, 'b, 'c> {
             &mut self.asset_store,
             &mut self.rendering_engine,
         )
+    }
+
+    pub fn profiler<T: Into<String>>(&mut self, profile_name: T) -> Profiler<'_> {
+        let now = self.now();
+        
+        Profiler::new(&mut self.profile_cache, profile_name, now)
     }
 
     // ************* Asset API ************* //
