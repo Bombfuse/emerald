@@ -8,11 +8,9 @@ pub type ProfileName = String;
 
 /// Captures the current time at instantiation, profiler should only be used inline.
 /// Ex.
-/// ```rust
-/// emd.profiler().start_frame("game_loop")?;
+/// emd.profiler().start_frame("game_loop").unwrap();
 /// do_my_game_logic();
-/// emd.profiler().finish_frame("game_loop")?;
-/// ```
+/// emd.profiler().finish_frame("game_loop").unwrap();
 pub struct Profiler<'c> {
     profile_cache: &'c mut ProfileCache,
     profile_name: ProfileName,

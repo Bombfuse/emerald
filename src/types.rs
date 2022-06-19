@@ -85,3 +85,39 @@ impl Rectangle {
             && self.y + self.height > other.y
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use crate::Rectangle;
+
+    #[test]
+    fn exact_overlap_intersects() {
+        let rect_a = Rectangle::new(0.0, 0.0, 10.0, 10.0);
+        let rect_b = rect_a.clone();
+
+        assert!(rect_a.intersects_with(&rect_b));
+        assert!(rect_b.intersects_with(&rect_a));
+    }
+
+    #[test]
+    fn rect_intersects_halfway() {
+        let rect_a = Rectangle::new(0.0, 0.0, 10.0, 10.0);
+        let mut rect_b = rect_a.clone();
+        rect_b.x = 5.0;
+        rect_b.y = 5.0;
+
+        assert!(rect_a.intersects_with(&rect_b));
+        assert!(rect_b.intersects_with(&rect_a));
+    }
+
+    #[test]
+    fn rect_intersects_halfway_negative() {
+        let rect_a = Rectangle::new(0.0, 0.0, 10.0, 10.0);
+        let mut rect_b = rect_a.clone();
+        rect_b.x = -5.0;
+        rect_b.y = -5.0;
+
+        assert!(rect_a.intersects_with(&rect_b));
+        assert!(rect_b.intersects_with(&rect_a));
+    }
+}
