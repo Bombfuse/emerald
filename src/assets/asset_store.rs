@@ -41,7 +41,7 @@ pub(crate) struct AssetStore {
         HashMap<String, crate::assets::hotreload::HotReloadMetadata>,
 }
 impl AssetStore {
-    pub fn new(ctx: &mut Context<'_, '_>, _game_name: String) -> Result<Self, EmeraldError> {
+    pub fn new(ctx: &mut Context, _game_name: String) -> Result<Self, EmeraldError> {
         let mut texture_key_map = HashMap::new();
         let default_texture = Texture::default(ctx).unwrap();
         texture_key_map.insert(TextureKey::default(), 0);
@@ -153,7 +153,7 @@ impl AssetStore {
 
     pub fn insert_font(
         &mut self,
-        _ctx: &mut Context<'_, '_>,
+        _ctx: &mut Context,
         key: FontKey,
         font: Font,
     ) -> Result<(), EmeraldError> {
@@ -288,7 +288,7 @@ impl AssetStore {
     }
 
     #[inline]
-    pub fn update_font_texture(&mut self, mut ctx: &mut Context<'_, '_>, key: &FontKey) {
+    pub fn update_font_texture(&mut self, mut ctx: &mut Context, key: &FontKey) {
         if let Some(index) = self.font_key_map.get(key) {
             if let Some(font) = self.fonts.get_mut(*index) {
                 if let Some(index) = self.texture_key_map.get(&font.font_texture_key) {

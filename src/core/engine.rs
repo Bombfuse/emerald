@@ -21,11 +21,7 @@ pub struct GameEngine {
     profile_cache: ProfileCache,
 }
 impl<'c> GameEngine {
-    pub fn new(
-        mut game: Box<dyn Game>,
-        settings: GameSettings,
-        mut ctx: &mut Context<'_, 'c>,
-    ) -> Self {
+    pub fn new(mut game: Box<dyn Game>, settings: GameSettings, mut ctx: &mut Context) -> Self {
         let mut asset_store = AssetStore::new(ctx, settings.title.clone()).unwrap();
         let mut logging_engine = LoggingEngine::new();
         let mut audio_engine = AudioEngine::new();
@@ -84,7 +80,7 @@ impl<'c> GameEngine {
 }
 impl<'a, 'b> EventHandler for GameEngine {
     #[inline]
-    fn update(&mut self, mut ctx: &mut Context<'_, '_>) {
+    fn update(&mut self, mut ctx: &mut Context) {
         let start_of_frame = miniquad::date::now();
         let delta = start_of_frame - self.last_instant;
         self.last_instant = start_of_frame;
@@ -112,7 +108,7 @@ impl<'a, 'b> EventHandler for GameEngine {
     #[inline]
     fn key_down_event(
         &mut self,
-        _ctx: &mut Context<'_, '_>,
+        _ctx: &mut Context,
         keycode: KeyCode,
         _keymods: KeyMods,
         repeat: bool,
@@ -121,55 +117,36 @@ impl<'a, 'b> EventHandler for GameEngine {
     }
 
     #[inline]
-    fn key_up_event(&mut self, _ctx: &mut Context<'_, '_>, keycode: KeyCode, _keymods: KeyMods) {
+    fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _keymods: KeyMods) {
         self.input_engine.set_key_up(keycode);
     }
 
     #[inline]
-    fn mouse_motion_event(&mut self, ctx: &mut Context<'_, '_>, x: f32, y: f32) {
+    fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32) {
         let y = ctx.screen_size().1 - y;
         self.input_engine.set_mouse_translation(x, y)
     }
 
     #[inline]
-    fn mouse_button_down_event(
-        &mut self,
-        ctx: &mut Context<'_, '_>,
-        button: MouseButton,
-        x: f32,
-        y: f32,
-    ) {
+    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         let y = ctx.screen_size().1 - y;
         self.input_engine.set_mouse_down(button, x, y)
     }
 
     #[inline]
-    fn mouse_button_up_event(
-        &mut self,
-        ctx: &mut Context<'_, '_>,
-        button: MouseButton,
-        x: f32,
-        y: f32,
-    ) {
+    fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         let y = ctx.screen_size().1 - y;
         self.input_engine.set_mouse_up(button, x, y)
     }
 
     #[inline]
-    fn touch_event(
-        &mut self,
-        ctx: &mut Context<'_, '_>,
-        phase: TouchPhase,
-        id: u64,
-        x: f32,
-        y: f32,
-    ) {
+    fn touch_event(&mut self, ctx: &mut Context, phase: TouchPhase, id: u64, x: f32, y: f32) {
         let y = ctx.screen_size().1 - y;
         self.input_engine.touch_event(phase, id, x, y)
     }
 
     #[inline]
-    fn draw(&mut self, mut ctx: &mut Context<'_, '_>) {
+    fn draw(&mut self, mut ctx: &mut Context) {
         let start_of_frame = miniquad::date::now();
         let delta = start_of_frame - self.last_instant;
 
