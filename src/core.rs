@@ -19,23 +19,23 @@ use crate::profiling::profile_cache::ProfileCache;
 use crate::profiling::profiler::Profiler;
 use crate::rendering::*;
 
-pub struct Emerald<'a, 'b, 'c> {
+pub struct Emerald<'c> {
     delta: f32,
     fps: f64,
     audio_engine: &'c mut AudioEngine,
-    quad_ctx: &'c mut miniquad::Context<'a, 'b>,
+    quad_ctx: &'c mut miniquad::Context,
     rendering_engine: &'c mut RenderingEngine,
     logging_engine: &'c mut LoggingEngine,
     input_engine: &'c mut InputEngine,
     pub(crate) asset_store: &'c mut AssetStore,
     profile_cache: &'c mut ProfileCache,
 }
-impl<'a, 'b, 'c> Emerald<'a, 'b, 'c> {
+impl<'c> Emerald<'c> {
     #[inline]
     pub(crate) fn new(
         delta: f32,
         fps: f64,
-        quad_ctx: &'c mut miniquad::Context<'a, 'b>,
+        quad_ctx: &'c mut miniquad::Context,
         audio_engine: &'c mut AudioEngine,
         input_engine: &'c mut InputEngine,
         logging_engine: &'c mut LoggingEngine,
@@ -112,7 +112,7 @@ impl<'a, 'b, 'c> Emerald<'a, 'b, 'c> {
     }
     // *****************************************
 
-    pub fn graphics(&mut self) -> GraphicsHandler<'a, 'b, '_> {
+    pub fn graphics(&mut self) -> GraphicsHandler<'_> {
         GraphicsHandler::new(
             &mut self.quad_ctx,
             &mut self.asset_store,
@@ -122,13 +122,13 @@ impl<'a, 'b, 'c> Emerald<'a, 'b, 'c> {
 
     pub fn profiler<T: Into<String>>(&mut self, profile_name: T) -> Profiler<'_> {
         let now = self.now();
-        
+
         Profiler::new(&mut self.profile_cache, profile_name, now)
     }
 
     // ************* Asset API ************* //
     #[inline]
-    pub fn loader(&mut self) -> AssetLoader<'a, 'b, '_> {
+    pub fn loader(&mut self) -> AssetLoader<'_> {
         AssetLoader::new(
             &mut self.quad_ctx,
             &mut self.asset_store,

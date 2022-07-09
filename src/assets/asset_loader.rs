@@ -5,15 +5,15 @@ use crate::*;
 
 use std::ffi::OsStr;
 
-pub struct AssetLoader<'a, 'b, 'c> {
-    pub(crate) quad_ctx: &'c mut miniquad::Context<'a, 'b>,
+pub struct AssetLoader<'c> {
+    pub(crate) quad_ctx: &'c mut miniquad::Context,
     pub(crate) asset_store: &'c mut AssetStore,
     rendering_engine: &'c mut RenderingEngine,
     _audio_engine: &'c mut AudioEngine,
 }
-impl<'a, 'b, 'c> AssetLoader<'a, 'b, 'c> {
+impl<'c> AssetLoader<'c> {
     pub(crate) fn new(
-        quad_ctx: &'c mut miniquad::Context<'a, 'b>,
+        quad_ctx: &'c mut miniquad::Context,
         asset_store: &'c mut AssetStore,
         rendering_engine: &'c mut RenderingEngine,
         _audio_engine: &'c mut AudioEngine,
