@@ -34,11 +34,11 @@ gamepad = { version = "0.1.4", optional = true }
 asefile =  { version = "0.3.4", optional = true }
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
-miniquad = { version = "=0.3.10", features = [ "log-impl" ] }
+miniquad = { version = "=0.3.11", features = [ "log-impl" ] }
 kira = { version= "0.5.3", optional = true, default-features = false, features = ["ogg", "flac", "wav"] }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
-miniquad = "=0.3.10"
+miniquad = "=0.3.11"
 kira = { version= "0.5.3", optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
