@@ -11,6 +11,7 @@ pub struct RenderSettings {
 
     // Whether or not the game engine should automatically cull sprites that are not in camera view
     pub frustrum_culling: bool,
+    pub pixel_snap: bool,
 }
 impl Default for RenderSettings {
     fn default() -> RenderSettings {
@@ -22,6 +23,7 @@ impl Default for RenderSettings {
             resizable_window: true,
             icon: None,
             frustrum_culling: true,
+            pixel_snap: true,
         }
     }
 }
