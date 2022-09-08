@@ -834,7 +834,7 @@ impl RenderingEngine {
 
 #[inline]
 fn draw_texture(
-    _settings: &RenderSettings,
+    settings: &RenderSettings,
     mut ctx: &mut Context,
     asset_store: &mut AssetStore,
     texture_key: &TextureKey,
@@ -848,7 +848,7 @@ fn draw_texture(
     resolution: (usize, usize),
 ) {
     // Bump position up by half a unit then floor, for pixel snap
-    if _settings.pixel_snap {
+    if settings.pixel_snap {
         position = Vec2::new((position.x + 0.5).floor(), (position.y + 0.5).floor());
     }
 
