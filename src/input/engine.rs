@@ -1,10 +1,11 @@
 use crate::{input::*, EmeraldError};
 
+use gamepad::Button;
 #[cfg(feature = "gamepads")]
 use gamepad::{GamepadEngine, GamepadState};
 
 use miniquad::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::touch_state::TouchState;
 
@@ -17,6 +18,21 @@ pub(crate) struct InputEngine {
     pub(crate) mouse_to_touch: bool,
 }
 
+pub(crate) struct Action {
+    pub key_bindings: HashSet<KeyCode>,
+    pub button_bindings: HashSet<Button>,
+}
+impl Action {
+    pub fn new() -> Self {
+        Self {
+            key_bindings: HashSet::new(),
+            button_bindings: HashSet::new(),
+        }
+    }
+}
+
+pub type ActionId = String;
+
 #[cfg(feature = "gamepads")]
 pub(crate) struct InputEngine {
     gamepad_engine: GamepadEngine,
@@ -26,6 +42,7 @@ pub(crate) struct InputEngine {
     pub(crate) touches: HashMap<u64, TouchState>,
     pub(crate) touches_to_mouse: bool,
     pub(crate) mouse_to_touch: bool,
+    pub(crate) actions: HashMap<ActionId, Action>,
 }
 impl InputEngine {
     #[cfg(feature = "gamepads")]
@@ -38,6 +55,8 @@ impl InputEngine {
             touches: HashMap::new(),
             touches_to_mouse: false,
             mouse_to_touch: false,
+
+            actions: HashMap::new(),
         }
     }
 
@@ -87,6 +106,45 @@ impl InputEngine {
         self.mouse.rollover();
 
         Ok(())
+    }
+
+    fn add_action_if_not_exists(&mut self, action_id: &ActionId) {
+        if self.actions.contains_key(action_id) {
+            return;
+        }
+
+        self.actions.insert(action_id.clone(), Action::new());
+    }
+
+    #[inline]
+    pub fn add_action_binding_key(&mut self, action_id: &ActionId, key_code: KeyCode) {
+        self.add_action_if_not_exists(action_id);
+        if let Some(action) = self.actions.get_mut(action_id) {
+            action.key_bindings.insert(key_code);
+        }
+    }
+
+    #[inline]
+    pub fn add_action_binding_button(&mut self, action_id: &ActionId, button: Button) {
+        self.add_action_if_not_exists(action_id);
+
+        if let Some(action) = self.actions.get_mut(action_id) {
+            action.button_bindings.insert(button);
+        }
+    }
+
+    #[inline]
+    pub fn remove_action_binding_key(&mut self, action_id: &ActionId, key_code: &KeyCode) {
+        if let Some(action) = self.actions.get_mut(action_id) {
+            action.key_bindings.remove(key_code);
+        }
+    }
+
+    #[inline]
+    pub fn remove_action_binding_button(&mut self, action_id: &ActionId, button: &Button) {
+        if let Some(action) = self.actions.get_mut(action_id) {
+            action.button_bindings.remove(button);
+        }
     }
 
     #[inline]

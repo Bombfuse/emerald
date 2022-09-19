@@ -38,9 +38,9 @@ impl Game for MyGame {
     }
 
     fn update(&mut self, mut emd: Emerald) {
-        let mut input = emd.input();
         let delta = emd.delta();
         let speed = 150.0;
+        let mut input = emd.input();
 
         if input.is_key_pressed(KeyCode::Left) {
             self.pos.translation.x -= speed * delta;

@@ -5,30 +5,92 @@ use std::collections::HashMap;
 #[cfg(feature = "gamepads")]
 use gamepad::{Button, GamepadState, Joystick};
 
-#[derive(Clone, Debug)]
-pub struct InputHandler {
-    keys: HashMap<KeyCode, ButtonState>,
-    mouse: MouseState,
-    touches: HashMap<u64, TouchState>,
-    #[cfg(feature = "gamepads")]
-    gamepads: Vec<GamepadState>,
+pub struct InputHandler<'a> {
+    engine: &'a mut InputEngine,
 }
-impl InputHandler {
-    pub(crate) fn new(engine: &InputEngine) -> Self {
-        let mut this = InputHandler {
-            keys: engine.keys.clone(),
-            mouse: engine.mouse,
-            touches: engine.touches.clone(),
-            #[cfg(feature = "gamepads")]
-            gamepads: engine.gamepads.clone(),
-        };
-        if engine.mouse_to_touch {
-            this.mouse_to_touch();
+impl<'a> InputHandler<'a> {
+    pub(crate) fn new(engine: &'a mut InputEngine) -> Self {
+        Self { engine }
+    }
+
+    #[inline]
+    pub fn add_action_binding_key(&mut self, action_id: &ActionId, key_code: KeyCode) {
+        self.engine.add_action_binding_key(action_id, key_code)
+    }
+
+    #[inline]
+    pub fn add_action_binding_button(&mut self, action_id: &ActionId, button: Button) {
+        self.engine.add_action_binding_button(action_id, button)
+    }
+
+    #[inline]
+    pub fn remove_action_binding_key(&mut self, action_id: &ActionId, key_code: &KeyCode) {
+        self.engine.remove_action_binding_key(action_id, key_code)
+    }
+
+    #[inline]
+    pub fn remove_action_binding_button(&mut self, action_id: &ActionId, button: &Button) {
+        self.engine.remove_action_binding_button(action_id, button)
+    }
+
+    #[inline]
+    pub fn is_action_pressed(&mut self, action_id: &ActionId) -> bool {
+        let mut keys = Vec::new();
+        let mut buttons = Vec::new();
+
+        if let Some(action) = self.engine.actions.get(action_id) {
+            for key in &action.key_bindings {
+                keys.push(*key);
+            }
+
+            for button in &action.button_bindings {
+                buttons.push(*button);
+            }
         }
-        if engine.touches_to_mouse {
-            this.touches_to_mouse();
+
+        for key in keys {
+            if self.is_key_pressed(key) {
+                return true;
+            }
         }
-        this
+
+        for button in buttons {
+            if self.is_button_pressed(button) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    #[inline]
+    pub fn is_action_just_pressed(&mut self, action_id: &ActionId) -> bool {
+        let mut keys = Vec::new();
+        let mut buttons = Vec::new();
+
+        if let Some(action) = self.engine.actions.get(action_id) {
+            for key in &action.key_bindings {
+                keys.push(*key);
+            }
+
+            for button in &action.button_bindings {
+                buttons.push(*button);
+            }
+        }
+
+        for key in keys {
+            if self.is_key_just_pressed(key) {
+                return true;
+            }
+        }
+
+        for button in buttons {
+            if self.is_button_just_pressed(button) {
+                return true;
+            }
+        }
+
+        false
     }
 
     #[inline]
@@ -45,40 +107,40 @@ impl InputHandler {
 
     #[inline]
     pub fn get_key_state(&mut self, keycode: KeyCode) -> ButtonState {
-        if let Some(key) = self.keys.get(&keycode) {
+        if let Some(key) = self.engine.keys.get(&keycode) {
             return *key;
         }
 
-        self.keys.insert(keycode, ButtonState::new());
+        self.engine.keys.insert(keycode, ButtonState::new());
         self.get_key_state(keycode)
     }
 
     #[inline]
     pub fn mouse(&self) -> MouseState {
-        self.mouse
+        self.engine.mouse
     }
 
     #[inline]
     pub fn touches(&self) -> &HashMap<u64, TouchState> {
-        &self.touches
+        &self.engine.touches
     }
 
     /// Converts touches to mouse clicks
     pub fn touches_to_mouse(&mut self) {
-        let last_touch = self.touches.values().last();
+        let last_touch = self.engine.touches.values().last();
         let last_touch = match last_touch {
             Some(x) => x,
             None => return,
         };
 
-        let number_of_touches = self.touches.len();
+        let number_of_touches = self.engine.touches.len();
         let button = match number_of_touches {
-            1 => &mut self.mouse.left,
-            2 => &mut self.mouse.right,
-            _ => &mut self.mouse.middle,
+            1 => &mut self.engine.mouse.left,
+            2 => &mut self.engine.mouse.right,
+            _ => &mut self.engine.mouse.middle,
         };
 
-        self.mouse.translation = last_touch.translation;
+        self.engine.mouse.translation = last_touch.translation;
         match last_touch.phase {
             TouchPhase::Started => {
                 button.was_pressed = false;
@@ -97,7 +159,10 @@ impl InputHandler {
 
     /// Treat left mouse clicks as touches
     pub fn mouse_to_touch(&mut self) {
-        let (previous, phase) = match (self.mouse.left.was_pressed, self.mouse.left.is_pressed) {
+        let (previous, phase) = match (
+            self.engine.mouse.left.was_pressed,
+            self.engine.mouse.left.is_pressed,
+        ) {
             (false, false) => return,
             (false, true) => (TouchPhase::Cancelled, TouchPhase::Started),
             (true, true) => (TouchPhase::Moved, TouchPhase::Moved),
@@ -107,10 +172,10 @@ impl InputHandler {
         // We need some fake id:
         let id = 0xC0FFEE;
 
-        self.touches.insert(
+        self.engine.touches.insert(
             id,
             TouchState {
-                translation: self.mouse.translation,
+                translation: self.engine.mouse.translation,
                 previous,
                 phase,
             },
@@ -121,7 +186,7 @@ impl InputHandler {
     #[inline]
     #[cfg(feature = "gamepads")]
     pub fn is_button_pressed(&mut self, button: Button) -> bool {
-        if let Some(gamepad) = self.gamepads.get(0) {
+        if let Some(gamepad) = self.engine.gamepads.get(0) {
             return gamepad.is_pressed(button);
         }
 
@@ -132,7 +197,7 @@ impl InputHandler {
     #[inline]
     #[cfg(feature = "gamepads")]
     pub fn is_button_just_pressed(&mut self, button: Button) -> bool {
-        if let Some(gamepad) = self.gamepads.get(0) {
+        if let Some(gamepad) = self.engine.gamepads.get(0) {
             return gamepad.is_just_pressed(button);
         }
 
@@ -143,7 +208,7 @@ impl InputHandler {
     #[inline]
     #[cfg(feature = "gamepads")]
     pub fn is_button_pressed_for(&mut self, button: Button, index: usize) -> bool {
-        if let Some(gamepad) = self.gamepads.get(index) {
+        if let Some(gamepad) = self.engine.gamepads.get(index) {
             return gamepad.is_pressed(button);
         }
 
@@ -154,7 +219,7 @@ impl InputHandler {
     #[inline]
     #[cfg(feature = "gamepads")]
     pub fn is_button_just_pressed_for(&mut self, button: Button, index: usize) -> bool {
-        if let Some(gamepad) = self.gamepads.get(index) {
+        if let Some(gamepad) = self.engine.gamepads.get(index) {
             return gamepad.is_just_pressed(button);
         }
 
@@ -165,7 +230,7 @@ impl InputHandler {
     #[inline]
     #[cfg(feature = "gamepads")]
     pub fn joystick(&mut self, joystick: Joystick) -> (f32, f32) {
-        if let Some(gamepad) = self.gamepads.get(0) {
+        if let Some(gamepad) = self.engine.gamepads.get(0) {
             return gamepad.joystick(joystick);
         }
 
@@ -175,7 +240,7 @@ impl InputHandler {
     #[inline]
     #[cfg(feature = "gamepads")]
     pub fn joystick_for(&mut self, joystick: Joystick, index: usize) -> (f32, f32) {
-        if let Some(gamepad) = self.gamepads.get(index) {
+        if let Some(gamepad) = self.engine.gamepads.get(index) {
             return gamepad.joystick(joystick);
         }
 
@@ -186,7 +251,7 @@ impl InputHandler {
     #[inline]
     #[cfg(feature = "gamepads")]
     pub fn joystick_raw(&mut self, joystick: Joystick) -> (i16, i16) {
-        if let Some(gamepad) = self.gamepads.get(0) {
+        if let Some(gamepad) = self.engine.gamepads.get(0) {
             return gamepad.joystick_raw(joystick);
         }
 
@@ -197,7 +262,7 @@ impl InputHandler {
     #[inline]
     #[cfg(feature = "gamepads")]
     pub fn joystick_raw_for(&mut self, joystick: Joystick, index: usize) -> (i16, i16) {
-        if let Some(gamepad) = self.gamepads.get(index) {
+        if let Some(gamepad) = self.engine.gamepads.get(index) {
             return gamepad.joystick_raw(joystick);
         }
 

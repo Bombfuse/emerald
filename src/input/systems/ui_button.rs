@@ -9,9 +9,8 @@ use crate::{
 /// Updates the status of UI Buttons.
 /// Presses the button if the user has pressed it, etc...
 pub fn ui_button_system(emd: &mut Emerald<'_>, world: &mut World) {
-    let input = emd.input();
-    let mouse = input.mouse();
-    let touches = input.touches();
+    let mouse = emd.input().mouse();
+    let touches = emd.input().touches().clone();
     let screen_size = emd.screen_size();
     let mouse_position = screen_translation_to_world_translation(
         (screen_size.0 as u32, screen_size.1 as u32),
@@ -35,7 +34,7 @@ pub fn ui_button_system(emd: &mut Emerald<'_>, world: &mut World) {
             is_translation_inside_button(emd, &ui_button, &transform, &mouse_position)
                 || check_touches_overlap_button(
                     emd,
-                    touches,
+                    &touches,
                     &touch_world_positions,
                     &ui_button,
                     &transform,

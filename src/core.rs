@@ -141,6 +141,7 @@ impl<'c> Emerald<'c> {
     pub fn writer(&mut self) -> Writer {
         Writer::new(self.get_user_data_folder_root())
     }
+
     // ************************************* //
 
     // ************* Audio API ************* //
@@ -160,7 +161,7 @@ impl<'c> Emerald<'c> {
 
     // ************* Input API ************* //
     #[inline]
-    pub fn input(&mut self) -> InputHandler {
+    pub fn input(&mut self) -> InputHandler<'_> {
         InputHandler::new(self.input_engine)
     }
 

@@ -18,10 +18,8 @@ impl Game for Example {
     }
 
     fn update(&mut self, mut emd: Emerald) {
-        let mut input = emd.input();
-
         let volume = emd.audio().mixer("test").unwrap().get_volume().unwrap();
-        if input.is_key_just_pressed(KeyCode::A) {
+        if emd.input().is_key_just_pressed(KeyCode::A) {
             emd.audio()
                 .mixer("test")
                 .unwrap()
@@ -32,7 +30,7 @@ impl Game for Example {
                 .unwrap()
                 .set_volume(volume - 0.1)
                 .unwrap();
-        } else if input.is_key_just_pressed(KeyCode::D) {
+        } else if emd.input().is_key_just_pressed(KeyCode::D) {
             emd.audio()
                 .mixer("test")
                 .unwrap()
@@ -45,7 +43,7 @@ impl Game for Example {
                 .unwrap();
         }
 
-        if input.is_key_just_pressed(KeyCode::Space) {
+        if emd.input().is_key_just_pressed(KeyCode::Space) {
             let snd = emd.loader().sound("test_music.wav").unwrap();
             emd.audio()
                 .mixer("test")
@@ -54,7 +52,7 @@ impl Game for Example {
                 .unwrap();
         }
 
-        if input.is_key_just_pressed(KeyCode::Z) {
+        if emd.input().is_key_just_pressed(KeyCode::Z) {
             for _ in 0..10 {
                 let snd = emd.loader().sound("test_sound.wav").unwrap();
                 emd.audio()
