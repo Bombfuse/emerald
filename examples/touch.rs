@@ -26,19 +26,19 @@ impl Game for TouchExample {
 
     fn update(&mut self, mut emd: Emerald) {
         let input = emd.input();
-        let touches = input.touches();
+        let touches = input.touches().clone();
 
         let screen = emd.screen_size();
         let screen_center = Transform::from_translation((screen.0 / 2.0, screen.1 / 2.0));
 
-        for (&id, touch) in touches {
+        for (id, touch) in &touches {
             let bunny_position = touch.translation - screen_center.translation;
             if touch.is_just_pressed() {
                 let components: (Sprite, Transform) = (
                     self.sprite.clone().unwrap(),
                     Transform::from_translation(bunny_position),
                 );
-                self.bunnies.insert(id, self.world.spawn(components));
+                self.bunnies.insert(*id, self.world.spawn(components));
             } else if touch.is_just_released() {
                 if let Some(x) = self.bunnies.remove(&id) {
                     self.world.despawn(x).unwrap();
