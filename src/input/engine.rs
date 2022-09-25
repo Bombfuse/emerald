@@ -1,31 +1,23 @@
 use crate::{input::*, EmeraldError};
 
-use gamepad::Button;
 #[cfg(feature = "gamepads")]
-use gamepad::{GamepadEngine, GamepadState};
+use gamepad::{Button, GamepadEngine, GamepadState};
 
 use miniquad::*;
 use std::collections::{HashMap, HashSet};
 
 use super::touch_state::TouchState;
 
-#[cfg(not(feature = "gamepads"))]
-pub(crate) struct InputEngine {
-    pub(crate) keys: HashMap<KeyCode, ButtonState>,
-    pub(crate) mouse: MouseState,
-    pub(crate) touches: HashMap<u64, TouchState>,
-    pub(crate) touches_to_mouse: bool,
-    pub(crate) mouse_to_touch: bool,
-}
-
 pub(crate) struct Action {
     pub key_bindings: HashSet<KeyCode>,
+    #[cfg(feature = "gamepads")]
     pub button_bindings: HashSet<Button>,
 }
 impl Action {
     pub fn new() -> Self {
         Self {
             key_bindings: HashSet::new(),
+            #[cfg(feature = "gamepads")]
             button_bindings: HashSet::new(),
         }
     }
@@ -33,9 +25,10 @@ impl Action {
 
 pub type ActionId = String;
 
-#[cfg(feature = "gamepads")]
 pub(crate) struct InputEngine {
+    #[cfg(feature = "gamepads")]
     gamepad_engine: GamepadEngine,
+    #[cfg(feature = "gamepads")]
     pub(crate) gamepads: Vec<GamepadState>,
     pub(crate) keys: HashMap<KeyCode, ButtonState>,
     pub(crate) mouse: MouseState,
@@ -45,10 +38,11 @@ pub(crate) struct InputEngine {
     pub(crate) actions: HashMap<ActionId, Action>,
 }
 impl InputEngine {
-    #[cfg(feature = "gamepads")]
     pub(crate) fn new() -> Self {
         InputEngine {
+            #[cfg(feature = "gamepads")]
             gamepad_engine: GamepadEngine::new(),
+            #[cfg(feature = "gamepads")]
             gamepads: Vec::new(),
             keys: HashMap::new(),
             mouse: MouseState::new(),
@@ -57,17 +51,6 @@ impl InputEngine {
             mouse_to_touch: false,
 
             actions: HashMap::new(),
-        }
-    }
-
-    #[cfg(not(feature = "gamepads"))]
-    pub(crate) fn new() -> Self {
-        InputEngine {
-            keys: HashMap::new(),
-            mouse: MouseState::new(),
-            touches: HashMap::new(),
-            touches_to_mouse: false,
-            mouse_to_touch: false,
         }
     }
 
@@ -125,6 +108,7 @@ impl InputEngine {
     }
 
     #[inline]
+    #[cfg(feature = "gamepads")]
     pub fn add_action_binding_button(&mut self, action_id: &ActionId, button: Button) {
         self.add_action_if_not_exists(action_id);
 
@@ -141,6 +125,7 @@ impl InputEngine {
     }
 
     #[inline]
+    #[cfg(feature = "gamepads")]
     pub fn remove_action_binding_button(&mut self, action_id: &ActionId, button: &Button) {
         if let Some(action) = self.actions.get_mut(action_id) {
             action.button_bindings.remove(button);

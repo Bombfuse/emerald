@@ -4,23 +4,20 @@ on:
       - master
       - development
 
-name: Cross-compile
+name: Build
 
 jobs:
   build:
-    name: Build
+    name: X Compile
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
         config:
-          - { os: ubuntu-latest, target: 'x86_64-unknown-linux-gnu' }
           - { os: ubuntu-latest, target: 'x86_64-pc-windows-gnu' }
           - { os: ubuntu-latest, target: 'wasm32-unknown-unknown' }
-          - { os: macos-latest, target: 'x86_64-apple-darwin' }
           - { os: macos-latest, target: 'aarch64-apple-ios' }
           - { os: macos-latest, target: 'x86_64-apple-ios' }
-          - { os: windows-latest, target: 'x86_64-pc-windows-msvc' }
         include:
           - os: ubuntu-latest
             packages: libx11-dev libxi-dev libgl1-mesa-dev gcc-mingw-w64 libsdl2-dev
@@ -49,7 +46,37 @@ jobs:
           command: build
           args: --all-targets --target=${{ matrix.config.target }}
 
+          
+  test:
+    name: Test
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { os: ubuntu-latest, target: 'x86_64-unknown-linux-gnu' }
+          - { os: macos-latest, target: 'x86_64-apple-darwin' }
+          - { os: windows-latest, target: 'x86_64-pc-windows-msvc' }
+        include:
+          - os: ubuntu-latest
+            packages: libx11-dev libxi-dev libgl1-mesa-dev gcc-mingw-w64 libsdl2-dev
 
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install packages (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get -yq --no-install-suggests --no-install-recommends install ${{ matrix.packages }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.config.target }}
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --lib --all-targets --target=${{ matrix.config.target }}
 
 
   android:
