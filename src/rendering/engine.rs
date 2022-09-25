@@ -901,7 +901,6 @@ fn get_camera_and_camera_transform(world: &World) -> (Camera, Transform) {
     (cam, cam_transform)
 }
 
-#[derive(Clone)]
 pub(crate) enum Drawable {
     Aseprite {
         sprite: Sprite,
@@ -1150,7 +1149,6 @@ impl ToDrawable for Label {
     }
 }
 
-#[derive(Clone)]
 pub(crate) struct DrawCommand {
     pub drawable: Drawable,
     pub transform: Transform,

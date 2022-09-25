@@ -220,6 +220,10 @@ impl World {
         self.inner.contains(entity)
     }
 
+    pub fn count(&self) -> usize {
+        self.inner.len() as usize
+    }
+
     /// Prepare a query against a single entity, using dynamic borrow checking
     ///
     /// Prefer [`query_one_mut`](Self::query_one_mut) when concurrent access to the [`World`] is not
@@ -302,5 +306,225 @@ impl World {
     #[cfg(feature = "physics")]
     pub fn physics_ref(&self) -> PhysicsRefHandler<'_> {
         PhysicsRefHandler::new(&self.physics_engine)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Camera, Transform, World};
+
+    #[test]
+    fn make_active_camera_succeeds_on_entity_with_camera() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(), Camera::default()));
+        assert!(world.make_active_camera(entity).is_ok());
+
+        let active_camera_entity = world.get_active_camera().unwrap();
+
+        assert_eq!(entity, active_camera_entity);
+    }
+
+    #[test]
+    fn make_active_camera_fails_on_entity_without_camera() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(),));
+
+        assert!(world.make_active_camera(entity).is_err());
+    }
+
+    #[test]
+    fn get_mut_succeeds_on_preexisting_component() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(),));
+
+        assert!(world.get_mut::<Transform>(entity).is_ok());
+    }
+
+    #[test]
+    fn get_mut_fails_on_nonexisting_component() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(),));
+
+        assert!(world.get_mut::<String>(entity).is_err());
+    }
+
+    #[test]
+    fn get_succeeds_on_preexisting_component() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(),));
+
+        assert!(world.get::<Transform>(entity).is_ok());
+    }
+
+    #[test]
+    fn get_fails_on_nonexisting_component() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(),));
+
+        assert!(world.get::<String>(entity).is_err());
+    }
+
+    #[test]
+    fn query_one_is_none_on_nonexisting_bundle() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(),));
+
+        let mut query = world.query_one::<(&Transform, &String)>(entity).unwrap();
+        assert!(query.get().is_none());
+    }
+
+    #[test]
+    fn query_one_is_some_on_existing_bundle() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(), "blah".to_string()));
+
+        let mut query = world.query_one::<(&Transform, &String)>(entity).unwrap();
+        assert!(query.get().is_some());
+    }
+
+    #[test]
+    fn query_one_mut_fails_on_nonexisting_bundle() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(),));
+
+        assert!(world
+            .query_one_mut::<(&Transform, &String)>(entity)
+            .is_err());
+    }
+
+    #[test]
+    fn query_one_mut_succeeds_on_existing_bundle() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(), "blah".to_string()));
+
+        assert!(world.query_one_mut::<(&Transform, &String)>(entity).is_ok());
+    }
+
+    #[test]
+    fn contains_is_accurate() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(),));
+
+        assert!(world.contains(entity));
+        world.despawn(entity).unwrap();
+        assert!(!world.contains(entity));
+    }
+
+    #[test]
+    fn count_is_accurate() {
+        let mut world = World::new();
+        let expected_count = 100;
+        for _ in 0..expected_count {
+            world.spawn((Transform::default(),));
+        }
+
+        assert_eq!(world.count(), expected_count);
+    }
+
+    #[test]
+    fn insert_fails_on_nonexisting_entity() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(),));
+        world.despawn(entity).unwrap();
+
+        assert!(world.insert_one(entity, 0).is_err());
+    }
+
+    #[test]
+    fn insert_overwrites_previous_component() {
+        struct TestStruct {
+            pub x: usize,
+        }
+        let expected_value = 100;
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(), TestStruct { x: 0 }));
+
+        world
+            .insert_one(entity, TestStruct { x: expected_value })
+            .unwrap();
+
+        assert_eq!(world.get::<TestStruct>(entity).unwrap().x, expected_value);
+    }
+
+    #[test]
+    fn remove_succeeds_on_preexisting_bundle() {
+        struct TestStruct {}
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(), TestStruct {}));
+
+        assert!(world.remove::<(Transform, TestStruct)>(entity).is_ok());
+
+        // Bundle should no longer exist
+        assert!(world.remove::<(Transform, TestStruct)>(entity).is_err());
+    }
+
+    #[test]
+    fn remove_fails_on_nonexisting_bundle() {
+        struct TestStruct {}
+        struct NoStruct {}
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(), TestStruct {}));
+
+        // This should fail because NoStruct doesn't exist on the entity
+        assert!(world
+            .remove::<(Transform, TestStruct, NoStruct)>(entity)
+            .is_err());
+    }
+
+    #[test]
+    fn remove_one_succeeds_on_preexisting_component() {
+        struct TestStruct {}
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(), TestStruct {}));
+
+        assert!(world.remove_one::<TestStruct>(entity).is_ok());
+        assert!(world.remove_one::<TestStruct>(entity).is_err());
+    }
+
+    #[test]
+    fn remove_one_fails_on_nonexisting_component() {
+        struct TestStruct {}
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(),));
+
+        assert!(world.remove_one::<TestStruct>(entity).is_err());
+    }
+
+    #[cfg(feature = "physics")]
+    mod physics_tests {
+        use rapier2d::prelude::RigidBodyBuilder;
+
+        use crate::{Transform, World};
+
+        #[test]
+        fn add_body_on_preexisting_entity() {
+            let mut world = World::new();
+
+            let entity = world.spawn((Transform::default(),));
+            let rbh = world
+                .physics()
+                .build_body(entity, RigidBodyBuilder::dynamic())
+                .unwrap();
+
+            assert!(world.physics().rigid_body(rbh).is_some());
+        }
+
+        #[test]
+        fn remove_body_is_some_on_entity_with_body() {
+            let mut world = World::new();
+
+            let (entity, _) = world
+                .spawn_with_body((Transform::default(),), RigidBodyBuilder::dynamic())
+                .unwrap();
+            assert!(world.physics().remove_body(entity).is_some());
+        }
+
+        #[test]
+        fn remove_body_is_empty_on_entity_with_body() {
+            let mut world = World::new();
+
+            let entity = world.spawn((Transform::default(),));
+            assert!(world.physics().remove_body(entity).is_none());
+        }
     }
 }

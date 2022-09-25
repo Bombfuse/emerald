@@ -3,7 +3,7 @@ use miniquad::*;
 use std::collections::HashMap;
 
 #[cfg(feature = "gamepads")]
-use gamepad::{Button, GamepadState, Joystick};
+use gamepad::{Button, Joystick};
 
 pub struct InputHandler<'a> {
     engine: &'a mut InputEngine,
@@ -19,6 +19,7 @@ impl<'a> InputHandler<'a> {
     }
 
     #[inline]
+    #[cfg(feature = "gamepads")]
     pub fn add_action_binding_button(&mut self, action_id: &ActionId, button: Button) {
         self.engine.add_action_binding_button(action_id, button)
     }
@@ -29,6 +30,7 @@ impl<'a> InputHandler<'a> {
     }
 
     #[inline]
+    #[cfg(feature = "gamepads")]
     pub fn remove_action_binding_button(&mut self, action_id: &ActionId, button: &Button) {
         self.engine.remove_action_binding_button(action_id, button)
     }
@@ -36,6 +38,7 @@ impl<'a> InputHandler<'a> {
     #[inline]
     pub fn is_action_pressed(&mut self, action_id: &ActionId) -> bool {
         let mut keys = Vec::new();
+        #[cfg(feature = "gamepads")]
         let mut buttons = Vec::new();
 
         if let Some(action) = self.engine.actions.get(action_id) {
@@ -43,8 +46,11 @@ impl<'a> InputHandler<'a> {
                 keys.push(*key);
             }
 
-            for button in &action.button_bindings {
-                buttons.push(*button);
+            #[cfg(feature = "gamepads")]
+            {
+                for button in &action.button_bindings {
+                    buttons.push(*button);
+                }
             }
         }
 
@@ -54,9 +60,12 @@ impl<'a> InputHandler<'a> {
             }
         }
 
-        for button in buttons {
-            if self.is_button_pressed(button) {
-                return true;
+        #[cfg(feature = "gamepads")]
+        {
+            for button in buttons {
+                if self.is_button_pressed(button) {
+                    return true;
+                }
             }
         }
 
@@ -66,6 +75,7 @@ impl<'a> InputHandler<'a> {
     #[inline]
     pub fn is_action_just_pressed(&mut self, action_id: &ActionId) -> bool {
         let mut keys = Vec::new();
+        #[cfg(feature = "gamepads")]
         let mut buttons = Vec::new();
 
         if let Some(action) = self.engine.actions.get(action_id) {
@@ -73,8 +83,11 @@ impl<'a> InputHandler<'a> {
                 keys.push(*key);
             }
 
-            for button in &action.button_bindings {
-                buttons.push(*button);
+            #[cfg(feature = "gamepads")]
+            {
+                for button in &action.button_bindings {
+                    buttons.push(*button);
+                }
             }
         }
 
@@ -84,9 +97,12 @@ impl<'a> InputHandler<'a> {
             }
         }
 
-        for button in buttons {
-            if self.is_button_just_pressed(button) {
-                return true;
+        #[cfg(feature = "gamepads")]
+        {
+            for button in buttons {
+                if self.is_button_just_pressed(button) {
+                    return true;
+                }
             }
         }
 

@@ -46,7 +46,7 @@ jobs:
           echo "linker = \"/usr/bin/x86_64-w64-mingw32-gcc\"" >> ~/.cargo/config
       - uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: test --lib
           args: --all-targets --target=${{ matrix.config.target }}
 
 
@@ -61,4 +61,4 @@ jobs:
       - name: cargo quad-apk
         run: |
           cargo update
-          cargo quad-apk build 
+          cargo quad-apk test --lib 
