@@ -3,3 +3,4 @@ members = [
     "emerald",
     "editor",
 ]
+resolver = "2"
