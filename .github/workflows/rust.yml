@@ -88,4 +88,5 @@ jobs:
       - name: cargo quad-apk
         run: |
           cargo update
-          cargo quad-apk build 
+          cd emerald
+          cargo quad-apk build

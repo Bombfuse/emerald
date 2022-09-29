@@ -1,4 +1,4 @@
-![Emerald](./emerald/assets/banner_large.png)
+![Emerald](assets/banner_large.png)
 [![Crates.io](https://img.shields.io/crates/v/emerald.svg)](https://crates.io/crates/emerald)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Discord chat](https://img.shields.io/discord/829494628771168296.svg?label=discord%20chat)](https://discord.gg/NHsz38AhkD)
@@ -12,18 +12,18 @@ The api is simple and powerful, giving you direct access to physics, audio, grap
 
 ## Supported Platforms
 <div>
-    <img alt="OpenGL" src="./emerald/assets/opengl.svg" width=32>
-    <img alt="MacOS" src="./emerald/assets/apple.svg" width=32>
-    <img alt="Linux" src="./emerald/assets/linux.svg" width=32>
-    <img alt="Windows" src="./emerald/assets/windows.svg" width=32>
-    <img alt="RaspberryPi" src="./emerald/assets/raspberrypi.svg" width=32>
-    <img alt="HTML5" src="./emerald/assets/webassembly.svg" width=32>
+    <img alt="OpenGL" src="assets/opengl.svg" width=32>
+    <img alt="MacOS" src="assets/apple.svg" width=32>
+    <img alt="Linux" src="assets/linux.svg" width=32>
+    <img alt="Windows" src="assets/windows.svg" width=32>
+    <img alt="RaspberryPi" src="assets/raspberrypi.svg" width=32>
+    <img alt="HTML5" src="assets/webassembly.svg" width=32>
 </div>
 
 
 --- Work in progress ---
 <div>
-    <img alt="Android" src="./emerald/assets/android.svg" width=32>
+    <img alt="Android" src="assets/android.svg" width=32>
 </div>
 --------------------------
 
@@ -133,7 +133,7 @@ let mut aseprite = emd.loader()
 ```
 
 Export settings
-![Preferred export settings](./emerald/assets/aseprite_settings.png)
+![Preferred export settings](assets/aseprite_settings.png)
 
 
 
