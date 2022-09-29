@@ -149,7 +149,7 @@ In order to keep a clean, simple API, and avoid network requests for assets. Eme
 
 This same method can be used to pack all assets into the game binary regardless of which platform you target.
 
-Use the `pack_bytes` function to load data into the engine.
+Use the `pack_asset_bytes` function to load data into the engine.
 
 ```rust
 fn initialize(&mut self, mut emd: Emerald) {
@@ -158,7 +158,7 @@ fn initialize(&mut self, mut emd: Emerald) {
     #[cfg(target_arch = "wasm32")]
     {
         emd.loader()
-            .pack_bytes(
+            .pack_asset_bytes(
                 "bunny.png",
                 include_bytes!(".bunny.png").to_vec()
             );
