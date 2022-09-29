@@ -37,8 +37,7 @@ jobs:
       - name: WASM nightly
         if: matrix.config.target == 'wasm32-unknown-unknown'
         run: |
-          sudo rustup install nightly
-          sudo rustup default nightly
+          cd emerald
       - name: Workaround MinGW issue # https://github.com/rust-lang/rust/issues/47048
         if: runner.os == 'Linux' && matrix.config.target == 'x86_64-pc-windows-gnu'
         run: |
