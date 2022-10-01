@@ -9,11 +9,17 @@ Let's give it a visual component (ex. ColorRect) and a custom player
 component as well.
 
 ```rust
+use emerald::{World, Transform, ColorRect};
+
 // Lets spawn our player, visualized by a rectangle!
 struct MyPlayerData { pub is_jogging: bool }
 
 let mut world = World::new();
-world.spawn((Transform::default(), ColorRect::default(), MyPlayerData { is_jogging: false }));
+world.spawn((
+    Transform::default(), 
+    ColorRect::default(), 
+    MyPlayerData { is_jogging: false }
+));
 ```
 
 Later on, we'll query this player and mutate its data!
