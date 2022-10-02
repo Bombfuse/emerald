@@ -15,7 +15,7 @@ pub(crate) fn load_ent_sprite<'a>(
     loader: &mut AssetLoader<'a>,
     entity: Entity,
     world: &mut World,
-    toml: &mut toml::Value,
+    toml: &toml::Value,
 ) -> Result<(), EmeraldError> {
     if !toml.is_table() {
         return Err(EmeraldError::new(
@@ -23,14 +23,12 @@ pub(crate) fn load_ent_sprite<'a>(
         ));
     }
 
-    if let Some(sprite_value) = toml.get("sprite") {
-        let schema: SpriteSchema = toml::from_str(&sprite_value.to_string())?;
-        let mut sprite = loader.sprite(schema.texture)?;
-        sprite.offset.x = schema.offset.x;
-        sprite.offset.y = schema.offset.y;
+    let schema: SpriteSchema = toml::from_str(&toml.to_string())?;
+    let mut sprite = loader.sprite(schema.texture)?;
+    sprite.offset.x = schema.offset.x;
+    sprite.offset.y = schema.offset.y;
 
-        world.insert_one(entity, sprite)?;
-    }
+    world.insert_one(entity, sprite)?;
 
     Ok(())
 }
