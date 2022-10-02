@@ -30,6 +30,7 @@ pub use logging::*;
 pub use crate::world::physics::*;
 
 pub use glam;
+pub use toml;
 
 // physics/math/collision re-exports
 #[cfg(feature = "physics")]

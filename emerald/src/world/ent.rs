@@ -8,13 +8,28 @@ pub(crate) mod ent_sprite_loader;
 
 const SPRITE_SCHEMA_KEY: &str = "sprite";
 
-pub(crate) fn load_ent<'a>(
-    loader: &mut AssetLoader<'a>,
+#[derive(Default)]
+pub struct EntLoadConfig<'a> {
+    pub world: World,
+    pub transform: Transform,
+    pub custom_component_loader: Option<
+        &'a dyn Fn(
+            &mut AssetLoader<'_>,
+            Entity,
+            &mut World,
+            toml::Value,
+            String,
+        ) -> Result<(), EmeraldError>,
+    >,
+}
+
+pub(crate) fn load_ent(
+    loader: &mut AssetLoader<'_>,
     world: &mut World,
-    transform: Transform,
     toml: String,
+    config: EntLoadConfig<'_>,
 ) -> Result<Entity, EmeraldError> {
-    let entity = world.spawn((transform,));
+    let entity = world.spawn((config.transform,));
 
     let mut toml = toml.parse::<toml::Value>()?;
 
@@ -31,7 +46,13 @@ pub(crate) fn load_ent<'a>(
                         load_ent_sprite(loader, entity, world, &sprite_value)?;
                     }
                 }
-                _ => {}
+                _ => {
+                    if let Some(custom_component_loader) = config.custom_component_loader {
+                        if let Some(value) = table.remove(&key) {
+                            custom_component_loader(loader, entity, world, value, key)?;
+                        }
+                    }
+                }
             }
         }
     }

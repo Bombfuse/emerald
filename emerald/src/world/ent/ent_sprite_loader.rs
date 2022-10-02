@@ -8,7 +8,9 @@ use super::Vec2f32Schema;
 #[derive(Deserialize, Serialize)]
 pub(crate) struct SpriteSchema {
     pub texture: String,
-    pub offset: Vec2f32Schema,
+    pub offset: Option<Vec2f32Schema>,
+    pub visible: Option<bool>,
+    pub scale: Option<Vec2f32Schema>,
 }
 
 pub(crate) fn load_ent_sprite<'a>(
@@ -25,8 +27,20 @@ pub(crate) fn load_ent_sprite<'a>(
 
     let schema: SpriteSchema = toml::from_str(&toml.to_string())?;
     let mut sprite = loader.sprite(schema.texture)?;
-    sprite.offset.x = schema.offset.x;
-    sprite.offset.y = schema.offset.y;
+
+    if let Some(offset) = schema.offset {
+        sprite.offset.x = offset.x;
+        sprite.offset.y = offset.y;
+    }
+
+    if let Some(visible) = schema.visible {
+        sprite.visible = visible;
+    }
+
+    if let Some(scale) = schema.scale {
+        sprite.scale.x = scale.x;
+        sprite.scale.y = scale.y;
+    }
 
     world.insert_one(entity, sprite)?;
 

@@ -1,3 +1,8 @@
 [sprite]
 texture = "bunny.png"
 offset = { x = 16.0, y = 200.0 }
+scale = { x = 2.0, y = 2.0 }
+
+[my_custom_player_component]
+name = "Bunny"
+max_hp = 50
