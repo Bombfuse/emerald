@@ -5,6 +5,8 @@ use crate::{AssetLoader, EmeraldError, World};
 
 use super::Vec2f32Schema;
 
+// TODO: Move this type to the emerald/types crate so that it can be used
+// by emerald and the editor
 #[derive(Deserialize, Serialize)]
 pub(crate) struct SpriteSchema {
     pub texture: String,
