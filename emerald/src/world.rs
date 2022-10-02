@@ -1,6 +1,8 @@
 #[cfg(feature = "physics")]
 pub mod physics;
 
+pub mod ent;
+
 use std::collections::HashMap;
 
 use crate::rendering::components::Camera;

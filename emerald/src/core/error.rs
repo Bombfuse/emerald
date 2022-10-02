@@ -54,6 +54,14 @@ impl From<kira::sound::error::SoundFromFileError> for EmeraldError {
     }
 }
 
+impl From<toml::de::Error> for EmeraldError {
+    fn from(e: toml::de::Error) -> EmeraldError {
+        EmeraldError {
+            message: format!("toml::de::Error {:?}", &e.to_string()),
+        }
+    }
+}
+
 impl From<image::ImageError> for EmeraldError {
     fn from(e: image::ImageError) -> EmeraldError {
         EmeraldError {
