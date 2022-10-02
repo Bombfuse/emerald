@@ -4,9 +4,13 @@ use serde::{Deserialize, Serialize};
 use crate::{AssetLoader, EmeraldError, Transform, World};
 
 use self::ent_sprite_loader::load_ent_sprite;
+pub(crate) mod ent_aseprite_loader;
+pub(crate) mod ent_rigid_body_loader;
 pub(crate) mod ent_sprite_loader;
 
 const SPRITE_SCHEMA_KEY: &str = "sprite";
+const RIGID_BODY_SCHEMA_KEY: &str = "rigid_body";
+const ASEPRITE_SCHEMA_KEY: &str = "aseprite";
 
 #[derive(Default)]
 pub struct EntLoadConfig<'a> {

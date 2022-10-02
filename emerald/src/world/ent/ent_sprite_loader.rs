@@ -5,10 +5,8 @@ use crate::{AssetLoader, EmeraldError, World};
 
 use super::Vec2f32Schema;
 
-// TODO: Move this type to the emerald/types crate so that it can be used
-// by emerald and the editor
 #[derive(Deserialize, Serialize)]
-pub(crate) struct SpriteSchema {
+pub(crate) struct EntSpriteSchema {
     pub texture: String,
     pub offset: Option<Vec2f32Schema>,
     pub visible: Option<bool>,
@@ -27,7 +25,7 @@ pub(crate) fn load_ent_sprite<'a>(
         ));
     }
 
-    let schema: SpriteSchema = toml::from_str(&toml.to_string())?;
+    let schema: EntSpriteSchema = toml::from_str(&toml.to_string())?;
     let mut sprite = loader.sprite(schema.texture)?;
 
     if let Some(offset) = schema.offset {

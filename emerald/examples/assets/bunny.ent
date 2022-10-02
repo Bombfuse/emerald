@@ -3,6 +3,16 @@ texture = "bunny.png"
 offset = { x = 16.0, y = 200.0 }
 scale = { x = 2.0, y = 2.0 }
 
+[rigid_body]
+body_type = "dynamic"
+colliders = [
+    {
+        shape = "cuboid"
+        half_width = 16.0
+        half_height = 16.0
+    }
+]
+
 [my_custom_player_component]
 name = "Bunny"
 max_hp = 50
