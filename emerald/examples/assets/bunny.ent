@@ -1,2 +1,3 @@
 [sprite]
 texture = "bunny.png"
+offset = { x = 16.0, y = 200.0 }

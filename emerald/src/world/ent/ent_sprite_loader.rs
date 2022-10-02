@@ -1,6 +1,15 @@
 use hecs::Entity;
+use serde::{Deserialize, Serialize};
 
 use crate::{AssetLoader, EmeraldError, World};
+
+use super::Vec2f32Schema;
+
+#[derive(Deserialize, Serialize)]
+pub(crate) struct SpriteSchema {
+    pub texture: String,
+    pub offset: Vec2f32Schema,
+}
 
 pub(crate) fn load_ent_sprite<'a>(
     loader: &mut AssetLoader<'a>,
@@ -15,17 +24,12 @@ pub(crate) fn load_ent_sprite<'a>(
     }
 
     if let Some(sprite_value) = toml.get("sprite") {
-        if let Some(sprite_texture_value) = sprite_value.get("texture") {
-            if let Some(texture_path) = sprite_texture_value.as_str() {
-                let sprite = loader.sprite(texture_path)?;
+        let schema: SpriteSchema = toml::from_str(&sprite_value.to_string())?;
+        let mut sprite = loader.sprite(schema.texture)?;
+        sprite.offset.x = schema.offset.x;
+        sprite.offset.y = schema.offset.y;
 
-                world.insert_one(entity, sprite)?;
-            } else {
-                return Err(EmeraldError::new("Expected a string as the texture value."));
-            }
-        } else {
-            return Err(EmeraldError::new("Expected a texture field"));
-        }
+        world.insert_one(entity, sprite)?;
     }
 
     Ok(())

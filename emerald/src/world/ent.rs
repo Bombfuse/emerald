@@ -1,4 +1,5 @@
 use hecs::Entity;
+use serde::{Deserialize, Serialize};
 
 use crate::{AssetLoader, EmeraldError, Transform, World};
 
@@ -17,4 +18,10 @@ pub(crate) fn load_ent<'a>(
     load_ent_sprite(loader, entity, world, &mut toml)?;
 
     Ok(entity)
+}
+
+#[derive(Deserialize, Serialize)]
+pub(crate) struct Vec2f32Schema {
+    pub x: f32,
+    pub y: f32,
 }
