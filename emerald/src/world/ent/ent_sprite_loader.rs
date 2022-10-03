@@ -11,6 +11,7 @@ pub(crate) struct EntSpriteSchema {
     pub offset: Option<Vec2f32Schema>,
     pub visible: Option<bool>,
     pub scale: Option<Vec2f32Schema>,
+    pub z_index: Option<f32>,
 }
 
 pub(crate) fn load_ent_sprite<'a>(
@@ -27,16 +28,13 @@ pub(crate) fn load_ent_sprite<'a>(
 
     let schema: EntSpriteSchema = toml::from_str(&toml.to_string())?;
     let mut sprite = loader.sprite(schema.texture)?;
+    sprite.z_index = schema.z_index.unwrap_or(0.0);
+    sprite.visible = schema.visible.unwrap_or(true);
 
     if let Some(offset) = schema.offset {
         sprite.offset.x = offset.x;
         sprite.offset.y = offset.y;
     }
-
-    if let Some(visible) = schema.visible {
-        sprite.visible = visible;
-    }
-
     if let Some(scale) = schema.scale {
         sprite.scale.x = scale.x;
         sprite.scale.y = scale.y;

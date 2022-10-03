@@ -63,11 +63,16 @@ impl Game for EntLoadingExample {
         assert!(self.world.get::<PlayerData>(entity).is_ok());
     }
 
-    fn update(&mut self, _emd: Emerald) {}
+    fn update(&mut self, emd: Emerald) {
+        aseprite_update_system(&mut self.world, emd.delta());
+    }
 
     fn draw(&mut self, mut emd: Emerald<'_>) {
         emd.graphics().begin().unwrap();
         emd.graphics().draw_world(&mut self.world).unwrap();
+        emd.graphics()
+            .draw_colliders(&mut self.world, Color::new(255, 0, 0, 100))
+            .unwrap();
         emd.graphics().render().unwrap();
     }
 }

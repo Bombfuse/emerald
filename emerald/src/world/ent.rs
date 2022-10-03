@@ -4,12 +4,17 @@ use serde::{Deserialize, Serialize};
 use crate::{AssetLoader, EmeraldError, Transform, World};
 
 use self::ent_sprite_loader::load_ent_sprite;
+#[cfg(feature = "aseprite")]
 pub(crate) mod ent_aseprite_loader;
-pub(crate) mod ent_rigid_body_loader;
 pub(crate) mod ent_sprite_loader;
 
+#[cfg(feature = "physics")]
+pub(crate) mod ent_rigid_body_loader;
+
 const SPRITE_SCHEMA_KEY: &str = "sprite";
+
 const RIGID_BODY_SCHEMA_KEY: &str = "rigid_body";
+
 const ASEPRITE_SCHEMA_KEY: &str = "aseprite";
 
 #[derive(Default)]
@@ -48,6 +53,32 @@ pub(crate) fn load_ent(
                 SPRITE_SCHEMA_KEY => {
                     if let Some(sprite_value) = table.remove(SPRITE_SCHEMA_KEY) {
                         load_ent_sprite(loader, entity, world, &sprite_value)?;
+                    }
+                }
+                RIGID_BODY_SCHEMA_KEY => {
+                    #[cfg(feature = "physics")]
+                    {
+                        if let Some(rigid_body_value) = table.remove(RIGID_BODY_SCHEMA_KEY) {
+                            ent_rigid_body_loader::load_ent_rigid_body(
+                                loader,
+                                entity,
+                                world,
+                                &rigid_body_value,
+                            )?;
+                        }
+                    }
+                }
+                ASEPRITE_SCHEMA_KEY => {
+                    #[cfg(feature = "aseprite")]
+                    {
+                        if let Some(aseprite_value) = table.remove(ASEPRITE_SCHEMA_KEY) {
+                            ent_aseprite_loader::load_ent_aseprite(
+                                loader,
+                                entity,
+                                world,
+                                &aseprite_value,
+                            )?;
+                        }
                     }
                 }
                 _ => {
