@@ -19,7 +19,6 @@ const ASEPRITE_SCHEMA_KEY: &str = "aseprite";
 
 #[derive(Default)]
 pub struct EntLoadConfig<'a> {
-    pub world: World,
     pub transform: Transform,
     pub custom_component_loader: Option<
         &'a dyn Fn(
