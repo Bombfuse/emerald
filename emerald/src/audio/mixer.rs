@@ -127,4 +127,10 @@ impl<'a> MixerHandler<'a> {
     pub fn clear(&mut self) -> Result<(), EmeraldError> {
         self.inner.clear()
     }
+    pub fn clear_sounds(&mut self) -> Result<(), EmeraldError> {
+        for instance_id in self.get_instances()? {
+            self.stop(instance_id)?;
+        }
+        Ok(())
+    }
 }
