@@ -11,14 +11,14 @@ use super::touch_state::TouchState;
 pub(crate) struct Action {
     pub key_bindings: HashSet<KeyCode>,
     #[cfg(feature = "gamepads")]
-    pub button_bindings: HashSet<Button>,
+    pub button_bindings: HashMap<usize, HashSet<Button>>,
 }
 impl Action {
     pub fn new() -> Self {
         Self {
             key_bindings: HashSet::new(),
             #[cfg(feature = "gamepads")]
-            button_bindings: HashSet::new(),
+            button_bindings: HashMap::new(),
         }
     }
 }
@@ -109,11 +109,22 @@ impl InputEngine {
 
     #[inline]
     #[cfg(feature = "gamepads")]
-    pub fn add_action_binding_button(&mut self, action_id: &ActionId, button: Button) {
+    pub fn add_action_binding_button(
+        &mut self,
+        action_id: &ActionId,
+        button: Button,
+        gamepad_index: usize,
+    ) {
         self.add_action_if_not_exists(action_id);
 
         if let Some(action) = self.actions.get_mut(action_id) {
-            action.button_bindings.insert(button);
+            if !action.button_bindings.contains_key(&gamepad_index) {
+                action.button_bindings.insert(gamepad_index, HashSet::new());
+            }
+
+            if let Some(set) = action.button_bindings.get_mut(&gamepad_index) {
+                set.insert(button);
+            }
         }
     }
 
@@ -126,9 +137,19 @@ impl InputEngine {
 
     #[inline]
     #[cfg(feature = "gamepads")]
-    pub fn remove_action_binding_button(&mut self, action_id: &ActionId, button: &Button) {
+    pub fn remove_action_binding_button(
+        &mut self,
+        action_id: &ActionId,
+        button: &Button,
+        gamepad_index: usize,
+    ) {
         if let Some(action) = self.actions.get_mut(action_id) {
-            action.button_bindings.remove(button);
+            if let Some(set) = action.button_bindings.get_mut(&gamepad_index) {
+                set.remove(button);
+                if set.len() == 0 {
+                    action.button_bindings.remove(&gamepad_index);
+                }
+            }
         }
     }
 

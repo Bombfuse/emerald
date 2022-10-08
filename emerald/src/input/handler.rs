@@ -20,8 +20,14 @@ impl<'a> InputHandler<'a> {
 
     #[inline]
     #[cfg(feature = "gamepads")]
-    pub fn add_action_binding_button(&mut self, action_id: &ActionId, button: Button) {
-        self.engine.add_action_binding_button(action_id, button)
+    pub fn add_action_binding_button(
+        &mut self,
+        action_id: &ActionId,
+        button: Button,
+        gamepad_index: usize,
+    ) {
+        self.engine
+            .add_action_binding_button(action_id, button, gamepad_index)
     }
 
     #[inline]
@@ -31,8 +37,14 @@ impl<'a> InputHandler<'a> {
 
     #[inline]
     #[cfg(feature = "gamepads")]
-    pub fn remove_action_binding_button(&mut self, action_id: &ActionId, button: &Button) {
-        self.engine.remove_action_binding_button(action_id, button)
+    pub fn remove_action_binding_button(
+        &mut self,
+        action_id: &ActionId,
+        button: &Button,
+        gamepad_index: usize,
+    ) {
+        self.engine
+            .remove_action_binding_button(action_id, button, gamepad_index)
     }
 
     #[inline]
@@ -48,8 +60,10 @@ impl<'a> InputHandler<'a> {
 
             #[cfg(feature = "gamepads")]
             {
-                for button in &action.button_bindings {
-                    buttons.push(*button);
+                for (gamepad_index, set) in &action.button_bindings {
+                    for button in set {
+                        buttons.push((*gamepad_index, *button));
+                    }
                 }
             }
         }
@@ -62,8 +76,8 @@ impl<'a> InputHandler<'a> {
 
         #[cfg(feature = "gamepads")]
         {
-            for button in buttons {
-                if self.is_button_pressed(button) {
+            for (gamepad_index, button) in buttons {
+                if self.is_button_pressed_for(button, gamepad_index) {
                     return true;
                 }
             }
@@ -85,8 +99,10 @@ impl<'a> InputHandler<'a> {
 
             #[cfg(feature = "gamepads")]
             {
-                for button in &action.button_bindings {
-                    buttons.push(*button);
+                for (gamepad_index, set) in &action.button_bindings {
+                    for button in set {
+                        buttons.push((*gamepad_index, *button));
+                    }
                 }
             }
         }
@@ -99,8 +115,8 @@ impl<'a> InputHandler<'a> {
 
         #[cfg(feature = "gamepads")]
         {
-            for button in buttons {
-                if self.is_button_just_pressed(button) {
+            for (gamepad_index, button) in buttons {
+                if self.is_button_just_pressed_for(button, gamepad_index) {
                     return true;
                 }
             }
