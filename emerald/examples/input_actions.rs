@@ -17,6 +17,9 @@ pub fn main() {
 
 const ACTION_TEST: &str = "test_action";
 
+const ACTION_ATTACK_P1: &str = "p1_attack";
+const ACTION_ATTACK_P2: &str = "p2_attack";
+
 pub struct InputActionsExample {
     world: World,
 }
