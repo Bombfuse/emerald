@@ -1,4 +1,4 @@
-use rapier2d::na::{Matrix4, Quaternion, Vector2, Vector4};
+use rapier2d::na::{Matrix2x4, Matrix4, Matrix4x2, Quaternion, Vector2, Vector4};
 
 // lib.rs
 #[repr(C)]
@@ -62,15 +62,8 @@ pub(crate) struct Instance {
 }
 impl Instance {
     pub fn to_raw(&self) -> InstanceRaw {
-        let position = Matrix4::from_columns(&[
-            Vector4::new(self.position.x, 0.0, 0.0, 0.0),
-            Vector4::new(0.0, self.position.y, 0.0, 0.0),
-            Vector4::new(0.0, 0.0, 1.0, 0.0),
-            Vector4::new(0.0, 0.0, 0.0, 1.0),
-        ]);
-
         InstanceRaw {
-            model: (position * Matrix4::identity()).into(),
+            target: (Matrix2x4::identity()).into(),
         }
     }
 }
@@ -78,7 +71,7 @@ impl Instance {
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub(crate) struct InstanceRaw {
-    model: [[f32; 4]; 4],
+    target: [[f32; 2]; 4],
 }
 impl InstanceRaw {
     pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
@@ -142,25 +135,16 @@ impl Camera2D {
 pub(crate) struct CameraUniform {
     // We can't use cgmath with bytemuck directly so we'll have
     // to convert the Matrix4 into a 4x4 f32 array
-    view_proj: [[f32; 4]; 4],
+    view_width: f32,
+    view_height: f32,
 }
 
 impl CameraUniform {
-    pub fn new() -> Self {
+    pub fn new(view_width: f32, view_height: f32) -> Self {
         Self {
-            view_proj: Matrix4::identity().into(),
+            view_height,
+            view_width,
         }
-    }
-
-    pub fn from_camera_2d(camera: &Camera2D) -> Self {
-        let mut uniform = CameraUniform::new();
-        uniform.update_view_proj(camera);
-
-        uniform
-    }
-
-    pub fn update_view_proj(&mut self, camera: &Camera2D) {
-        self.view_proj = camera.build_view_projection_matrix().into();
     }
 }
 

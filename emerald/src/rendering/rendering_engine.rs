@@ -79,8 +79,7 @@ impl RenderingEngine {
         let mut bind_group_layouts = HashMap::new();
         let draw_queue = VecDeque::new();
 
-        let camera = Camera2D::new(config.width, config.height);
-        let camera_uniform = CameraUniform::from_camera_2d(&camera);
+        let camera_uniform = CameraUniform::new(config.width as f32, config.height as f32);
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
             contents: bytemuck::cast_slice(&[camera_uniform]),
