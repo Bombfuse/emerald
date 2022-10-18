@@ -1,4 +1,4 @@
-use emerald::*;
+use emerald::{rendering::components::Sprite, *};
 
 pub fn main() {
     emerald::start(
@@ -27,7 +27,7 @@ impl Game for SpritesExample {
             &mouse.translation,
             &mut self.world,
         );
-        
+
         // Spawn with left mouse
         if mouse.left.is_just_pressed() {
             let mut sprite = emd.loader().sprite("bunny.png").unwrap();
@@ -42,7 +42,9 @@ impl Game for SpritesExample {
         if mouse.right.is_pressed {
             let speed = 0.1 * emd.delta();
 
-            for (_, (transform, _sprite)) in self.world.query::<(&mut Transform, &mut Sprite)>().iter() {
+            for (_, (transform, _sprite)) in
+                self.world.query::<(&mut Transform, &mut Sprite)>().iter()
+            {
                 transform.translation.x += (mouse_position.x - transform.translation.x) * speed;
                 transform.translation.y += (mouse_position.y - transform.translation.y) * speed;
             }

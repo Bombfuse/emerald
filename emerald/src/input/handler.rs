@@ -1,5 +1,4 @@
 use crate::input::*;
-use miniquad::*;
 use std::collections::HashMap;
 
 #[cfg(feature = "gamepads")]

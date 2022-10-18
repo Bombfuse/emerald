@@ -10,7 +10,6 @@ pub use button_state::*;
 pub use components::*;
 pub(crate) use engine::*;
 pub use handler::*;
-pub use miniquad::KeyCode;
 pub use mouse_state::*;
 pub use systems::*;
 pub use touch_state::*;
@@ -25,11 +24,161 @@ pub fn screen_translation_to_world_translation(
 ) -> Translation {
     let camera_pos = world
         .get_active_camera()
-        .and_then(|id| world.get_mut::<Translation>(id.clone()).ok())
+        .and_then(|id| world.get::<&Translation>(id.clone()).ok())
         .map(|pos| *pos)
         .unwrap_or_default();
 
     // TODO(bombfuse): take the camera zoom level into account when translating
     let screen_size = Translation::new(screen_size.0 as f32, screen_size.1 as f32);
     Translation::from(screen_size * -0.5) + *screen_translation + camera_pos
+}
+
+/// Describes touch-screen input state.
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum TouchPhase {
+    Started,
+    Moved,
+    Ended,
+    Cancelled,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
+pub enum MouseButton {
+    Right,
+    Left,
+    Middle,
+    Unknown,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Touch {
+    pub id: u32,
+    pub x: f32,
+    pub y: f32,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
+pub enum KeyCode {
+    Space,
+    Apostrophe,
+    Comma,
+    Minus,
+    Period,
+    Slash,
+    Key0,
+    Key1,
+    Key2,
+    Key3,
+    Key4,
+    Key5,
+    Key6,
+    Key7,
+    Key8,
+    Key9,
+    Semicolon,
+    Equal,
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
+    LeftBracket,
+    Backslash,
+    RightBracket,
+    GraveAccent,
+    World1,
+    World2,
+    Escape,
+    Enter,
+    Tab,
+    Backspace,
+    Insert,
+    Delete,
+    Right,
+    Left,
+    Down,
+    Up,
+    PageUp,
+    PageDown,
+    Home,
+    End,
+    CapsLock,
+    ScrollLock,
+    NumLock,
+    PrintScreen,
+    Pause,
+    F1,
+    F2,
+    F3,
+    F4,
+    F5,
+    F6,
+    F7,
+    F8,
+    F9,
+    F10,
+    F11,
+    F12,
+    F13,
+    F14,
+    F15,
+    F16,
+    F17,
+    F18,
+    F19,
+    F20,
+    F21,
+    F22,
+    F23,
+    F24,
+    F25,
+    Kp0,
+    Kp1,
+    Kp2,
+    Kp3,
+    Kp4,
+    Kp5,
+    Kp6,
+    Kp7,
+    Kp8,
+    Kp9,
+    KpDecimal,
+    KpDivide,
+    KpMultiply,
+    KpSubtract,
+    KpAdd,
+    KpEnter,
+    KpEqual,
+    LeftShift,
+    LeftControl,
+    LeftAlt,
+    LeftSuper,
+    RightShift,
+    RightControl,
+    RightAlt,
+    RightSuper,
+    Menu,
+    Unknown,
 }

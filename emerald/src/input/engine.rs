@@ -3,7 +3,6 @@ use crate::{input::*, EmeraldError};
 #[cfg(feature = "gamepads")]
 use gamepad::{Button, GamepadEngine, GamepadState};
 
-use miniquad::*;
 use std::collections::{HashMap, HashSet};
 
 use super::touch_state::TouchState;

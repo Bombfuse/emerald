@@ -1,8 +1,7 @@
-use crate::*;
+use crate::{Translation, *};
 
 use crate::core::components::transform::Transform;
 
-use glam::Vec2;
 use rapier2d::prelude::*;
 
 use crate::crossbeam;
@@ -23,7 +22,8 @@ pub struct PhysicsEngine {
     pub(crate) ccd_solver: CCDSolver,
     pub(crate) integration_parameters: IntegrationParameters,
     pub(crate) event_handler: ChannelEventCollector,
-    pub(crate) event_recv: crossbeam::channel::Receiver<CollisionEvent>,
+    pub(crate) collision_event_recv: crossbeam::channel::Receiver<CollisionEvent>,
+    pub(crate) contact_force_event_recv: crossbeam::channel::Receiver<ContactForceEvent>,
 
     entity_bodies: HashMap<Entity, RigidBodyHandle>,
     body_entities: HashMap<RigidBodyHandle, Entity>,
@@ -46,8 +46,10 @@ impl PhysicsEngine {
         let island_manager = IslandManager::new();
 
         // Initialize the event collector.
-        let (event_send, event_recv) = crossbeam::channel::unbounded();
-        let event_handler = ChannelEventCollector::new(event_send);
+        let (collision_event_send, collision_event_recv) = crossbeam::channel::unbounded();
+        let (contact_force_event_send, contact_force_event_recv) = crossbeam::channel::unbounded();
+        let event_handler =
+            ChannelEventCollector::new(collision_event_send, contact_force_event_send);
         let physics_hooks = Box::new(());
         let ccd_solver = CCDSolver::new();
         let query_pipeline = QueryPipeline::new();
@@ -64,7 +66,8 @@ impl PhysicsEngine {
             island_manager,
             ccd_solver,
             integration_parameters: IntegrationParameters::default(),
-            event_recv,
+            collision_event_recv,
+            contact_force_event_recv,
             event_handler,
             entity_bodies: HashMap::new(),
             body_entities: HashMap::new(),
@@ -110,7 +113,7 @@ impl PhysicsEngine {
         let mut started_contacts = Vec::new();
         let mut stopped_contacts = Vec::new();
 
-        while let Ok(contact_event) = self.event_recv.try_recv() {
+        while let Ok(contact_event) = self.collision_event_recv.try_recv() {
             match contact_event {
                 CollisionEvent::Started(h1, h2, _flags) => {
                     if let (Some(collider_one), Some(collider_two)) =
@@ -205,11 +208,11 @@ impl PhysicsEngine {
     #[inline]
     pub fn cast_ray(&mut self, ray_cast_query: RayCastQuery<'_>) -> Option<Entity> {
         if let Some((handle, _toi)) = self.query_pipeline.cast_ray(
+            &self.bodies,
             &self.colliders,
             &ray_cast_query.ray,
             ray_cast_query.max_toi,
             ray_cast_query.solid,
-            ray_cast_query.interaction_groups,
             ray_cast_query.filter,
         ) {
             return self.get_entity_from_collider(handle);
@@ -224,15 +227,19 @@ impl PhysicsEngine {
         shape: &dyn Shape,
         shape_cast_query: ShapeCastQuery<'_>,
     ) -> Option<Entity> {
-        let pos = Isometry::from(shape_cast_query.origin_translation);
+        let pos = Isometry::from(Vector2::new(
+            shape_cast_query.origin_translation.x,
+            shape_cast_query.origin_translation.y,
+        ));
 
         if let Some((handle, _hit)) = self.query_pipeline.cast_shape(
+            &self.bodies,
             &self.colliders,
             &pos,
             &shape_cast_query.velocity,
             shape,
             shape_cast_query.max_toi,
-            shape_cast_query.interaction_groups,
+            shape_cast_query.stop_at_penetration,
             shape_cast_query.filter,
         ) {
             return self.get_entity_from_collider(handle);
@@ -289,20 +296,22 @@ impl PhysicsEngine {
         world: &mut World,
     ) -> Result<RigidBodyHandle, EmeraldError> {
         let transform = {
-            let transform = match world.get_mut::<Transform>(entity.clone()) {
+            let transform = match world.get::<&Transform>(entity.clone()) {
                 Ok(pos) => Ok(pos),
                 Err(_e) => Err(EmeraldError::new(
                     "Unable to build a body for an entity without a position",
                 )),
             }?;
 
-            transform.clone()
+            *transform.clone()
         };
 
         let body = builder
-            .translation(Vec2::from(transform.translation).into())
+            .translation(Vector2::new(
+                transform.translation.x,
+                transform.translation.y,
+            ))
             .build();
-
         self.add_body(entity, body, world)
     }
 
@@ -425,7 +434,7 @@ impl PhysicsEngine {
     ) {
         if let Some(body_transform) = self.bodies.get(body_handle) {
             let translation = body_transform.position().translation;
-            transform.translation = translation.into();
+            transform.translation = Translation::new(translation.x, translation.y);
         }
     }
 
@@ -437,9 +446,18 @@ impl PhysicsEngine {
     ) {
         if let Some(body) = self.bodies.get_mut(body_handle) {
             if body.is_kinematic() {
-                body.set_next_kinematic_position(transform.translation.into())
+                body.set_next_kinematic_position(Isometry::from(Vector2::new(
+                    transform.translation.x,
+                    transform.translation.y,
+                )))
             } else {
-                body.set_position(transform.translation.into(), false)
+                body.set_position(
+                    Isometry::from(Vector2::new(
+                        transform.translation.x,
+                        transform.translation.y,
+                    )),
+                    false,
+                )
             }
         }
     }

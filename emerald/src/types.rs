@@ -1,7 +1,10 @@
-use glam::{vec2, Vec2};
-use nanoserde::DeJson;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, DeJson)]
+pub use hecs::Entity;
+pub use rapier2d::na::Vector2;
+pub use rapier2d::na::Vector3;
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct Rectangle {
     pub x: f32,
     pub y: f32,
@@ -19,7 +22,10 @@ impl Rectangle {
     }
 
     /// Creates a `Rectangle` from its bottom-left point and its size.
-    pub fn from_point_and_size(point: impl Into<Vec2>, size: impl Into<Vec2>) -> Self {
+    pub fn from_point_and_size(
+        point: impl Into<crate::Vector2<f32>>,
+        size: impl Into<crate::Vector2<f32>>,
+    ) -> Self {
         let point = point.into();
         let size = size.into();
 
@@ -63,17 +69,17 @@ impl Rectangle {
     }
 
     #[inline]
-    pub fn bottom_left(&self) -> Vec2 {
-        vec2(self.left(), self.bottom())
+    pub fn bottom_left(&self) -> Vector2<f32> {
+        Vector2::new(self.left(), self.bottom())
     }
 
     #[inline]
-    pub fn size(&self) -> Vec2 {
-        vec2(self.width, self.height)
+    pub fn size(&self) -> crate::Vector2<f32> {
+        Vector2::new(self.width, self.height)
     }
 
     #[inline]
-    pub fn center(&self) -> Vec2 {
+    pub fn center(&self) -> crate::Vector2<f32> {
         self.bottom_left() + self.size() / 2.0
     }
 

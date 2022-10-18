@@ -2,26 +2,30 @@ use crate::assets::*;
 use crate::audio::*;
 use crate::ent::load_ent;
 use crate::ent::EntLoadConfig;
-use crate::rendering::*;
+use crate::font::FontKey;
+use crate::rendering::components::Sprite;
+use crate::rendering_engine::RenderingEngine;
+use crate::texture::Texture;
+use crate::texture::TextureKey;
 use crate::*;
 
 use std::ffi::OsStr;
 
+#[cfg(feature = "aseprite")]
+use crate::rendering::components::Aseprite;
+
 pub struct AssetLoader<'c> {
-    pub(crate) quad_ctx: &'c mut miniquad::Context,
     pub(crate) asset_store: &'c mut AssetStore,
     rendering_engine: &'c mut RenderingEngine,
     _audio_engine: &'c mut AudioEngine,
 }
 impl<'c> AssetLoader<'c> {
     pub(crate) fn new(
-        quad_ctx: &'c mut miniquad::Context,
         asset_store: &'c mut AssetStore,
         rendering_engine: &'c mut RenderingEngine,
         _audio_engine: &'c mut AudioEngine,
     ) -> Self {
         AssetLoader {
-            quad_ctx,
             asset_store,
             rendering_engine,
             _audio_engine,
@@ -64,39 +68,39 @@ impl<'c> AssetLoader<'c> {
         file_path: T,
         font_size: u32,
     ) -> Result<FontKey, EmeraldError> {
-        let file_path: &str = file_path.as_ref();
-        let key = FontKey::new(file_path.clone(), font_size);
+        Ok(FontKey::default())
+        // let file_path: &str = file_path.as_ref();
+        // let key = FontKey::new(file_path.clone(), font_size);
 
-        if self.asset_store.get_font(&key).is_some() {
-            return Ok(key);
-        }
+        // if self.asset_store.get_font(&key).is_some() {
+        //     return Ok(key);
+        // }
 
-        let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
-        let font_texture_key = TextureKey::new(key.0.clone());
-        let font_texture = Texture::from_rgba8(
-            &mut self.quad_ctx,
-            font_texture_key.clone(),
-            font_image.width,
-            font_image.height,
-            &font_image.bytes,
-        )?;
-        let font_bytes = self.asset_bytes(file_path)?;
+        // let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
+        // let font_texture_key = TextureKey::new(key.0.clone());
+        // let font_texture = Texture::from_rgba8(
+        //     font_texture_key.clone(),
+        //     font_image.width,
+        //     font_image.height,
+        //     &font_image.bytes,
+        // )?;
+        // let font_bytes = self.asset_bytes(file_path)?;
 
-        let font_settings = fontdue::FontSettings {
-            scale: font_size as f32,
-            ..Default::default()
-        };
-        let inner_font = fontdue::Font::from_bytes(font_bytes, font_settings)?;
-        let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
+        // let font_settings = fontdue::FontSettings {
+        //     scale: font_size as f32,
+        //     ..Default::default()
+        // };
+        // let inner_font = fontdue::Font::from_bytes(font_bytes, font_settings)?;
+        // let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
 
-        self.asset_store
-            .insert_texture(font_texture_key, font_texture);
-        self.asset_store
-            .insert_fontdue_font(key.clone(), inner_font);
-        self.asset_store
-            .insert_font(&mut self.quad_ctx, key.clone(), font)?;
+        // self.asset_store
+        //     .insert_texture(font_texture_key, font_texture);
+        // self.asset_store
+        //     .insert_fontdue_font(key.clone(), inner_font);
+        // self.asset_store
+        //     .insert_font(&mut self.quad_ctx, key.clone(), font)?;
 
-        Ok(key)
+        // Ok(key)
     }
 
     pub fn ent<T: AsRef<str>>(
@@ -114,26 +118,7 @@ impl<'c> AssetLoader<'c> {
     pub fn aseprite<T: AsRef<str>>(&mut self, path: T) -> Result<Aseprite, EmeraldError> {
         let path = path.as_ref();
         let data = self.asset_bytes(path)?;
-        Aseprite::new(self.quad_ctx, self.asset_store, path, data)
-    }
-
-    /// Loads an exported Aseprite sprite sheet. The animations json file should
-    /// have been exported in the "Array" mode.
-    #[cfg(feature = "aseprite")]
-    pub fn aseprite_with_animations<T: AsRef<str>>(
-        &mut self,
-        path_to_texture: T,
-        path_to_animations: T,
-    ) -> Result<Aseprite, EmeraldError> {
-        let texture_path: &str = path_to_texture.as_ref();
-        let animation_path: &str = path_to_animations.as_ref();
-
-        let aseprite_data = self.asset_bytes(animation_path)?;
-
-        let sprite = self.sprite(texture_path)?;
-        let aseprite = Aseprite::from_exported(sprite, aseprite_data)?;
-
-        Ok(aseprite)
+        Aseprite::new(self.asset_store, path, data)
     }
 
     pub fn texture<T: AsRef<str>>(&mut self, path: T) -> Result<TextureKey, EmeraldError> {
@@ -145,10 +130,8 @@ impl<'c> AssetLoader<'c> {
         }
 
         let data = self.asset_bytes(path)?;
-        let texture = Texture::new(&mut self.quad_ctx, key.clone(), data)?;
-        self.asset_store.insert_texture(key.clone(), texture);
-
-        Ok(key)
+        self.rendering_engine
+            .load_texture(&mut self.asset_store, &data, key)
     }
 
     /// Creating render textures is slightly expensive and should be used conservatively.
@@ -156,7 +139,7 @@ impl<'c> AssetLoader<'c> {
     /// If you need a render texture with a new size, you should create a new render texture.
     pub fn render_texture(&mut self, w: usize, h: usize) -> Result<TextureKey, EmeraldError> {
         self.rendering_engine
-            .create_render_texture(w, h, &mut self.quad_ctx, &mut self.asset_store)
+            .create_render_texture(w as _, h as _, &mut self.asset_store)
     }
 
     pub fn sprite<T: AsRef<str>>(&mut self, path: T) -> Result<Sprite, EmeraldError> {

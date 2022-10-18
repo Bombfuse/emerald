@@ -1,22 +1,21 @@
 use crate::{
-    transform::Transform, AssetStore, ColorRect, DrawCommand, Drawable, EmeraldError, Label,
-    RenderingEngine, Sprite, TextureKey, World,
+    rendering_engine::{DrawCommand, Drawable, RenderingEngine},
+    texture::TextureKey,
+    AssetStore, EmeraldError, Transform, World,
 };
-use miniquad::Context;
 
-pub struct GraphicsHandler<'c> {
-    quad_ctx: &'c mut Context,
+use super::components::{ColorRect, Label, Sprite};
+
+pub struct RenderingHandler<'c> {
     asset_store: &'c mut AssetStore,
     rendering_engine: &'c mut RenderingEngine,
 }
-impl<'c> GraphicsHandler<'c> {
+impl<'c> RenderingHandler<'c> {
     pub(crate) fn new(
-        quad_ctx: &'c mut Context,
         asset_store: &'c mut AssetStore,
         rendering_engine: &'c mut RenderingEngine,
     ) -> Self {
-        GraphicsHandler {
-            quad_ctx,
+        RenderingHandler {
             asset_store,
             rendering_engine,
         }
@@ -27,7 +26,6 @@ impl<'c> GraphicsHandler<'c> {
             .draw_world(world, &mut self.asset_store)
     }
 
-    #[cfg(feature = "physics")]
     pub fn draw_colliders(
         &mut self,
         world: &mut World,
@@ -76,36 +74,32 @@ impl<'c> GraphicsHandler<'c> {
 
     /// Begin drawing to the screen
     pub fn begin(&mut self) -> Result<(), EmeraldError> {
-        self.rendering_engine
-            .begin(&mut self.quad_ctx, &mut self.asset_store)
+        self.rendering_engine.begin(&mut self.asset_store)
     }
 
     /// Begin drawing to the screen
     pub fn begin_texture(&mut self, texture_key: TextureKey) -> Result<(), EmeraldError> {
         self.rendering_engine
-            .begin_texture(&mut self.quad_ctx, texture_key, &mut self.asset_store)
+            .begin_texture(texture_key, &mut self.asset_store)
     }
 
     /// Commit all drawings to the screen
     pub fn render(&mut self) -> Result<(), EmeraldError> {
-        self.rendering_engine
-            .render(&mut self.quad_ctx, &mut self.asset_store)
+        self.rendering_engine.render(&mut self.asset_store)
     }
+
     /// Commit all drawings to the screen
     pub fn render_texture(&mut self) -> Result<TextureKey, EmeraldError> {
-        self.rendering_engine
-            .render_texture(&mut self.quad_ctx, &mut self.asset_store)
+        self.rendering_engine.render_texture(&mut self.asset_store)
     }
 
     pub fn set_fullscreen(&mut self, fs: bool) -> Result<(), EmeraldError> {
-        self.quad_ctx.set_fullscreen(fs);
-
+        todo!();
         Ok(())
     }
 
     pub fn set_window_size(&mut self, x: u32, y: u32) -> Result<(), EmeraldError> {
-        self.quad_ctx.set_window_size(x, y);
-
+        todo!();
         Ok(())
     }
 }

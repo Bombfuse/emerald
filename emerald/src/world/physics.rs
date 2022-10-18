@@ -1,11 +1,11 @@
 mod components;
-mod engine;
-mod handler;
-mod handler_ref;
+mod physics_engine;
+mod physics_handler;
+mod physics_handler_ref;
 mod types;
 
 pub use components::*;
-pub use engine::*;
-pub use handler::*;
-pub use handler_ref::*;
+pub use physics_engine::*;
+pub use physics_handler::*;
+pub use physics_handler_ref::*;
 pub use types::*;

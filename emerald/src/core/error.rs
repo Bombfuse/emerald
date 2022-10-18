@@ -70,25 +70,10 @@ impl From<image::ImageError> for EmeraldError {
     }
 }
 
-impl From<nanoserde::DeJsonErr> for EmeraldError {
-    fn from(e: nanoserde::DeJsonErr) -> EmeraldError {
-        EmeraldError {
-            message: format!("nanoserde::DeJsonErr {:?}", &e.to_string()),
-        }
-    }
-}
-
 impl From<std::io::Error> for EmeraldError {
     fn from(e: std::io::Error) -> EmeraldError {
         EmeraldError {
             message: format!("std::io::Error {:?}", &e.to_string()),
-        }
-    }
-}
-impl From<&str> for EmeraldError {
-    fn from(e: &str) -> EmeraldError {
-        EmeraldError {
-            message: e.to_string(),
         }
     }
 }
@@ -109,9 +94,8 @@ impl From<std::string::FromUtf8Error> for EmeraldError {
     }
 }
 
-#[cfg(feature = "physics")]
-impl From<crossbeam::channel::TryRecvError> for EmeraldError {
-    fn from(e: crossbeam::channel::TryRecvError) -> EmeraldError {
+impl From<rapier2d::crossbeam::channel::TryRecvError> for EmeraldError {
+    fn from(e: rapier2d::crossbeam::channel::TryRecvError) -> EmeraldError {
         EmeraldError {
             message: format!("crossbeam::channel::TryRecvError {:?}", &e.to_string()),
         }

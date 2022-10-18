@@ -1,32 +1,23 @@
-#[cfg(feature = "physics")]
 pub mod physics;
 
 pub mod ent;
 
 use std::collections::HashMap;
 
-use crate::rendering::components::Camera;
-use crate::EmeraldError;
+use crate::{rendering::components::Camera, EmeraldError, PhysicsEngine};
 
 use hecs::{
-    Bundle, Component, DynamicBundle, Entity, NoSuchEntity, Query, QueryBorrow, QueryItem,
-    QueryOne, Ref, RefMut, SpawnBatchIter,
+    Bundle, Component, ComponentRef, DynamicBundle, Entity, NoSuchEntity, Query, QueryBorrow,
+    QueryItem, QueryOne, SpawnBatchIter,
 };
 
-#[cfg(feature = "physics")]
-use crate::world::physics::*;
-#[cfg(feature = "physics")]
-use rapier2d::dynamics::*;
-
 pub struct World {
-    #[cfg(feature = "physics")]
     pub(crate) physics_engine: PhysicsEngine,
     pub(crate) inner: hecs::World,
 }
 impl Default for World {
     fn default() -> Self {
         World {
-            #[cfg(feature = "physics")]
             physics_engine: PhysicsEngine::new(),
             inner: hecs::World::default(),
         }
@@ -76,7 +67,6 @@ impl World {
     }
 
     /// Helper function for [`merge`]
-    #[cfg(feature = "physics")]
     fn merge_physics_entity(
         &mut self,
         other_world_physics: &mut PhysicsEngine,
@@ -108,7 +98,7 @@ impl World {
     #[inline]
     pub fn make_active_camera(&mut self, entity: Entity) -> Result<(), EmeraldError> {
         let mut set_camera = false;
-        if let Ok(mut camera) = self.get_mut::<Camera>(entity) {
+        if let Ok(mut camera) = self.get::<&mut Camera>(entity) {
             camera.is_active = true;
             set_camera = true;
         }
@@ -193,17 +183,7 @@ impl World {
         self.inner.query::<Q>()
     }
 
-    pub fn get_mut<T: Component>(&self, entity: Entity) -> Result<RefMut<'_, T>, EmeraldError> {
-        match self.inner.get_mut::<T>(entity.clone()) {
-            Ok(component_ref) => Ok(component_ref),
-            Err(e) => Err(EmeraldError::new(format!(
-                "Error getting component for entity {:?}. {:?}",
-                entity, e
-            ))),
-        }
-    }
-
-    pub fn get<T: Component>(&self, entity: Entity) -> Result<Ref<'_, T>, EmeraldError> {
+    pub fn get<'a, T: ComponentRef<'a>>(&'a self, entity: Entity) -> Result<T::Ref, EmeraldError> {
         match self.inner.get::<T>(entity.clone()) {
             Ok(component_ref) => Ok(component_ref),
             Err(e) => Err(EmeraldError::new(format!(
@@ -313,7 +293,7 @@ impl World {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Camera, Transform, World};
+    use crate::{rendering::components::Camera, Transform, World};
 
     #[test]
     fn make_active_camera_succeeds_on_entity_with_camera() {
@@ -335,27 +315,11 @@ mod tests {
     }
 
     #[test]
-    fn get_mut_succeeds_on_preexisting_component() {
-        let mut world = World::new();
-        let entity = world.spawn((Transform::default(),));
-
-        assert!(world.get_mut::<Transform>(entity).is_ok());
-    }
-
-    #[test]
-    fn get_mut_fails_on_nonexisting_component() {
-        let mut world = World::new();
-        let entity = world.spawn((Transform::default(),));
-
-        assert!(world.get_mut::<String>(entity).is_err());
-    }
-
-    #[test]
     fn get_succeeds_on_preexisting_component() {
         let mut world = World::new();
         let entity = world.spawn((Transform::default(),));
 
-        assert!(world.get::<Transform>(entity).is_ok());
+        assert!(world.get::<&Transform>(entity).is_ok());
     }
 
     #[test]
@@ -363,7 +327,21 @@ mod tests {
         let mut world = World::new();
         let entity = world.spawn((Transform::default(),));
 
-        assert!(world.get::<String>(entity).is_err());
+        assert!(world.get::<&String>(entity).is_err());
+    }
+
+    #[test]
+    fn get_can_mutate() {
+        let mut world = World::new();
+        let entity = world.spawn((Transform::default(),));
+        let expected_value = 100.0;
+
+        {
+            let mut entity_transform = world.get::<&mut Transform>(entity).unwrap();
+            entity_transform.translation.x = expected_value;
+        }
+
+        assert!(world.get::<&Transform>(entity).unwrap().translation.x == expected_value);
     }
 
     #[test]
@@ -445,7 +423,7 @@ mod tests {
             .insert_one(entity, TestStruct { x: expected_value })
             .unwrap();
 
-        assert_eq!(world.get::<TestStruct>(entity).unwrap().x, expected_value);
+        assert_eq!(world.get::<&TestStruct>(entity).unwrap().x, expected_value);
     }
 
     #[test]

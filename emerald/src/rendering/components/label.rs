@@ -1,5 +1,5 @@
-use crate::rendering::*;
 use crate::*;
+use crate::{font::FontKey, rendering::*};
 
 use fontdue::layout::{HorizontalAlign, VerticalAlign, WrapStyle};
 

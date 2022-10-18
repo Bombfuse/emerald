@@ -1,4 +1,4 @@
-use crate::*;
+use crate::render_settings::RenderSettings;
 
 #[derive(Clone, Debug)]
 pub struct GameSettings {
