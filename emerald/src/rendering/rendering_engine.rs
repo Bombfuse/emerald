@@ -14,7 +14,7 @@ use crate::{
     render_settings::RenderSettings,
     shaders::{
         self,
-        textured_quad::{Camera2D, CameraUniform, Instance, InstanceRaw, Vertex},
+        textured_quad::{Camera2D, CameraUniform, Vertex, VERTICES},
     },
     texture::{Texture, TextureKey},
     tilemap::Tilemap,
@@ -50,7 +50,6 @@ pub(crate) struct RenderingEngine {
 
     pub index_buffer: wgpu::Buffer,
     pub vertex_buffer: wgpu::Buffer,
-    pub instance_buffer: wgpu::Buffer,
 
     pub render_texture_uid: usize,
 
@@ -153,7 +152,7 @@ impl RenderingEngine {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: "vs_main",
-                    buffers: &[Vertex::desc(), InstanceRaw::desc()],
+                    buffers: &[Vertex::desc()],
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &shader,
@@ -190,19 +189,13 @@ impl RenderingEngine {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::cast_slice(shaders::textured_quad::VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
             contents: bytemuck::cast_slice(shaders::textured_quad::INDICES),
             usage: wgpu::BufferUsages::INDEX,
-        });
-        let instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("textured_quad instance buffer"),
-            size: std::mem::size_of::<InstanceRaw>() as u64,
-            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
         });
 
         Ok(Self {
@@ -220,7 +213,6 @@ impl RenderingEngine {
 
             vertex_buffer,
             index_buffer,
-            instance_buffer,
 
             render_texture_uid: 0,
 
@@ -442,10 +434,12 @@ impl RenderingEngine {
         let bind_groups = &self.bind_groups;
         let queue = &self.queue;
         let vertex_buffer = &self.vertex_buffer;
-        let instance_buffer = &self.instance_buffer;
         let index_buffer = &self.index_buffer;
 
         render_pass.set_pipeline(&self.texture_quad_render_pipeline);
+
+        // Calculate vertices for every texture to be drawn, paired with their sprite data and vertex indices
+        // for every tuple, draw that sprites texture bind group using that vertex index as the slice
 
         while let Some(draw_command) = draw_queue.pop_back() {
             let translation = draw_command.transform.translation;
@@ -456,7 +450,6 @@ impl RenderingEngine {
                         bind_groups,
                         render_pass,
                         vertex_buffer,
-                        instance_buffer,
                         index_buffer,
                         asset_store,
                         &sprite,
@@ -520,7 +513,6 @@ pub(crate) fn draw_sprite<'a>(
     bind_groups: &'a BindGroups,
     render_pass: &mut RenderPass<'a>,
     vertex_buffer: &'a Buffer,
-    instance_buffer: &'a Buffer,
     index_buffer: &'a Buffer,
     asset_store: &mut AssetStore,
     sprite: &Sprite,
@@ -537,19 +529,30 @@ pub(crate) fn draw_sprite<'a>(
         render_pass.set_bind_group(0, texture_bind_group, &[]);
         render_pass.set_bind_group(1, camera_bind_group, &[]);
 
-        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+        const V: &[Vertex] = &[
+            // Changed
+            Vertex {
+                position: [-0.5, 0.5],
+                tex_coords: [0.0, 0.0],
+            }, // A
+            Vertex {
+                position: [-0.5, -0.5],
+                tex_coords: [0.0, 1.0],
+            }, // B
+            Vertex {
+                position: [0.5, -0.5],
+                tex_coords: [1.0, 1.0],
+            }, // C
+            Vertex {
+                position: [0.5, 0.5],
+                tex_coords: [1.0, 0.0],
+            },
+        ];
 
-        let instance = Instance {
-            position: Vector2::new(0.5, 0.5),
-            rotation: Quaternion::identity(),
-            target: Vector4::new(0.0, 1.0, 0.0, 1.0),
-        };
-        queue.write_buffer(
-            instance_buffer,
-            0,
-            bytemuck::cast_slice(&[instance.to_raw()]),
-        );
-        render_pass.set_vertex_buffer(1, instance_buffer.slice(..));
+        // Calculate vertices here
+
+        queue.write_buffer(vertex_buffer, 0, bytemuck::cast_slice(&V));
+        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
         render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
         render_pass.draw_indexed(0..shaders::textured_quad::INDICES.len() as _, 0, 0..1);
@@ -1670,10 +1673,13 @@ struct DrawCommandAdder {
     /// Bounds for culling checks, or None if no culling checks should be
     /// performed.
     camera_bounds: Option<Rectangle>,
+    camera: Camera,
+    camera_transform: Transform,
 }
 
 impl DrawCommandAdder {
     fn new(engine: &RenderingEngine, world: &World) -> Self {
+        let (camera, camera_transform) = get_camera_and_camera_transform(world);
         let camera_bounds = if engine.settings.frustrum_culling {
             let screen_size = (engine.size.width as f32, engine.size.height as f32);
 
@@ -1692,7 +1698,11 @@ impl DrawCommandAdder {
             None
         };
 
-        Self { camera_bounds }
+        Self {
+            camera,
+            camera_transform,
+            camera_bounds,
+        }
     }
 
     fn add_draw_commands<'a, D>(
@@ -1703,6 +1713,7 @@ impl DrawCommandAdder {
     ) where
         D: hecs::Component + ToDrawable + 'a,
     {
+        let camera_transform = self.camera_transform.clone();
         draw_queue.extend(
             world
                 .query::<(&D, &Transform)>()
@@ -1721,9 +1732,11 @@ impl DrawCommandAdder {
                 .map(|(_entity, (to_drawable, transform))| {
                     let drawable = to_drawable.to_drawable();
 
+                    // TODO: Add camera transform offset to drawable transform
+                    let transform = *transform - camera_transform.clone();
                     DrawCommand {
                         drawable,
-                        transform: *transform,
+                        transform,
                         z_index: to_drawable.z_index(),
                     }
                 }),

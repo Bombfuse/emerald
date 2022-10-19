@@ -4,8 +4,8 @@ use rapier2d::na::{Matrix2x4, Matrix4, Matrix4x2, Quaternion, Vector2, Vector4};
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub(crate) struct Vertex {
-    position: [f32; 2],
-    tex_coords: [f32; 2],
+    pub position: [f32; 2],
+    pub tex_coords: [f32; 2],
 }
 impl Vertex {
     pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
@@ -50,61 +50,6 @@ pub(crate) const VERTICES: &[Vertex] = &[
 
 pub(crate) const INDICES: &[u16] = &[0, 1, 2, 0, 2, 3];
 
-pub(crate) struct Instance {
-    /// The (x, y) coordinates of the bottom left corner where the instance should be drawn.
-    pub position: Vector2<f32>,
-
-    /// The target area of the texture to draw.
-    pub target: Vector4<f32>,
-
-    /// The rotation applied to the drawn texture.
-    pub rotation: Quaternion<f32>,
-}
-impl Instance {
-    pub fn to_raw(&self) -> InstanceRaw {
-        InstanceRaw {
-            target: (Matrix2x4::identity()).into(),
-        }
-    }
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub(crate) struct InstanceRaw {
-    target: [[f32; 2]; 4],
-}
-impl InstanceRaw {
-    pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
-        use std::mem;
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 5,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
-                    shader_location: 6,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
-                    shader_location: 7,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
-                    shader_location: 8,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-            ],
-        }
-    }
-}
-
 pub(crate) struct Camera2D {
     pub view_height: u32,
     pub view_width: u32,
@@ -117,6 +62,7 @@ impl Camera2D {
             view_width,
         }
     }
+
     fn build_view_projection_matrix(&self) -> Matrix4<f32> {
         // // 1.
         // let view = cgmath::Matrix4::look_at_rh(self.eye, self.target, self.up);
