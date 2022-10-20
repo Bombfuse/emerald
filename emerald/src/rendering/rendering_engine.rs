@@ -54,6 +54,7 @@ pub(crate) struct RenderingEngine {
     pub render_texture_uid: usize,
 
     pub active_render_texture_key: Option<TextureKey>,
+    pub active_size: winit::dpi::PhysicalSize<u32>,
 }
 impl RenderingEngine {
     pub async fn new(
@@ -204,6 +205,7 @@ impl RenderingEngine {
             queue,
             config,
             size,
+            active_size: size,
             settings,
 
             texture_quad_render_pipeline,
@@ -236,7 +238,6 @@ impl RenderingEngine {
         world: &mut World,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
-        let screen_size = (self.size.width as f32, self.size.height as f32);
         let (camera, camera_transform) = get_camera_and_camera_transform(world);
 
         let cmd_adder = DrawCommandAdder::new(self, world);
@@ -256,11 +257,6 @@ impl RenderingEngine {
             let translation = {
                 let mut translation =
                     draw_command.transform.translation - camera_transform.translation;
-
-                if camera.centered {
-                    translation =
-                        translation + Translation::new(screen_size.0 / 2.0, screen_size.1 / 2.0);
-                }
 
                 translation += Translation::from(camera.offset);
                 translation
@@ -381,6 +377,7 @@ impl RenderingEngine {
                 label: Some("Surface Render Encoder"),
             });
 
+        self.active_size = self.size;
         {
             let (r, g, b, a) = self.settings.background_color.to_percentage();
 
@@ -401,7 +398,7 @@ impl RenderingEngine {
                 })],
                 depth_stencil_attachment: None,
             });
-            // we need to do this for every separate texture i think
+
             self.consume_draw_queue(&mut render_pass, asset_store)?;
         }
 
@@ -431,32 +428,139 @@ impl RenderingEngine {
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
         let draw_queue = &mut self.draw_queue;
-        let bind_groups = &self.bind_groups;
-        let queue = &self.queue;
-        let vertex_buffer = &self.vertex_buffer;
-        let index_buffer = &self.index_buffer;
 
         render_pass.set_pipeline(&self.texture_quad_render_pipeline);
 
         // Calculate vertices for every texture to be drawn, paired with their sprite data and vertex indices
         // for every tuple, draw that sprites texture bind group using that vertex index as the slice
+        let mut vertex_indices: Vec<(u64, TextureKey)> = Vec::new();
+        let mut counter = 0;
+
+        // (texture_key, vertices_rect, texture_target_rect)
+        let mut textured_quads: Vec<(TextureKey, [Vertex; 4])> = Vec::new();
 
         while let Some(draw_command) = draw_queue.pop_back() {
-            let translation = draw_command.transform.translation;
             match draw_command.drawable {
+                Drawable::Aseprite {
+                    sprite,
+                    rotation,
+                    color,
+                    centered,
+                    scale,
+                    offset,
+                    z_index,
+                    visible,
+                } => todo!(),
                 Drawable::Sprite { sprite } => {
-                    draw_sprite(
-                        queue,
-                        bind_groups,
-                        render_pass,
-                        vertex_buffer,
-                        index_buffer,
-                        asset_store,
-                        &sprite,
-                        &translation,
-                    )?;
+                    let texture_key = sprite.texture_key;
+                    let mut target_rect = sprite.target;
+                    let mut texture_size = (0.0, 0.0);
+                    if let Some(texture) = asset_store.get_texture(&texture_key) {
+                        texture_size = (texture.size.width as f32, texture.size.height as f32);
+                    }
+                    let mut x = draw_command.transform.translation.x
+                        / (self.active_size.width as f32 / 2.0);
+                    let mut y = draw_command.transform.translation.y
+                        / (self.active_size.height as f32 / 2.0);
+
+                    let normalized_texture_size = (
+                        texture_size.0 / (self.active_size.width as f32 / 2.0),
+                        texture_size.1 / (self.active_size.height as f32 / 2.0),
+                    );
+
+                    if sprite.centered {
+                        x -= normalized_texture_size.0 / 2.0;
+                        y -= normalized_texture_size.1 / 2.0;
+                    }
+                    let width = normalized_texture_size.0;
+                    let height = normalized_texture_size.1;
+                    let vertex_rect = Rectangle::new(x, y, width, height);
+                    let vertices = [
+                        // Changed
+                        Vertex {
+                            position: [vertex_rect.x, vertex_rect.y + vertex_rect.height],
+                            tex_coords: [target_rect.x, target_rect.y],
+                        }, // A
+                        Vertex {
+                            position: [vertex_rect.x, vertex_rect.y],
+                            tex_coords: [target_rect.x, target_rect.y + target_rect.height],
+                        }, // B
+                        Vertex {
+                            position: [vertex_rect.x + vertex_rect.width, vertex_rect.y],
+                            tex_coords: [
+                                target_rect.x + target_rect.width,
+                                target_rect.y + target_rect.height,
+                            ],
+                        }, // C
+                        Vertex {
+                            position: [
+                                vertex_rect.x + vertex_rect.width,
+                                vertex_rect.y + vertex_rect.height,
+                            ],
+                            tex_coords: [target_rect.x + target_rect.width, target_rect.y],
+                        },
+                    ];
+                    textured_quads.push((texture_key, vertices));
                 }
-                _ => {}
+                Drawable::ColorRect { color_rect } => todo!(),
+                Drawable::Label { label } => todo!(),
+                Drawable::Tilemap {
+                    texture_key,
+                    tiles,
+                    tile_size,
+                    width,
+                    height,
+                    visible,
+                    z_index,
+                } => todo!(),
+            }
+        }
+
+        // if textured_quads.len() as u64 > self.vertex_buffer.size() {
+        //     let contents = self.vertex_buffer =
+        //         self.device
+        //             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        //                 label: Some("Vertex Buffer"),
+        //                 contents: bytemuck::cast_slice(&contents),
+        //                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        //             });
+        // }
+
+        while let Some((texture_key, vertices)) = textured_quads.pop() {
+            self.queue.write_buffer(
+                &self.vertex_buffer,
+                counter * std::mem::size_of::<&[Vertex; 4]>() as u64,
+                bytemuck::cast_slice(&vertices),
+            );
+            vertex_indices.push((counter, texture_key));
+            counter += 1;
+        }
+        // Submit vertex buffer updates
+        self.queue.submit(None);
+
+        for (vertex_start, texture_key) in vertex_indices {
+            if let (Some(texture_bind_group), Some(camera_bind_group)) = (
+                self.bind_groups.get(&texture_key.0),
+                self.bind_groups.get(BIND_GROUP_ID_CAMERA_2D),
+            ) {
+                render_pass.set_bind_group(0, texture_bind_group, &[]);
+                render_pass.set_bind_group(1, camera_bind_group, &[]);
+
+                render_pass.set_vertex_buffer(
+                    0,
+                    self.vertex_buffer.slice(
+                        vertex_start..vertex_start + std::mem::size_of::<&[Vertex; 4]>() as u64,
+                    ),
+                );
+                render_pass
+                    .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+
+                render_pass.draw_indexed(0..shaders::textured_quad::INDICES.len() as _, 0, 0..1);
+            } else {
+                return Err(EmeraldError::new(format!(
+                    "Unable to find texture bind group for {:?}",
+                    &texture_key.0
+                )));
             }
         }
 
