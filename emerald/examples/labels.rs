@@ -1,4 +1,7 @@
-use emerald::*;
+use emerald::{
+    rendering::components::Label, Emerald, Game, GameSettings, KeyCode, Transform, World,
+};
+use fontdue::layout::HorizontalAlign;
 
 pub fn main() {
     emerald::start(

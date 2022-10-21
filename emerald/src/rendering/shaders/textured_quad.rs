@@ -1,4 +1,4 @@
-use rapier2d::na::{Matrix2x4, Matrix4, Matrix4x2, Quaternion, Vector2, Vector4};
+use rapier2d::na::Matrix4;
 
 // lib.rs
 #[repr(C)]

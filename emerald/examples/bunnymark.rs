@@ -38,9 +38,10 @@ impl Game for BunnymarkGame {
 
         let mut transform = Transform::default();
 
-        self.count = 1000;
-        self.world.spawn_batch((0..1000).map(|_| {
-            transform.translation.x += 6.0;
+        let start = 1_000;
+        self.count = start;
+        self.world.spawn_batch((0..start).map(|_| {
+            transform.translation.x += 1.0;
             transform.translation.y += 1.0;
             (transform, sprite.clone(), Velocity::new(5.0, 3.0))
         }));
@@ -97,7 +98,7 @@ impl Game for BunnymarkGame {
             transform.translation.y += vel.y;
         }
 
-        println!("{:?} {:?}", emd.fps() as u32, self.count);
+        println!("fps: {:?} count: {:?}", emd.fps() as u32, self.count);
     }
 
     fn draw(&mut self, mut emd: Emerald) {

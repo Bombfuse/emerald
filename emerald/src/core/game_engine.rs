@@ -1,6 +1,9 @@
 use std::collections::VecDeque;
 
-use winit::{dpi::PhysicalSize, event::WindowEvent};
+use winit::{
+    dpi::PhysicalSize,
+    event::{ElementState, VirtualKeyCode, WindowEvent},
+};
 
 use crate::{
     profiling::profile_cache::ProfileCache, rendering_engine::RenderingEngine, AssetStore,
@@ -84,9 +87,15 @@ impl GameEngine {
         self.rendering_engine.size
     }
 
+    pub fn handle_virtual_keycode(&mut self, virtual_keycode: VirtualKeyCode, state: ElementState) {
+        self.input_engine
+            .handle_virtual_keycode(virtual_keycode, state)
+    }
+
     pub fn update(&mut self) -> Result<(), EmeraldError> {
         let now = date::now();
         let delta = now - self.last_instant;
+        self.last_instant = now;
         self.update_fps_tracker(delta);
 
         let emd = Emerald::new(
@@ -123,7 +132,6 @@ impl GameEngine {
             &mut self.profile_cache,
         );
         self.game.draw(emd);
-
         // self.rendering_engine.post_draw(ctx, &mut self.asset_store);
 
         Ok(())
@@ -320,6 +328,6 @@ impl GameEngine {
 
 pub(crate) mod date {
     pub fn now() -> f64 {
-        instant::now()
+        instant::now() / 1000.0
     }
 }

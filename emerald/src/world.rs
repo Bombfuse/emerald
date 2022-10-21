@@ -56,8 +56,6 @@ impl World {
                 Ok(bundle) => {
                     let new_id = self.inner.spawn(bundle);
                     entity_id_shift_map.insert(old_id.clone(), new_id.clone());
-
-                    #[cfg(feature = "physics")]
                     self.merge_physics_entity(&mut other_world.physics_engine, old_id, new_id)?;
                 }
             }

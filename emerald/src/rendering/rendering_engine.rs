@@ -427,17 +427,20 @@ impl RenderingEngine {
         render_pass: &mut wgpu::RenderPass<'a>,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
+        let begin = std::time::Instant::now();
+        let now = std::time::Instant::now();
         let draw_queue = &mut self.draw_queue;
 
         render_pass.set_pipeline(&self.texture_quad_render_pipeline);
 
         // Calculate vertices for every texture to be drawn, paired with their sprite data and vertex indices
         // for every tuple, draw that sprites texture bind group using that vertex index as the slice
-        let mut vertex_indices: Vec<(u64, TextureKey)> = Vec::new();
         let mut counter = 0;
+        let vertex_set_size = (std::mem::size_of::<Vertex>() * 4) as u64;
 
-        // (texture_key, vertices_rect, texture_target_rect)
-        let mut textured_quads: Vec<(TextureKey, [Vertex; 4])> = Vec::new();
+        // (texture_key, vertices_index)
+        let mut textured_quads: Vec<(TextureKey, u64, [Vertex; 4])> = Vec::new();
+        let mut vertices = Vec::with_capacity(self.vertex_buffer.size() as usize);
 
         while let Some(draw_command) = draw_queue.pop_back() {
             match draw_command.drawable {
@@ -453,14 +456,14 @@ impl RenderingEngine {
                 } => todo!(),
                 Drawable::Sprite { sprite } => {
                     let texture_key = sprite.texture_key;
-                    let mut target_rect = sprite.target;
+                    let target_rect = sprite.target;
                     let mut texture_size = (0.0, 0.0);
                     if let Some(texture) = asset_store.get_texture(&texture_key) {
                         texture_size = (texture.size.width as f32, texture.size.height as f32);
                     }
-                    let mut x = draw_command.transform.translation.x
+                    let mut x = (draw_command.transform.translation.x + sprite.offset.x)
                         / (self.active_size.width as f32 / 2.0);
-                    let mut y = draw_command.transform.translation.y
+                    let mut y = (draw_command.transform.translation.y + sprite.offset.y)
                         / (self.active_size.height as f32 / 2.0);
 
                     let normalized_texture_size = (
@@ -475,7 +478,7 @@ impl RenderingEngine {
                     let width = normalized_texture_size.0;
                     let height = normalized_texture_size.1;
                     let vertex_rect = Rectangle::new(x, y, width, height);
-                    let vertices = [
+                    let vertex_set = [
                         // Changed
                         Vertex {
                             position: [vertex_rect.x, vertex_rect.y + vertex_rect.height],
@@ -500,7 +503,12 @@ impl RenderingEngine {
                             tex_coords: [target_rect.x + target_rect.width, target_rect.y],
                         },
                     ];
-                    textured_quads.push((texture_key, vertices));
+                    textured_quads.push((
+                        texture_key,
+                        (counter as u64) * vertex_set_size,
+                        vertex_set,
+                    ));
+                    vertices.extend(vertex_set);
                 }
                 Drawable::ColorRect { color_rect } => todo!(),
                 Drawable::Label { label } => todo!(),
@@ -514,31 +522,33 @@ impl RenderingEngine {
                     z_index,
                 } => todo!(),
             }
-        }
 
-        // if textured_quads.len() as u64 > self.vertex_buffer.size() {
-        //     let contents = self.vertex_buffer =
-        //         self.device
-        //             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //                 label: Some("Vertex Buffer"),
-        //                 contents: bytemuck::cast_slice(&contents),
-        //                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-        //             });
-        // }
-
-        while let Some((texture_key, vertices)) = textured_quads.pop() {
-            self.queue.write_buffer(
-                &self.vertex_buffer,
-                counter * std::mem::size_of::<&[Vertex; 4]>() as u64,
-                bytemuck::cast_slice(&vertices),
-            );
-            vertex_indices.push((counter, texture_key));
             counter += 1;
         }
-        // Submit vertex buffer updates
-        self.queue.submit(None);
+        // println!("build queues {:?}", std::time::Instant::now() - now);
+        let now = std::time::Instant::now();
+        if textured_quads.len() as u64 > (self.vertex_buffer.size() / vertex_set_size) {
+            self.vertex_buffer =
+                self.device
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("Vertex Buffer"),
+                        contents: bytemuck::cast_slice(&vertices),
+                        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                    });
+        } else {
+            self.queue
+                .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
+        }
+        // println!("write buffer {:?}", std::time::Instant::now() - now);
 
-        for (vertex_start, texture_key) in vertex_indices {
+        // Submit vertex buffer updates
+        let now = std::time::Instant::now();
+        self.queue.submit(None);
+        // println!("submit queue {:?}", std::time::Instant::now() - now);
+
+        let now = std::time::Instant::now();
+        for (texture_key, vertex_start, _) in textured_quads {
+            let vertex_start = vertex_start as u64;
             if let (Some(texture_bind_group), Some(camera_bind_group)) = (
                 self.bind_groups.get(&texture_key.0),
                 self.bind_groups.get(BIND_GROUP_ID_CAMERA_2D),
@@ -548,9 +558,8 @@ impl RenderingEngine {
 
                 render_pass.set_vertex_buffer(
                     0,
-                    self.vertex_buffer.slice(
-                        vertex_start..vertex_start + std::mem::size_of::<&[Vertex; 4]>() as u64,
-                    ),
+                    self.vertex_buffer
+                        .slice(vertex_start..vertex_start + vertex_set_size),
                 );
                 render_pass
                     .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
@@ -563,6 +572,12 @@ impl RenderingEngine {
                 )));
             }
         }
+        // println!("texture drawing {:?}", std::time::Instant::now() - now);
+
+        // println!(
+        //     "consume queue total {:?}",
+        //     std::time::Instant::now() - begin
+        // );
 
         Ok(())
     }
@@ -609,64 +624,6 @@ async fn get_device_and_queue(adapter: &Adapter) -> Result<(Device, Queue), Emer
         ))),
         Ok(val) => Ok(val),
     }
-}
-
-#[inline]
-pub(crate) fn draw_sprite<'a>(
-    queue: &wgpu::Queue,
-    bind_groups: &'a BindGroups,
-    render_pass: &mut RenderPass<'a>,
-    vertex_buffer: &'a Buffer,
-    index_buffer: &'a Buffer,
-    asset_store: &mut AssetStore,
-    sprite: &Sprite,
-    translation: &Translation,
-) -> Result<(), EmeraldError> {
-    if !sprite.visible {
-        return Ok(());
-    }
-
-    if let (Some(texture_bind_group), Some(camera_bind_group)) = (
-        bind_groups.get(&sprite.texture_key.0),
-        bind_groups.get(BIND_GROUP_ID_CAMERA_2D),
-    ) {
-        render_pass.set_bind_group(0, texture_bind_group, &[]);
-        render_pass.set_bind_group(1, camera_bind_group, &[]);
-
-        const V: &[Vertex] = &[
-            // Changed
-            Vertex {
-                position: [-0.5, 0.5],
-                tex_coords: [0.0, 0.0],
-            }, // A
-            Vertex {
-                position: [-0.5, -0.5],
-                tex_coords: [0.0, 1.0],
-            }, // B
-            Vertex {
-                position: [0.5, -0.5],
-                tex_coords: [1.0, 1.0],
-            }, // C
-            Vertex {
-                position: [0.5, 0.5],
-                tex_coords: [1.0, 0.0],
-            },
-        ];
-
-        // Calculate vertices here
-
-        queue.write_buffer(vertex_buffer, 0, bytemuck::cast_slice(&V));
-        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-        render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-
-        render_pass.draw_indexed(0..shaders::textured_quad::INDICES.len() as _, 0, 0..1);
-        return Ok(());
-    }
-
-    Err(EmeraldError::new(format!(
-        "Unable to find bind group for {} or camera bind group",
-        &sprite.texture_key.0
-    )))
 }
 
 // use crate::autotilemap::AutoTilemap;

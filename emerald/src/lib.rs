@@ -11,7 +11,7 @@ pub mod rendering;
 pub mod types;
 pub mod world;
 
-use crate::core::engine::GameEngine;
+use crate::core::game_engine::GameEngine;
 
 pub use crate::assets::*;
 pub use crate::colors::*;
@@ -101,7 +101,7 @@ async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldE
             window.request_redraw();
         }
         Event::RedrawRequested(window_id) if window_id == window.id() => {
-            if let Err(e) = game_engine.update() {
+            if let Err(_) = game_engine.update() {
                 *control_flow = ControlFlow::Exit;
             } else {
                 match game_engine.render() {
@@ -128,6 +128,11 @@ async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldE
                     }
                     WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                         game_engine.resize_window(**new_inner_size);
+                    }
+                    WindowEvent::KeyboardInput { input, .. } => {
+                        if let Some(virtual_keycode) = input.virtual_keycode {
+                            game_engine.handle_virtual_keycode(virtual_keycode, input.state);
+                        }
                     }
                     WindowEvent::CloseRequested
                     | WindowEvent::KeyboardInput {

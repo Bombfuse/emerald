@@ -2,6 +2,7 @@ use crate::{input::*, EmeraldError};
 
 #[cfg(feature = "gamepads")]
 use gamepad::{Button, GamepadEngine, GamepadState};
+use winit::event::{ElementState, VirtualKeyCode};
 
 use std::collections::{HashMap, HashSet};
 
@@ -50,6 +51,15 @@ impl InputEngine {
             mouse_to_touch: false,
 
             actions: HashMap::new(),
+        }
+    }
+
+    pub fn handle_virtual_keycode(&mut self, virtual_keycode: VirtualKeyCode, state: ElementState) {
+        let keycode = virtual_keycode_to_keycode(virtual_keycode);
+
+        match state {
+            ElementState::Pressed => self.set_key_pressed(keycode, true),
+            ElementState::Released => self.set_key_pressed(keycode, false),
         }
     }
 
@@ -205,5 +215,13 @@ impl InputEngine {
         let touch = self.touches.entry(id).or_default();
         touch.translation = Translation::new(x, y);
         touch.phase = phase;
+    }
+}
+
+pub(crate) fn virtual_keycode_to_keycode(virtual_keycode: VirtualKeyCode) -> KeyCode {
+    match virtual_keycode {
+        VirtualKeyCode::A => KeyCode::A,
+        VirtualKeyCode::Space => KeyCode::Space,
+        _ => KeyCode::Unknown,
     }
 }

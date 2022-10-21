@@ -1,14 +1,14 @@
 pub mod components;
-pub mod engine;
 pub mod error;
 pub mod game;
+pub mod game_engine;
 pub mod game_settings;
 
 pub use components::transform::*;
 pub use components::*;
-pub use engine::GameEngine;
 pub use error::*;
 pub use game::*;
+pub use game_engine::GameEngine;
 pub use game_settings::*;
 
 use crate::assets::*;
@@ -20,7 +20,7 @@ use crate::profiling::profiler::Profiler;
 use crate::rendering_engine::RenderingEngine;
 use crate::rendering_handler::RenderingHandler;
 
-use self::engine::date;
+use self::game_engine::date;
 
 pub struct Emerald<'c> {
     delta: f32,
