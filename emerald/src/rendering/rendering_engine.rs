@@ -14,7 +14,7 @@ use crate::{
     render_settings::RenderSettings,
     shaders::{
         self,
-        textured_quad::{Camera2D, CameraUniform, Vertex, VERTICES},
+        textured_quad::{Camera2D, CameraUniform, Vertex, INDICES, VERTICES},
     },
     texture::{Texture, TextureKey},
     tilemap::Tilemap,
@@ -196,7 +196,7 @@ impl RenderingEngine {
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
             contents: bytemuck::cast_slice(shaders::textured_quad::INDICES),
-            usage: wgpu::BufferUsages::INDEX,
+            usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
         });
 
         Ok(Self {
@@ -435,12 +435,17 @@ impl RenderingEngine {
 
         // Calculate vertices for every texture to be drawn, paired with their sprite data and vertex indices
         // for every tuple, draw that sprites texture bind group using that vertex index as the slice
-        let mut counter = 0;
+        let mut counter: u32 = 0;
         let vertex_set_size = (std::mem::size_of::<Vertex>() * 4) as u64;
+        let indices_set_size: u64 = std::mem::size_of::<u16>() as u64 * 6;
 
-        // (texture_key, vertices_index)
-        let mut textured_quads: Vec<(TextureKey, u64, [Vertex; 4])> = Vec::new();
+        // (texture_key, vertices_index, instances)
+        let mut textured_quads: Vec<(TextureKey, [Vertex; 4], u64, u64, u64, u64, u32)> =
+            Vec::new();
         let mut vertices = Vec::with_capacity(self.vertex_buffer.size() as usize);
+        let mut indices: Vec<u16> = Vec::with_capacity(self.index_buffer.size() as usize);
+        let mut prev_texture_key = None;
+        let draw_count = draw_queue.len();
 
         while let Some(draw_command) = draw_queue.pop_back() {
             match draw_command.drawable {
@@ -503,12 +508,49 @@ impl RenderingEngine {
                             tex_coords: [target_rect.x + target_rect.width, target_rect.y],
                         },
                     ];
-                    textured_quads.push((
-                        texture_key,
-                        (counter as u64) * vertex_set_size,
-                        vertex_set,
-                    ));
+
                     vertices.extend(vertex_set);
+
+                    let vertices_start = (counter as u64) * vertex_set_size;
+                    let index_start = counter as u16 * 4;
+                    indices.extend([
+                        index_start,
+                        index_start + 1,
+                        index_start + 2,
+                        index_start,
+                        index_start + 2,
+                        index_start + 3,
+                    ]);
+                    let mut add_quad = true;
+
+                    let len = textured_quads.len();
+                    if len > 0 {
+                        if let Some(key) = prev_texture_key {
+                            if key == texture_key {
+                                if let Some(textured_quad_draw) = textured_quads.get_mut(len - 1) {
+                                    textured_quad_draw.3 += vertex_set_size;
+                                    textured_quad_draw.5 += indices_set_size;
+                                    textured_quad_draw.6 += 1;
+                                    add_quad = false;
+                                }
+                            }
+                        }
+                    }
+
+                    if add_quad {
+                        let indices_start = (counter as u64) * indices_set_size;
+                        textured_quads.push((
+                            texture_key.clone(),
+                            vertex_set,
+                            vertices_start,
+                            vertices_start + vertex_set_size,
+                            indices_start,
+                            indices_start + indices_set_size,
+                            1,
+                        ));
+                    }
+
+                    prev_texture_key = Some(texture_key);
                 }
                 Drawable::ColorRect { color_rect } => todo!(),
                 Drawable::Label { label } => todo!(),
@@ -525,9 +567,19 @@ impl RenderingEngine {
 
             counter += 1;
         }
-        // println!("build queues {:?}", std::time::Instant::now() - now);
+        println!("build queues {:?}", std::time::Instant::now() - now);
         let now = std::time::Instant::now();
-        if textured_quads.len() as u64 > (self.vertex_buffer.size() / vertex_set_size) {
+        if indices.len() as u64 > (self.index_buffer.size() / indices_set_size as u64) {
+            self.index_buffer = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Index Buffer"),
+                    contents: bytemuck::cast_slice(&indices),
+                    usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+                });
+        }
+
+        if vertices.len() as u64 > (self.vertex_buffer.size() / vertex_set_size) {
             self.vertex_buffer =
                 self.device
                     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -539,16 +591,17 @@ impl RenderingEngine {
             self.queue
                 .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
         }
-        // println!("write buffer {:?}", std::time::Instant::now() - now);
+        println!("write buffer {:?}", std::time::Instant::now() - now);
 
         // Submit vertex buffer updates
         let now = std::time::Instant::now();
         self.queue.submit(None);
-        // println!("submit queue {:?}", std::time::Instant::now() - now);
+        println!("submit queue {:?}", std::time::Instant::now() - now);
 
         let now = std::time::Instant::now();
-        for (texture_key, vertex_start, _) in textured_quads {
-            let vertex_start = vertex_start as u64;
+        for (texture_key, _, vertices_start, vertices_end, indices_start, indices_end, instances) in
+            textured_quads
+        {
             if let (Some(texture_bind_group), Some(camera_bind_group)) = (
                 self.bind_groups.get(&texture_key.0),
                 self.bind_groups.get(BIND_GROUP_ID_CAMERA_2D),
@@ -556,15 +609,15 @@ impl RenderingEngine {
                 render_pass.set_bind_group(0, texture_bind_group, &[]);
                 render_pass.set_bind_group(1, camera_bind_group, &[]);
 
-                render_pass.set_vertex_buffer(
-                    0,
-                    self.vertex_buffer
-                        .slice(vertex_start..vertex_start + vertex_set_size),
-                );
                 render_pass
-                    .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                    .set_vertex_buffer(0, self.vertex_buffer.slice(vertices_start..vertices_end));
+                render_pass.set_index_buffer(
+                    self.index_buffer.slice(indices_start..indices_end),
+                    wgpu::IndexFormat::Uint16,
+                );
 
-                render_pass.draw_indexed(0..shaders::textured_quad::INDICES.len() as _, 0, 0..1);
+                println!("indices used {}", (instances * 6));
+                render_pass.draw_indexed(0..(instances * 6), 0, 0..1);
             } else {
                 return Err(EmeraldError::new(format!(
                     "Unable to find texture bind group for {:?}",
@@ -572,12 +625,12 @@ impl RenderingEngine {
                 )));
             }
         }
-        // println!("texture drawing {:?}", std::time::Instant::now() - now);
 
-        // println!(
-        //     "consume queue total {:?}",
-        //     std::time::Instant::now() - begin
-        // );
+        println!("texture drawing {:?}", std::time::Instant::now() - now);
+        println!(
+            "consume queue total {:?}",
+            std::time::Instant::now() - begin
+        );
 
         Ok(())
     }
