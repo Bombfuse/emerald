@@ -437,13 +437,12 @@ impl RenderingEngine {
         // for every tuple, draw that sprites texture bind group using that vertex index as the slice
         let mut counter: u32 = 0;
         let vertex_set_size = (std::mem::size_of::<Vertex>() * 4) as u64;
-        let indices_set_size: u64 = std::mem::size_of::<u16>() as u64 * 6;
+        let indices_set_size: u64 = std::mem::size_of::<u32>() as u64 * 6;
 
-        // (texture_key, vertices_index, instances)
         let mut textured_quads: Vec<(TextureKey, [Vertex; 4], u64, u64, u64, u64, u32)> =
             Vec::new();
         let mut vertices = Vec::with_capacity(self.vertex_buffer.size() as usize);
-        let mut indices: Vec<u16> = Vec::with_capacity(self.index_buffer.size() as usize);
+        let mut indices: Vec<u32> = Vec::with_capacity(self.index_buffer.size() as usize);
         let mut prev_texture_key = None;
         let draw_count = draw_queue.len();
 
@@ -512,7 +511,7 @@ impl RenderingEngine {
                     vertices.extend(vertex_set);
 
                     let vertices_start = (counter as u64) * vertex_set_size;
-                    let index_start = counter as u16 * 4;
+                    let index_start = counter as u32 * 4;
                     indices.extend([
                         index_start,
                         index_start + 1,
@@ -567,9 +566,15 @@ impl RenderingEngine {
 
             counter += 1;
         }
-        println!("build queues {:?}", std::time::Instant::now() - now);
+        // println!("build queues {:?}", std::time::Instant::now() - now);
         let now = std::time::Instant::now();
-        if indices.len() as u64 > (self.index_buffer.size() / indices_set_size as u64) {
+        let vertices_set_count = self.vertex_buffer.size() / vertex_set_size;
+        let indices_set_count = self.index_buffer.size() / indices_set_size as u64;
+        // println!("v {:?}", (self.vertex_buffer.size(), vertex_set_size));
+        // println!("i {:?}", (self.index_buffer.size(), indices_set_size));
+        // assert_eq!(vertices_set_count, indices_set_count);
+
+        if indices.len() as u64 > indices_set_count {
             self.index_buffer = self
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -577,9 +582,12 @@ impl RenderingEngine {
                     contents: bytemuck::cast_slice(&indices),
                     usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
                 });
+        } else {
+            self.queue
+                .write_buffer(&self.index_buffer, 0, bytemuck::cast_slice(&indices));
         }
 
-        if vertices.len() as u64 > (self.vertex_buffer.size() / vertex_set_size) {
+        if vertices.len() as u64 > vertices_set_count {
             self.vertex_buffer =
                 self.device
                     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -591,12 +599,12 @@ impl RenderingEngine {
             self.queue
                 .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
         }
-        println!("write buffer {:?}", std::time::Instant::now() - now);
+        // println!("write buffer {:?}", std::time::Instant::now() - now);
 
         // Submit vertex buffer updates
         let now = std::time::Instant::now();
         self.queue.submit(None);
-        println!("submit queue {:?}", std::time::Instant::now() - now);
+        // println!("submit queue {:?}", std::time::Instant::now() - now);
 
         let now = std::time::Instant::now();
         for (texture_key, _, vertices_start, vertices_end, indices_start, indices_end, instances) in
@@ -613,10 +621,10 @@ impl RenderingEngine {
                     .set_vertex_buffer(0, self.vertex_buffer.slice(vertices_start..vertices_end));
                 render_pass.set_index_buffer(
                     self.index_buffer.slice(indices_start..indices_end),
-                    wgpu::IndexFormat::Uint16,
+                    wgpu::IndexFormat::Uint32,
                 );
 
-                println!("indices used {}", (instances * 6));
+                // println!("indices used {}", (instances * 6));
                 render_pass.draw_indexed(0..(instances * 6), 0, 0..1);
             } else {
                 return Err(EmeraldError::new(format!(
@@ -626,11 +634,11 @@ impl RenderingEngine {
             }
         }
 
-        println!("texture drawing {:?}", std::time::Instant::now() - now);
-        println!(
-            "consume queue total {:?}",
-            std::time::Instant::now() - begin
-        );
+        // println!("texture drawing {:?}", std::time::Instant::now() - now);
+        // println!(
+        //     "consume queue total {:?}",
+        //     std::time::Instant::now() - begin
+        // );
 
         Ok(())
     }
