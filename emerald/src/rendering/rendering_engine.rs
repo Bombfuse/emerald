@@ -33,7 +33,8 @@ type BindGroupId = String;
 
 const BIND_GROUP_ID_CAMERA_2D: &str = "emd_camera_2d";
 
-type BindGroups = HashMap<String, BindGroup>;
+pub(crate) type BindGroups = HashMap<String, BindGroup>;
+pub(crate) type BindGroupLayouts = HashMap<BindGroupLayoutId, BindGroupLayout>;
 
 pub(crate) struct RenderingEngine {
     pub surface: wgpu::Surface,
@@ -44,7 +45,7 @@ pub(crate) struct RenderingEngine {
     pub settings: RenderSettings,
 
     pub texture_quad_render_pipeline: RenderPipeline,
-    pub bind_group_layouts: HashMap<BindGroupLayoutId, BindGroupLayout>,
+    pub bind_group_layouts: BindGroupLayouts,
     pub bind_groups: BindGroups,
     pub draw_queue: VecDeque<DrawCommand>,
 
@@ -325,36 +326,15 @@ impl RenderingEngine {
             return Ok(key);
         }
 
-        let texture = Texture::from_bytes(&self.device, &self.queue, &data, key.clone())?;
-
-        if let Some(texture_bind_group_layout) =
-            self.bind_group_layouts.get(&BindGroupLayoutId::TextureQuad)
-        {
-            let texture_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &texture_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&texture.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&texture.sampler),
-                    },
-                ],
-                label: Some(&format!("{:?}_group", &key.0)),
-            });
-
-            self.bind_groups.insert(key.get_name(), texture_bind_group);
-            asset_store.insert_texture(key.clone(), texture);
-
-            return Ok(key);
-        }
-
-        Err(EmeraldError::new(format!(
-            "Cannot find a texture_bind_group_layout for {:?}",
-            &key.0
-        )))
+        Texture::from_bytes(
+            &mut self.bind_groups,
+            &self.bind_group_layouts,
+            asset_store,
+            &self.device,
+            &self.queue,
+            &data,
+            key.clone(),
+        )
     }
 
     pub fn render(&mut self, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
@@ -414,8 +394,17 @@ impl RenderingEngine {
         height: u32,
         asset_store: &mut AssetStore,
     ) -> Result<TextureKey, EmeraldError> {
-        let key = TextureKey::new(format!("emd_render_texture_{}", self.render_texture_uid));
-        let render_texture = Texture::new(&self.device, width, height, key.clone())?;
+        let key = Texture::new(
+            &mut self.bind_groups,
+            &self.bind_group_layouts,
+            asset_store,
+            &self.device,
+            &self.queue,
+            width,
+            height,
+            &[],
+            TextureKey::new(format!("emd_render_texture_{}", self.render_texture_uid)),
+        )?;
         self.render_texture_uid += 1;
 
         Ok(key)
@@ -442,20 +431,102 @@ impl RenderingEngine {
         let mut vertices = Vec::with_capacity(self.vertex_buffer.size() as usize);
         let mut indices: Vec<u32> = Vec::with_capacity(self.index_buffer.size() as usize);
         let mut prev_texture_key = None;
-        let draw_count = draw_queue.len();
 
         while let Some(draw_command) = draw_queue.pop_back() {
             match draw_command.drawable {
-                Drawable::Aseprite {
-                    sprite,
-                    rotation,
-                    color,
-                    centered,
-                    scale,
-                    offset,
-                    z_index,
-                    visible,
-                } => todo!(),
+                Drawable::Aseprite { sprite, .. } => {
+                    let texture_key = sprite.texture_key;
+                    let target_rect = sprite.target;
+                    let mut texture_size = (0.0, 0.0);
+                    if let Some(texture) = asset_store.get_texture(&texture_key) {
+                        texture_size = (texture.size.width as f32, texture.size.height as f32);
+                    }
+                    let mut x = (draw_command.transform.translation.x + sprite.offset.x)
+                        / (self.active_size.width as f32 / 2.0);
+                    let mut y = (draw_command.transform.translation.y + sprite.offset.y)
+                        / (self.active_size.height as f32 / 2.0);
+
+                    let normalized_texture_size = (
+                        texture_size.0 / (self.active_size.width as f32 / 2.0),
+                        texture_size.1 / (self.active_size.height as f32 / 2.0),
+                    );
+
+                    if sprite.centered {
+                        x -= normalized_texture_size.0 / 2.0;
+                        y -= normalized_texture_size.1 / 2.0;
+                    }
+                    let width = normalized_texture_size.0;
+                    let height = normalized_texture_size.1;
+                    let vertex_rect = Rectangle::new(x, y, width, height);
+                    let vertex_set = [
+                        // Changed
+                        Vertex {
+                            position: [vertex_rect.x, vertex_rect.y + vertex_rect.height],
+                            tex_coords: [target_rect.x, target_rect.y],
+                        }, // A
+                        Vertex {
+                            position: [vertex_rect.x, vertex_rect.y],
+                            tex_coords: [target_rect.x, target_rect.y + target_rect.height],
+                        }, // B
+                        Vertex {
+                            position: [vertex_rect.x + vertex_rect.width, vertex_rect.y],
+                            tex_coords: [
+                                target_rect.x + target_rect.width,
+                                target_rect.y + target_rect.height,
+                            ],
+                        }, // C
+                        Vertex {
+                            position: [
+                                vertex_rect.x + vertex_rect.width,
+                                vertex_rect.y + vertex_rect.height,
+                            ],
+                            tex_coords: [target_rect.x + target_rect.width, target_rect.y],
+                        },
+                    ];
+
+                    vertices.extend(vertex_set);
+
+                    let vertices_start = (counter as u64) * vertex_set_size;
+                    let index_start = counter as u32 * 4;
+                    indices.extend([
+                        index_start,
+                        index_start + 1,
+                        index_start + 2,
+                        index_start,
+                        index_start + 2,
+                        index_start + 3,
+                    ]);
+                    let mut add_quad = true;
+
+                    let len = textured_quads.len();
+                    if len > 0 {
+                        if let Some(key) = prev_texture_key {
+                            if key == texture_key {
+                                if let Some(textured_quad_draw) = textured_quads.get_mut(len - 1) {
+                                    textured_quad_draw.3 += vertex_set_size;
+                                    textured_quad_draw.5 += indices_set_size;
+                                    textured_quad_draw.6 += 1;
+                                    add_quad = false;
+                                }
+                            }
+                        }
+                    }
+
+                    if add_quad {
+                        let indices_start = (counter as u64) * indices_set_size;
+                        textured_quads.push((
+                            texture_key.clone(),
+                            vertex_set,
+                            vertices_start,
+                            vertices_start + vertex_set_size,
+                            indices_start,
+                            indices_start + indices_set_size,
+                            1,
+                        ));
+                    }
+
+                    prev_texture_key = Some(texture_key);
+                }
                 Drawable::Sprite { sprite } => {
                     let texture_key = sprite.texture_key;
                     let target_rect = sprite.target;

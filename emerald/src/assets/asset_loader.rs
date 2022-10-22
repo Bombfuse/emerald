@@ -119,6 +119,8 @@ impl<'c> AssetLoader<'c> {
         let path = path.as_ref();
         let data = self.asset_bytes(path)?;
         Aseprite::new(
+            &mut self.rendering_engine.bind_groups,
+            &self.rendering_engine.bind_group_layouts,
             &self.rendering_engine.device,
             &self.rendering_engine.queue,
             self.asset_store,

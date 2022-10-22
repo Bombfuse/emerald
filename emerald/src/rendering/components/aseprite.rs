@@ -1,6 +1,7 @@
 use std::convert::TryInto;
 use std::sync::Arc;
 
+use crate::rendering_engine::{BindGroupLayouts, BindGroups};
 use crate::texture::{Texture, TextureKey};
 use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
@@ -33,6 +34,8 @@ impl Aseprite {
     }
 
     pub(crate) fn new(
+        bind_groups: &mut BindGroups,
+        bind_group_layouts: &BindGroupLayouts,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         asset_store: &mut AssetStore,
@@ -40,7 +43,15 @@ impl Aseprite {
         data: Vec<u8>,
     ) -> Result<Self, EmeraldError> {
         let aseprite = asefile::AsepriteFile::read(std::io::Cursor::new(data))?;
-        let data = AsepriteData::from_asefile(device, queue, asset_store, path, aseprite)?;
+        let data = AsepriteData::from_asefile(
+            bind_groups,
+            bind_group_layouts,
+            device,
+            queue,
+            asset_store,
+            path,
+            aseprite,
+        )?;
         Ok(Self::from_data(data))
     }
 
@@ -368,6 +379,8 @@ struct Frame {
 
 impl Frame {
     fn from_asefile(
+        bind_groups: &mut BindGroups,
+        bind_group_layouts: &BindGroupLayouts,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         asset_store: &mut AssetStore,
@@ -382,8 +395,15 @@ impl Frame {
             key.push_str(&frame_index.to_string());
             TextureKey::new(key)
         };
-        let texture = Texture::from_image(device, queue, &image, texture_key.clone())?;
-        asset_store.insert_texture(texture_key.clone(), texture);
+        let texture = Texture::from_image(
+            bind_groups,
+            bind_group_layouts,
+            asset_store,
+            device,
+            queue,
+            &image,
+            texture_key.clone(),
+        )?;
 
         Ok(Self {
             sprite: Sprite::from_texture(texture_key),
@@ -414,6 +434,8 @@ pub(crate) struct AsepriteData {
 
 impl AsepriteData {
     fn from_asefile(
+        bind_groups: &mut BindGroups,
+        bind_group_layouts: &BindGroupLayouts,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         asset_store: &mut AssetStore,
@@ -423,7 +445,16 @@ impl AsepriteData {
         let frames: Vec<Frame> = (0..aseprite.num_frames())
             .map(|frame_index| {
                 let frame = aseprite.frame(frame_index);
-                Frame::from_asefile(device, queue, asset_store, path, frame_index, frame)
+                Frame::from_asefile(
+                    bind_groups,
+                    bind_group_layouts,
+                    device,
+                    queue,
+                    asset_store,
+                    path,
+                    frame_index,
+                    frame,
+                )
             })
             .collect::<Result<_, EmeraldError>>()?;
 

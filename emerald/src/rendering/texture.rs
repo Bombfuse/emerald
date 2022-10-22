@@ -1,6 +1,9 @@
 use image::GenericImageView;
 
-use crate::EmeraldError;
+use crate::{
+    rendering_engine::{BindGroupLayoutId, BindGroupLayouts, BindGroups},
+    AssetStore, EmeraldError,
+};
 pub const EMERALD_DEFAULT_TEXTURE_NAME: &str = "emerald_default_texture";
 
 pub(crate) struct Texture {
@@ -14,11 +17,16 @@ impl Texture {
     pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float; // 1.
 
     pub fn new(
+        bind_groups: &mut BindGroups,
+        bind_group_layouts: &BindGroupLayouts,
+        asset_store: &mut AssetStore,
         device: &wgpu::Device,
+        queue: &wgpu::Queue,
         width: u32,
         height: u32,
+        data: &[u8],
         key: TextureKey,
-    ) -> Result<Self, EmeraldError> {
+    ) -> Result<TextureKey, EmeraldError> {
         let size = wgpu::Extent3d {
             width,
             height,
@@ -45,34 +53,13 @@ impl Texture {
             ..Default::default()
         });
 
-        Ok(Self {
+        let texture = Self {
             texture,
             view,
             sampler,
-            key,
+            key: key.clone(),
             size,
-        })
-    }
-
-    pub fn from_bytes(
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        bytes: &[u8],
-        key: TextureKey,
-    ) -> Result<Self, EmeraldError> {
-        let img = image::load_from_memory(bytes)?;
-        Self::from_image(device, queue, &img, key)
-    }
-
-    pub fn from_image(
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        img: &image::DynamicImage,
-        key: TextureKey,
-    ) -> Result<Self, EmeraldError> {
-        let rgba = img.to_rgba8();
-        let dimensions = img.dimensions();
-        let texture = Self::new(device, dimensions.0, dimensions.1, key)?;
+        };
 
         queue.write_texture(
             wgpu::ImageCopyTexture {
@@ -81,16 +68,84 @@ impl Texture {
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
-            &rgba,
+            data,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: std::num::NonZeroU32::new(4 * dimensions.0),
-                rows_per_image: std::num::NonZeroU32::new(dimensions.1),
+                bytes_per_row: std::num::NonZeroU32::new(4 * width),
+                rows_per_image: std::num::NonZeroU32::new(height),
             },
             texture.size,
         );
 
-        Ok(texture)
+        if let Some(texture_bind_group_layout) =
+            bind_group_layouts.get(&BindGroupLayoutId::TextureQuad)
+        {
+            let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &texture_bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&texture.view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&texture.sampler),
+                    },
+                ],
+                label: Some(&format!("{:?}_group", &key.0)),
+            });
+
+            bind_groups.insert(key.get_name(), texture_bind_group);
+            asset_store.insert_texture(key.clone(), texture);
+        }
+
+        Ok(key)
+    }
+
+    pub fn from_bytes(
+        bind_groups: &mut BindGroups,
+        bind_group_layouts: &BindGroupLayouts,
+        asset_store: &mut AssetStore,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        bytes: &[u8],
+        key: TextureKey,
+    ) -> Result<TextureKey, EmeraldError> {
+        let img = image::load_from_memory(bytes)?;
+        Self::from_image(
+            bind_groups,
+            bind_group_layouts,
+            asset_store,
+            device,
+            queue,
+            &img,
+            key,
+        )
+    }
+
+    pub fn from_image(
+        bind_groups: &mut BindGroups,
+        bind_group_layouts: &BindGroupLayouts,
+        asset_store: &mut AssetStore,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        img: &image::DynamicImage,
+        key: TextureKey,
+    ) -> Result<TextureKey, EmeraldError> {
+        let rgba = img.to_rgba8();
+        let dimensions = img.dimensions();
+
+        Self::new(
+            bind_groups,
+            bind_group_layouts,
+            asset_store,
+            device,
+            queue,
+            dimensions.0,
+            dimensions.1,
+            &rgba,
+            key,
+        )
     }
 }
 
