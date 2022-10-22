@@ -427,8 +427,6 @@ impl RenderingEngine {
         render_pass: &mut wgpu::RenderPass<'a>,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
-        let begin = std::time::Instant::now();
-        let now = std::time::Instant::now();
         let draw_queue = &mut self.draw_queue;
 
         render_pass.set_pipeline(&self.texture_quad_render_pipeline);
@@ -566,13 +564,8 @@ impl RenderingEngine {
 
             counter += 1;
         }
-        // println!("build queues {:?}", std::time::Instant::now() - now);
-        let now = std::time::Instant::now();
         let vertices_set_count = self.vertex_buffer.size() / vertex_set_size;
         let indices_set_count = self.index_buffer.size() / indices_set_size as u64;
-        // println!("v {:?}", (self.vertex_buffer.size(), vertex_set_size));
-        // println!("i {:?}", (self.index_buffer.size(), indices_set_size));
-        // assert_eq!(vertices_set_count, indices_set_count);
 
         if indices.len() as u64 > indices_set_count {
             self.index_buffer = self
@@ -599,14 +592,7 @@ impl RenderingEngine {
             self.queue
                 .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
         }
-        // println!("write buffer {:?}", std::time::Instant::now() - now);
-
-        // Submit vertex buffer updates
-        let now = std::time::Instant::now();
         self.queue.submit(None);
-        // println!("submit queue {:?}", std::time::Instant::now() - now);
-
-        let now = std::time::Instant::now();
         for (texture_key, _, vertices_start, vertices_end, indices_start, indices_end, instances) in
             textured_quads
         {
@@ -624,7 +610,6 @@ impl RenderingEngine {
                     wgpu::IndexFormat::Uint32,
                 );
 
-                // println!("indices used {}", (instances * 6));
                 render_pass.draw_indexed(0..(instances * 6), 0, 0..1);
             } else {
                 return Err(EmeraldError::new(format!(
@@ -633,12 +618,6 @@ impl RenderingEngine {
                 )));
             }
         }
-
-        // println!("texture drawing {:?}", std::time::Instant::now() - now);
-        // println!(
-        //     "consume queue total {:?}",
-        //     std::time::Instant::now() - begin
-        // );
 
         Ok(())
     }

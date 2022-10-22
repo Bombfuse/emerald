@@ -1,6 +1,6 @@
 use emerald::{
-    aseprite_update_system, transform::Transform, Emerald, Game, GameSettings, RenderSettings,
-    World,
+    render_settings::RenderSettings, rendering::components::aseprite_update_system,
+    transform::Transform, Emerald, Game, GameSettings, World,
 };
 
 pub fn main() {

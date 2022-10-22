@@ -54,6 +54,13 @@ impl From<kira::sound::error::SoundFromFileError> for EmeraldError {
     }
 }
 
+impl From<serde_json::Error> for EmeraldError {
+    fn from(e: serde_json::Error) -> EmeraldError {
+        EmeraldError {
+            message: format!("serde_json::Error {:?}", &e.to_string()),
+        }
+    }
+}
 impl From<toml::de::Error> for EmeraldError {
     fn from(e: toml::de::Error) -> EmeraldError {
         EmeraldError {
