@@ -484,6 +484,7 @@ impl RenderingEngine {
                         },
                     ];
 
+                    println!("{:?}", target_rect);
                     vertices.extend(vertex_set);
 
                     let vertices_start = (counter as u64) * vertex_set_size;
@@ -663,7 +664,9 @@ impl RenderingEngine {
             self.queue
                 .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
         }
+
         self.queue.submit(None);
+
         for (texture_key, _, vertices_start, vertices_end, indices_start, indices_end, instances) in
             textured_quads
         {
@@ -680,6 +683,8 @@ impl RenderingEngine {
                     self.index_buffer.slice(indices_start..indices_end),
                     wgpu::IndexFormat::Uint32,
                 );
+
+                println!("{:?}", (texture_key, instances));
 
                 render_pass.draw_indexed(0..(instances * 6), 0, 0..1);
             } else {

@@ -47,10 +47,9 @@ web-sys = { version = "0.3", features = [
     "Element",
 ]}
 
-[target.'cfg(target_arch="wasm32")'.dependencies]
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
-kira = { version= "0.5.3", optional = true }
+kira = { version= "0.5.3", optional = true, default-features = false, features = ["ogg", "flac", "wav"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 sapp-android = "0.1.9"
