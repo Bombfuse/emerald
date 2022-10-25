@@ -1,4 +1,9 @@
-use emerald::*;
+use emerald::{
+    render_settings::RenderSettings,
+    rendering::components::{ColorRect, Sprite},
+    texture::TextureKey,
+    *,
+};
 
 const RES_WIDTH: usize = 320;
 const RES_HEIGHT: usize = 160;

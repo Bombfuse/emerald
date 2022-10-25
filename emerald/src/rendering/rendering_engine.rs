@@ -394,6 +394,10 @@ impl RenderingEngine {
         height: u32,
         asset_store: &mut AssetStore,
     ) -> Result<TextureKey, EmeraldError> {
+        let data = (0..(width * height * 4))
+            .into_iter()
+            .map(|_| 0)
+            .collect::<Vec<u8>>();
         let key = Texture::new(
             &mut self.bind_groups,
             &self.bind_group_layouts,
@@ -402,7 +406,7 @@ impl RenderingEngine {
             &self.queue,
             width,
             height,
-            &[],
+            &data,
             TextureKey::new(format!("emd_render_texture_{}", self.render_texture_uid)),
         )?;
         self.render_texture_uid += 1;
