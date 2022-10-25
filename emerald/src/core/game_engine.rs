@@ -28,13 +28,14 @@ impl GameEngine {
         window: &winit::window::Window,
         settings: &GameSettings,
     ) -> Result<Self, EmeraldError> {
+        let mut asset_store = AssetStore::new(settings.title.clone()).unwrap();
         let rendering_engine =
-            RenderingEngine::new(window, settings.render_settings.clone()).await?;
+            RenderingEngine::new(window, settings.render_settings.clone(), &mut asset_store)
+                .await?;
 
         let audio_engine = AudioEngine::new();
         let input_engine = InputEngine::new();
         let profile_cache = ProfileCache::new(Default::default());
-        let asset_store = AssetStore::new(settings.title.clone()).unwrap();
         let logging_engine = LoggingEngine::new();
 
         let starting_amount = 50;

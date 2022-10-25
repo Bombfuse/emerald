@@ -5,7 +5,7 @@ use std::{
 
 use hecs::Entity;
 use rapier2d::na::{Quaternion, Vector2, Vector4};
-use wgpu::{util::DeviceExt, Buffer, RenderPass};
+use wgpu::{util::DeviceExt, Buffer, RenderPass, TextureView};
 use wgpu::{Adapter, BindGroup, BindGroupLayout, Device, Queue, RenderPipeline, Surface};
 use winit::dpi::PhysicalSize;
 
@@ -54,6 +54,8 @@ pub(crate) struct RenderingEngine {
 
     pub render_texture_uid: usize,
 
+    color_rect_texture: TextureKey,
+
     pub active_render_texture_key: Option<TextureKey>,
     pub active_size: winit::dpi::PhysicalSize<u32>,
 }
@@ -61,6 +63,7 @@ impl RenderingEngine {
     pub async fn new(
         window: &winit::window::Window,
         settings: RenderSettings,
+        asset_store: &mut AssetStore,
     ) -> Result<Self, EmeraldError> {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(wgpu::Backends::all());
@@ -200,6 +203,18 @@ impl RenderingEngine {
             usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
         });
 
+        let color_rect_texture = Texture::new(
+            &mut bind_groups,
+            &bind_group_layouts,
+            asset_store,
+            &device,
+            &queue,
+            1,
+            1,
+            &[0, 0, 0, 255],
+            TextureKey::default(),
+        )?;
+
         Ok(Self {
             surface,
             device,
@@ -216,6 +231,8 @@ impl RenderingEngine {
 
             vertex_buffer,
             index_buffer,
+
+            color_rect_texture,
 
             render_texture_uid: 0,
 
@@ -311,7 +328,23 @@ impl RenderingEngine {
             }
             Some(texture_key) => {
                 // TODO: consume draw queue and finish render pass
-                Ok(texture_key)
+                if let Some(texture) = asset_store.get_texture(&texture_key) {
+                    let view = texture
+                        .texture
+                        .create_view(&wgpu::TextureViewDescriptor::default());
+
+                    self.render_to_view(
+                        asset_store,
+                        view,
+                        &format!("render texture {:?}", texture_key),
+                    )?;
+                    return Ok(texture_key);
+                }
+
+                Err(EmeraldError::new(format!(
+                    "Unable to find texture {:?}",
+                    texture_key
+                )))
             }
         }
     }
@@ -337,24 +370,16 @@ impl RenderingEngine {
         )
     }
 
-    pub fn render(&mut self, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
-        let surface_texture = match self.surface.get_current_texture() {
-            Ok(surface_texture) => Ok(surface_texture),
-            Err(e) => {
-                match e {
-                    wgpu::SurfaceError::Lost => self.resize_window(self.size),
-                    _ => {}
-                };
-                Err(EmeraldError::new(format!("{:?}", e)))
-            }
-        }?;
-        let view = surface_texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+    fn render_to_view(
+        &mut self,
+        asset_store: &mut AssetStore,
+        view: TextureView,
+        view_name: &str,
+    ) -> Result<(), EmeraldError> {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Surface Render Encoder"),
+                label: Some(&format!("Encoder: {:?}", view_name)),
             });
 
         self.active_size = self.size;
@@ -362,7 +387,7 @@ impl RenderingEngine {
             let (r, g, b, a) = self.settings.background_color.to_percentage();
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Surface Render Pass"),
+                label: Some(&format!("Render Pass {:?}", view_name)),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
@@ -383,8 +408,28 @@ impl RenderingEngine {
         }
 
         self.queue.submit([encoder.finish()]);
-        surface_texture.present();
 
+        Ok(())
+    }
+
+    pub fn render(&mut self, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+        let surface_texture = match self.surface.get_current_texture() {
+            Ok(surface_texture) => Ok(surface_texture),
+            Err(e) => {
+                match e {
+                    wgpu::SurfaceError::Lost => self.resize_window(self.size),
+                    _ => {}
+                };
+                Err(EmeraldError::new(format!("{:?}", e)))
+            }
+        }?;
+        let view = surface_texture
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        self.render_to_view(asset_store, view, "surface pass")?;
+
+        surface_texture.present();
         Ok(())
     }
 
@@ -398,7 +443,7 @@ impl RenderingEngine {
             .into_iter()
             .map(|_| 0)
             .collect::<Vec<u8>>();
-        let key = Texture::new(
+        let key = Texture::new_render_target(
             &mut self.bind_groups,
             &self.bind_group_layouts,
             asset_store,
@@ -592,12 +637,15 @@ impl RenderingEngine {
                         let height = target_rect.height / texture_size.1;
                         target_rect = Rectangle::new(x, y, width, height);
                     }
+
                     if sprite.centered {
                         x -= normalized_texture_size.0 / 2.0;
                         y -= normalized_texture_size.1 / 2.0;
                     }
-                    let width = normalized_texture_size.0;
-                    let height = normalized_texture_size.1;
+
+                    let width = normalized_texture_size.0 * sprite.scale.x;
+                    let height = normalized_texture_size.1 * sprite.scale.y;
+                    println!("{:?}", (width, height));
                     let vertex_rect = Rectangle::new(x, y, width, height);
                     let vertex_set = [
                         // Changed
@@ -675,7 +723,7 @@ impl RenderingEngine {
 
                     prev_texture_key = Some(texture_key);
                 }
-                Drawable::ColorRect { color_rect } => todo!(),
+                Drawable::ColorRect { color_rect } => {}
                 Drawable::Label { label } => todo!(),
                 Drawable::Tilemap {
                     texture_key,
@@ -1874,7 +1922,17 @@ impl ToDrawable for ColorRect {
     }
 
     fn to_drawable(&self) -> Drawable {
-        Drawable::ColorRect { color_rect: *self }
+        // Drawable::ColorRect { color_rect: *self }
+        let mut sprite = Sprite::from_texture(TextureKey::default());
+        // We multiply our 1 pixel sprite by our size to achieve that size
+        sprite.scale.x = self.width as f32;
+        sprite.scale.y = self.height as f32;
+        sprite.color = self.color;
+        sprite.rotation = self.rotation;
+        sprite.centered = self.centered;
+        sprite.offset = self.offset;
+
+        Drawable::Sprite { sprite }
     }
 
     fn z_index(&self) -> f32 {
