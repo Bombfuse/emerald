@@ -426,8 +426,7 @@ impl RenderingEngine {
         let vertex_set_size = (std::mem::size_of::<Vertex>() * 4) as u64;
         let indices_set_size: u64 = std::mem::size_of::<u32>() as u64 * 6;
 
-        let mut textured_quads: Vec<(TextureKey, [Vertex; 4], u64, u64, u64, u64, u32)> =
-            Vec::new();
+        let mut textured_quads: Vec<(TextureKey, u64, u64, u64, u64, u32)> = Vec::new();
         let mut vertices = Vec::with_capacity(self.vertex_buffer.size() as usize);
         let mut indices: Vec<u32> = Vec::with_capacity(self.index_buffer.size() as usize);
         let mut prev_texture_key = None;
@@ -436,21 +435,40 @@ impl RenderingEngine {
             match draw_command.drawable {
                 Drawable::Aseprite { sprite, .. } => {
                     let texture_key = sprite.texture_key;
-                    let target_rect = sprite.target;
+                    let mut target_rect = sprite.target;
                     let mut texture_size = (0.0, 0.0);
                     if let Some(texture) = asset_store.get_texture(&texture_key) {
                         texture_size = (texture.size.width as f32, texture.size.height as f32);
+
+                        // Zeroed target means display entire texture
+                        if target_rect.is_zero_sized() {
+                            target_rect.width = texture_size.0;
+                            target_rect.height = texture_size.1;
+                        }
+                    } else {
+                        return Err(EmeraldError::new(format!(
+                            "Unable to find texture {:?}",
+                            texture_key
+                        )));
                     }
+
                     let mut x = (draw_command.transform.translation.x + sprite.offset.x)
                         / (self.active_size.width as f32 / 2.0);
                     let mut y = (draw_command.transform.translation.y + sprite.offset.y)
                         / (self.active_size.height as f32 / 2.0);
 
                     let normalized_texture_size = (
-                        texture_size.0 / (self.active_size.width as f32 / 2.0),
-                        texture_size.1 / (self.active_size.height as f32 / 2.0),
+                        target_rect.width / (self.active_size.width as f32 / 2.0),
+                        target_rect.height / (self.active_size.height as f32 / 2.0),
                     );
 
+                    {
+                        let x = target_rect.x / texture_size.0;
+                        let y = target_rect.y / texture_size.1;
+                        let width = target_rect.width / texture_size.0;
+                        let height = target_rect.height / texture_size.1;
+                        target_rect = Rectangle::new(x, y, width, height);
+                    }
                     if sprite.centered {
                         x -= normalized_texture_size.0 / 2.0;
                         y -= normalized_texture_size.1 / 2.0;
@@ -484,11 +502,33 @@ impl RenderingEngine {
                         },
                     ];
 
-                    println!("{:?}", target_rect);
                     vertices.extend(vertex_set);
 
+                    let mut same_texture = false;
+
+                    let len = textured_quads.len();
+                    if len > 0 {
+                        if let Some(key) = prev_texture_key {
+                            if key == texture_key {
+                                same_texture = true;
+                            }
+                        }
+                    }
+
+                    let mut add_quad = true;
+                    let mut index_start = 0;
+
+                    if same_texture {
+                        if let Some(textured_quad_draw) = textured_quads.get_mut(len - 1) {
+                            index_start = textured_quad_draw.5 as u32 * 4;
+                            textured_quad_draw.2 += vertex_set_size;
+                            textured_quad_draw.4 += indices_set_size;
+                            textured_quad_draw.5 += 1;
+                            add_quad = false;
+                        }
+                    }
+
                     let vertices_start = (counter as u64) * vertex_set_size;
-                    let index_start = counter as u32 * 4;
                     indices.extend([
                         index_start,
                         index_start + 1,
@@ -497,27 +537,11 @@ impl RenderingEngine {
                         index_start + 2,
                         index_start + 3,
                     ]);
-                    let mut add_quad = true;
-
-                    let len = textured_quads.len();
-                    if len > 0 {
-                        if let Some(key) = prev_texture_key {
-                            if key == texture_key {
-                                if let Some(textured_quad_draw) = textured_quads.get_mut(len - 1) {
-                                    textured_quad_draw.3 += vertex_set_size;
-                                    textured_quad_draw.5 += indices_set_size;
-                                    textured_quad_draw.6 += 1;
-                                    add_quad = false;
-                                }
-                            }
-                        }
-                    }
 
                     if add_quad {
                         let indices_start = (counter as u64) * indices_set_size;
                         textured_quads.push((
                             texture_key.clone(),
-                            vertex_set,
                             vertices_start,
                             vertices_start + vertex_set_size,
                             indices_start,
@@ -530,21 +554,40 @@ impl RenderingEngine {
                 }
                 Drawable::Sprite { sprite } => {
                     let texture_key = sprite.texture_key;
-                    let target_rect = sprite.target;
+                    let mut target_rect = sprite.target;
                     let mut texture_size = (0.0, 0.0);
                     if let Some(texture) = asset_store.get_texture(&texture_key) {
                         texture_size = (texture.size.width as f32, texture.size.height as f32);
+
+                        // Zeroed target means display entire texture
+                        if target_rect.is_zero_sized() {
+                            target_rect.width = texture_size.0;
+                            target_rect.height = texture_size.1;
+                        }
+                    } else {
+                        return Err(EmeraldError::new(format!(
+                            "Unable to find texture {:?}",
+                            texture_key
+                        )));
                     }
+
                     let mut x = (draw_command.transform.translation.x + sprite.offset.x)
                         / (self.active_size.width as f32 / 2.0);
                     let mut y = (draw_command.transform.translation.y + sprite.offset.y)
                         / (self.active_size.height as f32 / 2.0);
 
                     let normalized_texture_size = (
-                        texture_size.0 / (self.active_size.width as f32 / 2.0),
-                        texture_size.1 / (self.active_size.height as f32 / 2.0),
+                        target_rect.width / (self.active_size.width as f32 / 2.0),
+                        target_rect.height / (self.active_size.height as f32 / 2.0),
                     );
 
+                    {
+                        let x = target_rect.x / texture_size.0;
+                        let y = target_rect.y / texture_size.1;
+                        let width = target_rect.width / texture_size.0;
+                        let height = target_rect.height / texture_size.1;
+                        target_rect = Rectangle::new(x, y, width, height);
+                    }
                     if sprite.centered {
                         x -= normalized_texture_size.0 / 2.0;
                         y -= normalized_texture_size.1 / 2.0;
@@ -580,8 +623,31 @@ impl RenderingEngine {
 
                     vertices.extend(vertex_set);
 
+                    let mut same_texture = false;
+
+                    let len = textured_quads.len();
+                    if len > 0 {
+                        if let Some(key) = prev_texture_key {
+                            if key == texture_key {
+                                same_texture = true;
+                            }
+                        }
+                    }
+
+                    let mut add_quad = true;
+                    let mut index_start = 0;
+
+                    if same_texture {
+                        if let Some(textured_quad_draw) = textured_quads.get_mut(len - 1) {
+                            index_start = textured_quad_draw.5 as u32 * 4;
+                            textured_quad_draw.2 += vertex_set_size;
+                            textured_quad_draw.4 += indices_set_size;
+                            textured_quad_draw.5 += 1;
+                            add_quad = false;
+                        }
+                    }
+
                     let vertices_start = (counter as u64) * vertex_set_size;
-                    let index_start = counter as u32 * 4;
                     indices.extend([
                         index_start,
                         index_start + 1,
@@ -590,27 +656,11 @@ impl RenderingEngine {
                         index_start + 2,
                         index_start + 3,
                     ]);
-                    let mut add_quad = true;
-
-                    let len = textured_quads.len();
-                    if len > 0 {
-                        if let Some(key) = prev_texture_key {
-                            if key == texture_key {
-                                if let Some(textured_quad_draw) = textured_quads.get_mut(len - 1) {
-                                    textured_quad_draw.3 += vertex_set_size;
-                                    textured_quad_draw.5 += indices_set_size;
-                                    textured_quad_draw.6 += 1;
-                                    add_quad = false;
-                                }
-                            }
-                        }
-                    }
 
                     if add_quad {
                         let indices_start = (counter as u64) * indices_set_size;
                         textured_quads.push((
                             texture_key.clone(),
-                            vertex_set,
                             vertices_start,
                             vertices_start + vertex_set_size,
                             indices_start,
@@ -667,35 +717,43 @@ impl RenderingEngine {
 
         self.queue.submit(None);
 
-        for (texture_key, _, vertices_start, vertices_end, indices_start, indices_end, instances) in
-            textured_quads
-        {
-            if let (Some(texture_bind_group), Some(camera_bind_group)) = (
-                self.bind_groups.get(&texture_key.0),
-                self.bind_groups.get(BIND_GROUP_ID_CAMERA_2D),
-            ) {
-                render_pass.set_bind_group(0, texture_bind_group, &[]);
-                render_pass.set_bind_group(1, camera_bind_group, &[]);
+        if let Some(camera_bind_group) = self.bind_groups.get(BIND_GROUP_ID_CAMERA_2D) {
+            render_pass.set_bind_group(1, camera_bind_group, &[]);
 
-                render_pass
-                    .set_vertex_buffer(0, self.vertex_buffer.slice(vertices_start..vertices_end));
-                render_pass.set_index_buffer(
-                    self.index_buffer.slice(indices_start..indices_end),
-                    wgpu::IndexFormat::Uint32,
-                );
+            for (
+                texture_key,
+                vertices_start,
+                vertices_end,
+                indices_start,
+                indices_end,
+                instances,
+            ) in textured_quads
+            {
+                if let Some(texture_bind_group) = self.bind_groups.get(&texture_key.0) {
+                    render_pass.set_bind_group(0, texture_bind_group, &[]);
 
-                println!("{:?}", (texture_key, instances));
+                    render_pass.set_vertex_buffer(
+                        0,
+                        self.vertex_buffer.slice(vertices_start..vertices_end),
+                    );
+                    render_pass.set_index_buffer(
+                        self.index_buffer.slice(indices_start..indices_end),
+                        wgpu::IndexFormat::Uint32,
+                    );
 
-                render_pass.draw_indexed(0..(instances * 6), 0, 0..1);
-            } else {
-                return Err(EmeraldError::new(format!(
-                    "Unable to find texture bind group for {:?}",
-                    &texture_key.0
-                )));
+                    render_pass.draw_indexed(0..(instances * 6), 0, 0..1);
+                } else {
+                    return Err(EmeraldError::new(format!(
+                        "Unable to find texture bind group for {:?}",
+                        &texture_key.0
+                    )));
+                }
             }
+
+            return Ok(());
         }
 
-        Ok(())
+        Err(EmeraldError::new("Could not find camera bind group."))
     }
 }
 

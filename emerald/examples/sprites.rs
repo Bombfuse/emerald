@@ -19,6 +19,9 @@ impl Game for SpritesExample {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
         let sprite = emd.loader().sprite("bunny.png").unwrap();
         self.world.spawn((sprite, Transform::default()));
+        let sprite = emd.loader().sprite("smiley.png").unwrap();
+        self.world
+            .spawn((sprite, Transform::from_translation((-32.0, 0.0))));
     }
 
     fn update(&mut self, mut emd: Emerald) {

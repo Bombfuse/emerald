@@ -97,6 +97,10 @@ impl Texture {
 
             bind_groups.insert(key.get_name(), texture_bind_group);
             asset_store.insert_texture(key.clone(), texture);
+        } else {
+            return Err(EmeraldError::new(
+                "Unable to get TextureQuad bind group layout",
+            ));
         }
 
         Ok(key)

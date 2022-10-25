@@ -395,15 +395,18 @@ impl Frame {
             key.push_str(&frame_index.to_string());
             TextureKey::new(key)
         };
-        let texture = Texture::from_image(
-            bind_groups,
-            bind_group_layouts,
-            asset_store,
-            device,
-            queue,
-            &image,
-            texture_key.clone(),
-        )?;
+
+        if asset_store.get_texture(&texture_key).is_none() {
+            Texture::from_image(
+                bind_groups,
+                bind_group_layouts,
+                asset_store,
+                device,
+                queue,
+                &image,
+                texture_key.clone(),
+            )?;
+        }
 
         Ok(Self {
             sprite: Sprite::from_texture(texture_key),

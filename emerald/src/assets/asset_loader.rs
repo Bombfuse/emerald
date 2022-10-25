@@ -139,7 +139,6 @@ impl<'c> AssetLoader<'c> {
     ) -> Result<Aseprite, EmeraldError> {
         let texture_path: &str = path_to_texture.as_ref();
         let animation_path: &str = path_to_animations.as_ref();
-
         let aseprite_data = self.asset_bytes(animation_path)?;
 
         let sprite = self.sprite(texture_path)?;
