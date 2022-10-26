@@ -86,13 +86,13 @@ impl Game for MyGame {
                 &ColorRect::new(WHITE, 500 * 500, 500 * 500),
                 &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
             )
-            .ok();
+            .unwrap();
         emd.graphics()
             .draw_sprite(
                 &rabbit,
                 &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
             )
-            .ok();
+            .unwrap();
 
         let texture_key = emd.graphics().render_texture().unwrap();
 
@@ -103,7 +103,6 @@ impl Game for MyGame {
         // println!("{:?}", screen_sprite);
         let now = std::time::Instant::now();
 
-        let e = std::time::Instant::now();
         let mut screen_sprite = Sprite::from_texture(texture_key);
         screen_sprite.centered = false;
         screen_sprite.scale.x = self.scale;
@@ -112,6 +111,7 @@ impl Game for MyGame {
         emd.graphics().begin().unwrap();
         emd.graphics().draw_sprite(&screen_sprite, &self.pos).ok();
         emd.graphics().render().unwrap();
+        let e = std::time::Instant::now();
 
         println!("screen draw: {:?}", e - now);
     }

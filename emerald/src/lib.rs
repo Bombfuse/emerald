@@ -134,16 +134,13 @@ async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldE
                             game_engine.handle_virtual_keycode(virtual_keycode, input.state);
                         }
                     }
-                    WindowEvent::CloseRequested
-                    | WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
-                                ..
-                            },
-                        ..
-                    } => *control_flow = ControlFlow::Exit,
+                    WindowEvent::MouseInput { button, state, .. } => {
+                        game_engine.handle_mouse_input(button, state);
+                    }
+                    WindowEvent::CursorMoved { position, .. } => {
+                        game_engine.handle_cursor_move(position);
+                    }
+                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     _ => {}
                 }
             }

@@ -37,10 +37,24 @@ impl Game for SpritesExample {
         if mouse.left.is_just_pressed() {
             let mut sprite = emd.loader().sprite("bunny.png").unwrap();
             sprite.offset = Vector2::new(-10.0, 0.0);
+            println!("spawn");
 
             let mut transform = Transform::default();
             transform.translation = mouse_position;
             self.world.spawn((sprite, transform));
+        }
+
+        if emd.input().is_key_just_pressed(KeyCode::A) {
+            println!("scale down");
+            for (_, sprite) in self.world.query::<&mut Sprite>().iter() {
+                sprite.scale *= 0.5;
+            }
+        }
+        if emd.input().is_key_just_pressed(KeyCode::S) {
+            println!("scale up");
+            for (_, sprite) in self.world.query::<&mut Sprite>().iter() {
+                sprite.scale *= 2.0;
+            }
         }
 
         // move to mouse position

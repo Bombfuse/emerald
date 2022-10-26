@@ -5,7 +5,7 @@ use std::{
 
 use hecs::Entity;
 use rapier2d::na::{Quaternion, Vector2, Vector4};
-use wgpu::{util::DeviceExt, Buffer, RenderPass, TextureView};
+use wgpu::{util::DeviceExt, Buffer, RenderPass, TextureFormat, TextureView};
 use wgpu::{Adapter, BindGroup, BindGroupLayout, Device, Queue, RenderPipeline, Surface};
 use winit::dpi::PhysicalSize;
 
@@ -329,13 +329,15 @@ impl RenderingEngine {
             Some(texture_key) => {
                 // TODO: consume draw queue and finish render pass
                 if let Some(texture) = asset_store.get_texture(&texture_key) {
-                    let view = texture
-                        .texture
-                        .create_view(&wgpu::TextureViewDescriptor::default());
+                    let view = texture.texture.create_view(&wgpu::TextureViewDescriptor {
+                        format: Some(self.config.format),
+                        ..Default::default()
+                    });
 
                     self.render_to_view(
                         asset_store,
                         view,
+                        PhysicalSize::new(texture.size.width, texture.size.height),
                         &format!("render texture {:?}", texture_key),
                     )?;
                     return Ok(texture_key);
@@ -374,6 +376,7 @@ impl RenderingEngine {
         &mut self,
         asset_store: &mut AssetStore,
         view: TextureView,
+        view_size: PhysicalSize<u32>,
         view_name: &str,
     ) -> Result<(), EmeraldError> {
         let mut encoder = self
@@ -382,7 +385,7 @@ impl RenderingEngine {
                 label: Some(&format!("Encoder: {:?}", view_name)),
             });
 
-        self.active_size = self.size;
+        self.active_size = view_size;
         {
             let (r, g, b, a) = self.settings.background_color.to_percentage();
 
@@ -427,7 +430,7 @@ impl RenderingEngine {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        self.render_to_view(asset_store, view, "surface pass")?;
+        self.render_to_view(asset_store, view, self.size, "Surface Pass")?;
 
         surface_texture.present();
         Ok(())
@@ -453,6 +456,7 @@ impl RenderingEngine {
             height,
             &data,
             TextureKey::new(format!("emd_render_texture_{}", self.render_texture_uid)),
+            self.config.format,
         )?;
         self.render_texture_uid += 1;
 
@@ -638,15 +642,15 @@ impl RenderingEngine {
                         target_rect = Rectangle::new(x, y, width, height);
                     }
 
-                    if sprite.centered {
-                        x -= normalized_texture_size.0 / 2.0;
-                        y -= normalized_texture_size.1 / 2.0;
-                    }
-
                     let width = normalized_texture_size.0 * sprite.scale.x;
                     let height = normalized_texture_size.1 * sprite.scale.y;
-                    println!("{:?}", (width, height));
-                    let vertex_rect = Rectangle::new(x, y, width, height);
+                    let mut vertex_rect = Rectangle::new(x, y, width, height);
+
+                    if sprite.centered {
+                        vertex_rect.x -= width / 2.0;
+                        vertex_rect.y -= height / 2.0;
+                    }
+
                     let vertex_set = [
                         // Changed
                         Vertex {
@@ -766,8 +770,6 @@ impl RenderingEngine {
             self.queue
                 .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
         }
-
-        self.queue.submit(None);
 
         if let Some(camera_bind_group) = self.bind_groups.get(BIND_GROUP_ID_CAMERA_2D) {
             render_pass.set_bind_group(1, camera_bind_group, &[]);

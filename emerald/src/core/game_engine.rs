@@ -88,6 +88,14 @@ impl GameEngine {
         self.rendering_engine.size
     }
 
+    pub fn handle_cursor_move(&mut self, position: &winit::dpi::PhysicalPosition<f64>) {
+        self.input_engine.handle_cursor_move(position)
+    }
+
+    pub fn handle_mouse_input(&mut self, button: &winit::event::MouseButton, state: &ElementState) {
+        self.input_engine.handle_mouse_input(button, state)
+    }
+
     pub fn handle_virtual_keycode(&mut self, virtual_keycode: VirtualKeyCode, state: ElementState) {
         self.input_engine
             .handle_virtual_keycode(virtual_keycode, state)

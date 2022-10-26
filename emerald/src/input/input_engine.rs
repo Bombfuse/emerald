@@ -63,6 +63,30 @@ impl InputEngine {
         }
     }
 
+    pub fn handle_cursor_move(&mut self, position: &winit::dpi::PhysicalPosition<f64>) {
+        self.mouse.translation = Translation::new(position.x as f32, position.y as f32);
+    }
+
+    pub fn handle_mouse_input(&mut self, button: &winit::event::MouseButton, state: &ElementState) {
+        let is_pressed = match state {
+            ElementState::Pressed => true,
+            ElementState::Released => false,
+        };
+
+        match button {
+            winit::event::MouseButton::Left => {
+                self.mouse.left.is_pressed = is_pressed;
+            }
+            winit::event::MouseButton::Right => {
+                self.mouse.right.is_pressed = is_pressed;
+            }
+            winit::event::MouseButton::Middle => {
+                self.mouse.middle.is_pressed = is_pressed;
+            }
+            _ => {}
+        }
+    }
+
     fn rollover_touches(&mut self) {
         // Remove outdated touches.
         self.touches.retain(|_id, touch| !touch.is_outdated());
@@ -221,6 +245,11 @@ impl InputEngine {
 pub(crate) fn virtual_keycode_to_keycode(virtual_keycode: VirtualKeyCode) -> KeyCode {
     match virtual_keycode {
         VirtualKeyCode::A => KeyCode::A,
+        VirtualKeyCode::S => KeyCode::S,
+        VirtualKeyCode::Down => KeyCode::Down,
+        VirtualKeyCode::Up => KeyCode::Up,
+        VirtualKeyCode::Left => KeyCode::Left,
+        VirtualKeyCode::Right => KeyCode::Right,
         VirtualKeyCode::Space => KeyCode::Space,
         _ => KeyCode::Unknown,
     }
