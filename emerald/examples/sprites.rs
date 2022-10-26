@@ -26,6 +26,7 @@ impl Game for SpritesExample {
 
     fn update(&mut self, mut emd: Emerald) {
         let mouse = emd.input().mouse();
+        println!("mouse cursor at {:?}", mouse.translation);
         let screen_size = emd.screen_size();
         let mouse_position = screen_translation_to_world_translation(
             (screen_size.0 as u32, screen_size.1 as u32),
@@ -37,7 +38,7 @@ impl Game for SpritesExample {
         if mouse.left.is_just_pressed() {
             let mut sprite = emd.loader().sprite("bunny.png").unwrap();
             sprite.offset = Vector2::new(-10.0, 0.0);
-            println!("spawn");
+            println!("spawn at {:?}", mouse_position);
 
             let mut transform = Transform::default();
             transform.translation = mouse_position;

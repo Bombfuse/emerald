@@ -30,7 +30,12 @@ pub fn screen_translation_to_world_translation(
 
     // TODO(bombfuse): take the camera zoom level into account when translating
     let screen_size = Translation::new(screen_size.0 as f32, screen_size.1 as f32);
-    Translation::from(screen_size * -0.5) + *screen_translation + camera_pos
+    let normalized_screen_translation = Translation::new(
+        screen_translation.x - screen_size.x / 2.0,
+        screen_size.y - screen_translation.y - screen_size.y / 2.0,
+    );
+
+    camera_pos + normalized_screen_translation
 }
 
 /// Describes touch-screen input state.
