@@ -1,4 +1,7 @@
-use emerald::*;
+use emerald::{
+    rendering::components::{ColorRect, Sprite},
+    *,
+};
 
 pub fn main() {
     let game = MouseExample {
@@ -62,7 +65,7 @@ impl Game for MouseExample {
 
         self.rect = ColorRect::new(color, 40, 40);
 
-        self.screen_center = Translation::new(width / 2.0, height / 2.0);
+        self.screen_center = Translation::new(width as f32 / 2.0, height as f32 / 2.0);
         self.background = ColorRect::new(flash, width as u32, height as u32);
 
         for (_, (transform, _)) in self.world.query::<(&mut Transform, &mut Sprite)>().iter() {

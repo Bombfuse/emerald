@@ -303,7 +303,7 @@ impl PhysicsEngine {
                 )),
             }?;
 
-            *transform.clone()
+            (*transform).clone()
         };
 
         let body = builder

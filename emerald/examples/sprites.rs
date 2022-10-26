@@ -26,7 +26,6 @@ impl Game for SpritesExample {
 
     fn update(&mut self, mut emd: Emerald) {
         let mouse = emd.input().mouse();
-        println!("mouse cursor at {:?}", mouse.translation);
         let screen_size = emd.screen_size();
         let mouse_position = screen_translation_to_world_translation(
             (screen_size.0 as u32, screen_size.1 as u32),
@@ -38,7 +37,6 @@ impl Game for SpritesExample {
         if mouse.left.is_just_pressed() {
             let mut sprite = emd.loader().sprite("bunny.png").unwrap();
             sprite.offset = Vector2::new(-10.0, 0.0);
-            println!("spawn at {:?}", mouse_position);
 
             let mut transform = Transform::default();
             transform.translation = mouse_position;
@@ -46,15 +44,24 @@ impl Game for SpritesExample {
         }
 
         if emd.input().is_key_just_pressed(KeyCode::A) {
-            println!("scale down");
             for (_, sprite) in self.world.query::<&mut Sprite>().iter() {
                 sprite.scale *= 0.5;
             }
         }
         if emd.input().is_key_just_pressed(KeyCode::S) {
-            println!("scale up");
             for (_, sprite) in self.world.query::<&mut Sprite>().iter() {
                 sprite.scale *= 2.0;
+            }
+        }
+        if emd.input().is_key_pressed(KeyCode::W) {
+            for (_, sprite) in self.world.query::<&mut Sprite>().iter() {
+                sprite.rotation += 0.1;
+            }
+        }
+
+        if emd.input().is_key_pressed(KeyCode::Q) {
+            for (_, sprite) in self.world.query::<&mut Sprite>().iter() {
+                sprite.rotation -= 0.1;
             }
         }
 

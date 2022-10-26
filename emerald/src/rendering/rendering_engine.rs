@@ -608,7 +608,7 @@ impl RenderingEngine {
                 Drawable::Sprite { sprite } => {
                     let texture_key = sprite.texture_key;
                     let mut target_rect = sprite.target;
-                    let mut texture_size = (0.0, 0.0);
+                    let texture_size;
                     if let Some(texture) = asset_store.get_texture(&texture_key) {
                         texture_size = (texture.size.width as f32, texture.size.height as f32);
 
@@ -651,28 +651,67 @@ impl RenderingEngine {
                         vertex_rect.y -= height / 2.0;
                     }
 
+                    let center_x = vertex_rect.x + vertex_rect.width / 2.0;
+                    let center_y = vertex_rect.y + vertex_rect.height / 2.0;
+
+                    fn rotate_vertex(
+                        center_x: f32,
+                        center_y: f32,
+                        x: f32,
+                        y: f32,
+                        rotation: f32,
+                    ) -> [f32; 2] {
+                        let diff_x = x - center_x;
+                        let diff_y = y - center_y;
+                        [
+                            center_x + (rotation.cos() * diff_x) - (rotation.sin() * diff_y),
+                            center_y + (rotation.sin() * diff_x) + (rotation.cos() * diff_y),
+                        ]
+                    }
+
                     let vertex_set = [
                         // Changed
                         Vertex {
-                            position: [vertex_rect.x, vertex_rect.y + vertex_rect.height],
+                            position: rotate_vertex(
+                                center_x,
+                                center_y,
+                                vertex_rect.x,
+                                vertex_rect.y + vertex_rect.height,
+                                sprite.rotation,
+                            ),
                             tex_coords: [target_rect.x, target_rect.y],
                         }, // A
                         Vertex {
-                            position: [vertex_rect.x, vertex_rect.y],
+                            position: rotate_vertex(
+                                center_x,
+                                center_y,
+                                vertex_rect.x,
+                                vertex_rect.y,
+                                sprite.rotation,
+                            ),
                             tex_coords: [target_rect.x, target_rect.y + target_rect.height],
                         }, // B
                         Vertex {
-                            position: [vertex_rect.x + vertex_rect.width, vertex_rect.y],
+                            position: rotate_vertex(
+                                center_x,
+                                center_y,
+                                vertex_rect.x + vertex_rect.width,
+                                vertex_rect.y,
+                                sprite.rotation,
+                            ),
                             tex_coords: [
                                 target_rect.x + target_rect.width,
                                 target_rect.y + target_rect.height,
                             ],
                         }, // C
                         Vertex {
-                            position: [
+                            position: rotate_vertex(
+                                center_x,
+                                center_y,
                                 vertex_rect.x + vertex_rect.width,
                                 vertex_rect.y + vertex_rect.height,
-                            ],
+                                sprite.rotation,
+                            ),
                             tex_coords: [target_rect.x + target_rect.width, target_rect.y],
                         },
                     ];

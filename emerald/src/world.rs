@@ -4,12 +4,15 @@ pub mod ent;
 
 use std::collections::HashMap;
 
-use crate::{rendering::components::Camera, EmeraldError, PhysicsEngine};
+use crate::{
+    rendering::components::Camera, EmeraldError, PhysicsEngine, PhysicsHandler, PhysicsRefHandler,
+};
 
 use hecs::{
     Bundle, Component, ComponentRef, DynamicBundle, Entity, NoSuchEntity, Query, QueryBorrow,
     QueryItem, QueryOne, SpawnBatchIter,
 };
+use rapier2d::prelude::{RigidBodyBuilder, RigidBodyHandle};
 
 pub struct World {
     pub(crate) physics_engine: PhysicsEngine,
@@ -135,7 +138,6 @@ impl World {
         self.inner.spawn(components)
     }
 
-    #[cfg(feature = "physics")]
     pub fn spawn_with_body(
         &mut self,
         components: impl DynamicBundle,
@@ -156,7 +158,6 @@ impl World {
     }
 
     pub fn despawn(&mut self, entity: Entity) -> Result<(), EmeraldError> {
-        #[cfg(feature = "physics")]
         self.physics_engine.remove_body(entity);
 
         match self.inner.despawn(entity.clone()) {
@@ -170,11 +171,7 @@ impl World {
 
     pub fn clear(&mut self) {
         self.inner.clear();
-
-        #[cfg(feature = "physics")]
-        {
-            self.physics_engine = PhysicsEngine::new();
-        }
+        self.physics_engine = PhysicsEngine::new();
     }
 
     pub fn query<Q: Query>(&self) -> QueryBorrow<'_, Q> {
@@ -278,12 +275,10 @@ impl World {
         }
     }
 
-    #[cfg(feature = "physics")]
     pub fn physics(&mut self) -> PhysicsHandler<'_> {
         PhysicsHandler::new(&mut self.physics_engine, &mut self.inner)
     }
 
-    #[cfg(feature = "physics")]
     pub fn physics_ref(&self) -> PhysicsRefHandler<'_> {
         PhysicsRefHandler::new(&self.physics_engine)
     }
