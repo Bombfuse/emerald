@@ -49,13 +49,8 @@ impl<'c> RenderingHandler<'c> {
     }
 
     pub fn draw_label(&mut self, label: &Label, transform: &Transform) -> Result<(), EmeraldError> {
-        self.rendering_engine.push_draw_command(DrawCommand {
-            drawable: Drawable::Label {
-                label: label.clone(),
-            },
-            transform: *transform,
-            z_index: label.z_index,
-        })
+        self.rendering_engine
+            .draw_label(&mut self.asset_store, label, transform)
     }
 
     pub fn draw_color_rect(

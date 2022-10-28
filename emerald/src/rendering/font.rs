@@ -132,6 +132,11 @@ pub(crate) fn cache_glyph(
         let (metrics, bitmap) = font.rasterize_config(glyph_key);
         optional_metrics = Some(metrics);
         optional_bitmap = Some(bitmap);
+    } else {
+        return Err(EmeraldError::new(format!(
+            "Unable to get Fontdue Font while caching font glyph: {:?}",
+            font_key
+        )));
     }
 
     if let (Some(metrics), Some(bitmap)) = (optional_metrics, optional_bitmap) {
@@ -204,7 +209,17 @@ pub(crate) fn cache_glyph(
 
                 update_font_texture = true;
             }
+        } else {
+            return Err(EmeraldError::new(format!(
+                "Unable to get Font while caching font glyph: {:?}",
+                font_key
+            )));
         }
+    } else {
+        return Err(EmeraldError::new(format!(
+            "Unable to get Metrics while caching font glyph: {:?}",
+            font_key
+        )));
     }
 
     for (bytes, key) in to_update {
