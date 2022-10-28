@@ -1,8 +1,7 @@
-use crate::font::FontKey;
+use crate::font::{Font, FontKey};
 use crate::texture::{Texture, TextureKey};
 use crate::{EmeraldError, Sound, SoundKey};
 
-use fontdue::Font;
 use std::collections::HashMap;
 use std::fs::create_dir;
 use std::path::Path;
@@ -281,19 +280,6 @@ impl AssetStore {
             self.texture_key_map.insert(texture.key.clone(), i);
             i += 1;
         }
-    }
-
-    #[inline]
-    pub fn update_font_texture(&mut self, key: &FontKey) {
-        // if let Some(index) = self.font_key_map.get(key) {
-        //     if let Some(font) = self.fonts.get_mut(*index) {
-        //         if let Some(index) = self.texture_key_map.get(&font.font_texture_key) {
-        //             if let Some(font_texture) = self.textures.get_mut(*index) {
-        //                 font_texture.update(&mut ctx, &font.font_image);
-        //             }
-        //         }
-        //     }
-        // }
     }
 
     #[inline]

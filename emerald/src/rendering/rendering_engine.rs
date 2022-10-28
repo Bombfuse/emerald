@@ -11,6 +11,7 @@ use winit::dpi::PhysicalSize;
 
 use crate::{
     autotilemap::AutoTilemap,
+    font::FontKey,
     render_settings::RenderSettings,
     shaders::{
         self,
@@ -367,6 +368,31 @@ impl RenderingEngine {
             asset_store,
             &self.device,
             &self.queue,
+            &data,
+            key.clone(),
+        )
+    }
+
+    pub fn load_texture_ext(
+        &mut self,
+        asset_store: &mut AssetStore,
+        width: u32,
+        height: u32,
+        data: &[u8],
+        key: TextureKey,
+    ) -> Result<TextureKey, EmeraldError> {
+        if asset_store.get_texture(&key).is_some() {
+            return Ok(key);
+        }
+
+        Texture::new(
+            &mut self.bind_groups,
+            &self.bind_group_layouts,
+            asset_store,
+            &self.device,
+            &self.queue,
+            width,
+            height,
             &data,
             key.clone(),
         )
@@ -767,7 +793,7 @@ impl RenderingEngine {
                     prev_texture_key = Some(texture_key);
                 }
                 Drawable::ColorRect { color_rect } => {}
-                Drawable::Label { label } => todo!(),
+                Drawable::Label { label } => {}
                 Drawable::Tilemap {
                     texture_key,
                     tiles,
@@ -847,6 +873,40 @@ impl RenderingEngine {
         }
 
         Err(EmeraldError::new("Could not find camera bind group."))
+    }
+
+    #[inline]
+    pub fn update_font_texture(
+        &mut self,
+        asset_store: &mut AssetStore,
+        key: &FontKey,
+    ) -> Result<(), EmeraldError> {
+        if let Some(font) = asset_store.get_font(key) {
+            if let Some(texture) = asset_store.get_texture(&font.font_texture_key) {
+                self.queue.write_texture(
+                    wgpu::ImageCopyTexture {
+                        aspect: wgpu::TextureAspect::All,
+                        texture: &texture.texture,
+                        mip_level: 0,
+                        origin: wgpu::Origin3d::ZERO,
+                    },
+                    &font.font_image.bytes,
+                    wgpu::ImageDataLayout {
+                        offset: 0,
+                        bytes_per_row: std::num::NonZeroU32::new(4 * font.font_image.width as u32),
+                        rows_per_image: std::num::NonZeroU32::new(font.font_image.height as u32),
+                    },
+                    texture.size,
+                );
+
+                return Ok(());
+            }
+        }
+
+        Err(EmeraldError::new(format!(
+            "Unable to update font texture {:?}",
+            key
+        )))
     }
 }
 

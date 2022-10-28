@@ -1,6 +1,7 @@
 use image::GenericImageView;
 
 use crate::{
+    font::FontImage,
     rendering_engine::{BindGroupLayoutId, BindGroupLayouts, BindGroups},
     AssetStore, EmeraldError,
 };
@@ -305,12 +306,6 @@ impl Texture {
 //         })
 //     }
 
-//     pub(crate) fn update(&mut self, font_image: &FontImage) {
-//         assert_eq!(self.inner.width, font_image.width as u32);
-//         assert_eq!(self.inner.height, font_image.height as u32);
-
-//         self.inner.update(ctx, &font_image.bytes);
-//     }
 // }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]

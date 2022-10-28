@@ -2,6 +2,8 @@ use crate::assets::*;
 use crate::audio::*;
 use crate::ent::load_ent;
 use crate::ent::EntLoadConfig;
+use crate::font::Font;
+use crate::font::FontImage;
 use crate::font::FontKey;
 use crate::rendering::components::Sprite;
 use crate::rendering_engine::RenderingEngine;
@@ -68,39 +70,37 @@ impl<'c> AssetLoader<'c> {
         file_path: T,
         font_size: u32,
     ) -> Result<FontKey, EmeraldError> {
-        Ok(FontKey::default())
-        // let file_path: &str = file_path.as_ref();
-        // let key = FontKey::new(file_path.clone(), font_size);
+        let file_path: &str = file_path.as_ref();
+        let key = FontKey::new(file_path.clone(), font_size);
 
-        // if self.asset_store.get_font(&key).is_some() {
-        //     return Ok(key);
-        // }
+        if self.asset_store.get_font(&key).is_some() {
+            return Ok(key);
+        }
 
-        // let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
-        // let font_texture_key = TextureKey::new(key.0.clone());
-        // let font_texture = Texture::from_rgba8(
-        //     font_texture_key.clone(),
-        //     font_image.width,
-        //     font_image.height,
-        //     &font_image.bytes,
-        // )?;
-        // let font_bytes = self.asset_bytes(file_path)?;
+        let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
+        let font_texture_key = self.rendering_engine.load_texture_ext(
+            &mut self.asset_store,
+            font_image.width as u32,
+            font_image.height as u32,
+            &font_image.bytes,
+            TextureKey::new(key.0.clone()),
+        )?;
+        let font_bytes = self.asset_bytes(file_path)?;
 
-        // let font_settings = fontdue::FontSettings {
-        //     scale: font_size as f32,
-        //     ..Default::default()
-        // };
-        // let inner_font = fontdue::Font::from_bytes(font_bytes, font_settings)?;
-        // let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
+        let font_settings = fontdue::FontSettings {
+            scale: font_size as f32,
+            ..Default::default()
+        };
+        let inner_font = match fontdue::Font::from_bytes(font_bytes, font_settings) {
+            Ok(font) => font,
+            Err(e) => return Err(EmeraldError::new(e)),
+        };
+        let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
+        self.asset_store
+            .insert_fontdue_font(key.clone(), inner_font);
+        self.asset_store.insert_font(key.clone(), font)?;
 
-        // self.asset_store
-        //     .insert_texture(font_texture_key, font_texture);
-        // self.asset_store
-        //     .insert_fontdue_font(key.clone(), inner_font);
-        // self.asset_store
-        //     .insert_font(&mut self.quad_ctx, key.clone(), font)?;
-
-        // Ok(key)
+        Ok(key)
     }
 
     pub fn ent<T: AsRef<str>>(
