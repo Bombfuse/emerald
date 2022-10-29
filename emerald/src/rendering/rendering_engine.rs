@@ -63,6 +63,9 @@ pub(crate) struct RenderingEngine {
     pub index_buffer: wgpu::Buffer,
     pub vertex_buffer: wgpu::Buffer,
 
+    vertices: Vec<Vertex>,
+    indices: Vec<u32>,
+
     pub render_texture_uid: usize,
 
     color_rect_texture: TextureKey,
@@ -244,6 +247,8 @@ impl RenderingEngine {
 
             vertex_buffer,
             index_buffer,
+            vertices: Vec::new(),
+            indices: Vec::new(),
 
             color_rect_texture,
 
@@ -521,8 +526,8 @@ impl RenderingEngine {
         let indices_set_size: u64 = std::mem::size_of::<u32>() as u64 * 6;
 
         let mut textured_quads: Vec<TexturedTriDraw> = Vec::new();
-        let mut vertices = Vec::with_capacity(self.vertex_buffer.size() as usize);
-        let mut indices: Vec<u32> = Vec::with_capacity(self.index_buffer.size() as usize);
+        self.vertices.clear();
+        self.indices.clear();
         let mut prev_texture_key = None;
 
         let draw_queue = &mut self.draw_queue;
@@ -639,7 +644,7 @@ impl RenderingEngine {
                         },
                     ];
 
-                    vertices.extend(vertex_set);
+                    self.vertices.extend(vertex_set);
 
                     let mut same_texture = false;
 
@@ -666,7 +671,7 @@ impl RenderingEngine {
                     }
 
                     let vertices_start = (counter as u64) * vertex_set_size;
-                    indices.extend([
+                    self.indices.extend([
                         index_start,
                         index_start + 1,
                         index_start + 2,
@@ -793,30 +798,30 @@ impl RenderingEngine {
         let vertices_set_count = self.vertex_buffer.size() / vertex_set_size;
         let indices_set_count = self.index_buffer.size() / indices_set_size as u64;
 
-        if indices.len() as u64 > indices_set_count {
+        if self.indices.len() as u64 > indices_set_count {
             self.index_buffer = self
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Index Buffer"),
-                    contents: bytemuck::cast_slice(&indices),
+                    contents: bytemuck::cast_slice(&self.indices),
                     usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
                 });
         } else {
             self.queue
-                .write_buffer(&self.index_buffer, 0, bytemuck::cast_slice(&indices));
+                .write_buffer(&self.index_buffer, 0, bytemuck::cast_slice(&self.indices));
         }
 
-        if vertices.len() as u64 > vertices_set_count {
+        if self.vertices.len() as u64 > vertices_set_count {
             self.vertex_buffer =
                 self.device
                     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                         label: Some("Vertex Buffer"),
-                        contents: bytemuck::cast_slice(&vertices),
+                        contents: bytemuck::cast_slice(&self.vertices),
                         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                     });
         } else {
             self.queue
-                .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
+                .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&self.vertices));
         }
 
         if let Some(camera_bind_group) = self.bind_groups.get(BIND_GROUP_ID_CAMERA_2D) {
