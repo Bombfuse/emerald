@@ -684,8 +684,6 @@ impl RenderingEngine {
                         },
                     ];
 
-                    self.vertices.extend(vertex_set);
-
                     let mut same_texture = false;
 
                     let len = textured_quads.len();
@@ -711,6 +709,7 @@ impl RenderingEngine {
                     }
 
                     let vertices_start = (counter as u64) * vertex_set_size;
+                    self.vertices.extend(vertex_set);
                     self.indices.extend([
                         index_start,
                         index_start + 1,
@@ -763,10 +762,11 @@ impl RenderingEngine {
                         )));
                     }
 
-                    let mut remaining_char_count = label.visible_characters;
-                    if label.visible_characters < 0 {
-                        remaining_char_count = label.text.len() as i64;
-                    }
+                    let mut remaining_char_count = if label.visible_characters < 0 {
+                        label.text.len() as i64
+                    } else {
+                        label.visible_characters
+                    };
 
                     for glyph in self.layout.glyphs() {
                         let glyph_key = glyph.key;
@@ -774,6 +774,13 @@ impl RenderingEngine {
                         let y = glyph.y;
 
                         if let Some(font) = asset_store.get_font_mut(&label.font_key) {
+                            if !font.characters.contains_key(&glyph_key) {
+                                return Err(EmeraldError::new(format!(
+                                    "Font {:?} does not contain cached glyph {:?}",
+                                    font.font_texture_key, glyph_key
+                                )));
+                            }
+
                             let font_data = &font.characters[&glyph_key];
                             let left_coord = (font_data.offset_x as f32 + x) * label.scale;
                             let top_coord = y * label.scale;
@@ -801,14 +808,168 @@ impl RenderingEngine {
                                 }
                             }
 
-                            if remaining_char_count > 0 && !sprite.target.is_zero_sized() {
-                                draw_queue.push_back(DrawCommand {
-                                    drawable: Drawable::Sprite { sprite },
-                                    transform,
-                                    ..draw_command
+                            if remaining_char_count < 0 || sprite.target.is_zero_sized() {
+                                println!("{:?}", (glyph.parent, remaining_char_count));
+                                continue;
+                            }
+
+                            let texture_key = font.font_texture_key.clone();
+                            let mut target_rect = target;
+                            let texture_size;
+                            if let Some(texture) = asset_store.get_texture(&texture_key) {
+                                texture_size =
+                                    (texture.size.width as f32, texture.size.height as f32);
+
+                                // Zeroed target means display entire texture
+                                if target_rect.is_zero_sized() {
+                                    target_rect.width = texture_size.0;
+                                    target_rect.height = texture_size.1;
+                                }
+                            } else {
+                                return Err(EmeraldError::new(format!(
+                                    "Unable to find texture {:?}",
+                                    texture_key
+                                )));
+                            }
+
+                            let x = (transform.translation.x + label.offset.x)
+                                / (self.active_size.width as f32 / 2.0);
+                            let y = (transform.translation.y + label.offset.y)
+                                / (self.active_size.height as f32 / 2.0);
+
+                            let normalized_texture_size = (
+                                target_rect.width / (self.active_size.width as f32 / 2.0),
+                                target_rect.height / (self.active_size.height as f32 / 2.0),
+                            );
+
+                            {
+                                let x = target_rect.x / texture_size.0;
+                                let y = target_rect.y / texture_size.1;
+                                let width = target_rect.width / texture_size.0;
+                                let height = target_rect.height / texture_size.1;
+                                target_rect = Rectangle::new(x, y, width, height);
+                            }
+
+                            let width = normalized_texture_size.0 * label.scale;
+                            let height = normalized_texture_size.1 * label.scale;
+                            let mut vertex_rect = Rectangle::new(x, y, width, height);
+
+                            let center_x = vertex_rect.x + vertex_rect.width / 2.0;
+                            let center_y = vertex_rect.y + vertex_rect.height / 2.0;
+
+                            fn rotate_vertex(
+                                center_x: f32,
+                                center_y: f32,
+                                x: f32,
+                                y: f32,
+                                rotation: f32,
+                            ) -> [f32; 2] {
+                                let diff_x = x - center_x;
+                                let diff_y = y - center_y;
+                                [
+                                    center_x + (rotation.cos() * diff_x)
+                                        - (rotation.sin() * diff_y),
+                                    center_y
+                                        + (rotation.sin() * diff_x)
+                                        + (rotation.cos() * diff_y),
+                                ]
+                            }
+
+                            let vertex_set = [
+                                // Changed
+                                Vertex {
+                                    position: rotate_vertex(
+                                        center_x,
+                                        center_y,
+                                        vertex_rect.x,
+                                        vertex_rect.y + vertex_rect.height,
+                                        0.0,
+                                    ),
+                                    tex_coords: [target_rect.x, target_rect.y],
+                                }, // A
+                                Vertex {
+                                    position: rotate_vertex(
+                                        center_x,
+                                        center_y,
+                                        vertex_rect.x,
+                                        vertex_rect.y,
+                                        0.0,
+                                    ),
+                                    tex_coords: [target_rect.x, target_rect.y + target_rect.height],
+                                }, // B
+                                Vertex {
+                                    position: rotate_vertex(
+                                        center_x,
+                                        center_y,
+                                        vertex_rect.x + vertex_rect.width,
+                                        vertex_rect.y,
+                                        0.0,
+                                    ),
+                                    tex_coords: [
+                                        target_rect.x + target_rect.width,
+                                        target_rect.y + target_rect.height,
+                                    ],
+                                }, // C
+                                Vertex {
+                                    position: rotate_vertex(
+                                        center_x,
+                                        center_y,
+                                        vertex_rect.x + vertex_rect.width,
+                                        vertex_rect.y + vertex_rect.height,
+                                        0.0,
+                                    ),
+                                    tex_coords: [target_rect.x + target_rect.width, target_rect.y],
+                                },
+                            ];
+
+                            let mut same_texture = false;
+
+                            let len = textured_quads.len();
+                            if len > 0 {
+                                if let Some(key) = prev_texture_key {
+                                    if key == texture_key {
+                                        same_texture = true;
+                                    }
+                                }
+                            }
+
+                            let mut add_quad = true;
+                            let mut index_start = 0;
+
+                            if same_texture {
+                                if let Some(textured_quad_draw) = textured_quads.get_mut(len - 1) {
+                                    index_start = textured_quad_draw.count * 4;
+                                    textured_quad_draw.vertices_range.end += vertex_set_size;
+                                    textured_quad_draw.indices_range.end += indices_set_size;
+                                    textured_quad_draw.count += 1;
+                                    add_quad = false;
+                                }
+                            }
+
+                            let vertices_start = (counter as u64) * vertex_set_size;
+                            self.vertices.extend(vertex_set);
+                            self.indices.extend([
+                                index_start,
+                                index_start + 1,
+                                index_start + 2,
+                                index_start,
+                                index_start + 2,
+                                index_start + 3,
+                            ]);
+
+                            if add_quad {
+                                let indices_start = (counter as u64) * indices_set_size;
+                                textured_quads.push(TexturedTriDraw {
+                                    key: texture_key.clone(),
+                                    vertices_range: (vertices_start
+                                        ..vertices_start + vertex_set_size),
+                                    indices_range: (indices_start
+                                        ..indices_start + indices_set_size),
+                                    count: 1,
                                 });
                             }
 
+                            prev_texture_key = Some(texture_key);
                             remaining_char_count -= 1;
                         } else {
                             return Err(EmeraldError::new(format!(
