@@ -39,13 +39,16 @@ impl<'c> RenderingHandler<'c> {
         sprite: &Sprite,
         transform: &Transform,
     ) -> Result<(), EmeraldError> {
-        self.rendering_engine.push_draw_command(DrawCommand {
-            drawable: Drawable::Sprite {
-                sprite: sprite.clone(),
+        self.rendering_engine.push_draw_command(
+            &mut self.asset_store,
+            DrawCommand {
+                drawable: Drawable::Sprite {
+                    sprite: sprite.clone(),
+                },
+                transform: *transform,
+                z_index: sprite.z_index,
             },
-            transform: *transform,
-            z_index: sprite.z_index,
-        })
+        )
     }
 
     pub fn draw_label(&mut self, label: &Label, transform: &Transform) -> Result<(), EmeraldError> {
@@ -58,13 +61,16 @@ impl<'c> RenderingHandler<'c> {
         color_rect: &ColorRect,
         transform: &Transform,
     ) -> Result<(), EmeraldError> {
-        self.rendering_engine.push_draw_command(DrawCommand {
-            drawable: Drawable::ColorRect {
-                color_rect: *color_rect,
+        self.rendering_engine.push_draw_command(
+            &mut self.asset_store,
+            DrawCommand {
+                drawable: Drawable::ColorRect {
+                    color_rect: *color_rect,
+                },
+                transform: *transform,
+                z_index: color_rect.z_index,
             },
-            transform: *transform,
-            z_index: color_rect.z_index,
-        })
+        )
     }
 
     /// Begin drawing to the screen

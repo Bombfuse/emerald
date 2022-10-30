@@ -300,7 +300,7 @@ impl RenderingEngine {
             };
 
             draw_command.transform.translation = translation;
-            self.push_draw_command(draw_command)?;
+            self.push_draw_command(asset_store, draw_command)?;
         }
 
         Ok(())
@@ -311,7 +311,54 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn push_draw_command(&mut self, draw_command: DrawCommand) -> Result<(), EmeraldError> {
+    pub fn push_draw_command(
+        &mut self,
+        asset_store: &mut AssetStore,
+        draw_command: DrawCommand,
+    ) -> Result<(), EmeraldError> {
+        match &draw_command.drawable {
+            Drawable::Label { label } => {
+                // prepass for caching glyphs, ideally we can do this inline
+                {
+                    self.layout.reset(&LayoutSettings {
+                        max_width: label.max_width,
+                        max_height: label.max_height,
+                        wrap_style: label.wrap_style,
+                        horizontal_align: label.horizontal_align,
+                        vertical_align: label.vertical_align,
+                        ..LayoutSettings::default()
+                    });
+
+                    if let Some(font) = asset_store.get_fontdue_font(&label.font_key) {
+                        self.layout.append(
+                            &[font],
+                            &TextStyle::new(&label.text, label.font_size as f32, 0),
+                        );
+                    }
+
+                    let mut to_cache = Vec::new();
+                    for glyph in self.layout.glyphs() {
+                        if let Some(font) = asset_store.get_font(&label.font_key) {
+                            if !font.characters.contains_key(&glyph.key) {
+                                to_cache.push(glyph.key);
+                            }
+                        }
+                    }
+
+                    for glyph_key in to_cache {
+                        crate::font::cache_glyph(
+                            self,
+                            asset_store,
+                            &label.font_key,
+                            glyph_key,
+                            label.font_size,
+                        )?;
+                    }
+                }
+            }
+            _ => {}
+        }
+
         self.draw_queue.push_front(draw_command);
         Ok(())
     }
@@ -860,35 +907,16 @@ impl RenderingEngine {
         label: &Label,
         transform: &Transform,
     ) -> Result<(), EmeraldError> {
-        // prepass for caching glphys, ideally we can do this inline
-        {
-            let mut to_cache = Vec::new();
-            for glyph in self.layout.glyphs() {
-                if let Some(font) = asset_store.get_font(&label.font_key) {
-                    if !font.characters.contains_key(&glyph.key) {
-                        to_cache.push((label.font_key.clone(), glyph.key, label.font_size));
-                    }
-                }
-            }
-
-            for (font_key, glyph_key, font_size) in to_cache {
-                crate::font::cache_glyph(
-                    self,
-                    asset_store,
-                    &label.font_key,
-                    glyph_key,
-                    label.font_size,
-                )?;
-            }
-        }
-
-        self.push_draw_command(DrawCommand {
-            drawable: Drawable::Label {
-                label: label.clone(),
+        self.push_draw_command(
+            asset_store,
+            DrawCommand {
+                drawable: Drawable::Label {
+                    label: label.clone(),
+                },
+                transform: *transform,
+                z_index: label.z_index,
             },
-            transform: *transform,
-            z_index: label.z_index,
-        })
+        )
     }
 
     #[inline]
