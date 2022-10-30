@@ -565,171 +565,29 @@ impl RenderingEngine {
         let vertex_set_size = (std::mem::size_of::<Vertex>() * 4) as u64;
         let indices_set_size: u64 = std::mem::size_of::<u32>() as u64 * 6;
 
-        let mut textured_quads: Vec<TexturedTriDraw> = Vec::new();
+        let mut textured_tri_draws: Vec<TexturedTriDraw> = Vec::new();
         self.vertices.clear();
         self.indices.clear();
-        let mut prev_texture_key = None;
 
         let draw_queue = &mut self.draw_queue;
         while let Some(draw_command) = draw_queue.pop_back() {
             match draw_command.drawable {
                 Drawable::Sprite { sprite } => {
-                    let texture_key = sprite.texture_key;
-                    let mut target_rect = sprite.target;
-                    let texture_size;
-                    if let Some(texture) = asset_store.get_texture(&texture_key) {
-                        texture_size = (texture.size.width as f32, texture.size.height as f32);
-
-                        // Zeroed target means display entire texture
-                        if target_rect.is_zero_sized() {
-                            target_rect.width = texture_size.0;
-                            target_rect.height = texture_size.1;
-                        }
-                    } else {
-                        return Err(EmeraldError::new(format!(
-                            "Unable to find texture {:?}",
-                            texture_key
-                        )));
-                    }
-
-                    let x = (draw_command.transform.translation.x + sprite.offset.x)
-                        / (self.active_size.width as f32 / 2.0);
-                    let y = (draw_command.transform.translation.y + sprite.offset.y)
-                        / (self.active_size.height as f32 / 2.0);
-
-                    let normalized_texture_size = (
-                        target_rect.width / (self.active_size.width as f32 / 2.0),
-                        target_rect.height / (self.active_size.height as f32 / 2.0),
-                    );
-
-                    {
-                        let x = target_rect.x / texture_size.0;
-                        let y = target_rect.y / texture_size.1;
-                        let width = target_rect.width / texture_size.0;
-                        let height = target_rect.height / texture_size.1;
-                        target_rect = Rectangle::new(x, y, width, height);
-                    }
-
-                    let width = normalized_texture_size.0 * sprite.scale.x;
-                    let height = normalized_texture_size.1 * sprite.scale.y;
-                    let mut vertex_rect = Rectangle::new(x, y, width, height);
-
-                    if sprite.centered {
-                        vertex_rect.x -= width / 2.0;
-                        vertex_rect.y -= height / 2.0;
-                    }
-
-                    let center_x = vertex_rect.x + vertex_rect.width / 2.0;
-                    let center_y = vertex_rect.y + vertex_rect.height / 2.0;
-
-                    fn rotate_vertex(
-                        center_x: f32,
-                        center_y: f32,
-                        x: f32,
-                        y: f32,
-                        rotation: f32,
-                    ) -> [f32; 2] {
-                        let diff_x = x - center_x;
-                        let diff_y = y - center_y;
-                        [
-                            center_x + (rotation.cos() * diff_x) - (rotation.sin() * diff_y),
-                            center_y + (rotation.sin() * diff_x) + (rotation.cos() * diff_y),
-                        ]
-                    }
-
-                    let vertex_set = [
-                        // Changed
-                        Vertex {
-                            position: rotate_vertex(
-                                center_x,
-                                center_y,
-                                vertex_rect.x,
-                                vertex_rect.y + vertex_rect.height,
-                                sprite.rotation,
-                            ),
-                            tex_coords: [target_rect.x, target_rect.y],
-                        }, // A
-                        Vertex {
-                            position: rotate_vertex(
-                                center_x,
-                                center_y,
-                                vertex_rect.x,
-                                vertex_rect.y,
-                                sprite.rotation,
-                            ),
-                            tex_coords: [target_rect.x, target_rect.y + target_rect.height],
-                        }, // B
-                        Vertex {
-                            position: rotate_vertex(
-                                center_x,
-                                center_y,
-                                vertex_rect.x + vertex_rect.width,
-                                vertex_rect.y,
-                                sprite.rotation,
-                            ),
-                            tex_coords: [
-                                target_rect.x + target_rect.width,
-                                target_rect.y + target_rect.height,
-                            ],
-                        }, // C
-                        Vertex {
-                            position: rotate_vertex(
-                                center_x,
-                                center_y,
-                                vertex_rect.x + vertex_rect.width,
-                                vertex_rect.y + vertex_rect.height,
-                                sprite.rotation,
-                            ),
-                            tex_coords: [target_rect.x + target_rect.width, target_rect.y],
-                        },
-                    ];
-
-                    let mut same_texture = false;
-
-                    let len = textured_quads.len();
-                    if len > 0 {
-                        if let Some(key) = prev_texture_key {
-                            if key == texture_key {
-                                same_texture = true;
-                            }
-                        }
-                    }
-
-                    let mut add_quad = true;
-                    let mut index_start = 0;
-
-                    if same_texture {
-                        if let Some(textured_quad_draw) = textured_quads.get_mut(len - 1) {
-                            index_start = textured_quad_draw.count * 4;
-                            textured_quad_draw.vertices_range.end += vertex_set_size;
-                            textured_quad_draw.indices_range.end += indices_set_size;
-                            textured_quad_draw.count += 1;
-                            add_quad = false;
-                        }
-                    }
-
-                    let vertices_start = (counter as u64) * vertex_set_size;
-                    self.vertices.extend(vertex_set);
-                    self.indices.extend([
-                        index_start,
-                        index_start + 1,
-                        index_start + 2,
-                        index_start,
-                        index_start + 2,
-                        index_start + 3,
-                    ]);
-
-                    if add_quad {
-                        let indices_start = (counter as u64) * indices_set_size;
-                        textured_quads.push(TexturedTriDraw {
-                            key: texture_key.clone(),
-                            vertices_range: (vertices_start..vertices_start + vertex_set_size),
-                            indices_range: (indices_start..indices_start + indices_set_size),
-                            count: 1,
-                        });
-                    }
-
-                    prev_texture_key = Some(texture_key);
+                    draw_textured_quad(
+                        asset_store,
+                        sprite.texture_key,
+                        sprite.target,
+                        sprite.offset,
+                        sprite.scale,
+                        sprite.rotation,
+                        sprite.centered,
+                        draw_command.transform,
+                        self.active_size.clone(),
+                        &mut self.vertices,
+                        &mut self.indices,
+                        counter,
+                        &mut textured_tri_draws,
+                    )?;
                 }
                 Drawable::Aseprite { sprite, .. } => {
                     // Aseprites can be broken down into a sprite draw
@@ -768,6 +626,7 @@ impl RenderingEngine {
                         label.visible_characters
                     };
 
+                    let mut to_draw = Vec::new();
                     for glyph in self.layout.glyphs() {
                         let glyph_key = glyph.key;
                         let x = glyph.x;
@@ -796,180 +655,28 @@ impl RenderingEngine {
                             transform.translation.x += label.offset.x + left_coord;
                             transform.translation.y += label.offset.y + top_coord;
 
-                            let mut sprite = Sprite::from_texture(font.font_texture_key.clone());
-                            sprite.target = target;
-                            sprite.scale = Vector2::new(label.scale, label.scale);
-                            sprite.offset = label.offset;
-                            sprite.centered = false;
-
+                            let scale = Vector2::new(label.scale, label.scale);
+                            let offset = label.offset;
+                            let rotation = 0.0;
                             if label.centered {
                                 if let Some(width) = &label.max_width {
                                     transform.translation.x -= width / 2.0;
                                 }
                             }
 
-                            if remaining_char_count < 0 || sprite.target.is_zero_sized() {
-                                println!("{:?}", (glyph.parent, remaining_char_count));
+                            if remaining_char_count < 0 || target.is_zero_sized() {
                                 continue;
                             }
 
-                            let texture_key = font.font_texture_key.clone();
-                            let mut target_rect = target;
-                            let texture_size;
-                            if let Some(texture) = asset_store.get_texture(&texture_key) {
-                                texture_size =
-                                    (texture.size.width as f32, texture.size.height as f32);
+                            to_draw.push((
+                                font.font_texture_key.clone(),
+                                target,
+                                offset,
+                                scale,
+                                rotation,
+                                transform,
+                            ));
 
-                                // Zeroed target means display entire texture
-                                if target_rect.is_zero_sized() {
-                                    target_rect.width = texture_size.0;
-                                    target_rect.height = texture_size.1;
-                                }
-                            } else {
-                                return Err(EmeraldError::new(format!(
-                                    "Unable to find texture {:?}",
-                                    texture_key
-                                )));
-                            }
-
-                            let x = (transform.translation.x + label.offset.x)
-                                / (self.active_size.width as f32 / 2.0);
-                            let y = (transform.translation.y + label.offset.y)
-                                / (self.active_size.height as f32 / 2.0);
-
-                            let normalized_texture_size = (
-                                target_rect.width / (self.active_size.width as f32 / 2.0),
-                                target_rect.height / (self.active_size.height as f32 / 2.0),
-                            );
-
-                            {
-                                let x = target_rect.x / texture_size.0;
-                                let y = target_rect.y / texture_size.1;
-                                let width = target_rect.width / texture_size.0;
-                                let height = target_rect.height / texture_size.1;
-                                target_rect = Rectangle::new(x, y, width, height);
-                            }
-
-                            let width = normalized_texture_size.0 * label.scale;
-                            let height = normalized_texture_size.1 * label.scale;
-                            let mut vertex_rect = Rectangle::new(x, y, width, height);
-
-                            let center_x = vertex_rect.x + vertex_rect.width / 2.0;
-                            let center_y = vertex_rect.y + vertex_rect.height / 2.0;
-
-                            fn rotate_vertex(
-                                center_x: f32,
-                                center_y: f32,
-                                x: f32,
-                                y: f32,
-                                rotation: f32,
-                            ) -> [f32; 2] {
-                                let diff_x = x - center_x;
-                                let diff_y = y - center_y;
-                                [
-                                    center_x + (rotation.cos() * diff_x)
-                                        - (rotation.sin() * diff_y),
-                                    center_y
-                                        + (rotation.sin() * diff_x)
-                                        + (rotation.cos() * diff_y),
-                                ]
-                            }
-
-                            let vertex_set = [
-                                // Changed
-                                Vertex {
-                                    position: rotate_vertex(
-                                        center_x,
-                                        center_y,
-                                        vertex_rect.x,
-                                        vertex_rect.y + vertex_rect.height,
-                                        0.0,
-                                    ),
-                                    tex_coords: [target_rect.x, target_rect.y],
-                                }, // A
-                                Vertex {
-                                    position: rotate_vertex(
-                                        center_x,
-                                        center_y,
-                                        vertex_rect.x,
-                                        vertex_rect.y,
-                                        0.0,
-                                    ),
-                                    tex_coords: [target_rect.x, target_rect.y + target_rect.height],
-                                }, // B
-                                Vertex {
-                                    position: rotate_vertex(
-                                        center_x,
-                                        center_y,
-                                        vertex_rect.x + vertex_rect.width,
-                                        vertex_rect.y,
-                                        0.0,
-                                    ),
-                                    tex_coords: [
-                                        target_rect.x + target_rect.width,
-                                        target_rect.y + target_rect.height,
-                                    ],
-                                }, // C
-                                Vertex {
-                                    position: rotate_vertex(
-                                        center_x,
-                                        center_y,
-                                        vertex_rect.x + vertex_rect.width,
-                                        vertex_rect.y + vertex_rect.height,
-                                        0.0,
-                                    ),
-                                    tex_coords: [target_rect.x + target_rect.width, target_rect.y],
-                                },
-                            ];
-
-                            let mut same_texture = false;
-
-                            let len = textured_quads.len();
-                            if len > 0 {
-                                if let Some(key) = prev_texture_key {
-                                    if key == texture_key {
-                                        same_texture = true;
-                                    }
-                                }
-                            }
-
-                            let mut add_quad = true;
-                            let mut index_start = 0;
-
-                            if same_texture {
-                                if let Some(textured_quad_draw) = textured_quads.get_mut(len - 1) {
-                                    index_start = textured_quad_draw.count * 4;
-                                    textured_quad_draw.vertices_range.end += vertex_set_size;
-                                    textured_quad_draw.indices_range.end += indices_set_size;
-                                    textured_quad_draw.count += 1;
-                                    add_quad = false;
-                                }
-                            }
-
-                            let vertices_start = (counter as u64) * vertex_set_size;
-                            self.vertices.extend(vertex_set);
-                            self.indices.extend([
-                                index_start,
-                                index_start + 1,
-                                index_start + 2,
-                                index_start,
-                                index_start + 2,
-                                index_start + 3,
-                            ]);
-
-                            if add_quad {
-                                let indices_start = (counter as u64) * indices_set_size;
-                                textured_quads.push(TexturedTriDraw {
-                                    key: texture_key.clone(),
-                                    vertices_range: (vertices_start
-                                        ..vertices_start + vertex_set_size),
-                                    indices_range: (indices_start
-                                        ..indices_start + indices_set_size),
-                                    count: 1,
-                                });
-                            }
-
-                            prev_texture_key = Some(texture_key);
                             remaining_char_count -= 1;
                         } else {
                             return Err(EmeraldError::new(format!(
@@ -977,6 +684,23 @@ impl RenderingEngine {
                                 label.font_key
                             )));
                         }
+                    }
+                    for (texture_key, target, offset, scale, rotation, transform) in to_draw {
+                        draw_textured_quad(
+                            asset_store,
+                            texture_key,
+                            target,
+                            offset,
+                            scale,
+                            rotation,
+                            false,
+                            transform,
+                            self.active_size.clone(),
+                            &mut self.vertices,
+                            &mut self.indices,
+                            counter,
+                            &mut textured_tri_draws,
+                        )?;
                     }
                 }
                 Drawable::Tilemap {
@@ -1024,7 +748,7 @@ impl RenderingEngine {
         if let Some(camera_bind_group) = self.bind_groups.get(BIND_GROUP_ID_CAMERA_2D) {
             render_pass.set_bind_group(1, camera_bind_group, &[]);
 
-            for draw_call in textured_quads {
+            for draw_call in textured_tri_draws {
                 if let Some(texture_bind_group) = self.bind_groups.get(&draw_call.key.0) {
                     render_pass.set_bind_group(0, texture_bind_group, &[]);
 
@@ -1102,6 +826,162 @@ impl RenderingEngine {
             key
         )))
     }
+}
+
+fn draw_textured_quad(
+    asset_store: &mut AssetStore,
+    texture_key: TextureKey,
+    mut target: Rectangle,
+    offset: Vector2<f32>,
+    scale: Vector2<f32>,
+    rotation: f32,
+    centered: bool,
+    transform: Transform,
+    active_size: PhysicalSize<u32>,
+    vertices: &mut Vec<Vertex>,
+    indices: &mut Vec<u32>,
+    counter: u32,
+    textured_tri_draws: &mut Vec<TexturedTriDraw>,
+) -> Result<(), EmeraldError> {
+    let vertex_set_size = (std::mem::size_of::<Vertex>() * 4) as u64;
+    let indices_set_size: u64 = std::mem::size_of::<u32>() as u64 * 6;
+    let texture_size;
+    if let Some(texture) = asset_store.get_texture(&texture_key) {
+        texture_size = (texture.size.width as f32, texture.size.height as f32);
+
+        // Zeroed target means display entire texture
+        if target.is_zero_sized() {
+            target.width = texture_size.0;
+            target.height = texture_size.1;
+        }
+    } else {
+        return Err(EmeraldError::new(format!(
+            "Unable to find texture {:?}",
+            texture_key
+        )));
+    }
+
+    let x = (transform.translation.x + offset.x) / (active_size.width as f32 / 2.0);
+    let y = (transform.translation.y + offset.y) / (active_size.height as f32 / 2.0);
+
+    let normalized_texture_size = (
+        target.width / (active_size.width as f32 / 2.0),
+        target.height / (active_size.height as f32 / 2.0),
+    );
+
+    {
+        let x = target.x / texture_size.0;
+        let y = target.y / texture_size.1;
+        let width = target.width / texture_size.0;
+        let height = target.height / texture_size.1;
+        target = Rectangle::new(x, y, width, height);
+    }
+
+    let width = normalized_texture_size.0 * scale.x;
+    let height = normalized_texture_size.1 * scale.y;
+    let mut vertex_rect = Rectangle::new(x, y, width, height);
+
+    let center_x = vertex_rect.x + vertex_rect.width / 2.0;
+    let center_y = vertex_rect.y + vertex_rect.height / 2.0;
+
+    fn rotate_vertex(center_x: f32, center_y: f32, x: f32, y: f32, rotation: f32) -> [f32; 2] {
+        let diff_x = x - center_x;
+        let diff_y = y - center_y;
+        [
+            center_x + (rotation.cos() * diff_x) - (rotation.sin() * diff_y),
+            center_y + (rotation.sin() * diff_x) + (rotation.cos() * diff_y),
+        ]
+    }
+
+    if centered {
+        vertex_rect.x -= width / 2.0;
+        vertex_rect.y -= height / 2.0;
+    }
+
+    let vertex_set = [
+        // Changed
+        Vertex {
+            position: rotate_vertex(
+                center_x,
+                center_y,
+                vertex_rect.x,
+                vertex_rect.y + vertex_rect.height,
+                0.0,
+            ),
+            tex_coords: [target.x, target.y],
+        }, // A
+        Vertex {
+            position: rotate_vertex(center_x, center_y, vertex_rect.x, vertex_rect.y, 0.0),
+            tex_coords: [target.x, target.y + target.height],
+        }, // B
+        Vertex {
+            position: rotate_vertex(
+                center_x,
+                center_y,
+                vertex_rect.x + vertex_rect.width,
+                vertex_rect.y,
+                0.0,
+            ),
+            tex_coords: [target.x + target.width, target.y + target.height],
+        }, // C
+        Vertex {
+            position: rotate_vertex(
+                center_x,
+                center_y,
+                vertex_rect.x + vertex_rect.width,
+                vertex_rect.y + vertex_rect.height,
+                0.0,
+            ),
+            tex_coords: [target.x + target.width, target.y],
+        },
+    ];
+
+    let mut same_texture = false;
+
+    let len = textured_tri_draws.len();
+    if len > 0 {
+        if let Some(tri_draw) = textured_tri_draws.get(len - 1) {
+            if tri_draw.key == texture_key {
+                same_texture = true;
+            }
+        }
+    }
+
+    let mut add_quad = true;
+    let mut index_start = 0;
+
+    if same_texture {
+        if let Some(textured_quad_draw) = textured_tri_draws.get_mut(len - 1) {
+            index_start = textured_quad_draw.count * 4;
+            textured_quad_draw.vertices_range.end += vertex_set_size;
+            textured_quad_draw.indices_range.end += indices_set_size;
+            textured_quad_draw.count += 1;
+            add_quad = false;
+        }
+    }
+
+    let vertices_start = (counter as u64) * vertex_set_size;
+    vertices.extend(vertex_set);
+    indices.extend([
+        index_start,
+        index_start + 1,
+        index_start + 2,
+        index_start,
+        index_start + 2,
+        index_start + 3,
+    ]);
+
+    if add_quad {
+        let indices_start = (counter as u64) * indices_set_size;
+        textured_tri_draws.push(TexturedTriDraw {
+            key: texture_key.clone(),
+            vertices_range: (vertices_start..vertices_start + vertex_set_size),
+            indices_range: (indices_start..indices_start + indices_set_size),
+            count: 1,
+        });
+    }
+
+    Ok(())
 }
 
 async fn get_adapter(
