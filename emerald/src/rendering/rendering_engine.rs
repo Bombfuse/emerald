@@ -255,7 +255,7 @@ impl RenderingEngine {
             render_texture_uid: 0,
 
             active_render_texture_key: None,
-            layout: Layout::new(fontdue::layout::CoordinateSystem::PositiveYDown),
+            layout: Layout::new(fontdue::layout::CoordinateSystem::PositiveYUp),
         })
     }
 
@@ -817,6 +817,7 @@ impl RenderingEngine {
                             sprite.target = target;
                             sprite.scale = Vector2::new(label.scale, label.scale);
                             sprite.offset = label.offset;
+                            sprite.centered = false;
                             if remaining_char_count > 0 {
                                 draw_queue.push_back(DrawCommand {
                                     drawable: Drawable::Sprite { sprite },
