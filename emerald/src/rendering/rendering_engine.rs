@@ -255,7 +255,7 @@ impl RenderingEngine {
             render_texture_uid: 0,
 
             active_render_texture_key: None,
-            layout: Layout::new(fontdue::layout::CoordinateSystem::PositiveYUp),
+            layout: Layout::new(fontdue::layout::CoordinateSystem::PositiveYDown),
         })
     }
 
@@ -809,6 +809,10 @@ impl RenderingEngine {
                             //     + Vec2::from(label.offset)
                             //     + vec2(left_coord, -top_coord);
 
+                            let mut transform = draw_command.transform;
+                            transform.translation.x += label.offset.x + left_coord;
+                            transform.translation.y += label.offset.y + top_coord;
+
                             let mut sprite = Sprite::from_texture(font.font_texture_key.clone());
                             sprite.target = target;
                             sprite.scale = Vector2::new(label.scale, label.scale);
@@ -816,6 +820,7 @@ impl RenderingEngine {
                             if remaining_char_count > 0 {
                                 draw_queue.push_back(DrawCommand {
                                     drawable: Drawable::Sprite { sprite },
+                                    transform,
                                     ..draw_command
                                 });
                             }
