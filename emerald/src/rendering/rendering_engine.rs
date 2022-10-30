@@ -320,14 +320,7 @@ impl RenderingEngine {
             Drawable::Label { label } => {
                 // prepass for caching glyphs, ideally we can do this inline
                 {
-                    self.layout.reset(&LayoutSettings {
-                        max_width: label.max_width,
-                        max_height: label.max_height,
-                        wrap_style: label.wrap_style,
-                        horizontal_align: label.horizontal_align,
-                        vertical_align: label.vertical_align,
-                        ..LayoutSettings::default()
-                    });
+                    self.layout.reset(&Default::default());
 
                     if let Some(font) = asset_store.get_fontdue_font(&label.font_key) {
                         self.layout.append(
@@ -765,25 +758,11 @@ impl RenderingEngine {
                         );
                     }
 
-                    let mut font_texture_width = 0;
-                    let mut font_texture_height = 0;
-                    let mut font_texture_key: Option<TextureKey> = None;
-
-                    if let Some(font) = asset_store.get_font_mut(&label.font_key) {
-                        font_texture_key = Some(font.font_texture_key.clone());
-                    }
-
-                    if let Some(font_texture_key) = font_texture_key.as_ref() {
-                        if let Some(texture) = asset_store.get_texture(font_texture_key) {
-                            font_texture_width = texture.size.width;
-                            font_texture_height = texture.size.height;
-                        }
-                    }
-
                     let mut remaining_char_count = label.visible_characters;
                     if label.visible_characters < 0 {
                         remaining_char_count = label.text.len() as i64;
                     }
+
                     for glyph in self.layout.glyphs() {
                         let glyph_key = glyph.key;
                         let x = glyph.x;
@@ -795,19 +774,11 @@ impl RenderingEngine {
                             let top_coord = y * label.scale;
 
                             let target = Rectangle::new(
-                                (font_data.glyph_x as f32),
-                                (font_data.glyph_y as f32),
-                                (font_data.glyph_w as f32),
-                                (font_data.glyph_h as f32),
+                                font_data.glyph_x as f32,
+                                font_data.glyph_y as f32,
+                                font_data.glyph_w as f32,
+                                font_data.glyph_h as f32,
                             );
-
-                            // let real_scale = Vec2::new(
-                            //     label.scale * target.width * font_texture_width as f32,
-                            //     label.scale * target.height * font_texture_height as f32 * -1.0,
-                            // );
-                            // let real_position = Vec2::from(*position)
-                            //     + Vec2::from(label.offset)
-                            //     + vec2(left_coord, -top_coord);
 
                             let mut transform = draw_command.transform;
                             transform.translation.x += label.offset.x + left_coord;
@@ -818,7 +789,7 @@ impl RenderingEngine {
                             sprite.scale = Vector2::new(label.scale, label.scale);
                             sprite.offset = label.offset;
                             sprite.centered = false;
-                            if remaining_char_count > 0 {
+                            if remaining_char_count > 0 && !sprite.target.is_zero_sized() {
                                 draw_queue.push_back(DrawCommand {
                                     drawable: Drawable::Sprite { sprite },
                                     transform,
