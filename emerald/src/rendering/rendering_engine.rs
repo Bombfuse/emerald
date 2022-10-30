@@ -756,6 +756,11 @@ impl RenderingEngine {
                             &[font],
                             &TextStyle::new(&label.text, label.font_size as f32, 0),
                         );
+                    } else {
+                        return Err(EmeraldError::new(format!(
+                            "Font {:?} was not found in the asset store.",
+                            &label.font_key
+                        )));
                     }
 
                     let mut remaining_char_count = label.visible_characters;
@@ -789,6 +794,13 @@ impl RenderingEngine {
                             sprite.scale = Vector2::new(label.scale, label.scale);
                             sprite.offset = label.offset;
                             sprite.centered = false;
+
+                            if label.centered {
+                                if let Some(width) = &label.max_width {
+                                    transform.translation.x -= width / 2.0;
+                                }
+                            }
+
                             if remaining_char_count > 0 && !sprite.target.is_zero_sized() {
                                 draw_queue.push_back(DrawCommand {
                                     drawable: Drawable::Sprite { sprite },
