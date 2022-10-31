@@ -37,8 +37,13 @@ impl Game for MouseExample {
     fn update(&mut self, mut emd: Emerald) {
         let mouse = emd.input().mouse();
         let (width, height) = emd.screen_size();
-        self.transform.translation.x = mouse.translation.x;
-        self.transform.translation.y = mouse.translation.y;
+        let translation = screen_translation_to_world_translation(
+            (width, height),
+            &mouse.translation,
+            &self.world,
+        );
+        self.transform.translation.x = translation.x;
+        self.transform.translation.y = translation.y;
         let mut color = Color::new(0, 0, 0, 255);
         let mut flash = Color::new(128, 128, 128, 128);
 
@@ -63,6 +68,8 @@ impl Game for MouseExample {
             flash.b = 192;
         }
 
+        println!("Color should be {:?}", color);
+
         self.rect = ColorRect::new(color, 40, 40);
 
         self.screen_center = Translation::new(width as f32 / 2.0, height as f32 / 2.0);
@@ -70,7 +77,7 @@ impl Game for MouseExample {
 
         for (_, (transform, _)) in self.world.query::<(&mut Transform, &mut Sprite)>().iter() {
             // It's important to convert coordinates to the physical world space.
-            *transform = self.transform - Transform::from_translation(self.screen_center);
+            *transform = self.transform;
         }
     }
 

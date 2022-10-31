@@ -6,6 +6,7 @@ use rapier2d::na::Matrix4;
 pub(crate) struct Vertex {
     pub position: [f32; 2],
     pub tex_coords: [f32; 2],
+    pub color: [f32; 4],
 }
 impl Vertex {
     pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
@@ -23,6 +24,11 @@ impl Vertex {
                     shader_location: 1,
                     format: wgpu::VertexFormat::Float32x2,
                 },
+                wgpu::VertexAttribute {
+                    offset: (std::mem::size_of::<[f32; 2]>() * 2) as wgpu::BufferAddress,
+                    shader_location: 2,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
             ],
         }
     }
@@ -33,18 +39,22 @@ pub(crate) const VERTICES: &[Vertex] = &[
     Vertex {
         position: [-1.0, 1.0],
         tex_coords: [0.0, 0.0],
+        color: [0.0, 0.0, 0.0, 1.0],
     }, // A
     Vertex {
         position: [-1.0, -1.0],
         tex_coords: [0.0, 1.0],
+        color: [0.0, 0.0, 0.0, 1.0],
     }, // B
     Vertex {
         position: [1.0, -1.0],
         tex_coords: [1.0, 1.0],
+        color: [0.0, 0.0, 0.0, 1.0],
     }, // C
     Vertex {
         position: [1.0, 1.0],
         tex_coords: [1.0, 0.0],
+        color: [0.0, 0.0, 0.0, 1.0],
     },
 ];
 

@@ -20,7 +20,7 @@ use crate::{transform::Translation, World};
 pub fn screen_translation_to_world_translation(
     screen_size: (u32, u32),
     screen_translation: &Translation,
-    world: &mut World,
+    world: &World,
 ) -> Translation {
     let camera_pos = world
         .get_active_camera()

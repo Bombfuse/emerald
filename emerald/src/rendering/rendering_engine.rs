@@ -227,7 +227,7 @@ impl RenderingEngine {
             &queue,
             1,
             1,
-            &[0, 0, 0, 255],
+            &[255, 255, 255, 255],
             TextureKey::default(),
         )?;
 
@@ -581,6 +581,7 @@ impl RenderingEngine {
                         sprite.scale,
                         sprite.rotation,
                         sprite.centered,
+                        sprite.color,
                         draw_command.transform,
                         self.active_size.clone(),
                         &mut self.vertices,
@@ -597,7 +598,22 @@ impl RenderingEngine {
                     });
                     continue;
                 }
-                Drawable::ColorRect { color_rect } => {}
+                Drawable::ColorRect { color_rect } => {
+                    let mut sprite = Sprite::default();
+                    sprite.target = Rectangle::new(0.0, 0.0, 1.0, 1.0);
+                    sprite.scale.x = color_rect.width as f32;
+                    sprite.scale.y = color_rect.height as f32;
+                    sprite.rotation = color_rect.rotation;
+                    sprite.centered = color_rect.centered;
+                    sprite.color = color_rect.color;
+
+                    // Aseprites can be broken down into a sprite draw
+                    draw_queue.push_back(DrawCommand {
+                        drawable: Drawable::Sprite { sprite },
+                        ..draw_command
+                    });
+                    continue;
+                }
                 Drawable::Label { label } => {
                     self.layout.reset(&LayoutSettings {
                         max_width: label.max_width,
@@ -694,6 +710,7 @@ impl RenderingEngine {
                             scale,
                             rotation,
                             false,
+                            label.color,
                             transform,
                             self.active_size.clone(),
                             &mut self.vertices,
@@ -836,6 +853,7 @@ fn draw_textured_quad(
     scale: Vector2<f32>,
     rotation: f32,
     centered: bool,
+    color: Color,
     transform: Transform,
     active_size: PhysicalSize<u32>,
     vertices: &mut Vec<Vertex>,
@@ -909,10 +927,12 @@ fn draw_textured_quad(
                 0.0,
             ),
             tex_coords: [target.x, target.y],
+            color: [1.0, 1.0, 1.0, 1.0],
         }, // A
         Vertex {
             position: rotate_vertex(center_x, center_y, vertex_rect.x, vertex_rect.y, 0.0),
             tex_coords: [target.x, target.y + target.height],
+            color: color.to_percentage_slice(),
         }, // B
         Vertex {
             position: rotate_vertex(
@@ -923,6 +943,7 @@ fn draw_textured_quad(
                 0.0,
             ),
             tex_coords: [target.x + target.width, target.y + target.height],
+            color: color.to_percentage_slice(),
         }, // C
         Vertex {
             position: rotate_vertex(
@@ -933,6 +954,7 @@ fn draw_textured_quad(
                 0.0,
             ),
             tex_coords: [target.x + target.width, target.y],
+            color: color.to_percentage_slice(),
         },
     ];
 

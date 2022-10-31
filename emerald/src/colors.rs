@@ -19,6 +19,11 @@ impl Color {
         (r, g, b, a)
     }
 
+    pub fn to_percentage_slice(&self) -> [f32; 4] {
+        let (r, g, b, a) = self.to_percentage();
+        [r, g, b, a]
+    }
+
     pub fn with_alpha(&self, a: u8) -> Color {
         Color::new(self.r, self.g, self.b, a)
     }
