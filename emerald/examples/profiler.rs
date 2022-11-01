@@ -24,6 +24,7 @@ impl Game for ProfilingExample {
         let initialize_time = emd.profiler(profile_initialize).finish_frame().unwrap();
         println!("initialize time: {}", initialize_time);
     }
+
     fn update(&mut self, mut emd: Emerald) {
         emd.profiler("update").start_frame().unwrap();
 
