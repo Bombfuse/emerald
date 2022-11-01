@@ -1,10 +1,9 @@
-use emerald::*;
+use emerald::{render_settings::RenderSettings, rendering::components::Label, *};
 
 /// Music found from https://opengameart.org/content/5-chiptunes-action
 pub fn main() {
     let mut settings = GameSettings::default();
     let render_settings = RenderSettings {
-        resolution: (480, 320),
         ..Default::default()
     };
     settings.render_settings = render_settings;
