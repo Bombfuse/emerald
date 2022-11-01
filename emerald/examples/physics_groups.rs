@@ -1,5 +1,5 @@
-use emerald::*;
-
+use emerald::world::physics::InteractionGroups;
+use emerald::{render_settings::RenderSettings, rendering::components::ColorRect, *};
 const RES_WIDTH: f32 = 640.0;
 const RES_HEIGHT: f32 = 480.0;
 
@@ -21,8 +21,8 @@ pub fn main() {
     )
 }
 
-const GROUP_ONE: InteractionGroups = InteractionGroups::new(1, 1);
-const GROUP_TWO: InteractionGroups = InteractionGroups::new(2, 2);
+const GROUP_ONE: InteractionGroups = InteractionGroups::new(Group::GROUP_1, Group::GROUP_1);
+const GROUP_TWO: InteractionGroups = InteractionGroups::new(Group::GROUP_2, Group::GROUP_2);
 
 #[derive(Clone, Debug)]
 pub struct Velocity {

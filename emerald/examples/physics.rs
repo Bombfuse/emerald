@@ -1,4 +1,8 @@
-use emerald::*;
+use emerald::{
+    render_settings::RenderSettings,
+    rendering::components::{ColorRect, Label},
+    *,
+};
 
 const RES_WIDTH: f32 = 640.0;
 const RES_HEIGHT: f32 = 480.0;
