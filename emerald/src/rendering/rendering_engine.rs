@@ -899,6 +899,10 @@ fn draw_textured_quad(
     let height = normalized_texture_size.1 * scale.y;
     let mut vertex_rect = Rectangle::new(x, y, width, height);
 
+    if centered {
+        vertex_rect.x -= width / 2.0;
+        vertex_rect.y -= height / 2.0;
+    }
     let center_x = vertex_rect.x + vertex_rect.width / 2.0;
     let center_y = vertex_rect.y + vertex_rect.height / 2.0;
 
@@ -909,11 +913,6 @@ fn draw_textured_quad(
             center_x + (rotation.cos() * diff_x) - (rotation.sin() * diff_y),
             center_y + (rotation.sin() * diff_x) + (rotation.cos() * diff_y),
         ]
-    }
-
-    if centered {
-        vertex_rect.x -= width / 2.0;
-        vertex_rect.y -= height / 2.0;
     }
 
     let color = color.to_percentage_slice();
