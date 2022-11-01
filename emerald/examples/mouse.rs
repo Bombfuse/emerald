@@ -85,10 +85,7 @@ impl Game for MouseExample {
         emd.graphics().begin().unwrap();
 
         emd.graphics()
-            .draw_color_rect(
-                &self.background,
-                &Transform::from_translation(self.screen_center),
-            )
+            .draw_color_rect(&self.background, &Transform::default())
             .ok();
         emd.graphics()
             .draw_color_rect(&self.rect, &self.transform)

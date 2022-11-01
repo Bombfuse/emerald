@@ -600,7 +600,7 @@ impl RenderingEngine {
                 }
                 Drawable::ColorRect { color_rect } => {
                     let mut sprite = Sprite::default();
-                    sprite.target = Rectangle::new(0.0, 0.0, 1.0, 1.0);
+                    sprite.target = Rectangle::new(0.0, 0.0, 0.0, 0.0);
                     sprite.scale.x = color_rect.width as f32;
                     sprite.scale.y = color_rect.height as f32;
                     sprite.rotation = color_rect.rotation;
@@ -916,6 +916,7 @@ fn draw_textured_quad(
         vertex_rect.y -= height / 2.0;
     }
 
+    let color = color.to_percentage_slice();
     let vertex_set = [
         // Changed
         Vertex {
@@ -924,15 +925,15 @@ fn draw_textured_quad(
                 center_y,
                 vertex_rect.x,
                 vertex_rect.y + vertex_rect.height,
-                0.0,
+                rotation,
             ),
             tex_coords: [target.x, target.y],
-            color: [1.0, 1.0, 1.0, 1.0],
+            color,
         }, // A
         Vertex {
-            position: rotate_vertex(center_x, center_y, vertex_rect.x, vertex_rect.y, 0.0),
+            position: rotate_vertex(center_x, center_y, vertex_rect.x, vertex_rect.y, rotation),
             tex_coords: [target.x, target.y + target.height],
-            color: color.to_percentage_slice(),
+            color,
         }, // B
         Vertex {
             position: rotate_vertex(
@@ -940,10 +941,10 @@ fn draw_textured_quad(
                 center_y,
                 vertex_rect.x + vertex_rect.width,
                 vertex_rect.y,
-                0.0,
+                rotation,
             ),
             tex_coords: [target.x + target.width, target.y + target.height],
-            color: color.to_percentage_slice(),
+            color,
         }, // C
         Vertex {
             position: rotate_vertex(
@@ -951,10 +952,10 @@ fn draw_textured_quad(
                 center_y,
                 vertex_rect.x + vertex_rect.width,
                 vertex_rect.y + vertex_rect.height,
-                0.0,
+                rotation,
             ),
             tex_coords: [target.x + target.width, target.y],
-            color: color.to_percentage_slice(),
+            color,
         },
     ];
 
