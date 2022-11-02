@@ -18,7 +18,7 @@ pub fn main() {
 
     emerald::start(
         Box::new(MyGame {
-            pos: Transform::from_translation((320.0, 160.0)),
+            pos: Transform::default(),
             scale: 1.0,
             render_texture: None,
         }),
@@ -75,7 +75,6 @@ impl Game for MyGame {
     }
 
     fn draw(&mut self, mut emd: Emerald) {
-        let now = std::time::Instant::now();
         emd.graphics()
             .begin_texture(self.render_texture.as_ref().unwrap().clone())
             .unwrap();
@@ -95,13 +94,11 @@ impl Game for MyGame {
 
         let e = std::time::Instant::now();
 
-        println!("texture render: {:?}", e - now);
-
         // println!("{:?}", screen_sprite);
         let now = std::time::Instant::now();
 
         let mut screen_sprite = Sprite::from_texture(texture_key);
-        screen_sprite.centered = false;
+        screen_sprite.centered = true;
         screen_sprite.scale.x = self.scale;
         screen_sprite.scale.y = self.scale;
 
@@ -109,7 +106,5 @@ impl Game for MyGame {
         emd.graphics().draw_sprite(&screen_sprite, &self.pos).ok();
         emd.graphics().render().unwrap();
         let e = std::time::Instant::now();
-
-        println!("screen draw: {:?}", e - now);
     }
 }
