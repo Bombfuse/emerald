@@ -232,7 +232,7 @@ impl<'c> AssetLoader<'c> {
 
 #[cfg(feature = "hotreload")]
 pub(crate) mod hotreload {
-    use crate::{AssetLoader, AssetStore, TextureKey};
+    use crate::{texture::TextureKey, AssetLoader, AssetStore};
 
     #[derive(Clone, Copy, PartialEq, Eq)]
     pub enum HotReloadAssetType {
@@ -256,7 +256,7 @@ pub(crate) mod hotreload {
 
                     asset_store
                         .file_hot_reload_metadata
-                        .insert(texture_path, hot_reload_metadata);
+                        .insert(texture_path.to_string(), hot_reload_metadata);
                 }
             }
             Err(_) => {}

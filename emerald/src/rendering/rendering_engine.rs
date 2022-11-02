@@ -573,6 +573,10 @@ impl RenderingEngine {
         while let Some(draw_command) = draw_queue.pop_back() {
             match draw_command.drawable {
                 Drawable::Sprite { sprite } => {
+                    if !sprite.visible {
+                        continue;
+                    }
+
                     draw_textured_quad(
                         asset_store,
                         sprite.texture_key,
@@ -599,6 +603,10 @@ impl RenderingEngine {
                     continue;
                 }
                 Drawable::ColorRect { color_rect } => {
+                    if !color_rect.visible {
+                        continue;
+                    }
+
                     let mut sprite = Sprite::default();
                     sprite.target = Rectangle::new(0.0, 0.0, 0.0, 0.0);
                     sprite.scale.x = color_rect.width as f32;
@@ -615,6 +623,10 @@ impl RenderingEngine {
                     continue;
                 }
                 Drawable::Label { label } => {
+                    if !label.visible {
+                        continue;
+                    }
+
                     self.layout.reset(&LayoutSettings {
                         max_width: label.max_width,
                         max_height: label.max_height,
@@ -728,7 +740,69 @@ impl RenderingEngine {
                     height,
                     visible,
                     z_index,
-                } => todo!(),
+                } => {
+                    if !visible {
+                        continue;
+                    }
+                    let mut tileset_width = 0;
+
+                    if let Some(texture) = asset_store.get_texture(&texture_key) {
+                        tileset_width = texture.size.width as usize / tile_size.x;
+                    }
+
+                    let tile_width = tile_size.x as f32;
+                    let tile_height = tile_size.y as f32;
+
+                    let mut x = 0;
+                    let mut y = 0;
+                    for tile in tiles {
+                        if tile >= 0 {
+                            let tile_id = tile as usize;
+
+                            let tile_x = tile_id % tileset_width;
+                            let tile_y = tile_id / tileset_width;
+
+                            let target = Rectangle::new(
+                                tile_x as f32 * tile_width,
+                                tile_height - tile_y as f32 * tile_height,
+                                tile_width,
+                                tile_height,
+                            );
+                            let translation = draw_command.transform.translation.clone()
+                                + Translation::new(tile_width * x as f32, tile_height * y as f32);
+
+                            let offset = Vector2::new(0.0, 0.0);
+                            let scale = Vector2::new(1.0, 1.0);
+                            let rotation = 0.0;
+                            let centered = false;
+                            let color = crate::colors::WHITE;
+                            let transform = Transform::from_translation(translation);
+                            let active_size = self.active_size;
+                            draw_textured_quad(
+                                asset_store,
+                                texture_key.clone(),
+                                target,
+                                offset,
+                                scale,
+                                rotation,
+                                centered,
+                                color,
+                                transform,
+                                active_size,
+                                &mut self.vertices,
+                                &mut self.indices,
+                                counter,
+                                &mut textured_tri_draws,
+                            )?;
+                        }
+
+                        x += 1;
+                        if x >= width {
+                            x = 0;
+                            y += 1;
+                        }
+                    }
+                }
             }
 
             counter += 1;
@@ -2044,8 +2118,8 @@ impl ToDrawable for Sprite {
 
         if bounds.is_zero_sized() {
             if let Some(texture) = asset_store.get_texture(&self.texture_key) {
-                // bounds.width = texture.width as f32;
-                // bounds.height = texture.height as f32;
+                bounds.width = texture.size.width as f32;
+                bounds.height = texture.size.height as f32;
             }
         }
 
@@ -2053,14 +2127,15 @@ impl ToDrawable for Sprite {
         bounds.x = transform.translation.x + self.offset.x;
         bounds.y = transform.translation.y + self.offset.y;
 
+        bounds.width *= self.scale.x;
+        bounds.height *= self.scale.y;
+
         if self.centered {
             bounds.x -= bounds.width as f32 / 2.0;
             bounds.y -= bounds.height as f32 / 2.0;
         }
 
         // Take the sprite's scale factor into account
-        bounds.width *= self.scale.x;
-        bounds.height *= self.scale.y;
 
         Some(bounds)
     }

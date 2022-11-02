@@ -168,7 +168,10 @@ impl AssetStore {
             .insert(key.clone(), self.textures.len() - 1);
 
         #[cfg(feature = "hotreload")]
-        crate::assets::hotreload::on_insert_texture(self, self.get_full_asset_path(&key.get_name()))
+        crate::assets::hotreload::on_insert_texture(
+            self,
+            &self.get_full_asset_path(&key.get_name()),
+        )
     }
 
     pub fn get_full_asset_path(&self, path: &str) -> String {

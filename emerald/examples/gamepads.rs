@@ -1,4 +1,4 @@
-use emerald::*;
+use emerald::{render_settings::RenderSettings, rendering::components::Sprite, *};
 
 pub fn main() {
     let mut settings = GameSettings::default();
