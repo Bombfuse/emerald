@@ -396,7 +396,6 @@ impl RenderingEngine {
                         ..Default::default()
                     });
 
-                    println!("render texture {:?}", texture_key);
                     self.render_to_view(
                         asset_store,
                         view,
@@ -576,7 +575,6 @@ impl RenderingEngine {
                     if !sprite.visible {
                         continue;
                     }
-                    println!("{:?}", sprite);
 
                     draw_textured_quad(
                         asset_store,

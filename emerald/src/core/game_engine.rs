@@ -10,7 +10,16 @@ use crate::{
     AudioEngine, Emerald, EmeraldError, Game, GameSettings, InputEngine, LoggingEngine,
 };
 
-pub struct GameEngine {
+pub(crate) struct GameEngineContext {
+    pub window: Option<winit::window::Window>,
+}
+impl GameEngineContext {
+    pub fn get_window_id(&self) -> Option<winit::window::WindowId> {
+        self.window.as_ref().map(|window| window.id().clone())
+    }
+}
+
+pub(crate) struct GameEngine {
     game: Box<dyn Game>,
     rendering_engine: RenderingEngine,
     audio_engine: AudioEngine,
@@ -55,7 +64,7 @@ impl GameEngine {
         })
     }
 
-    pub fn initialize(&mut self) -> Result<(), EmeraldError> {
+    pub fn initialize(&mut self, ctx: &mut GameEngineContext) -> Result<(), EmeraldError> {
         let now = date::now();
         let delta = now - self.last_instant;
         self.update_fps_tracker(delta);
@@ -69,6 +78,7 @@ impl GameEngine {
             &mut self.rendering_engine,
             &mut self.asset_store,
             &mut self.profile_cache,
+            ctx,
         );
 
         self.game.initialize(emd);
@@ -101,7 +111,7 @@ impl GameEngine {
             .handle_virtual_keycode(virtual_keycode, state)
     }
 
-    pub fn update(&mut self) -> Result<(), EmeraldError> {
+    pub fn update(&mut self, ctx: &mut GameEngineContext) -> Result<(), EmeraldError> {
         let now = date::now();
         let delta = now - self.last_instant;
         self.last_instant = now;
@@ -116,6 +126,7 @@ impl GameEngine {
             &mut self.rendering_engine,
             &mut self.asset_store,
             &mut self.profile_cache,
+            ctx,
         );
 
         self.game.update(emd);
@@ -126,7 +137,7 @@ impl GameEngine {
         Ok(())
     }
 
-    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, ctx: &mut GameEngineContext) -> Result<(), wgpu::SurfaceError> {
         let start_of_frame = date::now();
         let delta = start_of_frame - self.last_instant;
 
@@ -139,6 +150,7 @@ impl GameEngine {
             &mut self.rendering_engine,
             &mut self.asset_store,
             &mut self.profile_cache,
+            ctx,
         );
         self.game.draw(emd);
         // self.rendering_engine.post_draw(ctx, &mut self.asset_store);

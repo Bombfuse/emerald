@@ -11,7 +11,7 @@ pub mod rendering;
 pub mod types;
 pub mod world;
 
-use crate::core::game_engine::GameEngine;
+use crate::core::game_engine::{GameEngine, GameEngineContext};
 
 pub use crate::assets::*;
 pub use crate::colors::*;
@@ -44,7 +44,6 @@ pub use rapier2d::{
     na::Vector2,
     parry,
 };
-//
 
 #[cfg(feature = "gamepads")]
 pub use gamepad;
@@ -52,10 +51,13 @@ pub use gamepad;
 pub use gamepad::{Button, Joystick};
 
 pub fn start(game: Box<dyn Game>, settings: GameSettings) {
-    pollster::block_on(run(game, settings)).unwrap();
+    pollster::block_on(start_async(game, settings)).unwrap();
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
+pub async fn start_async(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldError> {
+    run(game, settings).await
+}
+
 async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldError> {
     env_logger::init();
 
@@ -74,13 +76,16 @@ async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldE
         .build(&event_loop)
         .unwrap();
     let mut game_engine = GameEngine::new(game, &window, &settings).await?;
-    game_engine.initialize()?;
+
     #[cfg(target_arch = "wasm32")]
     {
         // Winit prevents sizing with CSS, so we have to set
         // the size manually when on web.
         use winit::dpi::PhysicalSize;
-        window.set_inner_size(PhysicalSize::new(450, 400));
+        window.set_inner_size(PhysicalSize::new(
+            settings.render_settings.resolution.0,
+            settings.render_settings.resolution.1,
+        ));
 
         use winit::platform::web::WindowExtWebSys;
         web_sys::window()
@@ -94,54 +99,74 @@ async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldE
             .expect("Couldn't append canvas to document body.");
     }
 
+    let mut ctx = GameEngineContext {
+        window: Some(window),
+    };
+
+    game_engine.initialize(&mut ctx)?;
+
     event_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
             // RedrawRequested will only trigger once, unless we manually
             // request it.
-            window.request_redraw();
+
+            if let Some(window) = &mut ctx.window {
+                window.request_redraw();
+            }
         }
-        Event::RedrawRequested(window_id) if window_id == window.id() => {
-            if let Err(_) = game_engine.update() {
-                *control_flow = ControlFlow::Exit;
-            } else {
-                match game_engine.render() {
-                    Ok(_) => {}
-                    // Reconfigure the surface if lost
-                    Err(wgpu::SurfaceError::Lost) => {
-                        game_engine.resize_window(game_engine.window_size());
+        Event::RedrawRequested(window_id) => {
+            if let Some(w_id) = ctx.get_window_id() {
+                if window_id == w_id {
+                    {
+                        if let Err(_) = game_engine.update(&mut ctx) {
+                            *control_flow = ControlFlow::Exit;
+                            return;
+                        }
                     }
-                    // The system is out of memory, we should probably quit
-                    Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-                    // All other errors (Outdated, Timeout) should be resolved by the next frame
-                    Err(e) => eprintln!("{:?}", e),
+                    match game_engine.render(&mut ctx) {
+                        Ok(_) => {}
+                        // Reconfigure the surface if lost
+                        Err(wgpu::SurfaceError::Lost) => {
+                            game_engine.resize_window(game_engine.window_size());
+                        }
+                        // The system is out of memory, we should probably quit
+                        Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+                        // All other errors (Outdated, Timeout) should be resolved by the next frame
+                        Err(e) => eprintln!("{:?}", e),
+                    }
                 }
             }
         }
         Event::WindowEvent {
             ref event,
             window_id,
-        } if window_id == window.id() => {
-            if !game_engine.input(event) {
-                match event {
-                    WindowEvent::Resized(physical_size) => {
-                        game_engine.resize_window(*physical_size);
-                    }
-                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        game_engine.resize_window(**new_inner_size);
-                    }
-                    WindowEvent::KeyboardInput { input, .. } => {
-                        if let Some(virtual_keycode) = input.virtual_keycode {
-                            game_engine.handle_virtual_keycode(virtual_keycode, input.state);
+        } => {
+            if let Some(w_id) = ctx.get_window_id() {
+                if window_id == w_id {
+                    if !game_engine.input(event) {
+                        match event {
+                            WindowEvent::Resized(physical_size) => {
+                                game_engine.resize_window(*physical_size);
+                            }
+                            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                                game_engine.resize_window(**new_inner_size);
+                            }
+                            WindowEvent::KeyboardInput { input, .. } => {
+                                if let Some(virtual_keycode) = input.virtual_keycode {
+                                    game_engine
+                                        .handle_virtual_keycode(virtual_keycode, input.state);
+                                }
+                            }
+                            WindowEvent::MouseInput { button, state, .. } => {
+                                game_engine.handle_mouse_input(button, state);
+                            }
+                            WindowEvent::CursorMoved { position, .. } => {
+                                game_engine.handle_cursor_move(position);
+                            }
+                            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                            _ => {}
                         }
                     }
-                    WindowEvent::MouseInput { button, state, .. } => {
-                        game_engine.handle_mouse_input(button, state);
-                    }
-                    WindowEvent::CursorMoved { position, .. } => {
-                        game_engine.handle_cursor_move(position);
-                    }
-                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                    _ => {}
                 }
             }
         }

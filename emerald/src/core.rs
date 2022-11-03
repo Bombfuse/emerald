@@ -8,7 +8,6 @@ pub use components::transform::*;
 pub use components::*;
 pub use error::*;
 pub use game::*;
-pub use game_engine::GameEngine;
 pub use game_settings::*;
 
 use crate::assets::*;
@@ -21,6 +20,7 @@ use crate::rendering_engine::RenderingEngine;
 use crate::rendering_handler::RenderingHandler;
 
 use self::game_engine::date;
+use self::game_engine::GameEngineContext;
 
 pub struct Emerald<'c> {
     delta: f32,
@@ -31,6 +31,7 @@ pub struct Emerald<'c> {
     input_engine: &'c mut InputEngine,
     pub(crate) asset_store: &'c mut AssetStore,
     profile_cache: &'c mut ProfileCache,
+    ctx: &'c mut GameEngineContext,
 }
 impl<'c> Emerald<'c> {
     #[inline]
@@ -43,6 +44,7 @@ impl<'c> Emerald<'c> {
         rendering_engine: &'c mut RenderingEngine,
         asset_store: &'c mut AssetStore,
         profile_cache: &'c mut ProfileCache,
+        ctx: &'c mut GameEngineContext,
     ) -> Self {
         Emerald {
             delta,
@@ -53,6 +55,7 @@ impl<'c> Emerald<'c> {
             logging_engine,
             asset_store,
             profile_cache,
+            ctx,
         }
     }
 
@@ -114,7 +117,11 @@ impl<'c> Emerald<'c> {
     // *****************************************
 
     pub fn graphics(&mut self) -> RenderingHandler<'_> {
-        RenderingHandler::new(&mut self.asset_store, &mut self.rendering_engine)
+        RenderingHandler::new(
+            &mut self.asset_store,
+            &mut self.rendering_engine,
+            &mut self.ctx,
+        )
     }
 
     pub fn profiler<T: Into<String>>(&mut self, profile_name: T) -> Profiler<'_> {

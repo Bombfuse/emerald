@@ -38,6 +38,7 @@ asefile =  { version = "0.3.4", optional = true }
 kira = { version= "0.5.3", optional = true, default-features = false, features = ["ogg", "flac", "wav"] }
 console_error_panic_hook = "0.1.6"
 console_log = "0.2.0"
+log = "0.4.17"
 wgpu = { version = "0.14.0", features = ["webgl"]}
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4.30"
