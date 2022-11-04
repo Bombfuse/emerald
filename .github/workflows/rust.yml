@@ -90,4 +90,4 @@ jobs:
           cargo update
           cargo install cargo-apk
           cd emerald
-          cargo apk build
+          cargo apk build --lib
