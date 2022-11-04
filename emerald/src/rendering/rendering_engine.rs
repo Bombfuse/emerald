@@ -474,8 +474,7 @@ impl RenderingEngine {
 
         self.active_size = view_size;
         {
-            let (r, g, b, a) = self.settings.background_color.to_percentage();
-
+            let (r, g, b, a) = self.settings.background_color.to_percentage_linear();
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(&format!("Render Pass {:?}", view_name)),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {

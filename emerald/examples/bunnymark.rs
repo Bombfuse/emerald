@@ -14,6 +14,7 @@ impl Velocity {
     }
 }
 
+#[cfg_attr(target_os = "android", ndk_glue::main(backtrace = "on"))]
 pub fn main() {
     let mut settings = GameSettings::default();
     settings.render_settings.resolution = (320 * 5, 180 * 5);
