@@ -63,6 +63,7 @@ ndk-glue = "0.7.0"
 [lib]
 name = "emerald"
 path = "src/lib.rs"
+crate-type = ["lib", "cdylib"]
 
 [[example]]
 name = "bunnymark"
