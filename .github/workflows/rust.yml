@@ -86,6 +86,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: cargo apk
         run: |
+          rustup target add aarch64-linux-android
           cargo update
           cargo install cargo-apk
           cd emerald
