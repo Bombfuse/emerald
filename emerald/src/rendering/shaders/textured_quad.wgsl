@@ -1,11 +1,3 @@
-// Vertex shader
-struct CameraUniform {
-    view_width: f32,
-    view_height: f32,
-};
-@group(1) @binding(0) // 1.
-var<uniform> camera: CameraUniform;
-
 struct VertexInput {
     @location(0) position: vec2<f32>,
     @location(1) tex_coords: vec2<f32>,

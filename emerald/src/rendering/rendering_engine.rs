@@ -105,29 +105,6 @@ impl RenderingEngine {
             contents: bytemuck::cast_slice(&[camera_uniform]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
-        let camera_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-                label: Some("camera_bind_group_layout"),
-            });
-
-        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &camera_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: camera_buffer.as_entire_binding(),
-            }],
-            label: Some("camera_bind_group"),
-        });
 
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -162,7 +139,7 @@ impl RenderingEngine {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout],
+                bind_group_layouts: &[&texture_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -203,9 +180,6 @@ impl RenderingEngine {
             });
 
         bind_group_layouts.insert(BindGroupLayoutId::TextureQuad, texture_bind_group_layout);
-        bind_group_layouts.insert(BindGroupLayoutId::Camera2D, camera_bind_group_layout);
-
-        bind_groups.insert(BIND_GROUP_ID_CAMERA_2D.into(), camera_bind_group);
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
@@ -735,17 +709,24 @@ impl RenderingEngine {
                     tiles,
                     tile_size,
                     width,
-                    height,
                     visible,
-                    z_index,
+                    height,
+                    ..
                 } => {
                     if !visible {
                         continue;
                     }
-                    let mut tileset_width = 0;
+                    let tileset_width;
+                    let tileset_height;
 
                     if let Some(texture) = asset_store.get_texture(&texture_key) {
                         tileset_width = texture.size.width as usize / tile_size.x;
+                        tileset_height = texture.size.height as usize / tile_size.y;
+                    } else {
+                        return Err(EmeraldError::new(format!(
+                            "Tilemap Texture {:?} not found.",
+                            texture_key
+                        )));
                     }
 
                     let tile_width = tile_size.x as f32;
@@ -758,11 +739,10 @@ impl RenderingEngine {
                             let tile_id = tile as usize;
 
                             let tile_x = tile_id % tileset_width;
-                            let tile_y = tile_id / tileset_width;
-
+                            let tile_y = tileset_height - 1 - tile_id / tileset_width;
                             let target = Rectangle::new(
                                 tile_x as f32 * tile_width,
-                                tile_height - tile_y as f32 * tile_height,
+                                tile_y as f32 * tile_height,
                                 tile_width,
                                 tile_height,
                             );
@@ -776,6 +756,7 @@ impl RenderingEngine {
                             let color = crate::colors::WHITE;
                             let transform = Transform::from_translation(translation);
                             let active_size = self.active_size;
+
                             draw_textured_quad(
                                 asset_store,
                                 texture_key.clone(),
@@ -834,33 +815,26 @@ impl RenderingEngine {
                 .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&self.vertices));
         }
 
-        if let Some(camera_bind_group) = self.bind_groups.get(BIND_GROUP_ID_CAMERA_2D) {
-            render_pass.set_bind_group(1, camera_bind_group, &[]);
+        for draw_call in textured_tri_draws {
+            if let Some(texture_bind_group) = self.bind_groups.get(&draw_call.key.0) {
+                render_pass.set_bind_group(0, texture_bind_group, &[]);
 
-            for draw_call in textured_tri_draws {
-                if let Some(texture_bind_group) = self.bind_groups.get(&draw_call.key.0) {
-                    render_pass.set_bind_group(0, texture_bind_group, &[]);
+                render_pass
+                    .set_vertex_buffer(0, self.vertex_buffer.slice(draw_call.vertices_range));
+                render_pass.set_index_buffer(
+                    self.index_buffer.slice(draw_call.indices_range),
+                    wgpu::IndexFormat::Uint32,
+                );
 
-                    render_pass
-                        .set_vertex_buffer(0, self.vertex_buffer.slice(draw_call.vertices_range));
-                    render_pass.set_index_buffer(
-                        self.index_buffer.slice(draw_call.indices_range),
-                        wgpu::IndexFormat::Uint32,
-                    );
-
-                    render_pass.draw_indexed(0..(draw_call.count * 6), 0, 0..1);
-                } else {
-                    return Err(EmeraldError::new(format!(
-                        "Unable to find texture bind group for {:?}",
-                        &draw_call.key.0
-                    )));
-                }
+                render_pass.draw_indexed(0..(draw_call.count * 6), 0, 0..1);
+            } else {
+                return Err(EmeraldError::new(format!(
+                    "Unable to find texture bind group for {:?}",
+                    &draw_call.key.0
+                )));
             }
-
-            return Ok(());
         }
-
-        Err(EmeraldError::new("Could not find camera bind group."))
+        Ok(())
     }
 
     #[inline]
@@ -1124,7 +1098,7 @@ async fn get_device_and_queue(adapter: &Adapter) -> Result<(Device, Queue), Emer
 #[inline]
 fn get_camera_and_camera_transform(world: &World) -> (Camera, Transform) {
     let mut cam = Camera::default();
-    let mut cam_transform = Transform::from_translation((0.0, 0.0));
+    let mut cam_transform = Transform::default();
     let mut entity_holding_camera: Option<Entity> = None;
 
     for (id, camera) in world.query::<&Camera>().iter() {
@@ -1422,9 +1396,11 @@ impl DrawCommandAdder {
     fn new(engine: &RenderingEngine, world: &World) -> Self {
         let (camera, camera_transform) = get_camera_and_camera_transform(world);
         let camera_bounds = if engine.settings.frustrum_culling {
-            let screen_size = (engine.size.width as f32, engine.size.height as f32);
+            let screen_size = (
+                engine.active_size.width as f32,
+                engine.active_size.height as f32,
+            );
 
-            let (camera, camera_transform) = get_camera_and_camera_transform(world);
             let mut camera_view_region = Rectangle::new(
                 camera_transform.translation.x - screen_size.0 / 2.0,
                 camera_transform.translation.y - screen_size.1 / 2.0,
@@ -1454,7 +1430,6 @@ impl DrawCommandAdder {
     ) where
         D: hecs::Component + ToDrawable + 'a,
     {
-        let camera_transform = self.camera_transform.clone();
         draw_queue.extend(
             world
                 .query::<(&D, &Transform)>()
@@ -1473,8 +1448,7 @@ impl DrawCommandAdder {
                 .map(|(_entity, (to_drawable, transform))| {
                     let drawable = to_drawable.to_drawable();
 
-                    // TODO: Add camera transform offset to drawable transform
-                    let transform = *transform - camera_transform.clone();
+                    let transform = *transform;
                     DrawCommand {
                         drawable,
                         transform,
