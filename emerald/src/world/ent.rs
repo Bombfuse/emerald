@@ -6,9 +6,9 @@ use crate::{AssetLoader, EmeraldError, Transform, World};
 use self::ent_sprite_loader::load_ent_sprite;
 #[cfg(feature = "aseprite")]
 pub(crate) mod ent_aseprite_loader;
-pub(crate) mod ent_sprite_loader;
 
 pub(crate) mod ent_rigid_body_loader;
+pub(crate) mod ent_sprite_loader;
 
 const SPRITE_SCHEMA_KEY: &str = "sprite";
 
