@@ -1,6 +1,6 @@
 use emerald::{
-    aseprite_update_system, transform::Transform, Emerald, Game, GameSettings, RenderSettings,
-    World,
+    render_settings::RenderSettings, rendering::components::aseprite_update_system,
+    transform::Transform, Emerald, Game, GameSettings, World,
 };
 
 pub fn main() {
@@ -28,7 +28,6 @@ impl Game for MyGame {
 
         // Load an aseprite file from the asset folder
         let mut aseprite = emd.loader().aseprite("smiley.aseprite").unwrap();
-
         aseprite.play_and_loop("smile").unwrap();
 
         let mut a2 = aseprite.clone();
@@ -49,7 +48,7 @@ impl Game for MyGame {
         self.world
             .spawn((a2, Transform::from_translation((-64.0, 64.0))));
         self.world
-            .spawn((a3, Transform::from_translation((0.0, 0.0))));
+            .spawn((a3, Transform::from_translation((0.0, -64.0))));
     }
 
     fn update(&mut self, emd: Emerald) {

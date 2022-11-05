@@ -93,12 +93,14 @@ fn is_translation_inside_button(
     };
 
     if let Some(texture) = emd.asset_store.get_texture(texture_key) {
-        if (translation.x >= ui_button_transform.translation.x - texture.width as f32 / 2.0)
-            && (translation.x <= ui_button_transform.translation.x + texture.width as f32 / 2.0)
+        if (translation.x >= ui_button_transform.translation.x - texture.size.width as f32 / 2.0)
+            && (translation.x
+                <= ui_button_transform.translation.x + texture.size.width as f32 / 2.0)
         {
-            if (translation.y >= ui_button_transform.translation.y - texture.height as f32 / 2.0)
+            if (translation.y
+                >= ui_button_transform.translation.y - texture.size.height as f32 / 2.0)
                 && (translation.y
-                    <= ui_button_transform.translation.y + texture.height as f32 / 2.0)
+                    <= ui_button_transform.translation.y + texture.size.height as f32 / 2.0)
             {
                 is_inside = true;
             }

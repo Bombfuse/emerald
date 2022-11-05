@@ -1,8 +1,9 @@
-use nalgebra::Vector2;
+use rapier2d::na::Vector2;
 
 use crate::{
+    texture::TextureKey,
     tilemap::{get_tilemap_index, TileId, Tilemap},
-    EmeraldError, TextureKey,
+    EmeraldError,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Hash)]

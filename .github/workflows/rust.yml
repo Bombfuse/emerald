@@ -82,11 +82,12 @@ jobs:
   android:
     name: Android
     runs-on: ubuntu-latest
-    container: notfl3/cargo-apk
     steps:
       - uses: actions/checkout@v2
-      - name: cargo quad-apk
+      - name: cargo apk
         run: |
+          rustup target add aarch64-linux-android
           cargo update
+          cargo install cargo-apk
           cd emerald
-          cargo quad-apk build
+          cargo apk build --lib

@@ -1,4 +1,4 @@
-use crate::{Rectangle, TextureKey};
+use crate::{texture::TextureKey, Rectangle};
 
 pub struct UIButton {
     pub pressed_texture: TextureKey,

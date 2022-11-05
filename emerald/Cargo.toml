@@ -1,6 +1,6 @@
 [package]
 name = "emerald"
-version = "0.2.7"
+version = "0.3.0"
 authors = ["Bombfuse <eiffeldud@gmail.com>"]
 edition = "2018"
 description = "A lite, fully featured 2D game engine."
@@ -9,45 +9,62 @@ license = "MIT OR Apache-2.0"
 resolver = "2"
 
 [features]
-default = ["logging", "gamepads", "physics", "aseprite", "audio"]
-logging = ["miniquad/log-impl"]
-physics = ["rapier2d"]
-gamepads = ["gamepad"]
-headless = []
-hotreload = []
-aseprite = ["asefile"]
+default = ["gamepads", "aseprite", "audio"]
 audio = ["kira"]
+gamepads = ["gamepad"]
+aseprite = ["asefile"]
+hotreload = []
 
 [dependencies]
-image = { version = "0.23.14", default-features = false, features = [ "png" ] }
-glam = { version = "0.17.1", default-features = false, features = ["libm"] }
-quad-rand = "0.2.1"
-fontdue = "0.6.2"
-nanoserde = "0.1.29"
-hecs = { version = "0.7.6", default-features = false }
-nalgebra =  { version = "0.31.0", features = ["convert-glam017"] }
+fontdue = "0.7.2"
 toml = "0.5.9"
+serde_json = "1.0"
+wgpu = "0.14.0"
+env_logger = "0.9.1"
+pollster = "0.2.5"
+winit = "0.27.4"
+rapier2d = "0.15.0"
+instant = "0.1.12"
+hecs = { version = "0.9", default-features = false }
+image = { version = "0.23.14", default-features = false, features = [ "png" ] }
 serde = { version = "1.0.145", features=["derive"] }
+bytemuck = { version = "1.12.1", features = ["derive"] }
 
 # Optionals
-rapier2d = { version = "0.12.0", optional = true  }
 gamepad = { version = "0.1.5", optional = true }
 asefile =  { version = "0.3.4", optional = true }
 
-[target.'cfg(target_arch="wasm32")'.dependencies]
-miniquad = { version = "=0.3.12", features = [ "log-impl" ] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
 kira = { version= "0.5.3", optional = true, default-features = false, features = ["ogg", "flac", "wav"] }
+console_error_panic_hook = "0.1.6"
+console_log = "0.2.0"
+log = "0.4.17"
+wgpu = { version = "0.14.0", features = ["webgl"]}
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4.30"
+web-sys = { version = "0.3", features = [
+    "Document",
+    "Window",
+    "Element",
+]}
+
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
-miniquad = "=0.3.12"
-kira = { version= "0.5.3", optional = true }
-
-[target.'cfg(target_os = "android")'.dependencies]
-sapp-android = "0.1.9"
+kira = { version= "0.5.3", optional = true, default-features = false, features = ["ogg", "flac", "wav"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3", features = ["winerror", "knownfolders", "shtypes", "shlobj", "combaseapi"] }
 
+[target.'cfg(target_os = "android")'.dependencies]
+sapp-android = "0.1.9"
+ndk-glue = "0.7.0"
+
 [lib]
 name = "emerald"
 path = "src/lib.rs"
+crate-type = ["lib", "cdylib"]
+
+[[example]]
+name = "bunnymark"
+crate-type = ["lib", "cdylib"]

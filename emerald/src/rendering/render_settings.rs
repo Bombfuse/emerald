@@ -7,7 +7,6 @@ pub struct RenderSettings {
     pub resolution: (u32, u32),
     pub high_dpi: bool,
     pub resizable_window: bool,
-    pub icon: Option<Icon>,
 
     // Whether or not the game engine should automatically cull sprites that are not in camera view
     pub frustrum_culling: bool,
@@ -21,7 +20,6 @@ impl Default for RenderSettings {
             resolution: (800, 600),
             high_dpi: false,
             resizable_window: true,
-            icon: None,
             frustrum_culling: true,
             pixel_snap: true,
         }

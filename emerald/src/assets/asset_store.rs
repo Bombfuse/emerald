@@ -1,7 +1,7 @@
-use crate::rendering::*;
+use crate::font::{Font, FontKey};
+use crate::texture::{Texture, TextureKey};
 use crate::{EmeraldError, Sound, SoundKey};
 
-use miniquad::Context;
 use std::collections::HashMap;
 use std::fs::create_dir;
 use std::path::Path;
@@ -41,13 +41,13 @@ pub(crate) struct AssetStore {
         HashMap<String, crate::assets::hotreload::HotReloadMetadata>,
 }
 impl AssetStore {
-    pub fn new(ctx: &mut Context, _game_name: String) -> Result<Self, EmeraldError> {
+    pub fn new(_game_name: String) -> Result<Self, EmeraldError> {
         let mut texture_key_map = HashMap::new();
-        let default_texture = Texture::default(ctx).unwrap();
+        // let default_texture = Texture::default(ctx).unwrap();
         texture_key_map.insert(TextureKey::default(), 0);
 
         let mut textures = Vec::with_capacity(INITIAL_TEXTURE_STORAGE_CAPACITY);
-        textures.push(default_texture);
+        // textures.push(default_texture);
 
         let asset_folder_root = String::from(DEFAULT_ASSET_FOLDER);
 
@@ -151,12 +151,7 @@ impl AssetStore {
             .insert(key, self.fontdue_fonts.len() - 1);
     }
 
-    pub fn insert_font(
-        &mut self,
-        _ctx: &mut Context,
-        key: FontKey,
-        font: Font,
-    ) -> Result<(), EmeraldError> {
+    pub fn insert_font(&mut self, key: FontKey, font: Font) -> Result<(), EmeraldError> {
         self.fonts.push(font);
         self.font_key_map.insert(key, self.fonts.len() - 1);
 
@@ -173,7 +168,10 @@ impl AssetStore {
             .insert(key.clone(), self.textures.len() - 1);
 
         #[cfg(feature = "hotreload")]
-        crate::assets::hotreload::on_insert_texture(self, self.get_full_asset_path(&key.get_name()))
+        crate::assets::hotreload::on_insert_texture(
+            self,
+            &self.get_full_asset_path(&key.get_name()),
+        )
     }
 
     pub fn get_full_asset_path(&self, path: &str) -> String {
@@ -262,7 +260,7 @@ impl AssetStore {
             let texture = self.textures.remove(i as _);
 
             if delete {
-                texture.inner.delete();
+                // texture.inner.delete();
             }
 
             if reset_map {
@@ -284,19 +282,6 @@ impl AssetStore {
         for texture in &self.textures {
             self.texture_key_map.insert(texture.key.clone(), i);
             i += 1;
-        }
-    }
-
-    #[inline]
-    pub fn update_font_texture(&mut self, mut ctx: &mut Context, key: &FontKey) {
-        if let Some(index) = self.font_key_map.get(key) {
-            if let Some(font) = self.fonts.get_mut(*index) {
-                if let Some(index) = self.texture_key_map.get(&font.font_texture_key) {
-                    if let Some(font_texture) = self.textures.get_mut(*index) {
-                        font_texture.update(&mut ctx, &font.font_image);
-                    }
-                }
-            }
         }
     }
 

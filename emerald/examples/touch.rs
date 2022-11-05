@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use emerald::*;
+use emerald::{rendering::components::Sprite, *};
 
 pub fn main() {
     let game = TouchExample {
@@ -29,7 +29,8 @@ impl Game for TouchExample {
         let touches = input.touches().clone();
 
         let screen = emd.screen_size();
-        let screen_center = Transform::from_translation((screen.0 / 2.0, screen.1 / 2.0));
+        let screen_center =
+            Transform::from_translation((screen.0 as f32 / 2.0, screen.1 as f32 / 2.0));
 
         for (id, touch) in &touches {
             let bunny_position = touch.translation - screen_center.translation;
@@ -48,7 +49,7 @@ impl Game for TouchExample {
                     .bunnies
                     .get(&id)
                     .copied()
-                    .and_then(|ent| self.world.get_mut::<Transform>(ent).ok());
+                    .and_then(|ent| self.world.get::<&mut Transform>(ent).ok());
                 if let Some(mut bunny) = bunny {
                     bunny.translation = bunny_position;
                 }

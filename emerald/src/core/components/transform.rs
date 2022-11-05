@@ -1,9 +1,8 @@
-use glam::{vec2, Vec2};
-use nalgebra::{Isometry2, Translation2, Vector2};
-use nanoserde::DeJson;
+use rapier2d::na::{Translation2, Vector2};
+use serde::{Deserialize, Serialize};
 
 /// The core piece of an entity, determines it's transformative state and position in the world.
-#[derive(Clone, Copy, Debug, DeJson)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct Transform {
     pub translation: Translation,
     pub rotation: f32,
@@ -57,7 +56,7 @@ impl std::ops::Add for Transform {
     }
 }
 
-#[derive(Clone, Copy, Debug, DeJson)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct Scale {
     pub x: f32,
     pub y: f32,
@@ -93,7 +92,7 @@ impl std::ops::Add for Scale {
     }
 }
 
-#[derive(Clone, Copy, Debug, DeJson)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct Translation {
     pub x: f32,
     pub y: f32,
@@ -108,48 +107,18 @@ impl Default for Translation {
         Translation::new(0.0, 0.0)
     }
 }
-impl From<Vec2> for Translation {
+impl From<Vector2<f32>> for Translation {
     #[inline]
-    fn from(v: Vec2) -> Self {
+    fn from(v: Vector2<f32>) -> Self {
         Self::new(v.x, v.y)
     }
 }
-impl From<Translation> for Vec2 {
+impl From<Translation> for Vector2<f32> {
     #[inline]
     fn from(t: Translation) -> Self {
-        vec2(t.x, t.y)
+        Vector2::new(t.x, t.y)
     }
 }
-
-macro_rules! impl_translation_from_other_type_via {
-    ($from_type:ty, $via_type:ty) => {
-        impl From<$from_type> for Translation {
-            #[inline]
-            fn from(x: $from_type) -> Self {
-                Self::from(<$via_type>::from(x))
-            }
-        }
-    };
-}
-
-macro_rules! impl_translation_to_other_type_via {
-    ($other_type:ty, $via_type:ty) => {
-        impl From<Translation> for $other_type {
-            #[inline]
-            fn from(t: Translation) -> Self {
-                Self::from(<$via_type>::from(t))
-            }
-        }
-    };
-}
-
-impl_translation_from_other_type_via!(Vector2<f32>, Vec2);
-impl_translation_to_other_type_via!(Vector2<f32>, Vec2);
-
-impl_translation_from_other_type_via!(Translation2<f32>, Vec2);
-impl_translation_to_other_type_via!(Translation2<f32>, Vec2);
-
-impl_translation_to_other_type_via!(Isometry2<f32>, Translation2<f32>);
 
 impl From<(f32, f32)> for Translation {
     fn from((x, y): (f32, f32)) -> Self {

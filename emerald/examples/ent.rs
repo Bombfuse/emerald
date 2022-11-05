@@ -1,4 +1,4 @@
-use emerald::{ent::EntLoadConfig, *};
+use emerald::{ent::EntLoadConfig, rendering::components::aseprite_update_system, *};
 
 pub fn main() {
     emerald::start(
@@ -60,7 +60,7 @@ impl Game for EntLoadingExample {
             .unwrap();
 
         // assert that we've successfully loaded a user defined component
-        assert!(self.world.get::<PlayerData>(entity).is_ok());
+        assert!(self.world.get::<&PlayerData>(entity).is_ok());
     }
 
     fn update(&mut self, emd: Emerald) {

@@ -95,8 +95,8 @@ impl Game for RaycastExample {
             });
 
             if let Some(e) = entity {
-                if let Ok(s) = self.world.get_mut::<String>(e) {
-                    println!("Found {}", s.clone());
+                if let Ok(s) = self.world.get::<&String>(e) {
+                    println!("Found {:?}", *s);
                 }
             }
         }
@@ -123,8 +123,8 @@ impl Game for RaycastExample {
             );
 
             if let Some(e) = entity {
-                if let Ok(s) = self.world.get_mut::<String>(e) {
-                    println!("Found {}", s.clone());
+                if let Ok(s) = self.world.get::<&String>(e) {
+                    println!("Found {:?}", *s);
                 }
             }
         }

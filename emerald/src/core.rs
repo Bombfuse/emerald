@@ -1,12 +1,11 @@
 pub mod components;
-pub mod engine;
 pub mod error;
 pub mod game;
+pub mod game_engine;
 pub mod game_settings;
 
 pub use components::transform::*;
 pub use components::*;
-pub use engine::GameEngine;
 pub use error::*;
 pub use game::*;
 pub use game_settings::*;
@@ -17,42 +16,46 @@ use crate::input::*;
 use crate::logging::*;
 use crate::profiling::profile_cache::ProfileCache;
 use crate::profiling::profiler::Profiler;
-use crate::rendering::*;
+use crate::rendering_engine::RenderingEngine;
+use crate::rendering_handler::RenderingHandler;
+
+use self::game_engine::date;
+use self::game_engine::GameEngineContext;
 
 pub struct Emerald<'c> {
     delta: f32,
     fps: f64,
     audio_engine: &'c mut AudioEngine,
-    quad_ctx: &'c mut miniquad::Context,
     rendering_engine: &'c mut RenderingEngine,
     logging_engine: &'c mut LoggingEngine,
     input_engine: &'c mut InputEngine,
     pub(crate) asset_store: &'c mut AssetStore,
     profile_cache: &'c mut ProfileCache,
+    ctx: &'c mut GameEngineContext,
 }
 impl<'c> Emerald<'c> {
     #[inline]
     pub(crate) fn new(
         delta: f32,
         fps: f64,
-        quad_ctx: &'c mut miniquad::Context,
         audio_engine: &'c mut AudioEngine,
         input_engine: &'c mut InputEngine,
         logging_engine: &'c mut LoggingEngine,
         rendering_engine: &'c mut RenderingEngine,
         asset_store: &'c mut AssetStore,
         profile_cache: &'c mut ProfileCache,
+        ctx: &'c mut GameEngineContext,
     ) -> Self {
         Emerald {
             delta,
             fps,
             audio_engine,
-            quad_ctx,
             rendering_engine,
             input_engine,
             logging_engine,
             asset_store,
             profile_cache,
+            ctx,
         }
     }
 
@@ -87,14 +90,15 @@ impl<'c> Emerald<'c> {
     /// Time since Epoch
     #[inline]
     pub fn now(&self) -> f64 {
-        miniquad::date::now()
+        date::now()
     }
 
     #[inline]
-    pub fn screen_size(&self) -> (f32, f32) {
-        let s = self.quad_ctx.screen_size();
-        let dpi = self.quad_ctx.dpi_scale();
-        (s.0 * dpi, s.1 * dpi)
+    pub fn screen_size(&self) -> (u32, u32) {
+        (
+            self.rendering_engine.size.width,
+            self.rendering_engine.size.height,
+        )
     }
 
     #[inline]
@@ -108,15 +112,15 @@ impl<'c> Emerald<'c> {
             self.audio_engine.clear().ok();
         }
 
-        self.quad_ctx.quit()
+        todo!()
     }
     // *****************************************
 
-    pub fn graphics(&mut self) -> GraphicsHandler<'_> {
-        GraphicsHandler::new(
-            &mut self.quad_ctx,
+    pub fn graphics(&mut self) -> RenderingHandler<'_> {
+        RenderingHandler::new(
             &mut self.asset_store,
             &mut self.rendering_engine,
+            &mut self.ctx,
         )
     }
 
@@ -130,7 +134,6 @@ impl<'c> Emerald<'c> {
     #[inline]
     pub fn loader(&mut self) -> AssetLoader<'_> {
         AssetLoader::new(
-            &mut self.quad_ctx,
             &mut self.asset_store,
             &mut self.rendering_engine,
             &mut self.audio_engine,

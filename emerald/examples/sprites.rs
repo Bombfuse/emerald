@@ -1,11 +1,13 @@
-use emerald::*;
+use emerald::{rendering::components::Sprite, *};
 
 pub fn main() {
+    let mut settings = GameSettings::default();
+    settings.render_settings.resolution = (320, 180);
     emerald::start(
         Box::new(SpritesExample {
             world: World::new(),
         }),
-        GameSettings::default(),
+        settings,
     )
 }
 
@@ -17,6 +19,9 @@ impl Game for SpritesExample {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
         let sprite = emd.loader().sprite("bunny.png").unwrap();
         self.world.spawn((sprite, Transform::default()));
+        let sprite = emd.loader().sprite("smiley.png").unwrap();
+        self.world
+            .spawn((sprite, Transform::from_translation((-32.0, 0.0))));
     }
 
     fn update(&mut self, mut emd: Emerald) {
@@ -27,7 +32,7 @@ impl Game for SpritesExample {
             &mouse.translation,
             &mut self.world,
         );
-        
+
         // Spawn with left mouse
         if mouse.left.is_just_pressed() {
             let mut sprite = emd.loader().sprite("bunny.png").unwrap();
@@ -38,11 +43,35 @@ impl Game for SpritesExample {
             self.world.spawn((sprite, transform));
         }
 
+        if emd.input().is_key_just_pressed(KeyCode::A) {
+            for (_, sprite) in self.world.query::<&mut Sprite>().iter() {
+                sprite.scale *= 0.5;
+            }
+        }
+        if emd.input().is_key_just_pressed(KeyCode::S) {
+            for (_, sprite) in self.world.query::<&mut Sprite>().iter() {
+                sprite.scale *= 2.0;
+            }
+        }
+        if emd.input().is_key_pressed(KeyCode::W) {
+            for (_, sprite) in self.world.query::<&mut Sprite>().iter() {
+                sprite.rotation += 0.1;
+            }
+        }
+
+        if emd.input().is_key_pressed(KeyCode::Q) {
+            for (_, sprite) in self.world.query::<&mut Sprite>().iter() {
+                sprite.rotation -= 0.1;
+            }
+        }
+
         // move to mouse position
         if mouse.right.is_pressed {
             let speed = 0.1 * emd.delta();
 
-            for (_, (transform, _sprite)) in self.world.query::<(&mut Transform, &mut Sprite)>().iter() {
+            for (_, (transform, _sprite)) in
+                self.world.query::<(&mut Transform, &mut Sprite)>().iter()
+            {
                 transform.translation.x += (mouse_position.x - transform.translation.x) * speed;
                 transform.translation.y += (mouse_position.y - transform.translation.y) * speed;
             }

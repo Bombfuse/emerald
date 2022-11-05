@@ -1,6 +1,7 @@
 use emerald::{
     autotilemap::{AutoTile, AutoTileRuleset, AutoTileRulesetValue, AutoTilemap},
-    Camera, Emerald, Game, GameSettings, Transform, Vector2, World,
+    rendering::components::Camera,
+    Emerald, Game, GameSettings, Transform, Vector2, World,
 };
 
 pub fn main() {

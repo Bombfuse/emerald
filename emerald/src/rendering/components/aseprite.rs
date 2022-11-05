@@ -1,12 +1,15 @@
 use std::convert::TryInto;
 use std::sync::Arc;
 
+use crate::rendering_engine::{BindGroupLayouts, BindGroups};
+use crate::texture::{Texture, TextureKey};
 use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
 
 use asefile::AnimationDirection;
-use miniquad::Context;
-use nanoserde::DeJson;
+use image::{DynamicImage, EncodableLayout};
+
+use super::Sprite;
 
 #[derive(Clone, Debug)]
 pub struct Aseprite {
@@ -31,13 +34,24 @@ impl Aseprite {
     }
 
     pub(crate) fn new(
-        ctx: &mut Context,
+        bind_groups: &mut BindGroups,
+        bind_group_layouts: &BindGroupLayouts,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
         asset_store: &mut AssetStore,
         path: &str,
         data: Vec<u8>,
     ) -> Result<Self, EmeraldError> {
         let aseprite = asefile::AsepriteFile::read(std::io::Cursor::new(data))?;
-        let data = AsepriteData::from_asefile(ctx, asset_store, path, aseprite)?;
+        let data = AsepriteData::from_asefile(
+            bind_groups,
+            bind_group_layouts,
+            device,
+            queue,
+            asset_store,
+            path,
+            aseprite,
+        )?;
         Ok(Self::from_data(data))
     }
 
@@ -46,7 +60,7 @@ impl Aseprite {
         animation_json: Vec<u8>,
     ) -> Result<Self, EmeraldError> {
         let animation_json = std::str::from_utf8(&animation_json)?;
-        let json_data: json_types::AsepriteData = DeJson::deserialize_json(animation_json)?;
+        let json_data: json_types::AsepriteData = serde_json::from_str(animation_json)?;
         let data = AsepriteData::from_sprite_and_json(sprite, json_data)?;
         Ok(Self::from_data(data))
     }
@@ -201,9 +215,9 @@ pub fn aseprite_update_system(world: &mut World, delta: f32) {
 }
 
 mod json_types {
-    use nanoserde::DeJson;
+    use serde::Deserialize;
 
-    #[derive(Copy, Clone, Debug, DeJson)]
+    #[derive(Copy, Clone, Debug, Deserialize)]
     pub struct AseRect {
         pub(crate) x: u32,
         pub(crate) y: u32,
@@ -211,20 +225,19 @@ mod json_types {
         pub(crate) h: u32,
     }
 
-    #[derive(Copy, Clone, Debug, DeJson)]
+    #[derive(Copy, Clone, Debug, Deserialize)]
     pub struct AseSize {
-        #[nserde(rename = "w")]
-        pub(crate) _w: u32,
+        pub(crate) w: u32,
         pub(crate) h: u32,
     }
 
-    #[derive(Clone, Debug, DeJson)]
+    #[derive(Clone, Debug, Deserialize)]
     pub struct AsepriteData {
         pub(crate) frames: Vec<AsepriteFrame>,
         pub(crate) meta: AsepriteMeta,
     }
 
-    #[derive(Clone, Debug, DeJson)]
+    #[derive(Clone, Debug, Deserialize)]
     pub struct AsepriteTag {
         pub(crate) name: String,
         pub(crate) from: u32,
@@ -232,29 +245,17 @@ mod json_types {
         pub(crate) direction: String,
     }
 
-    #[derive(Copy, Clone, Debug, DeJson)]
+    #[derive(Copy, Clone, Debug, Deserialize)]
     pub struct AsepriteFrame {
         pub(crate) frame: AseRect,
-        #[nserde(rename = "rotated")]
-        _rotated: bool,
-        #[nserde(rename = "trimmed")]
-        _trimmed: bool,
         pub(crate) duration: u32,
-        #[nserde(rename = "spriteSourceSize")]
-        _sprite_source_size: AseRect,
-        #[nserde(rename = "sourceSize")]
-        _source_size: AseSize,
     }
 
-    #[derive(Clone, Debug, DeJson)]
+    #[derive(Clone, Debug, Deserialize)]
     pub struct AsepriteMeta {
-        #[nserde(rename = "format")]
-        _format: String,
-        pub(crate) size: AseSize,
-        #[nserde(rename = "scale")]
-        _scale: String,
-        #[nserde(rename = "frameTags")]
+        #[serde(rename(deserialize = "frameTags"))]
         pub(crate) frame_tags: Vec<AsepriteTag>,
+        pub(crate) size: AseSize,
     }
 }
 
@@ -378,28 +379,34 @@ struct Frame {
 
 impl Frame {
     fn from_asefile(
-        ctx: &mut Context,
+        bind_groups: &mut BindGroups,
+        bind_group_layouts: &BindGroupLayouts,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
         asset_store: &mut AssetStore,
         path: &str,
         frame_index: u32,
         frame: asefile::Frame<'_>,
     ) -> Result<Self, EmeraldError> {
-        let image = frame.image();
-        let image = image::imageops::flip_vertical(&image);
+        let image = DynamicImage::ImageRgba8(frame.image());
         let texture_key = {
             let mut key = path.to_owned();
             key.push('#');
             key.push_str(&frame_index.to_string());
             TextureKey::new(key)
         };
-        let texture = Texture::from_rgba8(
-            ctx,
-            texture_key.clone(),
-            image.width().try_into().unwrap(),
-            image.height().try_into().unwrap(),
-            &image,
-        )?;
-        asset_store.insert_texture(texture_key.clone(), texture);
+
+        if asset_store.get_texture(&texture_key).is_none() {
+            Texture::from_image(
+                bind_groups,
+                bind_group_layouts,
+                asset_store,
+                device,
+                queue,
+                &image,
+                texture_key.clone(),
+            )?;
+        }
 
         Ok(Self {
             sprite: Sprite::from_texture(texture_key),
@@ -430,7 +437,10 @@ pub(crate) struct AsepriteData {
 
 impl AsepriteData {
     fn from_asefile(
-        ctx: &mut Context,
+        bind_groups: &mut BindGroups,
+        bind_group_layouts: &BindGroupLayouts,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
         asset_store: &mut AssetStore,
         path: &str,
         aseprite: asefile::AsepriteFile,
@@ -438,7 +448,16 @@ impl AsepriteData {
         let frames: Vec<Frame> = (0..aseprite.num_frames())
             .map(|frame_index| {
                 let frame = aseprite.frame(frame_index);
-                Frame::from_asefile(ctx, asset_store, path, frame_index, frame)
+                Frame::from_asefile(
+                    bind_groups,
+                    bind_group_layouts,
+                    device,
+                    queue,
+                    asset_store,
+                    path,
+                    frame_index,
+                    frame,
+                )
             })
             .collect::<Result<_, EmeraldError>>()?;
 

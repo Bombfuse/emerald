@@ -1,4 +1,9 @@
-use emerald::*;
+use emerald::{
+    render_settings::RenderSettings,
+    rendering::components::{ColorRect, Sprite},
+    texture::TextureKey,
+    *,
+};
 
 const RES_WIDTH: usize = 320;
 const RES_HEIGHT: usize = 160;
@@ -13,7 +18,7 @@ pub fn main() {
 
     emerald::start(
         Box::new(MyGame {
-            pos: Transform::from_translation((320.0, 160.0)),
+            pos: Transform::default(),
             scale: 1.0,
             render_texture: None,
         }),
@@ -70,7 +75,6 @@ impl Game for MyGame {
     }
 
     fn draw(&mut self, mut emd: Emerald) {
-        let now = std::time::Instant::now();
         emd.graphics()
             .begin_texture(self.render_texture.as_ref().unwrap().clone())
             .unwrap();
@@ -79,35 +83,28 @@ impl Game for MyGame {
         emd.graphics()
             .draw_color_rect(
                 &ColorRect::new(WHITE, 500 * 500, 500 * 500),
-                &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
+                &Transform::default(),
             )
-            .ok();
+            .unwrap();
         emd.graphics()
-            .draw_sprite(
-                &rabbit,
-                &Transform::from_translation(((RES_WIDTH / 2) as f32, (RES_HEIGHT / 2) as f32)),
-            )
-            .ok();
+            .draw_sprite(&rabbit, &Transform::default())
+            .unwrap();
 
         let texture_key = emd.graphics().render_texture().unwrap();
 
         let e = std::time::Instant::now();
 
-        println!("texture render: {:?}", e - now);
-
         // println!("{:?}", screen_sprite);
         let now = std::time::Instant::now();
 
-        let e = std::time::Instant::now();
         let mut screen_sprite = Sprite::from_texture(texture_key);
-        screen_sprite.centered = false;
+        screen_sprite.centered = true;
         screen_sprite.scale.x = self.scale;
         screen_sprite.scale.y = self.scale;
 
         emd.graphics().begin().unwrap();
         emd.graphics().draw_sprite(&screen_sprite, &self.pos).ok();
         emd.graphics().render().unwrap();
-
-        println!("screen draw: {:?}", e - now);
+        let e = std::time::Instant::now();
     }
 }

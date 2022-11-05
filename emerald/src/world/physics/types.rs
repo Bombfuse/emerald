@@ -1,4 +1,4 @@
-use nalgebra::{Point2, Vector2};
+use rapier2d::na::{Point2, Vector2};
 use rapier2d::{
     parry::query::Ray,
     prelude::{ColliderHandle, InteractionGroups},
@@ -21,9 +21,8 @@ use crate::transform::Translation;
 #[derive(Clone)]
 pub struct RayCastQuery<'a> {
     pub ray: Ray,
-    pub interaction_groups: InteractionGroups,
     pub max_toi: f32,
-    pub filter: Option<&'a dyn Fn(ColliderHandle) -> bool>,
+    pub filter: QueryFilter<'a>,
     pub solid: bool,
 }
 impl<'a> Default for RayCastQuery<'a> {
@@ -31,12 +30,13 @@ impl<'a> Default for RayCastQuery<'a> {
         RayCastQuery {
             ray: Ray::new(Point2::new(0.0, 0.0), Vector2::new(0.0, 0.0)),
             max_toi: 4.0,
-            filter: None,
+            filter: Default::default(),
             solid: true,
-            interaction_groups: InteractionGroups::all(),
         }
     }
 }
+
+pub use rapier2d::prelude::QueryFilter;
 
 pub struct ShapeCastQuery<'a> {
     /// The origin position that the shape will be cast from.
@@ -44,8 +44,8 @@ pub struct ShapeCastQuery<'a> {
     /// The directional velocity the shape will move at during the cast.
     pub velocity: Vector2<f32>,
     pub max_toi: f32,
-    pub interaction_groups: InteractionGroups,
-    pub filter: Option<&'a dyn Fn(ColliderHandle) -> bool>,
+    pub filter: QueryFilter<'a>,
+    pub stop_at_penetration: bool,
 }
 impl<'a> Default for ShapeCastQuery<'a> {
     fn default() -> ShapeCastQuery<'a> {
@@ -53,8 +53,8 @@ impl<'a> Default for ShapeCastQuery<'a> {
             origin_translation: Translation::new(0.0, 0.0),
             velocity: Vector2::new(0.0, 0.0),
             max_toi: 4.0,
-            filter: None,
-            interaction_groups: InteractionGroups::all(),
+            filter: Default::default(),
+            stop_at_penetration: false,
         }
     }
 }
