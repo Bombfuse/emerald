@@ -463,7 +463,6 @@ mod tests {
         assert!(world.remove_one::<TestStruct>(entity).is_err());
     }
 
-    #[cfg(feature = "physics")]
     mod physics_tests {
         use rapier2d::prelude::RigidBodyBuilder;
 
