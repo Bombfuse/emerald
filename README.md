@@ -12,18 +12,17 @@ The api is simple and powerful, giving you direct access to physics, audio, grap
 
 ## Supported Platforms
 <div>
-    <img alt="OpenGL" src="./assets/opengl.svg" width=32>
     <img alt="MacOS" src="./assets/apple.svg" width=32>
     <img alt="Linux" src="./assets/linux.svg" width=32>
     <img alt="Windows" src="./assets/windows.svg" width=32>
     <img alt="RaspberryPi" src="./assets/raspberrypi.svg" width=32>
-    <img alt="HTML5" src="./assets/webassembly.svg" width=32>
 </div>
 
 
 --- Work in progress ---
 <div>
     <img alt="Android" src="./assets/android.svg" width=32>
+    <img alt="HTML5" src="./assets/webassembly.svg" width=32>
 </div>
 --------------------------
 
@@ -137,7 +136,7 @@ Export settings
 
 
 
-## [WASM](https://webassembly.org/)
+## [WASM](https://webassembly.org/) (WIP, PROBABLY BROKEN RIGHT NOW)
 
 ### Build
 
@@ -185,15 +184,7 @@ fn initialize(&mut self, mut emd: Emerald) {
 }
 ```
 
-## Android
-
-### Build
-
-Recommended way to build for Android is using Docker.
-```bash
-docker run --rm -v $(pwd)":/root/src" -w /root/src notfl3/cargo-apk cargo quad-apk build --example physics
-```
-See [miniquad readme](https://github.com/not-fl3/miniquad#android) and [cargo-quad-apk](https://github.com/not-fl3/cargo-quad-apk) for more details.
+## Android (WIP, PROBABLY BROKEN RIGHT NOW)
 
 ### Asset Loading
 
@@ -202,10 +193,3 @@ Add following to `Cargo.toml` and load assets as usual:
 [package.metadata.android]
 assets = "YOUR_ASSETS_DIRECTORY/"
 ```
-
-## Demos
-* Links
-* To
-* Hosted
-* WASM demos
-* with source code
