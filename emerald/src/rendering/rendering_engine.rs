@@ -564,6 +564,7 @@ impl RenderingEngine {
                         &mut self.indices,
                         counter,
                         &mut textured_tri_draws,
+                        &self.settings,
                     )?;
                 }
                 Drawable::Aseprite { sprite, .. } => {
@@ -701,6 +702,7 @@ impl RenderingEngine {
                             &mut self.indices,
                             counter,
                             &mut textured_tri_draws,
+                            &self.settings,
                         )?;
                     }
                 }
@@ -772,6 +774,7 @@ impl RenderingEngine {
                                 &mut self.indices,
                                 counter,
                                 &mut textured_tri_draws,
+                                &self.settings,
                             )?;
                         }
 
@@ -906,6 +909,7 @@ fn draw_textured_quad(
     indices: &mut Vec<u32>,
     counter: u32,
     textured_tri_draws: &mut Vec<TexturedTriDraw>,
+    settings: &RenderSettings,
 ) -> Result<(), EmeraldError> {
     let vertex_set_size = (std::mem::size_of::<Vertex>() * 4) as u64;
     let indices_set_size: u64 = std::mem::size_of::<u32>() as u64 * 6;
@@ -925,8 +929,16 @@ fn draw_textured_quad(
         )));
     }
 
-    let x = (transform.translation.x + offset.x) / (active_size.width as f32 / 2.0);
-    let y = (transform.translation.y + offset.y) / (active_size.height as f32 / 2.0);
+    let mut x = transform.translation.x + offset.x;
+    let mut y = transform.translation.y + offset.y;
+
+    if settings.pixel_snap {
+        x = x.floor();
+        y = y.floor();
+    }
+
+    let x = x / (active_size.width as f32 / 2.0);
+    let y = y / (active_size.height as f32 / 2.0);
 
     let normalized_texture_size = (
         target.width / (active_size.width as f32 / 2.0),
