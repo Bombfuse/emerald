@@ -6,10 +6,9 @@ use crate::{AssetLoader, EmeraldError, Transform, World};
 use self::ent_sprite_loader::load_ent_sprite;
 #[cfg(feature = "aseprite")]
 pub(crate) mod ent_aseprite_loader;
-pub(crate) mod ent_sprite_loader;
 
-#[cfg(feature = "physics")]
 pub(crate) mod ent_rigid_body_loader;
+pub(crate) mod ent_sprite_loader;
 
 const SPRITE_SCHEMA_KEY: &str = "sprite";
 
@@ -55,16 +54,13 @@ pub(crate) fn load_ent(
                     }
                 }
                 RIGID_BODY_SCHEMA_KEY => {
-                    #[cfg(feature = "physics")]
-                    {
-                        if let Some(rigid_body_value) = table.remove(RIGID_BODY_SCHEMA_KEY) {
-                            ent_rigid_body_loader::load_ent_rigid_body(
-                                loader,
-                                entity,
-                                world,
-                                &rigid_body_value,
-                            )?;
-                        }
+                    if let Some(rigid_body_value) = table.remove(RIGID_BODY_SCHEMA_KEY) {
+                        ent_rigid_body_loader::load_ent_rigid_body(
+                            loader,
+                            entity,
+                            world,
+                            &rigid_body_value,
+                        )?;
                     }
                 }
                 ASEPRITE_SCHEMA_KEY => {

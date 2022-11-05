@@ -1,6 +1,6 @@
 use hecs::Entity;
-use nalgebra::Vector2;
 use rapier2d::{
+    na::Vector2,
     parry::shape::Cuboid,
     prelude::{ColliderBuilder, ColliderHandle, RigidBodyBuilder, RigidBodyHandle, RigidBodyType},
 };
