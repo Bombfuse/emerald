@@ -1,4 +1,7 @@
-use emerald::{rendering::components::Sprite, *};
+use emerald::{
+    rendering::components::{Label, Sprite},
+    *,
+};
 
 // Bunnymark is super disappointing right now, need to fix
 // https://github.com/Bombfuse/emerald/issues/10
@@ -98,27 +101,25 @@ impl Game for BunnymarkGame {
             transform.translation.x += vel.x;
             transform.translation.y += vel.y;
         }
-
-        println!("fps: {:?} count: {:?}", emd.fps() as u32, self.count);
     }
 
     fn draw(&mut self, mut emd: Emerald) {
         emd.graphics().begin().unwrap();
         emd.graphics().draw_world(&mut self.world).unwrap();
 
-        // let font = emd.loader().font("Roboto-Light.ttf", 40).unwrap();
-        // let label = Label::new(format!("FPS: {}", emd.fps() as u32), font.clone(), 40);
-        // let bunnycount_label = Label::new(format!("{} bunnies", (self.count)), font, 40);
+        let font = emd.loader().font("Roboto-Light.ttf", 40).unwrap();
+        let label = Label::new(format!("FPS: {}", emd.fps() as u32), font.clone(), 40);
+        let bunnycount_label = Label::new(format!("{} bunnies", (self.count)), font, 40);
 
-        // emd.graphics()
-        //     .draw_label(&label, &Transform::from_translation((500.0, 500.0)))
-        //     .unwrap();
-        // emd.graphics()
-        //     .draw_label(
-        //         &bunnycount_label,
-        //         &Transform::from_translation((500.0, 100.0)),
-        //     )
-        //     .unwrap();
+        emd.graphics()
+            .draw_label(&label, &Transform::from_translation((-300.0, 150.0)))
+            .unwrap();
+        emd.graphics()
+            .draw_label(
+                &bunnycount_label,
+                &Transform::from_translation((-300.0, 100.0)),
+            )
+            .unwrap();
 
         emd.graphics().render().unwrap();
     }

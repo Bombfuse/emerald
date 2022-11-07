@@ -6,8 +6,8 @@ use std::{
 
 use fontdue::layout::{Layout, LayoutSettings, TextStyle};
 use hecs::Entity;
-use rapier2d::na::{Quaternion, Vector2, Vector4};
-use wgpu::{util::DeviceExt, Buffer, RenderPass, TextureFormat, TextureView};
+use rapier2d::na::Vector2;
+use wgpu::{util::DeviceExt, TextureView};
 use wgpu::{Adapter, BindGroup, BindGroupLayout, Device, Queue, RenderPipeline, Surface};
 use winit::dpi::PhysicalSize;
 
@@ -17,7 +17,7 @@ use crate::{
     render_settings::RenderSettings,
     shaders::{
         self,
-        textured_quad::{Camera2D, CameraUniform, Vertex, INDICES, VERTICES},
+        textured_quad::{CameraUniform, Vertex},
     },
     texture::{Texture, TextureKey},
     tilemap::Tilemap,
@@ -29,12 +29,7 @@ use super::components::{Camera, ColorRect, Label, Sprite};
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum BindGroupLayoutId {
     TextureQuad,
-    Camera2D,
 }
-
-type BindGroupId = String;
-
-const BIND_GROUP_ID_CAMERA_2D: &str = "emd_camera_2d";
 
 /// A set of textured tris that will be drawn.
 struct TexturedTriDraw {
@@ -562,12 +557,33 @@ impl RenderingEngine {
                         self.active_size.clone(),
                         &mut self.vertices,
                         &mut self.indices,
-                        counter,
+                        &mut counter,
                         &mut textured_tri_draws,
                         &self.settings,
                     )?;
                 }
-                Drawable::Aseprite { sprite, .. } => {
+                Drawable::Aseprite {
+                    mut sprite,
+                    rotation,
+                    color,
+                    centered,
+                    scale,
+                    offset,
+                    z_index,
+                    visible,
+                } => {
+                    if !visible {
+                        continue;
+                    }
+
+                    sprite.rotation = rotation;
+                    sprite.color = color;
+                    sprite.centered = centered;
+                    sprite.scale = scale;
+                    sprite.offset = offset;
+                    sprite.z_index = z_index;
+                    sprite.visible = visible;
+
                     // Aseprites can be broken down into a sprite draw
                     draw_queue.push_back(DrawCommand {
                         drawable: Drawable::Sprite { sprite },
@@ -700,7 +716,7 @@ impl RenderingEngine {
                             self.active_size.clone(),
                             &mut self.vertices,
                             &mut self.indices,
-                            counter,
+                            &mut counter,
                             &mut textured_tri_draws,
                             &self.settings,
                         )?;
@@ -772,7 +788,7 @@ impl RenderingEngine {
                                 active_size,
                                 &mut self.vertices,
                                 &mut self.indices,
-                                counter,
+                                &mut counter,
                                 &mut textured_tri_draws,
                                 &self.settings,
                             )?;
@@ -786,8 +802,6 @@ impl RenderingEngine {
                     }
                 }
             }
-
-            counter += 1;
         }
         let vertices_set_count = self.vertex_buffer.size() / vertex_set_size;
         let indices_set_count = self.index_buffer.size() / indices_set_size as u64;
@@ -907,7 +921,7 @@ fn draw_textured_quad(
     active_size: PhysicalSize<u32>,
     vertices: &mut Vec<Vertex>,
     indices: &mut Vec<u32>,
-    counter: u32,
+    counter: &mut u32,
     textured_tri_draws: &mut Vec<TexturedTriDraw>,
     settings: &RenderSettings,
 ) -> Result<(), EmeraldError> {
@@ -1016,12 +1030,28 @@ fn draw_textured_quad(
         },
     ];
 
+    if settings.frustrum_culling {
+        let mut skip = true;
+
+        for vertex in &vertex_set {
+            let [x, y] = vertex.position;
+
+            if x >= -1.0 && x <= 1.0 && y >= -1.0 && y <= 1.0 {
+                skip = false;
+            }
+        }
+
+        if skip {
+            return Ok(());
+        }
+    }
+
     let mut same_texture = false;
 
     let len = textured_tri_draws.len();
     if len > 0 {
         if let Some(tri_draw) = textured_tri_draws.get(len - 1) {
-            if tri_draw.key == texture_key {
+            if tri_draw.key.0 == texture_key.0 {
                 same_texture = true;
             }
         }
@@ -1031,36 +1061,41 @@ fn draw_textured_quad(
     let mut index_start = 0;
 
     if same_texture {
-        if let Some(textured_quad_draw) = textured_tri_draws.get_mut(len - 1) {
-            index_start = textured_quad_draw.count * 4;
-            textured_quad_draw.vertices_range.end += vertex_set_size;
-            textured_quad_draw.indices_range.end += indices_set_size;
-            textured_quad_draw.count += 1;
+        if let Some(textured_tri_draw) = textured_tri_draws.get_mut(len - 1) {
+            index_start = textured_tri_draw.count * 4;
+            textured_tri_draw.vertices_range.end += vertex_set_size;
+            textured_tri_draw.indices_range.end += indices_set_size;
+            textured_tri_draw.count += 1;
             add_quad = false;
         }
     }
 
-    let vertices_start = (counter as u64) * vertex_set_size;
-    vertices.extend(vertex_set);
-    indices.extend([
+    let indices_set = [
         index_start,
         index_start + 1,
         index_start + 2,
         index_start,
         index_start + 2,
         index_start + 3,
-    ]);
+    ];
+
+    vertices.extend(vertex_set);
+    indices.extend(indices_set);
 
     if add_quad {
-        let indices_start = (counter as u64) * indices_set_size;
+        let indices_start = (*counter as u64) * indices_set_size;
+        let vertices_start = (*counter as u64) * vertex_set_size;
+        let indices_range = indices_start..indices_start + indices_set_size;
+        let vertices_range = vertices_start..vertices_start + vertex_set_size;
         textured_tri_draws.push(TexturedTriDraw {
             key: texture_key.clone(),
-            vertices_range: (vertices_start..vertices_start + vertex_set_size),
-            indices_range: (indices_start..indices_start + indices_set_size),
+            vertices_range,
+            indices_range,
             count: 1,
         });
     }
 
+    *counter += 1;
     Ok(())
 }
 

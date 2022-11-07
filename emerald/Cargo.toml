@@ -34,7 +34,6 @@ bytemuck = { version = "1.12.1", features = ["derive"] }
 gamepad = { version = "0.1.5", optional = true }
 asefile =  { version = "0.3.4", optional = true }
 
-
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 kira = { version= "0.5.3", optional = true, default-features = false, features = ["ogg", "flac", "wav"] }
 console_error_panic_hook = "0.1.6"
@@ -63,8 +62,4 @@ ndk-glue = "0.7.0"
 [lib]
 name = "emerald"
 path = "src/lib.rs"
-crate-type = ["lib", "cdylib"]
-
-[[example]]
-name = "bunnymark"
 crate-type = ["lib", "cdylib"]
