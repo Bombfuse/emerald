@@ -10,6 +10,7 @@ pub(crate) struct EntAsepriteSchema {
     pub aseprite: String,
     pub offset: Option<Vec2f32Schema>,
     pub visible: Option<bool>,
+    pub centered: Option<bool>,
     pub scale: Option<Vec2f32Schema>,
     pub default_animation: Option<AsepriteDefaultAnimationSchema>,
     pub z_index: Option<f32>,
@@ -38,6 +39,7 @@ pub(crate) fn load_ent_aseprite<'a>(
 
     aseprite.z_index = schema.z_index.unwrap_or(0.0);
     aseprite.visible = schema.visible.unwrap_or(true);
+    aseprite.centered = schema.centered.unwrap_or(true);
 
     if let Some(offset) = schema.offset {
         aseprite.offset.x = offset.x;

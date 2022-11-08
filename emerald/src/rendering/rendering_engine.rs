@@ -770,7 +770,7 @@ impl RenderingEngine {
                             let offset = Vector2::new(0.0, 0.0);
                             let scale = Vector2::new(1.0, 1.0);
                             let rotation = 0.0;
-                            let centered = false;
+                            let centered = true;
                             let color = crate::colors::WHITE;
                             let transform = Transform::from_translation(translation);
                             let active_size = self.active_size;
