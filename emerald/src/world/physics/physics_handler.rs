@@ -33,6 +33,17 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.build_collider(body_handle, desc)
     }
 
+    pub fn build_joint(
+        &mut self,
+        parent_handle: RigidBodyHandle,
+        child_handle: RigidBodyHandle,
+        joint: RevoluteJointBuilder,
+        wake_up: bool,
+    ) {
+        self.physics_engine
+            .build_joint(parent_handle, child_handle, joint, wake_up)
+    }
+
     /// Retrieves the entities with bodies that are touching the body of this entity.
     /// This includes:
     /// Collider <- Contact -> Collider
