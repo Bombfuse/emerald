@@ -350,6 +350,18 @@ impl PhysicsEngine {
     }
 
     #[inline]
+    pub fn build_joint(
+        &mut self,
+        parent_handle: RigidBodyHandle,
+        child_handle: RigidBodyHandle,
+        joint: RevoluteJointBuilder,
+        wake_up: bool,
+    ) {
+        self.impulse_joints
+            .insert(parent_handle, child_handle, joint, wake_up);
+    }
+
+    #[inline]
     pub(crate) fn remove_body(&mut self, entity: Entity) -> Option<RigidBody> {
         let mut body_entities = Vec::new();
         for e in self.entity_collisions.keys() {
@@ -451,13 +463,10 @@ impl PhysicsEngine {
                     transform.translation.y,
                 )))
             } else {
-                body.set_position(
-                    Isometry::from(Vector2::new(
-                        transform.translation.x,
-                        transform.translation.y,
-                    )),
-                    false,
-                )
+                body.set_translation(
+                    Vector2::new(transform.translation.x, transform.translation.y),
+                    true,
+                );
             }
         }
     }
