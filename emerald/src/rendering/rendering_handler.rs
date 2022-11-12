@@ -35,7 +35,8 @@ impl<'c> RenderingHandler<'c> {
         world: &mut World,
         color: crate::Color,
     ) -> Result<(), EmeraldError> {
-        self.rendering_engine.draw_colliders(world, color)
+        self.rendering_engine
+            .draw_colliders(&mut self.asset_store, world, color)
     }
 
     pub fn draw_sprite(

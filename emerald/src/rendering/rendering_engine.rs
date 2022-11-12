@@ -6,7 +6,7 @@ use std::{
 
 use fontdue::layout::{Layout, LayoutSettings, TextStyle};
 use hecs::Entity;
-use rapier2d::na::Vector2;
+use rapier2d::{na::Vector2, prelude::RigidBodyHandle};
 use wgpu::{util::DeviceExt, TextureView};
 use wgpu::{Adapter, BindGroup, BindGroupLayout, Device, Queue, RenderPipeline, Surface};
 use winit::dpi::PhysicalSize;
@@ -275,7 +275,50 @@ impl RenderingEngine {
         Ok(())
     }
 
-    pub fn draw_colliders(&mut self, world: &World, color: Color) -> Result<(), EmeraldError> {
+    #[inline]
+    pub fn draw_colliders(
+        &mut self,
+        asset_store: &mut AssetStore,
+        world: &mut World,
+        collider_color: Color,
+    ) -> Result<(), EmeraldError> {
+        let screen_size = self.active_size;
+        let mut color_rect = ColorRect {
+            color: collider_color,
+            ..Default::default()
+        };
+        color_rect.color = collider_color;
+        let (camera, camera_transform) = get_camera_and_camera_transform(world);
+
+        for (_id, body_handle) in world.inner.query::<&RigidBodyHandle>().iter() {
+            if let Some(body) = world.physics_engine.bodies.get(*body_handle) {
+                for collider_handle in body.colliders() {
+                    if let Some(collider) = world.physics_engine.colliders.get(*collider_handle) {
+                        let aabb = collider.compute_aabb();
+                        let body_translation =
+                            Translation::from(Vector2::from(aabb.center().coords));
+                        color_rect.width = aabb.half_extents().x as u32 * 2;
+                        color_rect.height = aabb.half_extents().y as u32 * 2;
+
+                        let translation = {
+                            let mut translation = body_translation - camera_transform.translation;
+
+                            translation
+                        };
+
+                        self.push_draw_command(
+                            asset_store,
+                            DrawCommand {
+                                drawable: Drawable::ColorRect { color_rect },
+                                transform: Transform::from_translation(translation),
+                                z_index: 0.0,
+                            },
+                        )?;
+                    }
+                }
+            }
+        }
+
         Ok(())
     }
 
