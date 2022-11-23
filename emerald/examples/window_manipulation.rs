@@ -26,5 +26,11 @@ impl Game for WindowManipulationExample {
         if emd.input().is_key_just_pressed(KeyCode::Enter) {
             emd.graphics().set_fullscreen(true).unwrap();
         }
+
+        if emd.input().mouse().left.is_just_pressed() {
+            emd.set_cursor(CursorIcon::Progress);
+        } else if emd.input().mouse().right.is_just_pressed() {
+            emd.set_cursor(CursorIcon::Default);
+        }
     }
 }

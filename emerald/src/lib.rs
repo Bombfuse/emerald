@@ -34,6 +34,8 @@ pub use serde;
 pub use serde_json;
 pub use toml;
 
+pub use winit::window::CursorIcon;
+
 pub use rapier2d::{
     crossbeam,
     dynamics::{RigidBody, RigidBodyBuilder, RigidBodyHandle},
