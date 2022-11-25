@@ -332,11 +332,19 @@ fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
     use std::io::Read;
 
     let current_dir = std::env::current_dir()?;
-    let path = current_dir.join(path);
-    let path = path.into_os_string().into_string()?;
+    let file_path = current_dir.join(path);
+    let file_path = file_path.into_os_string().into_string()?;
 
     let mut contents = vec![];
-    let mut file = File::open(path)?;
+    let mut file = match File::open(file_path) {
+        Ok(file) => file,
+        Err(e) => {
+            return Err(EmeraldError::new(format!(
+                "Error loading file {:?}: {:?}",
+                path, e
+            )))
+        }
+    };
     file.read_to_end(&mut contents)?;
     Ok(contents)
 }

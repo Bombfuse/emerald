@@ -1,0 +1,11 @@
+[physics]
+gravity = { x = 0.0, y = -9.8 }
+
+[[entities]]
+path = "bunny.ent"
+transform = { translation = { x = 0.0, y = 0.0 } }
+
+[[entities]]
+transform = { translation = { x = -100.0, y = 0.0 } }
+aseprite = { aseprite = "smiley.aseprite", default_animation = { name = "smile", looping = true } }
+physics_body = { body_type = "dynamic", colliders = [{ shape = "cuboid", half_width = 4.0, half_height = 4.0 }] }

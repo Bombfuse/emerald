@@ -3,18 +3,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::{AssetLoader, EmeraldError, Transform, World};
 
-use self::ent_sprite_loader::load_ent_sprite;
+use self::{ent_sprite_loader::load_ent_sprite, ent_transform_loader::load_ent_transform};
 #[cfg(feature = "aseprite")]
 pub(crate) mod ent_aseprite_loader;
 
 pub(crate) mod ent_rigid_body_loader;
 pub(crate) mod ent_sprite_loader;
+pub(crate) mod ent_transform_loader;
 
 const SPRITE_SCHEMA_KEY: &str = "sprite";
-
 const RIGID_BODY_SCHEMA_KEY: &str = "rigid_body";
-
 const ASEPRITE_SCHEMA_KEY: &str = "aseprite";
+const TRANSFORM_SCHEMA_KEY: &str = "transform";
 
 #[derive(Default)]
 pub struct EntLoadConfig<'a> {
@@ -33,12 +33,10 @@ pub struct EntLoadConfig<'a> {
 pub(crate) fn load_ent(
     loader: &mut AssetLoader<'_>,
     world: &mut World,
-    toml: String,
+    toml: &mut crate::toml::Value,
     config: EntLoadConfig<'_>,
 ) -> Result<Entity, EmeraldError> {
     let entity = world.spawn((config.transform,));
-
-    let mut toml = toml.parse::<toml::Value>()?;
 
     if let Some(table) = toml.as_table_mut() {
         let table_keys = table
@@ -48,6 +46,11 @@ pub(crate) fn load_ent(
             .collect::<Vec<String>>();
         for key in table_keys {
             match key.as_str() {
+                TRANSFORM_SCHEMA_KEY => {
+                    if let Some(transform_value) = table.remove(TRANSFORM_SCHEMA_KEY) {
+                        load_ent_transform(loader, entity, world, &transform_value)?;
+                    }
+                }
                 SPRITE_SCHEMA_KEY => {
                     if let Some(sprite_value) = table.remove(SPRITE_SCHEMA_KEY) {
                         load_ent_sprite(loader, entity, world, &sprite_value)?;
@@ -88,6 +91,16 @@ pub(crate) fn load_ent(
     }
 
     Ok(entity)
+}
+
+pub(crate) fn load_ent_from_toml(
+    loader: &mut AssetLoader<'_>,
+    world: &mut World,
+    toml: String,
+    config: EntLoadConfig<'_>,
+) -> Result<Entity, EmeraldError> {
+    let mut value = toml.parse::<toml::Value>()?;
+    load_ent(loader, world, &mut value, config)
 }
 
 #[derive(Deserialize, Serialize)]

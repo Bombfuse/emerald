@@ -1,11 +1,13 @@
 pub mod physics;
 
 pub mod ent;
+pub mod world_physics_loader;
 
 use std::collections::HashMap;
 
 use crate::{
-    rendering::components::Camera, EmeraldError, PhysicsEngine, PhysicsHandler, PhysicsRefHandler,
+    rendering::components::Camera, AssetLoader, EmeraldError, PhysicsEngine, PhysicsHandler,
+    PhysicsRefHandler, Transform,
 };
 
 use hecs::{
@@ -13,6 +15,11 @@ use hecs::{
     QueryItem, QueryOne, SpawnBatchIter,
 };
 use rapier2d::prelude::{RigidBodyBuilder, RigidBodyHandle};
+
+use self::{
+    ent::{load_ent, EntLoadConfig},
+    world_physics_loader::load_world_physics,
+};
 
 pub struct World {
     pub(crate) physics_engine: PhysicsEngine,
@@ -282,6 +289,68 @@ impl World {
     pub fn physics_ref(&self) -> PhysicsRefHandler<'_> {
         PhysicsRefHandler::new(&self.physics_engine)
     }
+}
+
+pub struct WorldLoadConfig<'a> {
+    pub transform_offset: Transform,
+    pub custom_component_loader: Option<
+        &'a dyn Fn(
+            &mut AssetLoader<'_>,
+            Entity,
+            &mut World,
+            toml::Value,
+            String,
+        ) -> Result<(), EmeraldError>,
+    >,
+}
+impl<'a> Default for WorldLoadConfig<'a> {
+    fn default() -> Self {
+        Self {
+            transform_offset: Default::default(),
+            custom_component_loader: None,
+        }
+    }
+}
+
+const PHYSICS_SCHEMA_KEY: &str = "physics";
+const ENTITIES_SCHEMA_KEY: &str = "entities";
+
+pub(crate) fn load_world(
+    loader: &mut AssetLoader<'_>,
+    toml: String,
+    config: WorldLoadConfig<'_>,
+) -> Result<World, EmeraldError> {
+    let mut toml = toml.parse::<toml::Value>()?;
+    let mut world = World::new();
+
+    if let Some(table) = toml.as_table_mut() {
+        // TODO: set physics here
+        if let Some(physics_val) = table.remove(PHYSICS_SCHEMA_KEY) {
+            load_world_physics(loader, &mut world, &physics_val)?;
+        }
+
+        if let Some(mut entities_val) = table.remove(ENTITIES_SCHEMA_KEY) {
+            if let Some(entities) = entities_val.as_array_mut() {
+                for value in entities {
+                    let config = EntLoadConfig {
+                        transform: Transform::default(),
+                        custom_component_loader: config.custom_component_loader,
+                    };
+
+                    // check if this is a ent path reference
+                    if let Some(path) = value.get("path") {
+                        if let Some(path) = path.as_str() {
+                            loader.ent(&mut world, config, path)?;
+                        }
+                    } else {
+                        load_ent(loader, &mut world, value, config)?;
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(world)
 }
 
 #[cfg(test)]
