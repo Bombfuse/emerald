@@ -1,4 +1,4 @@
-use emerald::*;
+use emerald::{rendering::components::aseprite_update_system, *};
 
 pub fn main() {
     emerald::start(
@@ -25,6 +25,12 @@ impl Game for WorldLoadingExample {
                 "example.wrld",
             )
             .unwrap();
+    }
+
+    fn update(&mut self, emd: Emerald) {
+        let delta = emd.delta();
+        aseprite_update_system(&mut self.world, delta);
+        self.world.physics().step(delta);
     }
 
     fn draw(&mut self, mut emd: Emerald) {

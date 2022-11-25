@@ -1,6 +1,7 @@
 pub mod physics;
 
 pub mod ent;
+pub mod world_physics_loader;
 
 use std::collections::HashMap;
 
@@ -15,7 +16,10 @@ use hecs::{
 };
 use rapier2d::prelude::{RigidBodyBuilder, RigidBodyHandle};
 
-use self::ent::{load_ent, EntLoadConfig};
+use self::{
+    ent::{load_ent, EntLoadConfig},
+    world_physics_loader::load_world_physics,
+};
 
 pub struct World {
     pub(crate) physics_engine: PhysicsEngine,
@@ -321,6 +325,9 @@ pub(crate) fn load_world(
 
     if let Some(table) = toml.as_table_mut() {
         // TODO: set physics here
+        if let Some(physics_val) = table.remove(PHYSICS_SCHEMA_KEY) {
+            load_world_physics(loader, &mut world, &physics_val)?;
+        }
 
         if let Some(mut entities_val) = table.remove(ENTITIES_SCHEMA_KEY) {
             if let Some(entities) = entities_val.as_array_mut() {
