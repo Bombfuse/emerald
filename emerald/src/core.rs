@@ -9,6 +9,7 @@ pub use components::*;
 pub use error::*;
 pub use game::*;
 pub use game_settings::*;
+use winit::window::CursorIcon;
 
 use crate::assets::*;
 use crate::audio::*;
@@ -73,6 +74,12 @@ impl<'c> Emerald<'c> {
 
     pub fn get_user_data_folder_root(&mut self) -> String {
         self.asset_store.get_user_data_folder_root()
+    }
+
+    pub fn set_cursor(&mut self, cursor: CursorIcon) {
+        if let Some(window) = &self.ctx.window {
+            window.set_cursor_icon(cursor);
+        }
     }
 
     // ************* General API ***************
