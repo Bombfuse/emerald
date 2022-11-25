@@ -1,6 +1,7 @@
 use crate::assets::*;
 use crate::audio::*;
 use crate::ent::load_ent;
+use crate::ent::load_ent_from_toml;
 use crate::ent::EntLoadConfig;
 use crate::font::Font;
 use crate::font::FontImage;
@@ -110,7 +111,16 @@ impl<'c> AssetLoader<'c> {
         path: T,
     ) -> Result<Entity, EmeraldError> {
         let toml = self.string(path)?;
-        load_ent(self, world, toml, config)
+        load_ent_from_toml(self, world, toml, config)
+    }
+
+    pub fn world<T: AsRef<str>>(
+        &mut self,
+        config: WorldLoadConfig<'_>,
+        path: T,
+    ) -> Result<World, EmeraldError> {
+        let toml = self.string(path)?;
+        load_world(self, toml, config)
     }
 
     /// Loads a `.aseprite` file.
