@@ -1324,7 +1324,10 @@ impl ToDrawable for Aseprite {
         transform: &Transform,
         asset_store: &mut AssetStore,
     ) -> Option<Rectangle> {
-        self.get_sprite().get_visible_bounds(transform, asset_store)
+        let mut sprite = self.get_sprite().clone();
+        sprite.offset = self.offset.clone();
+
+        sprite.get_visible_bounds(transform, asset_store)
     }
 
     fn to_drawable(&self) -> Drawable {
