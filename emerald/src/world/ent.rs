@@ -4,12 +4,13 @@ use serde::{Deserialize, Serialize};
 use crate::{AssetLoader, EmeraldError, Transform, World};
 
 use self::{
-    ent_label_loader::load_ent_label, ent_sprite_loader::load_ent_sprite,
-    ent_transform_loader::load_ent_transform,
+    ent_color_rect_loader::load_ent_color_rect, ent_label_loader::load_ent_label,
+    ent_sprite_loader::load_ent_sprite, ent_transform_loader::load_ent_transform,
 };
 #[cfg(feature = "aseprite")]
 pub(crate) mod ent_aseprite_loader;
 
+pub(crate) mod ent_color_rect_loader;
 pub(crate) mod ent_label_loader;
 pub(crate) mod ent_rigid_body_loader;
 pub(crate) mod ent_sprite_loader;
@@ -20,6 +21,7 @@ const RIGID_BODY_SCHEMA_KEY: &str = "rigid_body";
 const ASEPRITE_SCHEMA_KEY: &str = "aseprite";
 const TRANSFORM_SCHEMA_KEY: &str = "transform";
 const LABEL_SCHEMA_KEY: &str = "label";
+const COLOR_RECT_SCHEMA_KEY: &str = "color_rect";
 
 #[derive(Default)]
 pub struct EntLoadConfig<'a> {
@@ -52,6 +54,11 @@ pub(crate) fn load_ent(
             .collect::<Vec<String>>();
         for key in table_keys {
             match key.as_str() {
+                COLOR_RECT_SCHEMA_KEY => {
+                    if let Some(value) = table.remove(COLOR_RECT_SCHEMA_KEY) {
+                        load_ent_color_rect(loader, entity, world, &value)?;
+                    }
+                }
                 LABEL_SCHEMA_KEY => {
                     if let Some(label_value) = table.remove(LABEL_SCHEMA_KEY) {
                         load_ent_label(loader, entity, world, &label_value)?;

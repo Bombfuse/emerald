@@ -24,3 +24,8 @@ size = 32
 offset = { x = -48.0, y = 0.0 }
 horizontal_align = "left"
 vertical_align = "bottom"
+
+[color_rect]
+color = { r = 0, g = 0, b = 0, a = 255 }
+width = 12
+height = 12
