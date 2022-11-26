@@ -15,3 +15,12 @@ max_hp = 50
 aseprite = "smiley.aseprite"
 offset = { x = 16.0, y = 160.0 }
 default_animation = { name = "smile", looping = true }
+
+[label]
+font = "Roboto-Light.ttf"
+text = "Blah Blah Emerald Engine"
+font_size = 48
+size = 32
+offset = { x = -48.0, y = 0.0 }
+horizontal_align = "left"
+vertical_align = "bottom"
