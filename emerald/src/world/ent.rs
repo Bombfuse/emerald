@@ -3,10 +3,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{AssetLoader, EmeraldError, Transform, World};
 
-use self::{ent_sprite_loader::load_ent_sprite, ent_transform_loader::load_ent_transform};
+use self::{
+    ent_color_rect_loader::load_ent_color_rect, ent_label_loader::load_ent_label,
+    ent_sprite_loader::load_ent_sprite, ent_transform_loader::load_ent_transform,
+};
 #[cfg(feature = "aseprite")]
 pub(crate) mod ent_aseprite_loader;
 
+pub(crate) mod ent_color_rect_loader;
+pub(crate) mod ent_label_loader;
 pub(crate) mod ent_rigid_body_loader;
 pub(crate) mod ent_sprite_loader;
 pub(crate) mod ent_transform_loader;
@@ -15,6 +20,8 @@ const SPRITE_SCHEMA_KEY: &str = "sprite";
 const RIGID_BODY_SCHEMA_KEY: &str = "rigid_body";
 const ASEPRITE_SCHEMA_KEY: &str = "aseprite";
 const TRANSFORM_SCHEMA_KEY: &str = "transform";
+const LABEL_SCHEMA_KEY: &str = "label";
+const COLOR_RECT_SCHEMA_KEY: &str = "color_rect";
 
 #[derive(Default)]
 pub struct EntLoadConfig<'a> {
@@ -37,6 +44,7 @@ pub(crate) fn load_ent(
     config: EntLoadConfig<'_>,
 ) -> Result<Entity, EmeraldError> {
     let entity = world.spawn((config.transform,));
+    let mut custom_components = Vec::new();
 
     if let Some(table) = toml.as_table_mut() {
         let table_keys = table
@@ -46,6 +54,16 @@ pub(crate) fn load_ent(
             .collect::<Vec<String>>();
         for key in table_keys {
             match key.as_str() {
+                COLOR_RECT_SCHEMA_KEY => {
+                    if let Some(value) = table.remove(COLOR_RECT_SCHEMA_KEY) {
+                        load_ent_color_rect(loader, entity, world, &value)?;
+                    }
+                }
+                LABEL_SCHEMA_KEY => {
+                    if let Some(label_value) = table.remove(LABEL_SCHEMA_KEY) {
+                        load_ent_label(loader, entity, world, &label_value)?;
+                    }
+                }
                 TRANSFORM_SCHEMA_KEY => {
                     if let Some(transform_value) = table.remove(TRANSFORM_SCHEMA_KEY) {
                         load_ent_transform(loader, entity, world, &transform_value)?;
@@ -80,13 +98,20 @@ pub(crate) fn load_ent(
                     }
                 }
                 _ => {
-                    if let Some(custom_component_loader) = config.custom_component_loader {
+                    if config.custom_component_loader.is_some() {
                         if let Some(value) = table.remove(&key) {
-                            custom_component_loader(loader, entity, world, value, key)?;
+                            custom_components.push((key, value));
                         }
                     }
                 }
             }
+        }
+    }
+
+    // Custom components are loaded after all engine components
+    if let Some(custom_component_loader) = config.custom_component_loader {
+        for (key, value) in custom_components {
+            custom_component_loader(loader, entity, world, value, key)?;
         }
     }
 

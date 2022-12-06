@@ -1,7 +1,7 @@
 use crate::*;
 use crate::{font::FontKey, rendering::*};
 
-use fontdue::layout::{HorizontalAlign, VerticalAlign, WrapStyle};
+pub use fontdue::layout::{HorizontalAlign, VerticalAlign, WrapStyle};
 
 #[derive(Clone)]
 pub struct Label {

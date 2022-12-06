@@ -985,6 +985,10 @@ fn draw_textured_quad(
         )));
     }
 
+    // Add magic numbers to target semi-middle of pixels
+    target.x += 0.275;
+    target.y += 0.275;
+
     let mut x = transform.translation.x + offset.x;
     let mut y = transform.translation.y + offset.y;
 
