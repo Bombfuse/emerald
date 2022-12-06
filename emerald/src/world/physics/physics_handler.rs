@@ -53,13 +53,13 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.get_colliding_entities(entity)
     }
 
-    #[deprecated(note = "use `world.physics().get_colliding_bodies()` instead")]
+    #[deprecated(note = "use `world.physics().get_colliding_entities()` instead")]
     /// Retrieves the entities with bodies that are touching the rigid body of this entity.
     pub fn get_colliding_bodies(&self, entity: Entity) -> Vec<Entity> {
         self.physics_engine.get_colliding_entities(entity)
     }
 
-    #[deprecated(note = "use `world.physics().get_colliding_bodies()` instead")]
+    #[deprecated(note = "use `world.physics().get_colliding_entities()` instead")]
     /// Retrieves the entities with sensors that are touching this entity.
     pub fn get_colliding_areas(&self, entity: Entity) -> Vec<Entity> {
         self.physics_engine.get_colliding_entities(entity)

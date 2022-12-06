@@ -385,7 +385,6 @@ impl RenderingEngine {
             return Err(EmeraldError::new("Unable to begin_texture, a render texture is already active. Please complete your render pass on the texture before beginning another."));
         }
 
-        // TODO: Begin rendering the given texture.
         self.active_render_texture_key = Some(texture_key);
 
         Ok(())
@@ -855,7 +854,7 @@ impl RenderingEngine {
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Index Buffer"),
                     contents: bytemuck::cast_slice(&self.indices),
-                    usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+                    usage: self.index_buffer.usage(),
                 });
         } else {
             self.queue
@@ -868,7 +867,7 @@ impl RenderingEngine {
                     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                         label: Some("Vertex Buffer"),
                         contents: bytemuck::cast_slice(&self.vertices),
-                        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                        usage: self.vertex_buffer.usage(),
                     });
         } else {
             self.queue
@@ -1074,17 +1073,8 @@ fn draw_textured_quad(
     ];
 
     if settings.frustrum_culling {
-        let mut skip = true;
-
-        for vertex in &vertex_set {
-            let [x, y] = vertex.position;
-
-            if x >= -1.0 && x <= 1.0 && y >= -1.0 && y <= 1.0 {
-                skip = false;
-            }
-        }
-
-        if skip {
+        // Use vertex set bounding box for frustrum culling
+        if !Rectangle::new(-1.0, -1.0, 2.0, 2.0).intersects_with(&vertex_rect) {
             return Ok(());
         }
     }
