@@ -239,13 +239,14 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn draw_world(
+    pub fn draw_world_with_transform(
         &mut self,
         world: &mut World,
+        transform: Transform,
         asset_store: &mut AssetStore,
     ) -> Result<(), EmeraldError> {
         let (camera, camera_transform) = get_camera_and_camera_transform(world);
-
+        let camera_transform = camera_transform - transform;
         let cmd_adder = DrawCommandAdder::new(self, world);
         let mut draw_queue = Vec::new();
 
@@ -273,6 +274,15 @@ impl RenderingEngine {
         }
 
         Ok(())
+    }
+
+    #[inline]
+    pub fn draw_world(
+        &mut self,
+        world: &mut World,
+        asset_store: &mut AssetStore,
+    ) -> Result<(), EmeraldError> {
+        self.draw_world_with_transform(world, Transform::default(), asset_store)
     }
 
     #[inline]
