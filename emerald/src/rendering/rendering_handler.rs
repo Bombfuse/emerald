@@ -30,6 +30,16 @@ impl<'c> RenderingHandler<'c> {
             .draw_world(world, &mut self.asset_store)
     }
 
+    /// Draws the world with the given transform applied to the active camera.
+    pub fn draw_world_with_transform(
+        &mut self,
+        world: &mut World,
+        transform: Transform,
+    ) -> Result<(), EmeraldError> {
+        self.rendering_engine
+            .draw_world_with_transform(world, transform, &mut self.asset_store)
+    }
+
     pub fn draw_colliders(
         &mut self,
         world: &mut World,
