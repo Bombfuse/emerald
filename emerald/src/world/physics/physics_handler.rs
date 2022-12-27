@@ -65,16 +65,16 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.get_colliding_entities(entity)
     }
 
-    pub fn get_colliders(&self, entity: Entity) -> Vec<ColliderHandle> {
-        self.physics_engine.get_colliders(entity)
+    pub fn get_collider_handles(&self, entity: Entity) -> Vec<ColliderHandle> {
+        self.physics_engine.get_colliders_handles(entity)
     }
 
-    pub fn get_collider_desc(&self, collider_handle: ColliderHandle) -> Option<Collider> {
-        if let Some(collider) = self.physics_engine.colliders.get(collider_handle) {
-            return Some(collider.clone());
-        }
+    pub fn get_collider(&self, collider_handle: ColliderHandle) -> Option<&Collider> {
+        self.physics_engine.colliders.get(collider_handle)
+    }
 
-        None
+    pub fn get_collider_mut(&mut self, collider_handle: ColliderHandle) -> Option<&mut Collider> {
+        self.physics_engine.colliders.get_mut(collider_handle)
     }
 
     /// Remove physics body attached to this entity.

@@ -113,13 +113,14 @@ impl<'c> Emerald<'c> {
         self.fps
     }
 
+    /// Requests the game engine to shut down, this will usually happen when the current frame has completed.
     pub fn quit(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
         {
             self.audio_engine.clear().ok();
         }
 
-        todo!()
+        self.ctx.user_requesting_quit = true;
     }
     // *****************************************
 

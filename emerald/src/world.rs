@@ -82,7 +82,7 @@ impl World {
         new_id: Entity,
     ) -> Result<(), EmeraldError> {
         let mut colliders = Vec::new();
-        for c_id in other_world_physics.get_colliders(old_id.clone()) {
+        for c_id in other_world_physics.get_colliders_handles(old_id.clone()) {
             if let Some(collider) = other_world_physics.remove_collider(c_id) {
                 colliders.push(collider);
             }

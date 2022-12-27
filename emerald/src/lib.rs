@@ -101,6 +101,7 @@ async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldE
 
     let mut ctx = GameEngineContext {
         window: Some(window),
+        user_requesting_quit: false,
     };
 
     game_engine.initialize(&mut ctx)?;
@@ -118,7 +119,8 @@ async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldE
             if let Some(w_id) = ctx.get_window_id() {
                 if window_id == w_id {
                     {
-                        if let Err(_) = game_engine.update(&mut ctx) {
+                        let result = game_engine.update(&mut ctx);
+                        if result.is_err() || ctx.user_requesting_quit {
                             *control_flow = ControlFlow::Exit;
                             return;
                         }
