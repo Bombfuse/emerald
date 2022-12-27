@@ -12,6 +12,7 @@ use crate::{
 
 pub(crate) struct GameEngineContext {
     pub window: Option<winit::window::Window>,
+    pub user_requesting_quit: bool,
 }
 impl GameEngineContext {
     pub fn get_window_id(&self) -> Option<winit::window::WindowId> {

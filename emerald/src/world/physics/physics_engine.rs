@@ -195,7 +195,7 @@ impl PhysicsEngine {
     }
 
     #[inline]
-    pub fn get_colliders(&self, entity: Entity) -> Vec<ColliderHandle> {
+    pub fn get_colliders_handles(&self, entity: Entity) -> Vec<ColliderHandle> {
         if let Some(rbh) = self.entity_bodies.get(&entity) {
             if let Some(colliders) = self.body_colliders.get(rbh) {
                 return colliders.clone();
