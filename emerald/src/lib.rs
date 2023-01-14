@@ -67,12 +67,18 @@ async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldE
         console_log::init_with_level(log::Level::Warn).expect("Couldn't initialize logger");
     }
 
+    let fullscreen_option = if settings.render_settings.fullscreen {
+        Some(winit::window::Fullscreen::Borderless(None))
+    } else {
+        None
+    };
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_inner_size(PhysicalSize::new(
             settings.render_settings.resolution.0,
             settings.render_settings.resolution.1,
         ))
+        .with_fullscreen(fullscreen_option)
         .build(&event_loop)
         .unwrap();
     let mut game_engine = GameEngine::new(game, &window, &settings).await?;
@@ -110,7 +116,6 @@ async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldE
         Event::MainEventsCleared => {
             // RedrawRequested will only trigger once, unless we manually
             // request it.
-
             if let Some(window) = &mut ctx.window {
                 window.request_redraw();
             }

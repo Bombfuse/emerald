@@ -7,6 +7,7 @@ use rapier2d::prelude::*;
 use crate::crossbeam;
 use hecs::{Entity, World};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 /// A physics engine unique to a game world. This handles the RigidBodies of the game.
 pub struct PhysicsEngine {
@@ -206,6 +207,48 @@ impl PhysicsEngine {
     }
 
     #[inline]
+    pub fn intersections_with_ray(
+        &self,
+        ray_cast_query: RayCastQuery<'_>,
+    ) -> Vec<RayIntersectionResult> {
+        let ray_intersections = Arc::new(Mutex::new(Vec::new()));
+        let push_ray_intersections = ray_intersections.clone();
+
+        self.query_pipeline.intersections_with_ray(
+            &self.bodies,
+            &self.colliders,
+            &ray_cast_query.ray,
+            ray_cast_query.max_toi,
+            ray_cast_query.solid,
+            ray_cast_query.filter,
+            move |collider_handle, ray_intersection| {
+                push_ray_intersections
+                    .lock()
+                    .unwrap()
+                    .push((collider_handle, ray_intersection));
+
+                true
+            },
+        );
+
+        let mut intersection_results = Vec::new();
+        let ray_intersections = ray_intersections.lock().unwrap();
+
+        for (collider, ray_intersection) in ray_intersections.to_owned().into_iter() {
+            if let Some(entity) = self.get_entity_from_collider(collider) {
+                intersection_results.push(RayIntersectionResult {
+                    entity,
+                    collider,
+                    toi: ray_intersection.toi,
+                    normal: ray_intersection.normal,
+                });
+            }
+        }
+
+        intersection_results
+    }
+
+    #[inline]
     pub fn cast_ray(&mut self, ray_cast_query: RayCastQuery<'_>) -> Option<Entity> {
         if let Some((handle, _toi)) = self.query_pipeline.cast_ray(
             &self.bodies,
@@ -223,7 +266,7 @@ impl PhysicsEngine {
 
     #[inline]
     pub fn cast_shape(
-        &mut self,
+        &self,
         shape: &dyn Shape,
         shape_cast_query: ShapeCastQuery<'_>,
     ) -> Option<Entity> {

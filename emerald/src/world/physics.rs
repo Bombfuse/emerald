@@ -10,4 +10,4 @@ pub use physics_handler::*;
 pub use physics_handler_ref::*;
 pub use types::*;
 
-pub use rapier2d::prelude::{ActiveCollisionTypes, Group, InteractionGroups};
+pub use rapier2d::prelude::{ActiveCollisionTypes, Group, InteractionGroups, QueryFilterFlags};

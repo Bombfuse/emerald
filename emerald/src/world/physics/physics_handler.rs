@@ -111,11 +111,19 @@ impl<'a> PhysicsHandler<'a> {
 
     /// Returns the first entity the shape collides with if one exists.
     pub fn cast_shape(
-        &mut self,
+        &self,
         shape: &dyn Shape,
         shape_cast_query: ShapeCastQuery<'_>,
     ) -> Option<Entity> {
         self.physics_engine.cast_shape(shape, shape_cast_query)
+    }
+
+    #[inline]
+    pub fn intersections_with_ray(
+        &self,
+        ray_cast_query: RayCastQuery<'_>,
+    ) -> Vec<RayIntersectionResult> {
+        self.physics_engine.intersections_with_ray(ray_cast_query)
     }
 
     /// Steps the physics at 1/60 timestep
