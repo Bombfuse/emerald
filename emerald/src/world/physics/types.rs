@@ -4,24 +4,6 @@ use rapier2d::{parry::query::Ray, prelude::ColliderHandle};
 
 use crate::transform::Translation;
 
-pub struct RayIntersectionResult {
-    /// The entity the ray intersected with.
-    pub entity: Entity,
-
-    /// The collider the ray intersected with.
-    pub collider: ColliderHandle,
-
-    /// The time of impact of the ray with the object.  The exact contact point can be computed
-    /// with: `ray.point_at(toi)` or equivalently `origin + dir * toi` where `origin` is the origin of the ray;
-    /// `dir` is its direction and `toi` is the value of this field.
-    pub toi: f32,
-
-    /// The normal at the intersection point.
-    ///
-    /// If the `toi` is exactly zero, the normal might not be reliable.
-    pub normal: Vector2<f32>,
-}
-
 /// # Parameters
 /// - `ray`: the ray to cast.
 /// - `max_toi`: the maximum time-of-impact that can be reported by this cast. This effectively

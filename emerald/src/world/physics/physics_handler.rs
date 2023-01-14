@@ -118,14 +118,6 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.cast_shape(shape, shape_cast_query)
     }
 
-    #[inline]
-    pub fn intersections_with_ray(
-        &self,
-        ray_cast_query: RayCastQuery<'_>,
-    ) -> Vec<RayIntersectionResult> {
-        self.physics_engine.intersections_with_ray(ray_cast_query)
-    }
-
     /// Steps the physics at 1/60 timestep
     pub fn step(&mut self, delta: f32) {
         self.step_n(1, delta);
