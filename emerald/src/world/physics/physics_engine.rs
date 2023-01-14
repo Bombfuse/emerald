@@ -7,7 +7,6 @@ use rapier2d::prelude::*;
 use crate::crossbeam;
 use hecs::{Entity, World};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 
 /// A physics engine unique to a game world. This handles the RigidBodies of the game.
 pub struct PhysicsEngine {
