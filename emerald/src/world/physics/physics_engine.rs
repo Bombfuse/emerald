@@ -223,7 +223,7 @@ impl PhysicsEngine {
 
     #[inline]
     pub fn cast_shape(
-        &mut self,
+        &self,
         shape: &dyn Shape,
         shape_cast_query: ShapeCastQuery<'_>,
     ) -> Option<Entity> {

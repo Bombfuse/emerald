@@ -1,8 +1,6 @@
+use hecs::Entity;
 use rapier2d::na::{Point2, Vector2};
-use rapier2d::{
-    parry::query::Ray,
-    prelude::{ColliderHandle, InteractionGroups},
-};
+use rapier2d::{parry::query::Ray, prelude::ColliderHandle};
 
 use crate::transform::Translation;
 

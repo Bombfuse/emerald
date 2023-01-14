@@ -111,7 +111,7 @@ impl<'a> PhysicsHandler<'a> {
 
     /// Returns the first entity the shape collides with if one exists.
     pub fn cast_shape(
-        &mut self,
+        &self,
         shape: &dyn Shape,
         shape_cast_query: ShapeCastQuery<'_>,
     ) -> Option<Entity> {
