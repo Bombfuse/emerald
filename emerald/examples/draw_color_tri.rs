@@ -1,6 +1,6 @@
 use emerald::{
-    rendering::components::ColorTri, Emerald, Game, GameSettings, Transform, Vector2, World, BLACK,
-    WHITE,
+    rendering::components::ColorTri, Emerald, Game, GameSettings, KeyCode, Transform, Vector2,
+    World, BLACK, WHITE,
 };
 
 pub fn main() {
@@ -13,7 +13,7 @@ impl Game for DrawColorTriExample {
         emd.set_asset_folder_root("./examples/assets/".to_string());
     }
 
-    fn update(&mut self, _emd: Emerald) {}
+    fn update(&mut self, emd: Emerald) {}
 
     fn draw(&mut self, mut emd: Emerald<'_>) {
         let color_tri = ColorTri::new(
