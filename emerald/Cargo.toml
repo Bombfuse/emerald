@@ -14,6 +14,7 @@ audio = ["kira"]
 gamepads = ["gamepad"]
 aseprite = ["asefile"]
 hotreload = []
+physics-deterministic = ["rapier2d/enhanced-determinism"]
 
 [dependencies]
 fontdue = "0.7.2"

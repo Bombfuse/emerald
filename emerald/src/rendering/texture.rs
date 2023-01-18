@@ -1,7 +1,6 @@
 use image::GenericImageView;
 
 use crate::{
-    font::FontImage,
     rendering_engine::{BindGroupLayoutId, BindGroupLayouts, BindGroups},
     AssetStore, EmeraldError,
 };
@@ -15,8 +14,6 @@ pub(crate) struct Texture {
     pub size: wgpu::Extent3d,
 }
 impl Texture {
-    pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float; // 1.
-
     pub fn new(
         bind_groups: &mut BindGroups,
         bind_group_layouts: &BindGroupLayouts,
