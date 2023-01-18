@@ -1,3 +1,5 @@
+use rapier2d::na::Vector2;
+
 use crate::{
     game_engine::GameEngineContext,
     rendering_engine::{DrawCommand, Drawable, RenderingEngine},
@@ -5,7 +7,7 @@ use crate::{
     AssetStore, EmeraldError, Transform, World,
 };
 
-use super::components::{ColorRect, Label, Sprite};
+use super::components::{ColorRect, ColorTri, Label, Sprite};
 
 pub struct RenderingHandler<'c> {
     asset_store: &'c mut AssetStore,
@@ -69,6 +71,25 @@ impl<'c> RenderingHandler<'c> {
     pub fn draw_label(&mut self, label: &Label, transform: &Transform) -> Result<(), EmeraldError> {
         self.rendering_engine
             .draw_label(&mut self.asset_store, label, transform)
+    }
+
+    /// Draw a triangle with the given points at the given transform.
+    /// Points are drawn with the given transform as an offset.
+    pub fn draw_color_tri(
+        &mut self,
+        color_tri: &ColorTri,
+        transform: &Transform,
+    ) -> Result<(), EmeraldError> {
+        self.rendering_engine.push_draw_command(
+            &mut self.asset_store,
+            DrawCommand {
+                drawable: Drawable::ColorTri {
+                    color_tri: color_tri.clone(),
+                },
+                transform: transform.clone(),
+                z_index: color_tri.z_index,
+            },
+        )
     }
 
     pub fn draw_color_rect(

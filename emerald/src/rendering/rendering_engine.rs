@@ -24,7 +24,7 @@ use crate::{
     AssetStore, Color, EmeraldError, Rectangle, Scale, Transform, Translation, UIButton, World,
 };
 
-use super::components::{Camera, ColorRect, Label, Sprite};
+use super::components::{get_bounding_box_of_triangle, Camera, ColorRect, ColorTri, Label, Sprite};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum BindGroupLayoutId {
@@ -36,7 +36,44 @@ struct TexturedTriDraw {
     pub key: TextureKey,
     pub vertices_range: Range<u64>,
     pub indices_range: Range<u64>,
-    pub count: u32,
+    count: usize,
+    indices_per_draw: usize,
+    vertices_per_draw: usize,
+}
+impl TexturedTriDraw {
+    pub fn new(
+        key: TextureKey,
+        vertices_start: u64,
+        vertices_set_size: u64,
+        vertices_per_draw: usize,
+        indices_start: u64,
+        indices_set_size: u64,
+        indices_per_draw: usize,
+    ) -> Self {
+        Self {
+            key,
+            vertices_range: vertices_start..vertices_set_size,
+            indices_range: indices_start..indices_set_size,
+            count: 1,
+            vertices_per_draw,
+            indices_per_draw,
+        }
+    }
+    /// Add a new vertices_set and indices_set to the call.
+    /// Returns the index start for where to add the next indices_set
+    pub fn add(&mut self, vertices_set_size: u64, indices_set_size: u64) {
+        self.vertices_range.end += vertices_set_size;
+        self.indices_range.end += indices_set_size;
+        self.count += 1;
+    }
+
+    pub fn index_start(&self) -> u32 {
+        (self.count() * self.vertices_per_draw) as u32
+    }
+
+    pub fn count(&self) -> usize {
+        self.count
+    }
 }
 
 pub(crate) type BindGroups = HashMap<String, BindGroup>;
@@ -378,7 +415,7 @@ impl RenderingEngine {
         Ok(())
     }
 
-    pub fn begin(&mut self, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+    pub fn begin(&mut self, _asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
         if self.active_render_texture_key.is_some() {
             return Err(EmeraldError::new("Cannot begin render. There is an active render_texture. Please finish rendering to your texture before beginning the final render pass."));
         }
@@ -580,7 +617,6 @@ impl RenderingEngine {
 
         // Calculate vertices for every texture to be drawn, paired with their sprite data and vertex indices
         // for every tuple, draw that sprites texture bind group using that vertex index as the slice
-        let mut counter: u32 = 0;
         let vertex_set_size = (std::mem::size_of::<Vertex>() * 4) as u64;
         let indices_set_size: u64 = std::mem::size_of::<u32>() as u64 * 6;
 
@@ -609,7 +645,6 @@ impl RenderingEngine {
                         self.active_size.clone(),
                         &mut self.vertices,
                         &mut self.indices,
-                        &mut counter,
                         &mut textured_tri_draws,
                         &self.settings,
                     )?;
@@ -655,14 +690,30 @@ impl RenderingEngine {
                     sprite.rotation = color_rect.rotation;
                     sprite.centered = color_rect.centered;
                     sprite.color = color_rect.color;
-
-                    // Aseprites can be broken down into a sprite draw
                     draw_queue.push_back(DrawCommand {
                         drawable: Drawable::Sprite { sprite },
                         ..draw_command
                     });
                     continue;
                 }
+
+                Drawable::ColorTri { color_tri } => draw_textured_tri(
+                    asset_store,
+                    TextureKey::default(),
+                    color_tri.points,
+                    [
+                        Vector2::new(0.0, 0.0),
+                        Vector2::new(1.0, 1.0),
+                        Vector2::new(0.0, 1.0),
+                    ],
+                    color_tri.color,
+                    draw_command.transform,
+                    self.active_size.clone(),
+                    &mut self.vertices,
+                    &mut self.indices,
+                    &mut textured_tri_draws,
+                    &self.settings,
+                )?,
                 Drawable::Label { label } => {
                     if !label.visible {
                         continue;
@@ -768,7 +819,6 @@ impl RenderingEngine {
                             self.active_size.clone(),
                             &mut self.vertices,
                             &mut self.indices,
-                            &mut counter,
                             &mut textured_tri_draws,
                             &self.settings,
                         )?;
@@ -840,7 +890,6 @@ impl RenderingEngine {
                                 active_size,
                                 &mut self.vertices,
                                 &mut self.indices,
-                                &mut counter,
                                 &mut textured_tri_draws,
                                 &self.settings,
                             )?;
@@ -885,6 +934,7 @@ impl RenderingEngine {
         }
 
         for draw_call in textured_tri_draws {
+            let indices_count = draw_call.count() as u32 * draw_call.indices_per_draw as u32;
             if let Some(texture_bind_group) = self.bind_groups.get(&draw_call.key.0) {
                 render_pass.set_bind_group(0, texture_bind_group, &[]);
 
@@ -895,7 +945,7 @@ impl RenderingEngine {
                     wgpu::IndexFormat::Uint32,
                 );
 
-                render_pass.draw_indexed(0..(draw_call.count * 6), 0, 0..1);
+                render_pass.draw_indexed(0..indices_count, 0, 0..1);
             } else {
                 return Err(EmeraldError::new(format!(
                     "Unable to find texture bind group for {:?}",
@@ -960,6 +1010,14 @@ impl RenderingEngine {
     }
 }
 
+const VERTEX_SIZE: u64 = std::mem::size_of::<Vertex>() as u64;
+const INDEX_SIZE: u64 = std::mem::size_of::<u32>() as u64;
+
+const TEXTURED_QUAD_VERTICES_PER_DRAW: usize = 4;
+const TEXTURED_QUAD_INDICES_PER_DRAW: usize = 6;
+const TEXTURED_QUAD_VERTEX_SET_SIZE: u64 = VERTEX_SIZE * TEXTURED_QUAD_VERTICES_PER_DRAW as u64; // 4 vertices, 1 for each corner of the quad
+const TEXTURED_QUAD_INDICES_SET_SIZE: u64 = INDEX_SIZE * TEXTURED_QUAD_INDICES_PER_DRAW as u64; // 6 indices to draw a quad using 4 vertices
+
 fn draw_textured_quad(
     asset_store: &mut AssetStore,
     texture_key: TextureKey,
@@ -973,12 +1031,9 @@ fn draw_textured_quad(
     active_size: PhysicalSize<u32>,
     vertices: &mut Vec<Vertex>,
     indices: &mut Vec<u32>,
-    counter: &mut u32,
     textured_tri_draws: &mut Vec<TexturedTriDraw>,
     settings: &RenderSettings,
 ) -> Result<(), EmeraldError> {
-    let vertex_set_size = (std::mem::size_of::<Vertex>() * 4) as u64;
-    let indices_set_size: u64 = std::mem::size_of::<u32>() as u64 * 6;
     let texture_size;
     if let Some(texture) = asset_store.get_texture(&texture_key) {
         texture_size = (texture.size.width as f32, texture.size.height as f32);
@@ -1093,27 +1148,21 @@ fn draw_textured_quad(
         }
     }
 
-    let mut same_texture = false;
-
     let len = textured_tri_draws.len();
-    if len > 0 {
-        if let Some(tri_draw) = textured_tri_draws.get(len - 1) {
-            if tri_draw.key.0 == texture_key.0 {
-                same_texture = true;
-            }
-        }
-    }
+    let same_texture = len > 0
+        && textured_tri_draws
+            .last()
+            .filter(|draw| draw.key.0 == texture_key.0)
+            .is_some();
 
-    let mut add_quad = true;
-    let mut index_start = 0;
-
+    let mut index_start: u32 = 0;
     if same_texture {
-        if let Some(textured_tri_draw) = textured_tri_draws.get_mut(len - 1) {
-            index_start = textured_tri_draw.count * 4;
-            textured_tri_draw.vertices_range.end += vertex_set_size;
-            textured_tri_draw.indices_range.end += indices_set_size;
-            textured_tri_draw.count += 1;
-            add_quad = false;
+        if let Some(draw) = textured_tri_draws.last_mut() {
+            index_start = draw.index_start();
+            draw.add(
+                TEXTURED_QUAD_VERTEX_SET_SIZE,
+                TEXTURED_QUAD_INDICES_SET_SIZE,
+            );
         }
     }
 
@@ -1129,20 +1178,142 @@ fn draw_textured_quad(
     vertices.extend(vertex_set);
     indices.extend(indices_set);
 
-    if add_quad {
-        let indices_start = (*counter as u64) * indices_set_size;
-        let vertices_start = (*counter as u64) * vertex_set_size;
-        let indices_range = indices_start..indices_start + indices_set_size;
-        let vertices_range = vertices_start..vertices_start + vertex_set_size;
-        textured_tri_draws.push(TexturedTriDraw {
-            key: texture_key.clone(),
-            vertices_range,
-            indices_range,
-            count: 1,
-        });
+    if !same_texture {
+        let mut indices_start = 0;
+        let mut vertices_start = 0;
+        if let Some(draw) = textured_tri_draws.last() {
+            indices_start = draw.indices_range.end;
+            vertices_start = draw.vertices_range.end;
+        }
+
+        textured_tri_draws.push(TexturedTriDraw::new(
+            texture_key,
+            vertices_start,
+            TEXTURED_QUAD_VERTEX_SET_SIZE,
+            TEXTURED_QUAD_VERTICES_PER_DRAW,
+            indices_start,
+            TEXTURED_QUAD_INDICES_SET_SIZE,
+            TEXTURED_QUAD_INDICES_PER_DRAW,
+        ));
+    }
+    Ok(())
+}
+
+const TEXTURED_TRI_VERTICES_PER_DRAW: usize = 3;
+const TEXTURED_TRI_INDICES_PER_DRAW: usize = 3;
+/// 1 vertex per triangle point
+const TEXTURED_TRI_VERTEX_SET_SIZE: u64 = VERTEX_SIZE * TEXTURED_TRI_VERTICES_PER_DRAW as u64;
+/// 1 index per triangle vertex
+const TEXTURED_TRI_INDICES_SET_SIZE: u64 = INDEX_SIZE * TEXTURED_TRI_INDICES_PER_DRAW as u64;
+fn draw_textured_tri(
+    asset_store: &mut AssetStore,
+    texture_key: TextureKey,
+    mut points: [Vector2<f32>; 3],
+    mut target: [Vector2<f32>; 3],
+    color: Color,
+    transform: Transform,
+    active_size: PhysicalSize<u32>,
+    vertices: &mut Vec<Vertex>,
+    indices: &mut Vec<u32>,
+    textured_tri_draws: &mut Vec<TexturedTriDraw>,
+    settings: &RenderSettings,
+) -> Result<(), EmeraldError> {
+    let texture_size;
+    if let Some(texture) = asset_store.get_texture(&texture_key) {
+        texture_size = (texture.size.width as f32, texture.size.height as f32);
+    } else {
+        return Err(EmeraldError::new(format!(
+            "Unable to find texture {:?}",
+            texture_key
+        )));
     }
 
-    *counter += 1;
+    for target_point in &mut target {
+        // Add magic numbers to target semi-middle of pixels
+        target_point.x += 0.275;
+        target_point.y += 0.275;
+    }
+
+    let color = color.to_percentage_slice();
+
+    for point in &mut points {
+        point.x += transform.translation.x;
+        point.y += transform.translation.y;
+
+        if settings.pixel_snap {
+            point.x = point.x.floor();
+            point.y = point.y.floor();
+        }
+
+        point.x = point.x / (active_size.width as f32 / 2.0);
+        point.y = point.y / (active_size.height as f32 / 2.0);
+    }
+
+    if settings.frustrum_culling {
+        // Use vertex set bounding box for frustrum culling
+        if !Rectangle::new(-1.0, -1.0, 2.0, 2.0)
+            .intersects_with(&get_bounding_box_of_triangle(&points))
+        {
+            return Ok(());
+        }
+    }
+
+    let len = textured_tri_draws.len();
+    let mut same_texture = len > 0
+        && textured_tri_draws
+            .last()
+            .filter(|draw| draw.key.0 == texture_key.0)
+            .is_some();
+
+    let mut index_start: u32 = 0;
+    if same_texture {
+        if let Some(draw) = textured_tri_draws.last_mut() {
+            index_start = draw.index_start();
+            draw.add(TEXTURED_TRI_VERTEX_SET_SIZE, TEXTURED_TRI_INDICES_SET_SIZE);
+        }
+    }
+
+    let indices_set = [index_start, index_start + 1, index_start + 2];
+    let vertex_set = [
+        Vertex {
+            position: [points[0].x, points[0].y],
+            tex_coords: [target[0].x, target[0].y],
+            color,
+        },
+        Vertex {
+            position: [points[1].x, points[1].y],
+            tex_coords: [target[1].x, target[1].y],
+            color,
+        },
+        Vertex {
+            position: [points[2].x, points[2].y],
+            tex_coords: [target[2].x, target[2].y],
+            color,
+        },
+    ];
+
+    vertices.extend(vertex_set);
+    indices.extend(indices_set);
+
+    if !same_texture {
+        let mut indices_start = 0;
+        let mut vertices_start = 0;
+        if let Some(draw) = textured_tri_draws.last() {
+            indices_start = draw.indices_range.end;
+            vertices_start = draw.vertices_range.end;
+        }
+
+        textured_tri_draws.push(TexturedTriDraw::new(
+            texture_key,
+            vertices_start,
+            TEXTURED_TRI_VERTEX_SET_SIZE,
+            TEXTURED_TRI_VERTICES_PER_DRAW,
+            indices_start,
+            TEXTURED_TRI_INDICES_SET_SIZE,
+            TEXTURED_TRI_INDICES_PER_DRAW,
+        ));
+    }
+
     Ok(())
 }
 
@@ -1227,6 +1398,9 @@ pub(crate) enum Drawable {
     },
     ColorRect {
         color_rect: ColorRect,
+    },
+    ColorTri {
+        color_tri: ColorTri,
     },
     Label {
         label: Label,
