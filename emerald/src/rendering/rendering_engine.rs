@@ -1199,6 +1199,9 @@ fn draw_textured_quad(
     Ok(())
 }
 
+/// Takes a polygon, breaks it up into triangles, then renders those.
+fn draw_textured_polygon() {}
+
 const TEXTURED_TRI_VERTICES_PER_DRAW: usize = 3;
 const TEXTURED_TRI_INDICES_PER_DRAW: usize = 3;
 /// 1 vertex per triangle point
@@ -1259,7 +1262,7 @@ fn draw_textured_tri(
     }
 
     let len = textured_tri_draws.len();
-    let mut same_texture = len > 0
+    let same_texture = len > 0
         && textured_tri_draws
             .last()
             .filter(|draw| draw.key.0 == texture_key.0)
