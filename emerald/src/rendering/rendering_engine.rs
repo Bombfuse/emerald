@@ -32,6 +32,7 @@ pub(crate) enum BindGroupLayoutId {
 }
 
 /// A set of textured tris that will be drawn.
+#[derive(Debug)]
 struct TexturedTriDraw {
     pub key: TextureKey,
     pub vertices_range: Range<u64>,
@@ -52,13 +53,14 @@ impl TexturedTriDraw {
     ) -> Self {
         Self {
             key,
-            vertices_range: vertices_start..vertices_set_size,
-            indices_range: indices_start..indices_set_size,
+            vertices_range: vertices_start..vertices_start + vertices_set_size,
+            indices_range: indices_start..indices_start + indices_set_size,
             count: 1,
             vertices_per_draw,
             indices_per_draw,
         }
     }
+
     /// Add a new vertices_set and indices_set to the call.
     /// Returns the index start for where to add the next indices_set
     pub fn add(&mut self, vertices_set_size: u64, indices_set_size: u64) {
@@ -1152,7 +1154,11 @@ fn draw_textured_quad(
     let same_texture = len > 0
         && textured_tri_draws
             .last()
-            .filter(|draw| draw.key.0 == texture_key.0)
+            .filter(|draw| {
+                draw.key.0 == texture_key.0
+                    && draw.indices_per_draw == TEXTURED_QUAD_INDICES_PER_DRAW // check that the previous draw is also for quads
+                    && draw.vertices_per_draw == TEXTURED_QUAD_VERTICES_PER_DRAW
+            })
             .is_some();
 
     let mut index_start: u32 = 0;
@@ -1196,6 +1202,7 @@ fn draw_textured_quad(
             TEXTURED_QUAD_INDICES_PER_DRAW,
         ));
     }
+
     Ok(())
 }
 
@@ -1259,10 +1266,14 @@ fn draw_textured_tri(
     }
 
     let len = textured_tri_draws.len();
-    let mut same_texture = len > 0
+    let same_texture = len > 0
         && textured_tri_draws
             .last()
-            .filter(|draw| draw.key.0 == texture_key.0)
+            .filter(|draw| {
+                draw.key.0 == texture_key.0
+                    && draw.indices_per_draw == TEXTURED_TRI_INDICES_PER_DRAW
+                    && draw.vertices_per_draw == TEXTURED_TRI_VERTICES_PER_DRAW
+            })
             .is_some();
 
     let mut index_start: u32 = 0;

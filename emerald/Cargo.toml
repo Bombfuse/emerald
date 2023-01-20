@@ -1,6 +1,6 @@
 [package]
 name = "emerald"
-version = "0.3.199"
+version = "0.3.2"
 authors = ["Bombfuse <eiffeldud@gmail.com>"]
 edition = "2018"
 description = "A lite, fully featured 2D game engine."
