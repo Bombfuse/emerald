@@ -4,9 +4,6 @@ pub use hecs::Entity;
 pub use rapier2d::na::Vector2;
 pub use rapier2d::na::Vector3;
 
-pub mod polygon;
-pub use polygon::*;
-
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct Rectangle {
     pub x: f32,

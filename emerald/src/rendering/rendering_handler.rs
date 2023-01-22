@@ -1,10 +1,10 @@
-use rapier2d::na::Vector2;
+use rapier2d::{na::Vector2, prelude::ConvexPolygon};
 
 use crate::{
     game_engine::GameEngineContext,
     rendering_engine::{DrawCommand, Drawable, RenderingEngine},
     texture::TextureKey,
-    AssetStore, EmeraldError, Transform, World,
+    AssetStore, Color, EmeraldError, Transform, World,
 };
 
 use super::components::{ColorRect, ColorTri, Label, Sprite};
@@ -90,6 +90,36 @@ impl<'c> RenderingHandler<'c> {
                 z_index: color_tri.z_index,
             },
         )
+    }
+
+    pub fn draw_convex_polygon(
+        &mut self,
+        color: &Color,
+        convex_polygon: &ConvexPolygon,
+        transform: &Transform,
+    ) -> Result<(), EmeraldError> {
+        let vertices = convex_polygon
+            .points()
+            .iter()
+            .flat_map(|p| [p.x as f64, p.y as f64])
+            .collect::<Vec<f64>>();
+        let triangles = emd_earcutr::earcut(&vertices, &vec![], 2);
+        for tri in triangles.chunks_exact(3) {
+            let i1 = tri[0] * 2;
+            let i2 = tri[1] * 2;
+            let i3 = tri[2] * 2;
+            let color_tri = ColorTri::new(
+                color.clone(),
+                [
+                    Vector2::new(vertices[i1] as f32, vertices[i1 + 1] as f32),
+                    Vector2::new(vertices[i2] as f32, vertices[i2 + 1] as f32),
+                    Vector2::new(vertices[i3] as f32, vertices[i3 + 1] as f32),
+                ],
+            );
+            self.draw_color_tri(&color_tri, transform)?;
+        }
+
+        Ok(())
     }
 
     pub fn draw_color_rect(

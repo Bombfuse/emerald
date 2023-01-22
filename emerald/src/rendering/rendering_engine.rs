@@ -1206,9 +1206,6 @@ fn draw_textured_quad(
     Ok(())
 }
 
-/// Takes a polygon, breaks it up into triangles, then renders those.
-fn draw_textured_polygon() {}
-
 const TEXTURED_TRI_VERTICES_PER_DRAW: usize = 3;
 const TEXTURED_TRI_INDICES_PER_DRAW: usize = 3;
 /// 1 vertex per triangle point
