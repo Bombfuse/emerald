@@ -1,6 +1,7 @@
 pub mod physics;
 
 pub mod ent;
+pub mod navigation;
 pub mod world_physics_loader;
 
 use std::collections::HashMap;
