@@ -227,7 +227,7 @@ pub(crate) fn cache_glyph(
     }
 
     if update_font_texture {
-        rendering_engine.update_font_texture(asset_store, font_key);
+        rendering_engine.update_font_texture(asset_store, font_key)?;
     }
 
     if let Some(characters) = recache_characters {
