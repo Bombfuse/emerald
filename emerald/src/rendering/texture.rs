@@ -170,16 +170,21 @@ impl Texture {
         bytes: &[u8],
         key: TextureKey,
     ) -> Result<TextureKey, EmeraldError> {
-        let img = image::load_from_memory(bytes)?;
-        Self::from_image(
-            bind_groups,
-            bind_group_layouts,
-            asset_store,
-            device,
-            queue,
-            &img,
-            key,
-        )
+        match image::load_from_memory(bytes) {
+            Ok(img) => Self::from_image(
+                bind_groups,
+                bind_group_layouts,
+                asset_store,
+                device,
+                queue,
+                &img,
+                key,
+            ),
+            Err(e) => Err(EmeraldError::new(format!(
+                "Error loading image from memory. Texture Key: {:?} Err: {:?}",
+                &key.0, e
+            ))),
+        }
     }
 
     pub fn from_image(
