@@ -129,7 +129,7 @@ pub(crate) fn load_ent_from_toml(
 }
 
 #[derive(Deserialize, Serialize)]
-pub(crate) struct Vec2f32Schema {
+pub struct Vec2f32Schema {
     pub x: f32,
     pub y: f32,
 }
