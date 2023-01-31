@@ -1,4 +1,7 @@
-use rapier2d::{na::Vector2, prelude::ConvexPolygon};
+use rapier2d::{
+    na::Vector2,
+    prelude::{ConvexPolygon, RigidBodyHandle},
+};
 
 use crate::{
     game_engine::GameEngineContext,
@@ -47,8 +50,51 @@ impl<'c> RenderingHandler<'c> {
         world: &mut World,
         color: crate::Color,
     ) -> Result<(), EmeraldError> {
-        self.rendering_engine
-            .draw_colliders(&mut self.asset_store, world, color)
+        let mut color_rect = ColorRect {
+            color,
+            ..Default::default()
+        };
+
+        let camera_transform = if let Some(e) = world.get_active_camera() {
+            world.get::<&mut Transform>(e)?.clone()
+        } else {
+            Default::default()
+        };
+
+        for (_id, (body_handle, transform)) in
+            world.inner.query::<(&RigidBodyHandle, &Transform)>().iter()
+        {
+            if let Some(body) = world.physics_engine.bodies.get(*body_handle) {
+                for collider_handle in body.colliders() {
+                    if let Some(collider) = world.physics_engine.colliders.get(*collider_handle) {
+                        let offset = collider.translation() - body.translation();
+                        let collider_transform = transform.clone()
+                            + Transform::from_translation((offset.x, offset.y))
+                            - camera_transform;
+
+                        if let Some(polygon) = collider.shape().as_convex_polygon() {
+                            self.draw_convex_polygon(&color, &polygon, &collider_transform)?;
+                            continue;
+                        }
+
+                        if let Some(cuboid) = collider.shape().as_cuboid() {
+                            color_rect.width = cuboid.half_extents.x as u32 * 2;
+                            color_rect.height = cuboid.half_extents.y as u32 * 2;
+                            self.draw_color_rect(&color_rect, &collider_transform)?;
+                            continue;
+                        }
+
+                        // If we dont have specific logic for the shape let's just draw its AABB
+                        let aabb = collider.compute_aabb();
+                        color_rect.width = aabb.half_extents().x as u32 * 2;
+                        color_rect.height = aabb.half_extents().y as u32 * 2;
+                        self.draw_color_rect(&color_rect, &collider_transform)?;
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub fn draw_sprite(
