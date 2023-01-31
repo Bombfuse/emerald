@@ -8,6 +8,9 @@ pub(crate) struct EntColorRectSchema {
     pub color: Color,
     pub width: u32,
     pub height: u32,
+
+    #[serde(default)]
+    pub z_index: f32,
 }
 
 pub(crate) fn load_ent_color_rect<'a>(
@@ -23,7 +26,8 @@ pub(crate) fn load_ent_color_rect<'a>(
     }
 
     let schema: EntColorRectSchema = toml::from_str(&toml.to_string())?;
-    let color_rect = ColorRect::new(schema.color, schema.width, schema.height);
+    let mut color_rect = ColorRect::new(schema.color, schema.width, schema.height);
+    color_rect.z_index = schema.z_index;
     world.insert_one(entity, color_rect)?;
 
     Ok(())
