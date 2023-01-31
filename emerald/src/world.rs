@@ -129,16 +129,13 @@ impl World {
 
     #[inline]
     pub fn get_active_camera(&self) -> Option<Entity> {
-        let mut cam = None;
-
         for (id, camera) in self.query::<&Camera>().iter() {
             if camera.is_active {
-                cam = Some(id);
-                break;
+                return Some(id);
             }
         }
 
-        cam
+        None
     }
 
     pub fn spawn(&mut self, components: impl DynamicBundle) -> Entity {

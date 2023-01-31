@@ -132,11 +132,11 @@ impl<'a> PhysicsHandler<'a> {
             self.physics_engine.step(delta);
         }
 
-        self.physics_engine
-            .sync_game_world_to_physics_world(&mut self.world);
-
         self.physics_engine.consume_contacts();
         self.physics_engine.update_query_pipeline();
+
+        self.physics_engine
+            .sync_game_world_to_physics_world(&mut self.world);
     }
 
     pub fn set_gravity(&mut self, gravity: Vector2<f32>) {
