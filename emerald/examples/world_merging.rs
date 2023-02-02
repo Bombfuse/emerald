@@ -34,7 +34,9 @@ impl Game for WorldMergingExample {
             )
             .unwrap();
             let now = emd.now();
-            self.world.merge(world).unwrap();
+            self.world
+                .merge(world, Transform::from_translation((100.0, 100.0)))
+                .unwrap();
             let after = emd.now();
             println!(
                 "merged {} bunnies in {:?}us",

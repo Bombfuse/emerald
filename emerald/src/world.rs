@@ -56,7 +56,11 @@ impl World {
     /// The camera of the primary world will remain the current camera.
     /// If physics is enabled, will keep its own physics settings.
     /// Returns a map of OldEntity -> NewEntity. If you have components that store Entity references, use this map to update your references.
-    pub fn merge(&mut self, mut other_world: World) -> Result<(), EmeraldError> {
+    pub fn merge(&mut self, mut other_world: World, offset: Transform) -> Result<(), EmeraldError> {
+        for (_, transform) in other_world.query::<&mut Transform>().iter() {
+            *transform = transform.clone() + offset.clone();
+        }
+
         let mut entity_id_shift_map = HashMap::new();
         let other_entities = other_world
             .inner
