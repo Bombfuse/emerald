@@ -315,11 +315,13 @@ impl World {
 
 pub struct WorldLoadConfig {
     pub transform_offset: Transform,
+    pub merge_handler: Option<WorldMergeHandler>,
 }
 impl Default for WorldLoadConfig {
     fn default() -> Self {
         Self {
             transform_offset: Default::default(),
+            merge_handler: None,
         }
     }
 }
@@ -333,6 +335,15 @@ pub(crate) fn load_world(
 ) -> Result<World, EmeraldError> {
     let mut toml = toml.parse::<toml::Value>()?;
     let mut world = World::new();
+
+    if let Some(merge_handler) = loader
+        .asset_store
+        .load_config
+        .world_load_config
+        .merge_handler
+    {
+        world.set_merge_handler(merge_handler);
+    }
 
     if let Some(table) = toml.as_table_mut() {
         if let Some(physics_val) = table.remove(PHYSICS_SCHEMA_KEY) {

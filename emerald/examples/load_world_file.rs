@@ -15,7 +15,10 @@ pub struct WorldLoadingExample {
 impl Game for WorldLoadingExample {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root("./examples/assets/".to_string());
-        self.world = emd.loader().world("example.wrld").unwrap();
+        self.world = emd
+            .loader()
+            .world("example.wrld", Transform::default())
+            .unwrap();
     }
 
     fn update(&mut self, emd: Emerald) {
