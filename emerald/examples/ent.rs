@@ -48,15 +48,12 @@ pub struct EntLoadingExample {
 impl Game for EntLoadingExample {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root("./examples/assets/".to_string());
-
-        let config = EntLoadConfig {
-            custom_component_loader: Some(&custom_component_loader),
-            ..Default::default()
-        };
+        emd.loader()
+            .set_custom_component_loader(custom_component_loader);
 
         let entity = emd
             .loader()
-            .ent(&mut self.world, config, "bunny.ent")
+            .ent(&mut self.world, "bunny.ent", Transform::default())
             .unwrap();
 
         // assert that we've successfully loaded a user defined component

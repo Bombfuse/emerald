@@ -8,14 +8,37 @@ use crate::font::FontImage;
 use crate::font::FontKey;
 use crate::rendering::components::Sprite;
 use crate::rendering_engine::RenderingEngine;
-use crate::texture::Texture;
 use crate::texture::TextureKey;
 use crate::*;
 
+use std::collections::HashMap;
 use std::ffi::OsStr;
 
 #[cfg(feature = "aseprite")]
 use crate::rendering::components::Aseprite;
+
+pub type CustomComponentLoader =
+    fn(&mut AssetLoader<'_>, Entity, &mut World, toml::Value, String) -> Result<(), EmeraldError>;
+
+/// A function defined by the user that handles merge results.
+/// Given the base world a mapping of OldEntity -> NewEntity ids.
+pub type WorldMergeHandler = fn(&mut World, HashMap<Entity, Entity>) -> Result<(), EmeraldError>;
+
+pub struct AssetLoadConfig {
+    /// The default configuration to use when loading worlds.
+    pub world_load_config: WorldLoadConfig,
+
+    /// A user defined function that handles loading their own custom component definitions.
+    pub custom_component_loader: Option<CustomComponentLoader>,
+}
+impl Default for AssetLoadConfig {
+    fn default() -> Self {
+        Self {
+            world_load_config: Default::default(),
+            custom_component_loader: None,
+        }
+    }
+}
 
 pub struct AssetLoader<'c> {
     pub(crate) asset_store: &'c mut AssetStore,
@@ -35,6 +58,9 @@ impl<'c> AssetLoader<'c> {
         }
     }
 
+    pub fn set_custom_component_loader(&mut self, custom_component_loader: CustomComponentLoader) {
+        self.asset_store.load_config.custom_component_loader = Some(custom_component_loader);
+    }
     /// Retrieves bytes from the assets directory of the game
     pub fn asset_bytes<T: AsRef<str>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
         let path: &str = file_path.as_ref();
@@ -107,20 +133,16 @@ impl<'c> AssetLoader<'c> {
     pub fn ent<T: AsRef<str>>(
         &mut self,
         world: &mut World,
-        config: EntLoadConfig<'_>,
         path: T,
+        transform: Transform,
     ) -> Result<Entity, EmeraldError> {
         let toml = self.string(path)?;
-        load_ent_from_toml(self, world, toml, config)
+        load_ent_from_toml(self, world, toml, transform)
     }
 
-    pub fn world<T: AsRef<str>>(
-        &mut self,
-        config: WorldLoadConfig<'_>,
-        path: T,
-    ) -> Result<World, EmeraldError> {
+    pub fn world<T: AsRef<str>>(&mut self, path: T) -> Result<World, EmeraldError> {
         let toml = self.string(path)?;
-        load_world(self, toml, config)
+        load_world(self, toml)
     }
 
     /// Loads a `.aseprite` file.

@@ -24,26 +24,17 @@ const LABEL_SCHEMA_KEY: &str = "label";
 const COLOR_RECT_SCHEMA_KEY: &str = "color_rect";
 
 #[derive(Default)]
-pub struct EntLoadConfig<'a> {
+pub struct EntLoadConfig {
     pub transform: Transform,
-    pub custom_component_loader: Option<
-        &'a dyn Fn(
-            &mut AssetLoader<'_>,
-            Entity,
-            &mut World,
-            toml::Value,
-            String,
-        ) -> Result<(), EmeraldError>,
-    >,
 }
 
 pub(crate) fn load_ent(
     loader: &mut AssetLoader<'_>,
     world: &mut World,
     toml: &mut crate::toml::Value,
-    config: EntLoadConfig<'_>,
+    transform: Transform,
 ) -> Result<Entity, EmeraldError> {
-    let entity = world.spawn((config.transform,));
+    let entity = world.spawn((transform,));
     let mut custom_components = Vec::new();
 
     if let Some(table) = toml.as_table_mut() {
@@ -98,7 +89,12 @@ pub(crate) fn load_ent(
                     }
                 }
                 _ => {
-                    if config.custom_component_loader.is_some() {
+                    if loader
+                        .asset_store
+                        .load_config
+                        .custom_component_loader
+                        .is_some()
+                    {
                         if let Some(value) = table.remove(&key) {
                             custom_components.push((key, value));
                         }
@@ -109,7 +105,7 @@ pub(crate) fn load_ent(
     }
 
     // Custom components are loaded after all engine components
-    if let Some(custom_component_loader) = config.custom_component_loader {
+    if let Some(custom_component_loader) = loader.asset_store.load_config.custom_component_loader {
         for (key, value) in custom_components {
             custom_component_loader(loader, entity, world, value, key)?;
         }
@@ -122,10 +118,10 @@ pub(crate) fn load_ent_from_toml(
     loader: &mut AssetLoader<'_>,
     world: &mut World,
     toml: String,
-    config: EntLoadConfig<'_>,
+    transform: Transform,
 ) -> Result<Entity, EmeraldError> {
     let mut value = toml.parse::<toml::Value>()?;
-    load_ent(loader, world, &mut value, config)
+    load_ent(loader, world, &mut value, transform)
 }
 
 #[derive(Deserialize, Serialize)]
