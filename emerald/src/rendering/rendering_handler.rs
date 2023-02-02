@@ -50,6 +50,10 @@ impl<'c> RenderingHandler<'c> {
         world: &mut World,
         color: crate::Color,
     ) -> Result<(), EmeraldError> {
+        if world.physics_engine.is_none() {
+            return Ok(());
+        }
+
         let mut color_rect = ColorRect {
             color,
             ..Default::default()
@@ -64,9 +68,21 @@ impl<'c> RenderingHandler<'c> {
         for (_id, (body_handle, transform)) in
             world.inner.query::<(&RigidBodyHandle, &Transform)>().iter()
         {
-            if let Some(body) = world.physics_engine.bodies.get(*body_handle) {
+            if let Some(body) = world
+                .physics_engine
+                .as_ref()
+                .unwrap()
+                .bodies
+                .get(*body_handle)
+            {
                 for collider_handle in body.colliders() {
-                    if let Some(collider) = world.physics_engine.colliders.get(*collider_handle) {
+                    if let Some(collider) = world
+                        .physics_engine
+                        .as_ref()
+                        .unwrap()
+                        .colliders
+                        .get(*collider_handle)
+                    {
                         let offset = collider.translation() - body.translation();
                         let collider_transform = transform.clone()
                             + Transform::from_translation((offset.x, offset.y))

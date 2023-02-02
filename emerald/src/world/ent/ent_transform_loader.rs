@@ -13,7 +13,7 @@ pub(crate) struct EntTransformSchema {
 }
 
 pub(crate) fn load_ent_transform<'a>(
-    loader: &mut AssetLoader<'a>,
+    _loader: &mut AssetLoader<'a>,
     entity: Entity,
     world: &mut World,
     toml: &toml::Value,

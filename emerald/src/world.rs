@@ -6,8 +6,8 @@ pub mod world_physics_loader;
 use std::collections::HashMap;
 
 use crate::{
-    rendering::components::Camera, AssetLoader, EmeraldError, PhysicsEngine, PhysicsHandler,
-    PhysicsRefHandler, Transform,
+    rendering::components::Camera, AssetLoadConfig, AssetLoader, EmeraldError, PhysicsEngine,
+    PhysicsHandler, Transform, WorldMergeHandler,
 };
 
 use hecs::{
@@ -22,14 +22,17 @@ use self::{
 };
 
 pub struct World {
-    pub(crate) physics_engine: PhysicsEngine,
+    pub(crate) physics_engine: Option<PhysicsEngine>,
     pub(crate) inner: hecs::World,
+
+    merge_handler: Option<WorldMergeHandler>,
 }
 impl Default for World {
     fn default() -> Self {
         World {
-            physics_engine: PhysicsEngine::new(),
+            physics_engine: None,
             inner: hecs::World::default(),
+            merge_handler: None,
         }
     }
 }
@@ -38,16 +41,26 @@ impl World {
         Default::default()
     }
 
-    // TODO: Make entity ids, rigid body handles, and collider handles unique across all worlds. Then we can remove the HashMap of OldEntity -> NewEntity.
+    pub fn new_with_merge_handler(world_merge_handler: WorldMergeHandler) -> Self {
+        let mut world = World::new();
+        world.set_merge_handler(world_merge_handler);
+        world
+    }
+
+    pub fn set_merge_handler(&mut self, world_merge_handler: WorldMergeHandler) {
+        self.merge_handler = Some(world_merge_handler);
+    }
+
     /// Absorbs another world into this one. Resets and changes the Entity ids of the other worlds, when they are merged into this world.
     /// All entities are placed into this world at their current transform.
     /// The camera of the primary world will remain the current camera.
     /// If physics is enabled, will keep its own physics settings.
     /// Returns a map of OldEntity -> NewEntity. If you have components that store Entity references, use this map to update your references.
-    pub fn merge(
-        &mut self,
-        mut other_world: World,
-    ) -> Result<HashMap<Entity, Entity>, EmeraldError> {
+    pub fn merge(&mut self, mut other_world: World, offset: Transform) -> Result<(), EmeraldError> {
+        for (_, transform) in other_world.query::<&mut Transform>().iter() {
+            *transform = transform.clone() + offset.clone();
+        }
+
         let mut entity_id_shift_map = HashMap::new();
         let other_entities = other_world
             .inner
@@ -56,22 +69,26 @@ impl World {
             .collect::<Vec<Entity>>();
 
         for old_id in other_entities {
-            match other_world.inner.take(old_id.clone()) {
+            let bundle = match other_world.inner.take(old_id.clone()) {
                 Err(_) => {
                     return Err(EmeraldError::new(format!(
                         "Entity {:?} does not exist, cannot merge.",
                         old_id
                     )))
                 }
-                Ok(bundle) => {
-                    let new_id = self.inner.spawn(bundle);
-                    entity_id_shift_map.insert(old_id.clone(), new_id.clone());
-                    self.merge_physics_entity(&mut other_world.physics_engine, old_id, new_id)?;
-                }
-            }
+                Ok(bundle) => bundle,
+            };
+
+            let new_id = self.inner.spawn(bundle);
+            entity_id_shift_map.insert(old_id.clone(), new_id.clone());
+            self.merge_physics_entity(other_world.physics_engine(), old_id, new_id)?;
         }
 
-        Ok(entity_id_shift_map)
+        if let Some(merge_handler) = self.merge_handler {
+            (merge_handler)(self, entity_id_shift_map)?;
+        }
+
+        Ok(())
     }
 
     /// Helper function for [`merge`]
@@ -81,6 +98,9 @@ impl World {
         old_id: Entity,
         new_id: Entity,
     ) -> Result<(), EmeraldError> {
+        // create physics engine if it doesnt exist
+        self.physics_engine();
+
         let mut colliders = Vec::new();
         for c_id in other_world_physics.get_colliders_handles(old_id.clone()) {
             if let Some(collider) = other_world_physics.remove_collider(c_id) {
@@ -89,16 +109,28 @@ impl World {
         }
 
         if let Some(rigid_body) = other_world_physics.remove_body(old_id.clone()) {
-            let new_rbh =
-                self.physics_engine
-                    .add_body(new_id.clone(), rigid_body, &mut self.inner)?;
+            let physics_engine = self.physics_engine.as_mut().unwrap();
+            let new_rbh = physics_engine.add_body(new_id.clone(), rigid_body, &mut self.inner)?;
 
             for collider in colliders {
-                self.physics_engine.add_collider(new_rbh, collider);
+                physics_engine.add_collider(new_rbh, collider);
             }
         }
 
         Ok(())
+    }
+
+    /// We use this function to get the physics engine because we need to create one if it does not exist yet.
+    /// We by default have no engine to save memory and make worlds lighter.
+    /// Many worlds do not require physics and by not including it until it's needed,
+    /// we're more freely able to spam world creation.
+    pub(crate) fn physics_engine(&mut self) -> &mut PhysicsEngine {
+        if self.physics_engine.is_none() {
+            self.physics_engine = Some(PhysicsEngine::new());
+        }
+
+        // I'm not stoked on unwrapping internally, but this should be fine.
+        self.physics_engine.as_mut().unwrap()
     }
 
     /// Disable all cameras then set the camera on the given entity as active.
@@ -162,7 +194,7 @@ impl World {
     }
 
     pub fn despawn(&mut self, entity: Entity) -> Result<(), EmeraldError> {
-        self.physics_engine.remove_body(entity);
+        self.physics_engine().remove_body(entity);
 
         match self.inner.despawn(entity.clone()) {
             Ok(()) => Ok(()),
@@ -175,7 +207,7 @@ impl World {
 
     pub fn clear(&mut self) {
         self.inner.clear();
-        self.physics_engine = PhysicsEngine::new();
+        self.physics_engine = None;
     }
 
     pub fn query<Q: Query>(&self) -> QueryBorrow<'_, Q> {
@@ -280,31 +312,20 @@ impl World {
     }
 
     pub fn physics(&mut self) -> PhysicsHandler<'_> {
-        PhysicsHandler::new(&mut self.physics_engine, &mut self.inner)
-    }
-
-    pub fn physics_ref(&self) -> PhysicsRefHandler<'_> {
-        PhysicsRefHandler::new(&self.physics_engine)
+        self.physics_engine();
+        PhysicsHandler::new(self.physics_engine.as_mut().unwrap(), &mut self.inner)
     }
 }
 
-pub struct WorldLoadConfig<'a> {
+pub struct WorldLoadConfig {
     pub transform_offset: Transform,
-    pub custom_component_loader: Option<
-        &'a dyn Fn(
-            &mut AssetLoader<'_>,
-            Entity,
-            &mut World,
-            toml::Value,
-            String,
-        ) -> Result<(), EmeraldError>,
-    >,
+    pub merge_handler: Option<WorldMergeHandler>,
 }
-impl<'a> Default for WorldLoadConfig<'a> {
+impl Default for WorldLoadConfig {
     fn default() -> Self {
         Self {
             transform_offset: Default::default(),
-            custom_component_loader: None,
+            merge_handler: None,
         }
     }
 }
@@ -315,13 +336,20 @@ const ENTITIES_SCHEMA_KEY: &str = "entities";
 pub(crate) fn load_world(
     loader: &mut AssetLoader<'_>,
     toml: String,
-    config: WorldLoadConfig<'_>,
 ) -> Result<World, EmeraldError> {
     let mut toml = toml.parse::<toml::Value>()?;
     let mut world = World::new();
 
+    if let Some(merge_handler) = loader
+        .asset_store
+        .load_config
+        .world_load_config
+        .merge_handler
+    {
+        world.set_merge_handler(merge_handler);
+    }
+
     if let Some(table) = toml.as_table_mut() {
-        // TODO: set physics here
         if let Some(physics_val) = table.remove(PHYSICS_SCHEMA_KEY) {
             load_world_physics(loader, &mut world, &physics_val)?;
         }
@@ -329,18 +357,13 @@ pub(crate) fn load_world(
         if let Some(mut entities_val) = table.remove(ENTITIES_SCHEMA_KEY) {
             if let Some(entities) = entities_val.as_array_mut() {
                 for value in entities {
-                    let config = EntLoadConfig {
-                        transform: Transform::default(),
-                        custom_component_loader: config.custom_component_loader,
-                    };
-
                     // check if this is a ent path reference
                     if let Some(path) = value.get("path") {
                         if let Some(path) = path.as_str() {
-                            loader.ent(&mut world, config, path)?;
+                            loader.ent(&mut world, path, Transform::default())?;
                         }
                     } else {
-                        load_ent(loader, &mut world, value, config)?;
+                        load_ent(loader, &mut world, value, Transform::default())?;
                     }
                 }
             }

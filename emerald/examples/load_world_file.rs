@@ -15,16 +15,7 @@ pub struct WorldLoadingExample {
 impl Game for WorldLoadingExample {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root("./examples/assets/".to_string());
-        self.world = emd
-            .loader()
-            .world(
-                WorldLoadConfig {
-                    transform_offset: Default::default(),
-                    custom_component_loader: None,
-                },
-                "example.wrld",
-            )
-            .unwrap();
+        self.world = emd.loader().world("example.wrld").unwrap();
     }
 
     fn update(&mut self, emd: Emerald) {

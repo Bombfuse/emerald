@@ -1,6 +1,6 @@
 use crate::font::{Font, FontKey};
 use crate::texture::{Texture, TextureKey};
-use crate::{EmeraldError, Sound, SoundKey};
+use crate::{AssetLoadConfig, EmeraldError, Sound, SoundKey};
 
 use std::collections::HashMap;
 use std::fs::create_dir;
@@ -22,6 +22,8 @@ const DEFAULT_USER_DATA_FOLDER: &str = "./";
 /// Assets can be loaded via the `AssetLoader` and inserted into the AssetStore.
 /// Assets can be manually removed from the store if memory management becomes a concern.
 pub(crate) struct AssetStore {
+    pub(crate) load_config: AssetLoadConfig,
+
     bytes: HashMap<String, Vec<u8>>,
 
     fonts: Vec<Font>,
@@ -43,11 +45,8 @@ pub(crate) struct AssetStore {
 impl AssetStore {
     pub fn new(_game_name: String) -> Result<Self, EmeraldError> {
         let mut texture_key_map = HashMap::new();
-        // let default_texture = Texture::default(ctx).unwrap();
         texture_key_map.insert(TextureKey::default(), 0);
-
-        let mut textures = Vec::with_capacity(INITIAL_TEXTURE_STORAGE_CAPACITY);
-        // textures.push(default_texture);
+        let textures = Vec::with_capacity(INITIAL_TEXTURE_STORAGE_CAPACITY);
 
         let asset_folder_root = String::from(DEFAULT_ASSET_FOLDER);
 
@@ -64,6 +63,7 @@ impl AssetStore {
         }
 
         Ok(AssetStore {
+            load_config: Default::default(),
             bytes: HashMap::new(),
             fontdue_fonts: Vec::with_capacity(INITIAL_FONT_STORAGE_CAPACITY),
             fonts: Vec::with_capacity(INITIAL_FONT_STORAGE_CAPACITY),
@@ -160,7 +160,7 @@ impl AssetStore {
 
     pub fn insert_texture(&mut self, key: TextureKey, texture: Texture) {
         if self.get_texture(&key).is_some() {
-            self.remove_texture(key.clone(), false);
+            self.remove_texture(key.clone());
         }
 
         self.textures.push(texture);
@@ -246,7 +246,7 @@ impl AssetStore {
         None
     }
 
-    pub fn remove_texture(&mut self, key: TextureKey, delete: bool) -> Option<Texture> {
+    pub fn remove_texture(&mut self, key: TextureKey) -> Option<Texture> {
         let mut i: i32 = -1;
 
         if let Some(index) = self.texture_key_map.get(&key) {
@@ -258,10 +258,6 @@ impl AssetStore {
             let reset_map = (i as usize) != self.textures.len();
             self.texture_key_map.remove(&key);
             let texture = self.textures.remove(i as _);
-
-            if delete {
-                // texture.inner.delete();
-            }
 
             if reset_map {
                 self.update_texture_key_map();
