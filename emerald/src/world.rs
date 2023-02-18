@@ -6,8 +6,8 @@ pub mod world_physics_loader;
 use std::collections::HashMap;
 
 use crate::{
-    rendering::components::Camera, AssetLoadConfig, AssetLoader, EmeraldError, PhysicsEngine,
-    PhysicsHandler, Transform, WorldMergeHandler,
+    rendering::components::Camera, resources::Resources, AssetLoadConfig, AssetLoader,
+    EmeraldError, PhysicsEngine, PhysicsHandler, Transform, WorldMergeHandler,
 };
 
 use hecs::{
@@ -24,7 +24,7 @@ use self::{
 pub struct World {
     pub(crate) physics_engine: Option<PhysicsEngine>,
     pub(crate) inner: hecs::World,
-
+    resources: Resources,
     merge_handler: Option<WorldMergeHandler>,
 }
 impl Default for World {
@@ -33,6 +33,7 @@ impl Default for World {
             physics_engine: None,
             inner: hecs::World::default(),
             merge_handler: None,
+            resources: Resources::new(),
         }
     }
 }
@@ -131,6 +132,11 @@ impl World {
 
         // I'm not stoked on unwrapping internally, but this should be fine.
         self.physics_engine.as_mut().unwrap()
+    }
+
+    #[inline]
+    pub fn resources(&mut self) -> &mut Resources {
+        &mut self.resources
     }
 
     /// Disable all cameras then set the camera on the given entity as active.
@@ -550,6 +556,71 @@ mod tests {
         let entity = world.spawn((Transform::default(),));
 
         assert!(world.remove_one::<TestStruct>(entity).is_err());
+    }
+
+    mod resources_tests {
+        use crate::World;
+        struct MyResource {
+            pub value: usize,
+        }
+        struct MyOtherResource {
+            pub other_value: usize,
+        }
+
+        #[test]
+        fn retains_value() {
+            let mut world = World::new();
+            let expected_value = 10003;
+            world.resources().insert(MyResource {
+                value: expected_value,
+            });
+
+            assert_eq!(
+                world.resources().get::<MyResource>().unwrap().value,
+                expected_value
+            );
+        }
+
+        #[test]
+        fn mutates_value() {
+            let mut world = World::new();
+            let expected_value = 10003;
+            let init_value = 0;
+            world.resources().insert(MyResource { value: init_value });
+            world.resources().get_mut::<MyResource>().unwrap().value = expected_value;
+
+            assert_eq!(
+                world.resources().get::<MyResource>().unwrap().value,
+                expected_value
+            );
+        }
+
+        #[test]
+        fn holds_different_resources() {
+            let mut world = World::new();
+            let expected_value = 10003;
+            let other_expected_value = 3;
+            world.resources().insert(MyResource {
+                value: expected_value,
+            });
+            world.resources().insert(MyOtherResource {
+                other_value: other_expected_value,
+            });
+
+            assert_eq!(
+                world.resources().get::<MyResource>().unwrap().value,
+                expected_value
+            );
+
+            assert_eq!(
+                world
+                    .resources()
+                    .get::<MyOtherResource>()
+                    .unwrap()
+                    .other_value,
+                other_expected_value
+            );
+        }
     }
 
     mod physics_tests {

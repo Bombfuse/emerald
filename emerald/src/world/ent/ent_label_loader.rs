@@ -9,8 +9,12 @@ use super::Vec2f32Schema;
 
 #[derive(Deserialize, Serialize)]
 pub(crate) struct EntLabelSchema {
-    pub font: String,
-    pub font_size: u32,
+    pub font: Option<String>,
+    pub font_size: Option<u32>,
+
+    /// A path to the font resource file
+    pub resource: Option<String>,
+
     pub size: u16,
     pub text: Option<String>,
     pub offset: Option<Vec2f32Schema>,
@@ -19,6 +23,15 @@ pub(crate) struct EntLabelSchema {
 
     /// options: "center", "left", "right"
     pub horizontal_align: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct FontResource {
+    /// The path to the font
+    pub font: String,
+
+    /// The size of the font
+    pub size: u32,
 }
 
 pub(crate) fn load_ent_label<'a>(
@@ -34,7 +47,26 @@ pub(crate) fn load_ent_label<'a>(
     }
 
     let schema: EntLabelSchema = toml::from_str(&toml.to_string())?;
-    let font = loader.font(schema.font, schema.font_size)?;
+
+    if (schema.font.is_none() || schema.font_size.is_none()) && schema.resource.is_none() {
+        return Err(EmeraldError::new(format!("Failure loading entity {:?}: Labels require either a resource OR a (font AND font_size).", entity)));
+    }
+
+    let mut font = None;
+
+    if let (Some(font_path), Some(font_size)) = (schema.font, schema.font_size) {
+        font = Some(loader.font(font_path, font_size)?);
+    } else if let Some(resource_file) = schema.resource {
+        let resource_data = loader.string(resource_file)?;
+        let resource: FontResource = toml::from_str(&resource_data)?;
+        font = Some(loader.font(resource.font, resource.size)?);
+    }
+
+    if font.is_none() {
+        return Err(EmeraldError::new(format!("Failure loading entity {:?}: Labels require either a resource OR a (font AND font_size).", entity)));
+    }
+
+    let font = font.unwrap();
     let text = schema.text.unwrap_or("".into());
     let mut label = Label::new(text, font, schema.size);
 
@@ -85,4 +117,19 @@ pub(crate) fn load_ent_label<'a>(
     world.insert_one(entity, label)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FontResource;
+
+    #[test]
+    fn validate_font_resource() {
+        let example_resource = r#"
+            font = "Roboto-Light.ttf"
+            size = 48
+        "#;
+
+        toml::from_str::<FontResource>(example_resource).unwrap();
+    }
 }

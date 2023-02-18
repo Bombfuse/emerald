@@ -7,7 +7,9 @@ use super::Vec2f32Schema;
 
 #[derive(Deserialize, Serialize)]
 pub(crate) struct EntAsepriteSchema {
-    pub aseprite: String,
+    pub aseprite: Option<String>,
+    pub texture: Option<String>,
+    pub animations: Option<String>,
     pub offset: Option<Vec2f32Schema>,
     pub visible: Option<bool>,
     pub centered: Option<bool>,
@@ -35,8 +37,21 @@ pub(crate) fn load_ent_aseprite<'a>(
     }
     let schema: EntAsepriteSchema = toml::from_str(&toml.to_string())?;
 
-    let mut aseprite = loader.aseprite(schema.aseprite)?;
+    if (schema.animations.is_none() || schema.texture.is_none()) && schema.aseprite.is_none() {
+        return Err(EmeraldError::new(format!("Failed to load Aseprite for entity {:?}. Either (animations AND texture) OR aseprite must be provided.", entity)));
+    }
 
+    let mut aseprite = None;
+
+    if let Some(aseprite_path) = schema.aseprite {
+        aseprite = Some(loader.aseprite(aseprite_path)?);
+    }
+
+    if let (Some(texture), Some(animations)) = (schema.texture, schema.animations) {
+        aseprite = Some(loader.aseprite_with_animations(texture, animations)?);
+    }
+
+    let mut aseprite = aseprite.unwrap();
     aseprite.z_index = schema.z_index.unwrap_or(0.0);
     aseprite.visible = schema.visible.unwrap_or(true);
     aseprite.centered = schema.centered.unwrap_or(true);

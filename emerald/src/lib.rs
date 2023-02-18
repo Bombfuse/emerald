@@ -8,6 +8,7 @@ pub mod input;
 pub mod logging;
 pub mod profiling;
 pub mod rendering;
+pub mod resources;
 pub mod types;
 pub mod world;
 

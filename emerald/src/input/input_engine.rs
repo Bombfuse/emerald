@@ -7,7 +7,6 @@ use winit::event::{ElementState, VirtualKeyCode};
 use std::collections::{HashMap, HashSet};
 
 use super::touch_state::TouchState;
-
 pub(crate) struct Action {
     pub key_bindings: HashSet<KeyCode>,
     #[cfg(feature = "gamepads")]
