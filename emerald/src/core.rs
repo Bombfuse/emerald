@@ -33,6 +33,7 @@ pub struct Emerald<'c> {
     pub(crate) asset_store: &'c mut AssetStore,
     profile_cache: &'c mut ProfileCache,
     ctx: &'c mut GameEngineContext,
+    resources: &'c mut anymap::AnyMap,
 }
 impl<'c> Emerald<'c> {
     #[inline]
@@ -46,6 +47,7 @@ impl<'c> Emerald<'c> {
         asset_store: &'c mut AssetStore,
         profile_cache: &'c mut ProfileCache,
         ctx: &'c mut GameEngineContext,
+        resources: &'c mut anymap::AnyMap,
     ) -> Self {
         Emerald {
             delta,
@@ -57,6 +59,7 @@ impl<'c> Emerald<'c> {
             asset_store,
             profile_cache,
             ctx,
+            resources,
         }
     }
 
@@ -169,6 +172,11 @@ impl<'c> Emerald<'c> {
         &mut self.logging_engine
     }
     // ************************************* //
+
+    #[inline]
+    pub fn resources(&mut self) -> &mut anymap::AnyMap {
+        &mut self.resources
+    }
 
     // ************* Input API ************* //
     #[inline]

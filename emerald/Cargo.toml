@@ -1,6 +1,6 @@
 [package]
 name = "emerald"
-version = "0.3.205"
+version = "0.3.206"
 authors = ["Bombfuse <eiffeldud@gmail.com>"]
 edition = "2018"
 description = "A lite, fully featured 2D game engine."
@@ -33,6 +33,7 @@ bytemuck = { version = "1.12.1", features = ["derive"] }
 gamepad = { version = "0.1.5", optional = true }
 asefile =  { version = "0.3.4", optional = true }
 emd_earcutr = "0.1.0"
+anymap = { version = "0.12.1", default-features = false }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 kira = { version= "0.5.3", optional = true, default-features = false, features = ["ogg", "flac", "wav"] }
