@@ -1,6 +1,9 @@
 [physics]
 gravity = { x = 0.0, y = -9.8 }
 
+[my_custom_resource]
+some_custom_data = 10
+
 [[entities]]
 path = "bunny.ent"
 transform = { translation = { x = 0.0, y = 0.0 } }

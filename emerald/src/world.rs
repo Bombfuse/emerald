@@ -374,6 +374,12 @@ pub(crate) fn load_world(
                 }
             }
         }
+
+        if let Some(world_resource_loader) = loader.asset_store.load_config.world_resource_loader {
+            for (key, value) in table.to_owned() {
+                (world_resource_loader)(loader, &mut world, value, key)?;
+            }
+        }
     }
 
     Ok(world)
