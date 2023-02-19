@@ -20,6 +20,9 @@ use crate::rendering::components::Aseprite;
 pub type CustomComponentLoader =
     fn(&mut AssetLoader<'_>, Entity, &mut World, toml::Value, String) -> Result<(), EmeraldError>;
 
+pub type WorldResourceLoader =
+    fn(&mut AssetLoader<'_>, &mut World, toml::Value, String) -> Result<(), EmeraldError>;
+
 /// A function defined by the user that handles merge results.
 /// Given the base world a mapping of OldEntity -> NewEntity ids.
 pub type WorldMergeHandler = fn(&mut World, HashMap<Entity, Entity>) -> Result<(), EmeraldError>;
@@ -30,12 +33,15 @@ pub struct AssetLoadConfig {
 
     /// A user defined function that handles loading their own custom component definitions.
     pub custom_component_loader: Option<CustomComponentLoader>,
+
+    pub world_resource_loader: Option<WorldResourceLoader>,
 }
 impl Default for AssetLoadConfig {
     fn default() -> Self {
         Self {
             world_load_config: Default::default(),
             custom_component_loader: None,
+            world_resource_loader: None,
         }
     }
 }
@@ -61,6 +67,11 @@ impl<'c> AssetLoader<'c> {
     pub fn set_custom_component_loader(&mut self, custom_component_loader: CustomComponentLoader) {
         self.asset_store.load_config.custom_component_loader = Some(custom_component_loader);
     }
+
+    pub fn set_world_resource_loader(&mut self, world_resource_loader: WorldResourceLoader) {
+        self.asset_store.load_config.world_resource_loader = Some(world_resource_loader);
+    }
+
     /// Retrieves bytes from the assets directory of the game
     pub fn asset_bytes<T: AsRef<str>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
         let path: &str = file_path.as_ref();
