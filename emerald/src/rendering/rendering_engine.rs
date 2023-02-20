@@ -520,6 +520,7 @@ impl RenderingEngine {
             Err(e) => {
                 match e {
                     wgpu::SurfaceError::Lost => self.resize_window(self.size),
+                    // outdated surface texture, no point rendering to it, just skip
                     wgpu::SurfaceError::Outdated => return Ok(()),
                     _ => {}
                 };
