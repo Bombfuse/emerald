@@ -520,6 +520,7 @@ impl RenderingEngine {
             Err(e) => {
                 match e {
                     wgpu::SurfaceError::Lost => self.resize_window(self.size),
+                    wgpu::SurfaceError::Outdated => return Ok(()),
                     _ => {}
                 };
                 Err(EmeraldError::new(format!("{:?}", e)))
