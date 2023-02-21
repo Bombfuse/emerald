@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     texture::TextureKey,
     tilemap::{get_tilemap_index, TileId, Tilemap},
-    EmeraldError,
+    Emerald, EmeraldError,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Hash, Deserialize, Serialize)]
@@ -196,7 +196,43 @@ pub enum AutoTile {
 }
 
 #[derive(Deserialize, Serialize)]
-struct AutoTileMapSchema {}
+struct AutoTileMapSchema {
+    pub tileset: String,
+
+    #[serde(default)]
+    pub rulesets: Vec<AutoTileRulesetSchema>,
+
+    pub tile_height: usize,
+    pub tile_width: usize,
+    pub map_width: usize,
+    pub map_height: usize,
+}
+impl AutoTileMapSchema {
+    pub fn to_autotilemap(self, emd: &mut Emerald) -> Result<AutoTilemap, EmeraldError> {
+        let tileset = emd.loader().texture(self.tileset.clone())?;
+        self.to_autotilemap_with_tileset(tileset)
+    }
+
+    pub fn to_autotilemap_with_tileset(
+        self,
+        tileset: TextureKey,
+    ) -> Result<AutoTilemap, EmeraldError> {
+        let rulesets = self
+            .rulesets
+            .into_iter()
+            .map(|ruleset_schema| ruleset_schema.to_ruleset())
+            .collect::<Result<Vec<AutoTileRuleset>, EmeraldError>>()?;
+        let autotilemap = AutoTilemap::new(
+            tileset,
+            Vector2::new(self.tile_width, self.tile_height),
+            self.map_width,
+            self.map_height,
+            rulesets,
+        );
+
+        Ok(autotilemap)
+    }
+}
 
 pub struct AutoTilemap {
     pub(crate) tilemap: Tilemap,
@@ -325,7 +361,7 @@ impl AutoTilemap {
 
 #[cfg(test)]
 mod tests {
-    use super::{AutoTileRuleset, AutoTileRulesetSchema, AutoTileRulesetValue};
+    use super::{AutoTileMapSchema, AutoTileRuleset, AutoTileRulesetSchema, AutoTileRulesetValue};
 
     #[test]
     fn deser_ruleset() {
@@ -349,5 +385,40 @@ mod tests {
 
         // Check target tile is a tile
         assert_eq!(ruleset.grid[2][2], AutoTileRulesetValue::Tile);
+    }
+
+    #[test]
+    fn deser_autotilemap() {
+        let autotilemap_toml = r#"
+            tileset = "tileset.png"
+            tile_width = 32
+            tile_height = 32
+            map_width = 10
+            map_height = 10
+        "#;
+        let schema: AutoTileMapSchema = crate::toml::from_str(&autotilemap_toml).unwrap();
+        let autotilemap = schema
+            .to_autotilemap_with_tileset(Default::default())
+            .unwrap();
+        assert_eq!(autotilemap.width(), 10);
+        assert_eq!(autotilemap.height(), 10);
+        assert_eq!(autotilemap.tile_size().x, 32);
+        assert_eq!(autotilemap.tile_size().y, 32);
+
+        let missing_map_size = r#"
+            tileset = "tileset.png"
+            tile_width = 32
+            tile_height = 32
+        "#;
+        let schema = crate::toml::from_str::<AutoTileMapSchema>(&missing_map_size);
+        assert!(schema.is_err());
+
+        let missing_tile_size = r#"
+            tileset = "tileset.png"
+            map_width = 10
+            map_height = 10
+        "#;
+        let schema = crate::toml::from_str::<AutoTileMapSchema>(&missing_tile_size);
+        assert!(schema.is_err());
     }
 }
