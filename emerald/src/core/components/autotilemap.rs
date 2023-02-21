@@ -195,6 +195,10 @@ pub enum AutoTile {
     Tile = 1,
 }
 
+fn default_visibility() -> bool {
+    true
+}
+
 #[derive(Deserialize, Serialize)]
 struct AutoTileMapSchema {
     pub tileset: String,
@@ -206,6 +210,12 @@ struct AutoTileMapSchema {
     pub tile_width: usize,
     pub map_width: usize,
     pub map_height: usize,
+
+    #[serde(default)]
+    pub z_index: f32,
+
+    #[serde(default = "default_visibility")]
+    pub visible: bool,
 }
 impl AutoTileMapSchema {
     pub fn to_autotilemap(self, emd: &mut Emerald) -> Result<AutoTilemap, EmeraldError> {
@@ -222,13 +232,16 @@ impl AutoTileMapSchema {
             .into_iter()
             .map(|ruleset_schema| ruleset_schema.to_ruleset())
             .collect::<Result<Vec<AutoTileRuleset>, EmeraldError>>()?;
-        let autotilemap = AutoTilemap::new(
+        let mut autotilemap = AutoTilemap::new(
             tileset,
             Vector2::new(self.tile_width, self.tile_height),
             self.map_width,
             self.map_height,
             rulesets,
         );
+
+        autotilemap.set_z_index(self.z_index);
+        autotilemap.set_visible(self.visible);
 
         Ok(autotilemap)
     }
@@ -273,6 +286,14 @@ impl AutoTilemap {
         }
 
         Ok(())
+    }
+
+    pub fn set_z_index(&mut self, z_index: f32) {
+        self.tilemap.z_index = z_index;
+    }
+
+    pub fn set_visible(&mut self, visible: bool) {
+        self.tilemap.visible = visible;
     }
 
     pub fn width(&self) -> usize {
@@ -361,12 +382,12 @@ impl AutoTilemap {
 
 #[cfg(test)]
 mod tests {
-    use super::{AutoTileMapSchema, AutoTileRuleset, AutoTileRulesetSchema, AutoTileRulesetValue};
+    use super::{AutoTileMapSchema, AutoTileRulesetSchema, AutoTileRulesetValue};
 
     #[test]
     fn deser_ruleset() {
         let ruleset_toml = r#"
-            tile_id = 0
+            tile_id = 10
 
             [[rules]]
             x = 0
@@ -380,6 +401,7 @@ mod tests {
         "#;
         let schema: AutoTileRulesetSchema = crate::toml::from_str(ruleset_toml).unwrap();
         let ruleset = schema.to_ruleset().unwrap();
+        assert_eq!(ruleset.tile_id, 10);
         assert_eq!(ruleset.grid[0][0], AutoTileRulesetValue::None);
         assert_eq!(ruleset.grid[1][1], AutoTileRulesetValue::Tile);
 

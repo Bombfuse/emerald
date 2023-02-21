@@ -1,20 +1,54 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{texture::TextureKey, *};
 
 pub type TileId = usize;
 
+#[derive(Deserialize, Serialize)]
 struct TileSchema {
     x: usize,
     y: usize,
     id: TileId,
 }
 
+#[derive(Deserialize, Serialize)]
 struct TilemapSchema {
-    tilesheet: String,
+    tileset: String,
+    width: usize,
+    height: usize,
     tile_width: usize,
     tile_height: usize,
-    tiles: Vec<TileSchema>,
+    #[serde(default = "default_visibility")]
     visible: bool,
+    #[serde(default)]
     z_index: f32,
+
+    #[serde(default)]
+    tiles: Vec<TileSchema>,
+}
+impl TilemapSchema {
+    pub fn to_tilemap(self, emd: &mut Emerald) -> Result<Tilemap, EmeraldError> {
+        let tileset = emd.loader().texture(self.tileset.clone())?;
+        self.to_tilemap_with_tileset(tileset)
+    }
+
+    pub fn to_tilemap_with_tileset(self, tileset: TextureKey) -> Result<Tilemap, EmeraldError> {
+        let mut tilemap = Tilemap::new(
+            tileset,
+            Vector2::new(self.tile_width, self.tile_height),
+            self.width,
+            self.height,
+        );
+        for tile in self.tiles {
+            tilemap.set_tile(tile.x, tile.y, Some(tile.id))?;
+        }
+
+        Ok(tilemap)
+    }
+}
+
+fn default_visibility() -> bool {
+    true
 }
 
 #[derive(Clone)]
@@ -105,6 +139,14 @@ impl Tilemap {
         self.height
     }
 
+    pub fn tile_width(&self) -> usize {
+        self.tile_size.x
+    }
+
+    pub fn tile_height(&self) -> usize {
+        self.tile_size.y
+    }
+
     pub fn set_tilesheet(&mut self, tilesheet: TextureKey) {
         self.tilesheet = tilesheet
     }
@@ -131,4 +173,61 @@ pub(crate) fn get_tilemap_index(
     }
 
     Ok((y * width) + x)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tilemap::{TileSchema, TilemapSchema};
+
+    #[test]
+    fn deser_tile() {
+        let toml = r#"
+            x = 3
+            y = 6
+            id = 10
+        "#;
+        let schema: TileSchema = crate::toml::from_str(toml).unwrap();
+        assert_eq!(schema.id, 10);
+        assert_eq!(schema.x, 3);
+        assert_eq!(schema.y, 6);
+    }
+
+    #[test]
+    fn deser_tilemap() {
+        let toml = r#"
+            tileset = "tileset.png"
+            width = 10
+            height = 10
+            tile_width = 32
+            tile_height = 32
+
+            [[tiles]]
+            id = 14
+            x = 5
+            y = 6
+        "#;
+        let schema: TilemapSchema = crate::toml::from_str(&toml).unwrap();
+        let tilemap = schema.to_tilemap_with_tileset(Default::default()).unwrap();
+        assert_eq!(tilemap.width(), 10);
+        assert_eq!(tilemap.height(), 10);
+        assert_eq!(tilemap.tile_width(), 32);
+        assert_eq!(tilemap.tile_height(), 32);
+        assert_eq!(tilemap.get_tile(5, 6).unwrap().unwrap(), 14);
+
+        let missing_map_size = r#"
+            tileset = "tileset.png"
+            tile_width = 32
+            tile_height = 32
+        "#;
+        let schema = crate::toml::from_str::<TilemapSchema>(&missing_map_size);
+        assert!(schema.is_err());
+
+        let missing_tile_size = r#"
+            tileset = "tileset.png"
+            map_width = 10
+            map_height = 10
+        "#;
+        let schema = crate::toml::from_str::<TilemapSchema>(&missing_tile_size);
+        assert!(schema.is_err());
+    }
 }
