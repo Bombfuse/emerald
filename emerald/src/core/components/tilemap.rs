@@ -2,6 +2,21 @@ use crate::{texture::TextureKey, *};
 
 pub type TileId = usize;
 
+struct TileSchema {
+    x: usize,
+    y: usize,
+    id: TileId,
+}
+
+struct TilemapSchema {
+    tilesheet: String,
+    tile_width: usize,
+    tile_height: usize,
+    tiles: Vec<TileSchema>,
+    visible: bool,
+    z_index: f32,
+}
+
 #[derive(Clone)]
 pub struct Tilemap {
     pub(crate) width: usize,

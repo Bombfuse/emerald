@@ -1,4 +1,5 @@
 use rapier2d::na::Vector2;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     texture::TextureKey,
@@ -6,15 +7,79 @@ use crate::{
     EmeraldError,
 };
 
-#[derive(Clone, Copy, Debug, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Hash, Deserialize, Serialize)]
 pub enum AutoTileRulesetValue {
+    Any,
     None,
     Tile,
-    Any,
 }
 
 const AUTOTILE_RULESET_GRID_SIZE: usize = 5;
 
+#[derive(Deserialize, Serialize)]
+struct AutoTileRulesetSchema {
+    /// id of the tile in the tileset this rule belongs to
+    pub tile_id: TileId,
+
+    /// List of tile rules in the ruleset, tiles not given in the 5x5 grid are assumed to be Any
+    pub rules: Vec<AutoTileRulesetSchemaTile>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct AutoTileRulesetSchemaTile {
+    /// Position of this tile rule in the 5x5 grid, cannot be greater than 4
+    pub x: usize,
+
+    /// Position of this tile rule in the 5x5 grid, cannot be greater than 4
+    pub y: usize,
+
+    /// ex. Any, None, Tile
+    pub value: AutoTileRulesetValue,
+}
+impl AutoTileRulesetSchema {
+    fn to_ruleset(self) -> Result<AutoTileRuleset, EmeraldError> {
+        let mut grid = default_ruleset_grid();
+
+        for tile in self.rules {
+            if tile.x >= AUTOTILE_RULESET_GRID_SIZE || tile.y >= AUTOTILE_RULESET_GRID_SIZE {
+                return Err(EmeraldError::new(format!(
+                    "Tile {:?} does not fit inside of the 5x5 ruleset grid.",
+                    tile
+                )));
+            }
+
+            grid[tile.x][tile.y] = tile.value;
+        }
+
+        // We require the center of the grid to be the target tile.
+        grid[2][2] = AutoTileRulesetValue::Tile;
+
+        Ok(AutoTileRuleset {
+            tile_id: self.tile_id,
+            grid,
+        })
+    }
+}
+
+fn default_ruleset_grid(
+) -> [[AutoTileRulesetValue; AUTOTILE_RULESET_GRID_SIZE]; AUTOTILE_RULESET_GRID_SIZE] {
+    let default_row = [
+        AutoTileRulesetValue::Any,
+        AutoTileRulesetValue::Any,
+        AutoTileRulesetValue::Any,
+        AutoTileRulesetValue::Any,
+        AutoTileRulesetValue::Any,
+    ];
+    [
+        default_row,
+        default_row,
+        default_row,
+        default_row,
+        default_row,
+    ]
+}
+
+#[derive(Deserialize, Serialize)]
 pub struct AutoTileRuleset {
     pub tile_id: TileId,
 
@@ -129,6 +194,9 @@ pub enum AutoTile {
     None = 0,
     Tile = 1,
 }
+
+#[derive(Deserialize, Serialize)]
+struct AutoTileMapSchema {}
 
 pub struct AutoTilemap {
     pub(crate) tilemap: Tilemap,
@@ -254,5 +322,32 @@ impl AutoTilemap {
         self.tilemap.get_tile(x, y)
     }
 }
-#[test]
-fn test_autotiles() {}
+
+#[cfg(test)]
+mod tests {
+    use super::{AutoTileRuleset, AutoTileRulesetSchema, AutoTileRulesetValue};
+
+    #[test]
+    fn deser_ruleset() {
+        let ruleset_toml = r#"
+            tile_id = 0
+
+            [[rules]]
+            x = 0
+            y = 0
+            value = "None"
+
+            [[rules]]
+            x = 1
+            y = 1
+            value = "Tile"
+        "#;
+        let schema: AutoTileRulesetSchema = crate::toml::from_str(ruleset_toml).unwrap();
+        let ruleset = schema.to_ruleset().unwrap();
+        assert_eq!(ruleset.grid[0][0], AutoTileRulesetValue::None);
+        assert_eq!(ruleset.grid[1][1], AutoTileRulesetValue::Tile);
+
+        // Check target tile is a tile
+        assert_eq!(ruleset.grid[2][2], AutoTileRulesetValue::Tile);
+    }
+}
