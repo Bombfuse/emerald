@@ -1,7 +1,10 @@
 use hecs::Entity;
 use serde::{Deserialize, Serialize};
 
-use crate::{AssetLoader, EmeraldError, Transform, World};
+use crate::{
+    autotilemap::load_ent_autotilemap, tilemap::load_ent_tilemap, AssetLoader, EmeraldError,
+    Transform, World,
+};
 
 use self::{
     ent_color_rect_loader::load_ent_color_rect, ent_label_loader::load_ent_label,
@@ -22,6 +25,8 @@ const ASEPRITE_SCHEMA_KEY: &str = "aseprite";
 const TRANSFORM_SCHEMA_KEY: &str = "transform";
 const LABEL_SCHEMA_KEY: &str = "label";
 const COLOR_RECT_SCHEMA_KEY: &str = "color_rect";
+const AUTOTILEMAP_SCHEMA_KEY: &str = "autotilemap";
+const TILEMAP_SCHEMA_KEY: &str = "tilemap";
 
 #[derive(Default)]
 pub struct EntLoadConfig {
@@ -45,6 +50,16 @@ pub(crate) fn load_ent(
             .collect::<Vec<String>>();
         for key in table_keys {
             match key.as_str() {
+                AUTOTILEMAP_SCHEMA_KEY => {
+                    if let Some(value) = table.remove(AUTOTILEMAP_SCHEMA_KEY) {
+                        load_ent_autotilemap(loader, entity, world, &value)?;
+                    }
+                }
+                TILEMAP_SCHEMA_KEY => {
+                    if let Some(value) = table.remove(TILEMAP_SCHEMA_KEY) {
+                        load_ent_tilemap(loader, entity, world, &value)?;
+                    }
+                }
                 COLOR_RECT_SCHEMA_KEY => {
                     if let Some(value) = table.remove(COLOR_RECT_SCHEMA_KEY) {
                         load_ent_color_rect(loader, entity, world, &value)?;

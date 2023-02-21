@@ -23,12 +23,13 @@ struct TilemapSchema {
     #[serde(default)]
     z_index: f32,
 
+    /// Takes a list of tiles, rather than a grid for usability.
     #[serde(default)]
     tiles: Vec<TileSchema>,
 }
 impl TilemapSchema {
-    pub fn to_tilemap(self, emd: &mut Emerald) -> Result<Tilemap, EmeraldError> {
-        let tileset = emd.loader().texture(self.tileset.clone())?;
+    pub fn to_tilemap(self, loader: &mut AssetLoader) -> Result<Tilemap, EmeraldError> {
+        let tileset = loader.texture(self.tileset.clone())?;
         self.to_tilemap_with_tileset(tileset)
     }
 
@@ -173,6 +174,19 @@ pub(crate) fn get_tilemap_index(
     }
 
     Ok((y * width) + x)
+}
+
+pub(crate) fn load_ent_tilemap<'a>(
+    loader: &mut AssetLoader<'a>,
+    entity: Entity,
+    world: &mut World,
+    toml: &toml::Value,
+) -> Result<(), EmeraldError> {
+    let schema: TilemapSchema = toml::from_str(&toml.to_string())?;
+    let tilemap = schema.to_tilemap(loader)?;
+    world.insert_one(entity, tilemap)?;
+
+    Ok(())
 }
 
 #[cfg(test)]

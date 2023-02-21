@@ -1,10 +1,11 @@
+use hecs::Entity;
 use rapier2d::na::Vector2;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     texture::TextureKey,
     tilemap::{get_tilemap_index, TileId, Tilemap},
-    Emerald, EmeraldError,
+    AssetLoader, Emerald, EmeraldError, World,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Hash, Deserialize, Serialize)]
@@ -218,8 +219,8 @@ struct AutoTileMapSchema {
     pub visible: bool,
 }
 impl AutoTileMapSchema {
-    pub fn to_autotilemap(self, emd: &mut Emerald) -> Result<AutoTilemap, EmeraldError> {
-        let tileset = emd.loader().texture(self.tileset.clone())?;
+    pub fn to_autotilemap(self, loader: &mut AssetLoader) -> Result<AutoTilemap, EmeraldError> {
+        let tileset = loader.texture(self.tileset.clone())?;
         self.to_autotilemap_with_tileset(tileset)
     }
 
@@ -378,6 +379,19 @@ impl AutoTilemap {
     pub fn get_tile_id(&self, x: usize, y: usize) -> Result<Option<TileId>, EmeraldError> {
         self.tilemap.get_tile(x, y)
     }
+}
+
+pub(crate) fn load_ent_autotilemap<'a>(
+    loader: &mut AssetLoader<'a>,
+    entity: Entity,
+    world: &mut World,
+    toml: &toml::Value,
+) -> Result<(), EmeraldError> {
+    let schema: AutoTileMapSchema = toml::from_str(&toml.to_string())?;
+    let autotilemap = schema.to_autotilemap(loader)?;
+    world.insert_one(entity, autotilemap)?;
+
+    Ok(())
 }
 
 #[cfg(test)]
