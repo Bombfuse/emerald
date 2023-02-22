@@ -16,8 +16,12 @@ struct TilemapSchema {
     tileset: String,
     width: usize,
     height: usize,
-    tile_width: usize,
-    tile_height: usize,
+    /// Height of tileset in tiles
+    tileset_height: usize,
+    /// Width of tileset in tiles
+    tileset_width: usize,
+    tile_height_px: usize,
+    tile_width_px: usize,
     #[serde(default = "default_visibility")]
     visible: bool,
     #[serde(default)]
@@ -30,13 +34,15 @@ struct TilemapSchema {
 impl TilemapSchema {
     pub fn to_tilemap(self, loader: &mut AssetLoader) -> Result<Tilemap, EmeraldError> {
         let tileset = loader.texture(self.tileset.clone())?;
-        self.to_tilemap_with_tileset(tileset)
+        self.to_tilemap_ext(tileset)
     }
 
-    pub fn to_tilemap_with_tileset(self, tileset: TextureKey) -> Result<Tilemap, EmeraldError> {
+    pub fn to_tilemap_ext(self, tileset: TextureKey) -> Result<Tilemap, EmeraldError> {
         let mut tilemap = Tilemap::new(
             tileset,
-            Vector2::new(self.tile_width, self.tile_height),
+            Vector2::new(self.tile_width_px, self.tile_height_px),
+            self.tileset_width,
+            self.tileset_height,
             self.width,
             self.height,
         );
@@ -59,6 +65,10 @@ pub struct Tilemap {
     pub(crate) tilesheet: TextureKey,
     pub(crate) tile_size: Vector2<usize>,
     pub(crate) tiles: Vec<Option<TileId>>,
+    // Width of tilesheet in tiles
+    pub(crate) tilesheet_width: usize,
+    // Height of tilesheet in tiles
+    pub(crate) tilesheet_height: usize,
     pub z_index: f32,
     pub visible: bool,
 }
@@ -67,6 +77,10 @@ impl Tilemap {
         tilesheet: TextureKey,
         // Size of a tile in the grid, in pixels
         tile_size: Vector2<usize>,
+        // Width of tilesheet in tiles
+        tilesheet_width: usize,
+        // Height of tilesheet in tiles
+        tilesheet_height: usize,
         width: usize,
         height: usize,
     ) -> Self {
@@ -84,6 +98,8 @@ impl Tilemap {
             tiles,
             z_index: 0.0,
             visible: true,
+            tilesheet_height,
+            tilesheet_width,
         }
     }
 
@@ -210,10 +226,13 @@ mod tests {
     fn deser_tilemap() {
         let toml = r#"
             tileset = "tileset.png"
+            tileset_width = 2
+            tileset_height = 2
+
             width = 10
             height = 10
-            tile_width = 32
-            tile_height = 32
+            tile_width_px = 32
+            tile_height_px = 32
 
             [[tiles]]
             id = 14
@@ -221,7 +240,7 @@ mod tests {
             y = 6
         "#;
         let schema: TilemapSchema = crate::toml::from_str(&toml).unwrap();
-        let tilemap = schema.to_tilemap_with_tileset(Default::default()).unwrap();
+        let tilemap = schema.to_tilemap_ext(Default::default()).unwrap();
         assert_eq!(tilemap.width(), 10);
         assert_eq!(tilemap.height(), 10);
         assert_eq!(tilemap.tile_width(), 32);
@@ -230,6 +249,8 @@ mod tests {
 
         let missing_map_size = r#"
             tileset = "tileset.png"
+            tileset_width = 2
+            tileset_height = 2
             tile_width = 32
             tile_height = 32
         "#;
@@ -238,6 +259,8 @@ mod tests {
 
         let missing_tile_size = r#"
             tileset = "tileset.png"
+            tileset_width = 2
+            tileset_height = 2
             map_width = 10
             map_height = 10
         "#;
