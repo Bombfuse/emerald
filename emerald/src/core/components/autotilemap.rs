@@ -367,7 +367,6 @@ impl AutoTilemap {
         for x in 0..self.width() {
             for y in 0..self.height() {
                 let id = self.compute_tileset_tile_id(x, y)?;
-                println!("tile_id {:?}", id);
                 self.tilemap.set_tile(x, y, id)?;
             }
         }
