@@ -11,8 +11,8 @@ use crate::{
 };
 
 use hecs::{
-    Bundle, Component, ComponentRef, DynamicBundle, Entity, NoSuchEntity, Query, QueryBorrow,
-    QueryItem, QueryOne, SpawnBatchIter,
+    Bundle, Component, ComponentRef, DynamicBundle, Entity, EntityRef, NoSuchEntity, Query,
+    QueryBorrow, QueryItem, QueryOne, SpawnBatchIter,
 };
 use rapier2d::prelude::{RigidBodyBuilder, RigidBodyHandle};
 
@@ -230,6 +230,11 @@ impl World {
         }
     }
 
+    /// Collects the ids of all entities with the given components
+    pub fn collect<Q: Query>(&self) -> Vec<Entity> {
+        self.query::<Q>().iter().map(|(id, _)| id).collect()
+    }
+
     pub fn reserve_entity(&self) -> Entity {
         self.inner.reserve_entity()
     }
@@ -239,8 +244,31 @@ impl World {
         self.inner.contains(entity)
     }
 
+    /// The number of entities in the world
     pub fn count(&self) -> usize {
         self.inner.len() as usize
+    }
+
+    /// Whether or not the entity satisfies the query
+    pub fn satisfies<Q: Query>(&self, entity: Entity) -> bool {
+        self.inner
+            .satisfies::<Q>(entity)
+            .ok()
+            .map(|b| b)
+            .unwrap_or(false)
+    }
+
+    /// Whether or not the entity has the component
+    pub fn has<C: Component>(&self, entity: Entity) -> bool {
+        self.entity(entity)
+            .ok()
+            .map(|e| e.has::<C>())
+            .unwrap_or(false)
+    }
+
+    /// Gets a reference to the entity
+    pub fn entity(&self, entity: Entity) -> Result<EntityRef<'_>, NoSuchEntity> {
+        self.inner.entity(entity)
     }
 
     /// Prepare a query against a single entity, using dynamic borrow checking
@@ -387,6 +415,8 @@ pub(crate) fn load_world(
 
 #[cfg(test)]
 mod tests {
+    use hecs::Entity;
+
     use crate::{rendering::components::Camera, Transform, World};
 
     #[test]
@@ -406,6 +436,29 @@ mod tests {
         let entity = world.spawn((Transform::default(),));
 
         assert!(world.make_active_camera(entity).is_err());
+    }
+
+    #[test]
+    fn collect_test() {
+        let mut world = World::new();
+        let mut transform_ents = world
+            .spawn_batch([(Transform::default(),), (Transform::default(),)])
+            .collect::<Vec<Entity>>();
+        let str_ents = world
+            .spawn_batch([
+                (Transform::default(), String::from("test1")),
+                (Transform::default(), String::from("test2")),
+                (Transform::default(), String::from("test3")),
+            ])
+            .collect::<Vec<Entity>>();
+        transform_ents.extend(str_ents.clone());
+
+        let usize_ent = world.spawn((Transform::default(), 1usize));
+        transform_ents.push(usize_ent.clone());
+
+        assert_eq!(world.collect::<&Transform>(), transform_ents);
+        assert_eq!(world.collect::<(&Transform, &String)>(), str_ents);
+        assert_eq!(world.collect::<(&Transform, &usize)>(), vec![usize_ent]);
     }
 
     #[test]
@@ -445,6 +498,28 @@ mod tests {
 
         let mut query = world.query_one::<(&Transform, &String)>(entity).unwrap();
         assert!(query.get().is_none());
+    }
+
+    #[test]
+    fn satisfies_test() {
+        let mut world = World::new();
+
+        let id = world.spawn((Transform::default(), 100usize));
+
+        assert!(world.satisfies::<&Transform>(id));
+        assert!(world.satisfies::<(&Transform, &usize)>(id));
+        assert!(!world.satisfies::<(&Transform, &String)>(id));
+        assert!(!world.satisfies::<(&Transform, &usize, &String)>(id));
+    }
+
+    #[test]
+    fn has_test() {
+        let mut world = World::new();
+        let id = world.spawn((Transform::default(), 100usize));
+
+        assert!(world.has::<Transform>(id));
+        assert!(world.has::<usize>(id));
+        assert!(!world.has::<String>(id));
     }
 
     #[test]
