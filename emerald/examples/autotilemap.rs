@@ -23,7 +23,8 @@ impl Game for AutotilemapExample {
         let rulesets = vec![
             // An autotile ruleset that only places the first tile when it is not immediately surrounded by other tiles.
             AutoTileRuleset {
-                tile_id: 0,
+                x: 0,
+                y: 0,
                 grid: [
                     // Column 1
                     [
@@ -69,7 +70,8 @@ impl Game for AutotilemapExample {
             },
             // An autotile ruleset that only places the second tile when it is surrounded by tiles immediately
             AutoTileRuleset {
-                tile_id: 1,
+                x: 1,
+                y: 0,
                 grid: [
                     // Column 1
                     [
@@ -115,7 +117,8 @@ impl Game for AutotilemapExample {
             },
             // An autotile ruleset that places the third tile in any other scenario
             AutoTileRuleset {
-                tile_id: 2,
+                x: 1,
+                y: 0,
                 grid: [
                     [
                         AutoTileRulesetValue::Any,
@@ -157,7 +160,8 @@ impl Game for AutotilemapExample {
         ];
 
         let tileset_key = emd.loader().texture("tileset.png").unwrap();
-        let mut autotilemap = AutoTilemap::new(tileset_key, Vector2::new(16, 16), 20, 20, rulesets);
+        let mut autotilemap =
+            AutoTilemap::new(tileset_key, Vector2::new(16, 16), 2, 2, 20, 20, rulesets);
 
         autotilemap.set_tile(0, 0).unwrap(); // tile_id 2
         autotilemap.set_tile(10, 4).unwrap(); // tile_id 2

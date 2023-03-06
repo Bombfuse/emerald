@@ -1,6 +1,62 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{texture::TextureKey, *};
 
 pub type TileId = usize;
+
+#[derive(Deserialize, Serialize)]
+struct TileSchema {
+    x: usize,
+    y: usize,
+    id: TileId,
+}
+
+#[derive(Deserialize, Serialize)]
+struct TilemapSchema {
+    tileset: String,
+    width: usize,
+    height: usize,
+    /// Height of tileset in tiles
+    tileset_height: usize,
+    /// Width of tileset in tiles
+    tileset_width: usize,
+    tile_height_px: usize,
+    tile_width_px: usize,
+    #[serde(default = "default_visibility")]
+    visible: bool,
+    #[serde(default)]
+    z_index: f32,
+
+    /// Takes a list of tiles, rather than a grid for usability.
+    #[serde(default)]
+    tiles: Vec<TileSchema>,
+}
+impl TilemapSchema {
+    pub fn to_tilemap(self, loader: &mut AssetLoader) -> Result<Tilemap, EmeraldError> {
+        let tileset = loader.texture(self.tileset.clone())?;
+        self.to_tilemap_ext(tileset)
+    }
+
+    pub fn to_tilemap_ext(self, tileset: TextureKey) -> Result<Tilemap, EmeraldError> {
+        let mut tilemap = Tilemap::new(
+            tileset,
+            Vector2::new(self.tile_width_px, self.tile_height_px),
+            self.tileset_width,
+            self.tileset_height,
+            self.width,
+            self.height,
+        );
+        for tile in self.tiles {
+            tilemap.set_tile(tile.x, tile.y, Some(tile.id))?;
+        }
+
+        Ok(tilemap)
+    }
+}
+
+fn default_visibility() -> bool {
+    true
+}
 
 #[derive(Clone)]
 pub struct Tilemap {
@@ -9,6 +65,10 @@ pub struct Tilemap {
     pub(crate) tilesheet: TextureKey,
     pub(crate) tile_size: Vector2<usize>,
     pub(crate) tiles: Vec<Option<TileId>>,
+    // Width of tilesheet in tiles
+    pub(crate) tilesheet_width: usize,
+    // Height of tilesheet in tiles
+    pub(crate) tilesheet_height: usize,
     pub z_index: f32,
     pub visible: bool,
 }
@@ -17,6 +77,10 @@ impl Tilemap {
         tilesheet: TextureKey,
         // Size of a tile in the grid, in pixels
         tile_size: Vector2<usize>,
+        // Width of tilesheet in tiles
+        tilesheet_width: usize,
+        // Height of tilesheet in tiles
+        tilesheet_height: usize,
         width: usize,
         height: usize,
     ) -> Self {
@@ -34,6 +98,8 @@ impl Tilemap {
             tiles,
             z_index: 0.0,
             visible: true,
+            tilesheet_height,
+            tilesheet_width,
         }
     }
 
@@ -90,6 +156,14 @@ impl Tilemap {
         self.height
     }
 
+    pub fn tile_width(&self) -> usize {
+        self.tile_size.x
+    }
+
+    pub fn tile_height(&self) -> usize {
+        self.tile_size.y
+    }
+
     pub fn set_tilesheet(&mut self, tilesheet: TextureKey) {
         self.tilesheet = tilesheet
     }
@@ -116,4 +190,81 @@ pub(crate) fn get_tilemap_index(
     }
 
     Ok((y * width) + x)
+}
+
+pub(crate) fn load_ent_tilemap<'a>(
+    loader: &mut AssetLoader<'a>,
+    entity: Entity,
+    world: &mut World,
+    toml: &toml::Value,
+) -> Result<(), EmeraldError> {
+    let schema: TilemapSchema = toml::from_str(&toml.to_string())?;
+    let tilemap = schema.to_tilemap(loader)?;
+    world.insert_one(entity, tilemap)?;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tilemap::{TileSchema, TilemapSchema};
+
+    #[test]
+    fn deser_tile() {
+        let toml = r#"
+            x = 3
+            y = 6
+            id = 10
+        "#;
+        let schema: TileSchema = crate::toml::from_str(toml).unwrap();
+        assert_eq!(schema.id, 10);
+        assert_eq!(schema.x, 3);
+        assert_eq!(schema.y, 6);
+    }
+
+    #[test]
+    fn deser_tilemap() {
+        let toml = r#"
+            tileset = "tileset.png"
+            tileset_width = 2
+            tileset_height = 2
+
+            width = 10
+            height = 10
+            tile_width_px = 32
+            tile_height_px = 32
+
+            [[tiles]]
+            id = 14
+            x = 5
+            y = 6
+        "#;
+        let schema: TilemapSchema = crate::toml::from_str(&toml).unwrap();
+        let tilemap = schema.to_tilemap_ext(Default::default()).unwrap();
+        assert_eq!(tilemap.width(), 10);
+        assert_eq!(tilemap.height(), 10);
+        assert_eq!(tilemap.tile_width(), 32);
+        assert_eq!(tilemap.tile_height(), 32);
+        assert_eq!(tilemap.get_tile(5, 6).unwrap().unwrap(), 14);
+
+        let missing_map_size = r#"
+            tileset = "tileset.png"
+            tileset_width = 2
+            tileset_height = 2
+            tile_width = 32
+            tile_height = 32
+        "#;
+        let schema = crate::toml::from_str::<TilemapSchema>(&missing_map_size);
+        assert!(schema.is_err());
+
+        let missing_tile_size = r#"
+            tileset = "tileset.png"
+            tileset_width = 2
+            tileset_height = 2
+            map_width = 10
+            map_height = 10
+        "#;
+        let schema = crate::toml::from_str::<TilemapSchema>(&missing_tile_size);
+        assert!(schema.is_err());
+    }
 }

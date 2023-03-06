@@ -12,3 +12,50 @@ transform = { translation = { x = 0.0, y = 0.0 } }
 transform = { translation = { x = -100.0, y = 0.0 } }
 aseprite = { aseprite = "smiley.aseprite", default_animation = { name = "smile", looping = true } }
 physics_body = { body_type = "dynamic", colliders = [{ shape = "cuboid", half_width = 4.0, half_height = 4.0 }] }
+
+[[entities]]
+transform = { translation = { x = 0.0, y = 0.0 } }
+[entities.tilemap]
+width = 10
+height = 10
+tile_height_px = 16
+tile_width_px = 16
+tileset_width = 2
+tileset_height = 2
+tileset = "tileset.png"
+[[entities.tilemap.tiles]]
+x = 0
+y = 0
+id = 0
+[[entities.tilemap.tiles]]
+x = 1
+y = 1
+id = 1
+[[entities.tilemap.tiles]]
+x = 1
+y = 0
+id = 2
+[[entities.tilemap.tiles]]
+x = 0
+y = 1
+id = 3
+
+[[entities]]
+transform = { translation = { x = 0.0, y = -50.0 } }
+[entities.autotilemap]
+width = 10
+height = 10
+tile_height_px = 16
+tile_width_px = 16
+tileset_width = 2
+tileset_height = 2
+tileset = "tileset.png"
+[[entities.autotilemap.rulesets]]
+x = 1
+y = 1
+[[entities.autotilemap.tiles]]
+x = 5
+y = 5
+[[entities.autotilemap.tiles]]
+x = 1
+y = 1

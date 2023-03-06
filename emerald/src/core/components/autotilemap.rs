@@ -1,22 +1,124 @@
+use hecs::Entity;
 use rapier2d::na::Vector2;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     texture::TextureKey,
     tilemap::{get_tilemap_index, TileId, Tilemap},
-    EmeraldError,
+    AssetLoader, Emerald, EmeraldError, World,
 };
 
-#[derive(Clone, Copy, Debug, PartialEq, Hash)]
+#[derive(Deserialize, Serialize)]
+struct AutoTileRulesetsResource {
+    #[serde(default)]
+    pub rulesets: Vec<AutoTileRulesetSchema>,
+}
+
+pub fn load_autotile_rulesets_from_resource<T: Into<String>>(
+    emd: &mut Emerald,
+    resource_path: T,
+) -> Result<Vec<AutoTileRuleset>, EmeraldError> {
+    let data = emd.loader().string(resource_path.into())?;
+    let resource = crate::toml::from_str::<AutoTileRulesetsResource>(&data)?;
+    let rulesets = resource
+        .rulesets
+        .into_iter()
+        .map(|schema| schema.to_ruleset())
+        .collect::<Result<Vec<AutoTileRuleset>, EmeraldError>>()?;
+
+    Ok(rulesets)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Hash, Deserialize, Serialize)]
 pub enum AutoTileRulesetValue {
+    Any,
     None,
     Tile,
-    Any,
 }
 
 const AUTOTILE_RULESET_GRID_SIZE: usize = 5;
 
+#[derive(Deserialize, Serialize)]
+struct AutoTileRulesetSchema {
+    /// x position of the tile in the tileset this ruleset belongs to
+    pub x: usize,
+    /// y position of the tile in the tileset this ruleset belongs to
+    pub y: usize,
+
+    /// List of tile rules in the ruleset, tiles not given in the 5x5 grid are assumed to be Any
+    #[serde(default)]
+    pub rules: Vec<AutoTileRulesetSchemaTile>,
+}
+impl AutoTileRulesetSchema {
+    fn to_ruleset(self) -> Result<AutoTileRuleset, EmeraldError> {
+        let mut grid = default_ruleset_grid();
+        let max_offset = (AUTOTILE_RULESET_GRID_SIZE / 2) as i8;
+
+        for tile in self.rules {
+            if tile.x < -max_offset
+                || tile.x > max_offset
+                || tile.y < -max_offset
+                || tile.y > max_offset
+            {
+                return Err(EmeraldError::new(format!(
+                    "Tile {:?} does not fit inside of the 5x5 ruleset grid.",
+                    tile
+                )));
+            }
+
+            let position = Vector2::new(
+                (AUTOTILE_RULESET_GRID_SIZE / 2) as i8 + tile.x,
+                (AUTOTILE_RULESET_GRID_SIZE / 2) as i8 + tile.y,
+            );
+            grid[position.x as usize][position.y as usize] = tile.value;
+        }
+
+        // We require the center of the grid to be the target tile.
+        grid[2][2] = AutoTileRulesetValue::Tile;
+
+        Ok(AutoTileRuleset {
+            x: self.x,
+            y: self.y,
+            grid,
+        })
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct AutoTileRulesetSchemaTile {
+    /// relative x position to the center tile of the rule grid
+    pub x: i8,
+    /// relative y position to the center tile of the rule grid
+    pub y: i8,
+
+    /// ex. Any, None, Tile
+    pub value: AutoTileRulesetValue,
+}
+
+fn default_ruleset_grid(
+) -> [[AutoTileRulesetValue; AUTOTILE_RULESET_GRID_SIZE]; AUTOTILE_RULESET_GRID_SIZE] {
+    let default_row = [
+        AutoTileRulesetValue::Any,
+        AutoTileRulesetValue::Any,
+        AutoTileRulesetValue::Any,
+        AutoTileRulesetValue::Any,
+        AutoTileRulesetValue::Any,
+    ];
+    [
+        default_row,
+        default_row,
+        default_row,
+        default_row,
+        default_row,
+    ]
+}
+
+#[derive(Deserialize, Serialize)]
 pub struct AutoTileRuleset {
-    pub tile_id: TileId,
+    /// X position of the autotile in the tileset
+    pub x: usize,
+    /// Y position of the autotile in the tileset
+    pub y: usize,
 
     /// A grid determining the ruleset that displays this tile.
     /// Most grids will only need to cover a 3x3 area around the center tile,
@@ -130,6 +232,95 @@ pub enum AutoTile {
     Tile = 1,
 }
 
+fn default_visibility() -> bool {
+    true
+}
+
+#[derive(Deserialize, Serialize)]
+struct AutoTileSchema {
+    x: usize,
+    y: usize,
+}
+
+#[derive(Deserialize, Serialize)]
+struct AutoTileMapSchema {
+    pub tileset: String,
+
+    /// Height of tileset in tiles
+    pub tileset_height: usize,
+    /// Width of tileset in tiles
+    pub tileset_width: usize,
+    pub tile_height_px: usize,
+    pub tile_width_px: usize,
+
+    /// Path to the rulesets resource.
+    /// Appends onto any defined rulesets in this autotilemap.
+    #[serde(default)]
+    pub resource: Option<String>,
+
+    #[serde(default)]
+    pub rulesets: Vec<AutoTileRulesetSchema>,
+
+    pub width: usize,
+    pub height: usize,
+
+    #[serde(default)]
+    pub tiles: Vec<AutoTileSchema>,
+
+    #[serde(default)]
+    pub z_index: f32,
+
+    #[serde(default = "default_visibility")]
+    pub visible: bool,
+}
+impl AutoTileMapSchema {
+    pub fn to_autotilemap(self, loader: &mut AssetLoader) -> Result<AutoTilemap, EmeraldError> {
+        let tileset = loader.texture(self.tileset.clone())?;
+        let mut rulesets = Vec::new();
+
+        if let Some(resource) = &self.resource {
+            let toml = loader.string(resource.clone())?;
+            let resource = crate::toml::from_str::<AutoTileRulesetsResource>(&toml)?;
+            rulesets = resource.rulesets;
+        }
+
+        self.to_autotilemap_ext(tileset, rulesets)
+    }
+
+    pub fn to_autotilemap_ext(
+        self,
+        tileset: TextureKey,
+        extra_rulesets: Vec<AutoTileRulesetSchema>,
+    ) -> Result<AutoTilemap, EmeraldError> {
+        let mut ruleset_schemas = self.rulesets;
+        ruleset_schemas.extend(extra_rulesets);
+
+        let rulesets = ruleset_schemas
+            .into_iter()
+            .map(|ruleset_schema| ruleset_schema.to_ruleset())
+            .collect::<Result<Vec<AutoTileRuleset>, EmeraldError>>()?;
+
+        let mut autotilemap = AutoTilemap::new(
+            tileset,
+            Vector2::new(self.tile_width_px, self.tile_height_px),
+            self.tileset_width,
+            self.tileset_height,
+            self.width,
+            self.height,
+            rulesets,
+        );
+
+        for tile in self.tiles {
+            autotilemap.set_tile(tile.x, tile.y)?;
+        }
+
+        autotilemap.set_z_index(self.z_index);
+        autotilemap.set_visible(self.visible);
+
+        Ok(autotilemap)
+    }
+}
+
 pub struct AutoTilemap {
     pub(crate) tilemap: Tilemap,
     rulesets: Vec<AutoTileRuleset>,
@@ -140,11 +331,22 @@ impl AutoTilemap {
         tilesheet: TextureKey,
         // Size of a tile in the grid, in pixels
         tile_size: Vector2<usize>,
+        // Width of tilesheet in tiles
+        tilesheet_width: usize,
+        // Height of tilesheet in tiles
+        tilesheet_height: usize,
         map_width: usize,
         map_height: usize,
         rulesets: Vec<AutoTileRuleset>,
     ) -> Self {
-        let tilemap = Tilemap::new(tilesheet, tile_size, map_width, map_height);
+        let tilemap = Tilemap::new(
+            tilesheet,
+            tile_size,
+            tilesheet_width,
+            tilesheet_height,
+            map_width,
+            map_height,
+        );
 
         let tile_count = map_width * map_height;
         let mut autotiles = Vec::with_capacity(tile_count);
@@ -164,11 +366,20 @@ impl AutoTilemap {
     pub fn bake(&mut self) -> Result<(), EmeraldError> {
         for x in 0..self.width() {
             for y in 0..self.height() {
-                self.tilemap.set_tile(x, y, self.compute_tile_id(x, y)?)?;
+                let id = self.compute_tileset_tile_id(x, y)?;
+                self.tilemap.set_tile(x, y, id)?;
             }
         }
 
         Ok(())
+    }
+
+    pub fn set_z_index(&mut self, z_index: f32) {
+        self.tilemap.z_index = z_index;
+    }
+
+    pub fn set_visible(&mut self, visible: bool) {
+        self.tilemap.visible = visible;
     }
 
     pub fn width(&self) -> usize {
@@ -221,17 +432,29 @@ impl AutoTilemap {
     }
 
     pub fn get_ruleset(&self, tile_id: TileId) -> Option<&AutoTileRuleset> {
-        self.rulesets
-            .iter()
-            .find(|ruleset| ruleset.tile_id == tile_id)
+        let width = self.width();
+        let height = self.height();
+
+        self.rulesets.iter().find(|ruleset| {
+            if let Ok(id) = get_tilemap_index(ruleset.x, ruleset.y, width, height) {
+                id == tile_id
+            } else {
+                false
+            }
+        })
     }
 
     pub fn remove_ruleset(&mut self, tile_id: TileId) -> Option<AutoTileRuleset> {
-        if let Some(index) = self
-            .rulesets
-            .iter()
-            .position(|ruleset| ruleset.tile_id == tile_id)
-        {
+        let width = self.width();
+        let height = self.height();
+
+        if let Some(index) = self.rulesets.iter().position(|ruleset| {
+            if let Ok(id) = get_tilemap_index(ruleset.x, ruleset.y, width, height) {
+                id == tile_id
+            } else {
+                false
+            }
+        }) {
             return Some(self.rulesets.remove(index));
         }
 
@@ -239,13 +462,26 @@ impl AutoTilemap {
     }
 
     /// Computes the tileid for the given autotile position.
-    pub fn compute_tile_id(&self, x: usize, y: usize) -> Result<Option<TileId>, EmeraldError> {
+    pub fn compute_tileset_tile_id(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> Result<Option<TileId>, EmeraldError> {
+        let width = self.width();
+        let height = self.height();
+
         if let Some(ruleset) = self
             .rulesets
             .iter()
-            .find(|ruleset| ruleset.matches(&self.autotiles, self.width(), self.height(), x, y))
+            .find(|ruleset| ruleset.matches(&self.autotiles, width, height, x, y))
         {
-            return Ok(Some(ruleset.tile_id));
+            let id = get_tilemap_index(
+                ruleset.x,
+                ruleset.y,
+                self.tilemap.tilesheet_width,
+                self.tilemap.tilesheet_height,
+            )?;
+            return Ok(Some(id));
         }
 
         Ok(None)
@@ -254,5 +490,104 @@ impl AutoTilemap {
         self.tilemap.get_tile(x, y)
     }
 }
-#[test]
-fn test_autotiles() {}
+
+pub(crate) fn load_ent_autotilemap<'a>(
+    loader: &mut AssetLoader<'a>,
+    entity: Entity,
+    world: &mut World,
+    toml: &toml::Value,
+) -> Result<(), EmeraldError> {
+    let schema: AutoTileMapSchema = toml::from_str(&toml.to_string())?;
+    let mut autotilemap = schema.to_autotilemap(loader)?;
+    autotilemap.bake()?;
+    world.insert_one(entity, autotilemap)?;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AutoTileMapSchema, AutoTileRulesetSchema, AutoTileRulesetValue};
+
+    #[test]
+    fn deser_ruleset() {
+        let ruleset_toml = r#"
+            x = 10
+            y = 11
+
+            [[rules]]
+            x = -1
+            y = -1
+            value = "None"
+
+            [[rules]]
+            x = -1
+            y = 0
+            value = "None"
+
+            [[rules]]
+            x = 1
+            y = 1
+            value = "Tile"
+        "#;
+        let schema: AutoTileRulesetSchema = crate::toml::from_str(ruleset_toml).unwrap();
+        let ruleset = schema.to_ruleset().unwrap();
+        assert_eq!(ruleset.x, 10);
+        assert_eq!(ruleset.y, 11);
+        assert_eq!(ruleset.grid[1][1], AutoTileRulesetValue::None);
+        assert_eq!(ruleset.grid[1][2], AutoTileRulesetValue::None);
+        assert_eq!(ruleset.grid[3][3], AutoTileRulesetValue::Tile);
+
+        // Check target tile is a tile
+        assert_eq!(ruleset.grid[2][2], AutoTileRulesetValue::Tile);
+
+        let out_of_bounds_ruleset = r#"
+            x = 10
+            y = 11
+
+            [[rules]]
+            x = -3
+            y = 0
+            value = "None"
+        "#;
+        let schema: AutoTileRulesetSchema = crate::toml::from_str(out_of_bounds_ruleset).unwrap();
+        assert!(schema.to_ruleset().is_err());
+    }
+
+    #[test]
+    fn deser_autotilemap() {
+        let autotilemap_toml = r#"
+            tileset = "tileset.png"
+            tileset_height = 2
+            tileset_width = 2
+            tile_width_px = 32
+            tile_height_px = 32
+            width = 10
+            height = 10
+        "#;
+        let schema: AutoTileMapSchema = crate::toml::from_str(&autotilemap_toml).unwrap();
+        let autotilemap = schema
+            .to_autotilemap_ext(Default::default(), Vec::new())
+            .unwrap();
+        assert_eq!(autotilemap.width(), 10);
+        assert_eq!(autotilemap.height(), 10);
+        assert_eq!(autotilemap.tile_size().x, 32);
+        assert_eq!(autotilemap.tile_size().y, 32);
+
+        let missing_map_size = r#"
+            tileset = "tileset.png"
+            tile_width = 32
+            tile_height = 32
+        "#;
+        let schema = crate::toml::from_str::<AutoTileMapSchema>(&missing_map_size);
+        assert!(schema.is_err());
+
+        let missing_tile_size = r#"
+            tileset = "tileset.png"
+            width = 10
+            height = 10
+        "#;
+        let schema = crate::toml::from_str::<AutoTileMapSchema>(&missing_tile_size);
+        assert!(schema.is_err());
+    }
+}
