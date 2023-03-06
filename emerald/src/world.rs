@@ -235,6 +235,11 @@ impl World {
         self.query::<Q>().iter().map(|(id, _)| id).collect()
     }
 
+    /// Collects the ids of all entities with the given components
+    pub fn collect_by<C: Component>(&self) -> Vec<Entity> {
+        self.query::<&C>().iter().map(|(id, _)| id).collect()
+    }
+
     pub fn reserve_entity(&self) -> Entity {
         self.inner.reserve_entity()
     }
@@ -459,6 +464,10 @@ mod tests {
         assert_eq!(world.collect::<&Transform>(), transform_ents);
         assert_eq!(world.collect::<(&Transform, &String)>(), str_ents);
         assert_eq!(world.collect::<(&Transform, &usize)>(), vec![usize_ent]);
+
+        assert_eq!(world.collect_by::<Transform>().len(), 6);
+        assert_eq!(world.collect_by::<String>().len(), 3);
+        assert_eq!(world.collect_by::<usize>().len(), 1);
     }
 
     #[test]
