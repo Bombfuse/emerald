@@ -15,6 +15,8 @@ pub(crate) struct EntLabelSchema {
     /// A path to the font resource file
     pub resource: Option<String>,
 
+    #[serde(default)]
+    pub z_index: f32,
     pub size: u16,
     pub text: Option<String>,
     pub offset: Option<Vec2f32Schema>,
@@ -69,6 +71,7 @@ pub(crate) fn load_ent_label<'a>(
     let font = font.unwrap();
     let text = schema.text.unwrap_or("".into());
     let mut label = Label::new(text, font, schema.size);
+    label.z_index = schema.z_index;
 
     if let Some(offset) = schema.offset {
         label.offset = Vector2::new(offset.x, offset.y);
