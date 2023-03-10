@@ -139,6 +139,12 @@ impl World {
         &mut self.resources
     }
 
+
+    #[inline]
+    pub fn resources_ref(&self) -> &Resources {
+        &self.resources
+    }
+
     /// Disable all cameras then set the camera on the given entity as active.
     /// Fails if the given entity does not exist, or does not have a camera.
     #[inline]
