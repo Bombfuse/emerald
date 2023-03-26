@@ -24,6 +24,8 @@ pub(crate) struct EntColliderSchema {
 pub(crate) struct EntRigidBodySchema {
     pub body_type: String,
     pub colliders: Option<Vec<EntColliderSchema>>,
+    pub lock_rotations: Option<bool>,
+    pub lock_translations: Option<bool>,
 }
 
 fn load_ent_collider(
@@ -96,7 +98,15 @@ pub(crate) fn load_ent_rigid_body<'a>(
         }
     }
 
-    let rigid_body_builder = RigidBodyBuilder::new(body_type);
+    let mut rigid_body_builder = RigidBodyBuilder::new(body_type);
+
+    if schema.lock_rotations.filter(|l| *l).is_some() {
+        rigid_body_builder = rigid_body_builder.lock_rotations();
+    }
+
+    if schema.lock_translations.filter(|l| *l).is_some() {
+        rigid_body_builder = rigid_body_builder.lock_translations();
+    }
 
     let rbh = world.physics().build_body(entity, rigid_body_builder)?;
     if let Some(collider_schemas) = schema.colliders {
