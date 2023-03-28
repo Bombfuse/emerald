@@ -1,6 +1,7 @@
 use hecs::Entity;
 use rapier2d::{
-    na::Vector2,
+    control::{CharacterLength, KinematicCharacterController},
+    na::{UnitVector2, Vector2},
     parry::shape::Cuboid,
     prelude::{ColliderBuilder, ColliderHandle, RigidBodyBuilder, RigidBodyHandle, RigidBodyType},
 };
@@ -20,12 +21,41 @@ pub(crate) struct EntColliderSchema {
     pub sensor: Option<bool>,
 }
 
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+pub(crate) enum CharacterLengthSchema {
+    Absolute,
+    Relative,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub(crate) struct CharacterOffsetSchema {
+    length_type: CharacterLengthSchema,
+    value: f32,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub(crate) struct KinematicCharacterControllerMeta {
+    /// Excludes the entities own body from the movement queries.
+    #[serde(default = "exclude_self_default")]
+    pub exclude_self: bool,
+
+    #[serde(default)]
+    pub offset: Option<CharacterOffsetSchema>,
+
+    #[serde(default)]
+    pub up: Option<Vec2f32Schema>,
+}
+fn exclude_self_default() -> bool {
+    true
+}
+
 #[derive(Deserialize, Serialize)]
 pub(crate) struct EntRigidBodySchema {
     pub body_type: String,
     pub colliders: Option<Vec<EntColliderSchema>>,
     pub lock_rotations: Option<bool>,
     pub lock_translations: Option<bool>,
+    pub character: Option<KinematicCharacterControllerMeta>,
 }
 
 fn load_ent_collider(
@@ -109,6 +139,24 @@ pub(crate) fn load_ent_rigid_body<'a>(
     }
 
     let rbh = world.physics().build_body(entity, rigid_body_builder)?;
+
+    if let Some(character) = schema.character {
+        let mut controller = KinematicCharacterController::default();
+        character.offset.map(|offset| {
+            controller.offset = match offset.length_type {
+                CharacterLengthSchema::Absolute => CharacterLength::Absolute(offset.value),
+                CharacterLengthSchema::Relative => CharacterLength::Relative(offset.value),
+            };
+        });
+        character
+            .up
+            .map(|v| controller.up = UnitVector2::new_normalize(v.to_vector2()));
+
+        world
+            .physics()
+            .build_kinematic_character_controller(entity, controller)?;
+    }
+
     if let Some(collider_schemas) = schema.colliders {
         for collider_schema in collider_schemas {
             load_ent_collider(rbh, world, collider_schema)?;
@@ -116,4 +164,29 @@ pub(crate) fn load_ent_rigid_body<'a>(
     }
 
     Ok(rbh)
+}
+
+#[cfg(test)]
+mod test {
+    use crate::ent::ent_rigid_body_loader::CharacterLengthSchema;
+
+    use super::KinematicCharacterControllerMeta;
+
+    fn deser_kinematic_controller_meta() {
+        let toml = r#"
+            exclude_self = false
+            offset = { length_type = "Relative", value = 0.01 }
+            up = {x = 0.0, y = 1.0}
+        "#;
+
+        let meta: KinematicCharacterControllerMeta = crate::toml::from_str(toml).unwrap();
+        assert_eq!(
+            meta.offset.as_ref().unwrap().length_type,
+            CharacterLengthSchema::Relative
+        );
+        assert_eq!(meta.offset.unwrap().value, 0.01);
+
+        assert_eq!(meta.up.unwrap().y, 1.0);
+        assert_eq!(meta.exclude_self, false);
+    }
 }

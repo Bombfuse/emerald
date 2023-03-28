@@ -2,6 +2,7 @@ use crate::{Translation, *};
 
 use crate::core::components::transform::Transform;
 
+use rapier2d::control::KinematicCharacterController;
 use rapier2d::prelude::*;
 
 use crate::crossbeam;
@@ -25,7 +26,12 @@ pub struct PhysicsEngine {
     pub(crate) collision_event_recv: crossbeam::channel::Receiver<CollisionEvent>,
     pub(crate) contact_force_event_recv: crossbeam::channel::Receiver<ContactForceEvent>,
 
+    kinematic_character_controllers:
+        HashMap<KinematicCharacterControllerHandle, KinematicCharacterController>,
+    kinematic_cc_uid: KinematicCharacterControllerHandle,
+
     entity_bodies: HashMap<Entity, RigidBodyHandle>,
+    body_kinematic_controllers: HashMap<RigidBodyHandle, KinematicCharacterControllerHandle>,
     body_entities: HashMap<RigidBodyHandle, Entity>,
     body_colliders: HashMap<RigidBodyHandle, Vec<ColliderHandle>>,
     collider_body: HashMap<ColliderHandle, RigidBodyHandle>,
@@ -69,7 +75,10 @@ impl PhysicsEngine {
             collision_event_recv,
             contact_force_event_recv,
             event_handler,
+            kinematic_character_controllers: HashMap::new(),
+            kinematic_cc_uid: 0,
             entity_bodies: HashMap::new(),
+            body_kinematic_controllers: HashMap::new(),
             body_entities: HashMap::new(),
             body_colliders: HashMap::new(),
             collider_body: HashMap::new(),
@@ -183,6 +192,54 @@ impl PhysicsEngine {
         if let Some(intersections) = self.entity_collisions.get_mut(&entity_two) {
             intersections.retain(|&x| x != entity_one);
         }
+    }
+
+    #[inline]
+    pub fn build_kinematic_character_controller(
+        &mut self,
+        entity: Entity,
+        controller: KinematicCharacterController,
+    ) -> Result<KinematicCharacterControllerHandle, EmeraldError> {
+        if !self.entity_bodies.contains_key(&entity) {
+            return Err(EmeraldError::new(format!(
+                "Cannot build kinematic character controller. Entity {:?} does not have a body.",
+                &entity
+            )));
+        }
+
+        let handle = self.kinematic_cc_uid;
+        let entity_bodies = &self.entity_bodies;
+        let kinematic_character_controllers = &mut self.kinematic_character_controllers;
+        let body_kinematic_controllers = &mut self.body_kinematic_controllers;
+
+        entity_bodies.get(&entity).map(|rbh| {
+            kinematic_character_controllers.insert(handle, controller);
+            body_kinematic_controllers.insert(rbh.clone(), handle);
+        });
+
+        self.kinematic_cc_uid += 1;
+
+        Ok(handle)
+    }
+
+    #[inline]
+    pub fn remove_kinematic_controller(
+        &mut self,
+        entity: Entity,
+    ) -> Option<KinematicCharacterController> {
+        let kinematic_character_controllers = &mut self.kinematic_character_controllers;
+        let entity_bodies = &self.entity_bodies;
+        let body_kinematic_controllers = &self.body_kinematic_controllers;
+
+        entity_bodies
+            .get(&entity)
+            .map(|rbh| {
+                body_kinematic_controllers
+                    .get(&rbh)
+                    .map(|handle| kinematic_character_controllers.remove(handle))
+                    .flatten()
+            })
+            .flatten()
     }
 
     #[inline]
@@ -469,5 +526,39 @@ impl PhysicsEngine {
                 );
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hecs::{Entity, World};
+    use rapier2d::{control::KinematicCharacterController, prelude::RigidBodyHandle};
+
+    use crate::PhysicsEngine;
+
+    fn get_test_entity() -> Entity {
+        let mut world = World::new();
+        world.spawn(())
+    }
+
+    #[test]
+    fn build_kinematic_controller_fails_on_no_rbh_test() {
+        let mut physics_engine = PhysicsEngine::new();
+        let entity = get_test_entity();
+        assert!(physics_engine
+            .build_kinematic_character_controller(entity, KinematicCharacterController::default())
+            .is_err());
+    }
+
+    #[test]
+    fn build_kinematic_controller_succeeds_with_rbh_test() {
+        let mut physics_engine = PhysicsEngine::new();
+        let entity = get_test_entity();
+        physics_engine
+            .entity_bodies
+            .insert(entity.clone(), RigidBodyHandle::default());
+        assert!(physics_engine
+            .build_kinematic_character_controller(entity, KinematicCharacterController::default())
+            .is_ok());
     }
 }

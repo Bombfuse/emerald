@@ -1,4 +1,5 @@
 use hecs::Entity;
+use rapier2d::na::Vector2;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -139,8 +140,13 @@ pub(crate) fn load_ent_from_toml(
     load_ent(loader, world, &mut value, transform)
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Vec2f32Schema {
     pub x: f32,
     pub y: f32,
+}
+impl Vec2f32Schema {
+    pub fn to_vector2(self) -> Vector2<f32> {
+        Vector2::new(self.x, self.y)
+    }
 }

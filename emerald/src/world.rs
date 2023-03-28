@@ -139,7 +139,6 @@ impl World {
         &mut self.resources
     }
 
-
     #[inline]
     pub fn resources_ref(&self) -> &Resources {
         &self.resources

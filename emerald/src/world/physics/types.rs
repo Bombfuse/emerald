@@ -4,6 +4,8 @@ use rapier2d::{parry::query::Ray, prelude::ColliderHandle};
 
 use crate::transform::Translation;
 
+pub type KinematicCharacterControllerHandle = usize;
+
 /// # Parameters
 /// - `ray`: the ray to cast.
 /// - `max_toi`: the maximum time-of-impact that can be reported by this cast. This effectively

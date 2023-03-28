@@ -2,6 +2,7 @@ use crate::physics::*;
 use crate::{EmeraldError, Vector2};
 
 use hecs::Entity;
+use rapier2d::control::KinematicCharacterController;
 use rapier2d::prelude::*;
 
 pub struct PhysicsHandler<'a> {
@@ -98,6 +99,15 @@ impl<'a> PhysicsHandler<'a> {
 
     pub fn rigid_body_mut(&mut self, body_handle: RigidBodyHandle) -> Option<&mut RigidBody> {
         self.physics_engine.bodies.get_mut(body_handle)
+    }
+
+    pub fn build_kinematic_character_controller(
+        &mut self,
+        entity: Entity,
+        controller: KinematicCharacterController,
+    ) -> Result<KinematicCharacterControllerHandle, EmeraldError> {
+        self.physics_engine
+            .build_kinematic_character_controller(entity, controller)
     }
 
     pub fn body_count(&self) -> usize {
