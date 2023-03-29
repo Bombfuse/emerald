@@ -7,7 +7,7 @@ use winit::{
 
 use crate::{
     profiling::profile_cache::ProfileCache, rendering_engine::RenderingEngine,
-    resources::Resources, AssetStore, AudioEngine, Emerald, EmeraldError, Game, GameSettings,
+    resources::Resources, AssetEngine, AudioEngine, Emerald, EmeraldError, Game, GameSettings,
     InputEngine, LoggingEngine,
 };
 
@@ -27,7 +27,7 @@ pub(crate) struct GameEngine {
     audio_engine: AudioEngine,
     profile_cache: ProfileCache,
     input_engine: InputEngine,
-    asset_store: AssetStore,
+    asset_store: AssetEngine,
     logging_engine: LoggingEngine,
     resources: Resources,
 
@@ -40,7 +40,7 @@ impl GameEngine {
         window: &winit::window::Window,
         settings: &GameSettings,
     ) -> Result<Self, EmeraldError> {
-        let mut asset_store = AssetStore::new(settings.title.clone()).unwrap();
+        let mut asset_store = AssetEngine::new();
         let rendering_engine =
             RenderingEngine::new(window, settings.render_settings.clone(), &mut asset_store)
                 .await?;

@@ -1,4 +1,4 @@
-use crate::{audio::sound::SoundInstanceId, AssetStore, EmeraldError, SoundKey};
+use crate::{audio::sound::SoundInstanceId, AssetEngine, EmeraldError, SoundKey};
 
 #[cfg(feature = "audio")]
 mod kira_backend;
@@ -23,12 +23,12 @@ pub(crate) trait Mixer {
     fn play(
         &mut self,
         sound: SoundKey,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Result<SoundInstanceId, EmeraldError>;
     fn play_and_loop(
         &mut self,
         sound: SoundKey,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Result<SoundInstanceId, EmeraldError>;
     fn get_volume(&self) -> Result<f32, EmeraldError>;
     fn set_volume(&mut self, volume: f32) -> Result<(), EmeraldError>;
@@ -86,10 +86,10 @@ pub(crate) fn new_mixer() -> Result<ThreadSafeMixer, EmeraldError> {
 
 pub struct MixerHandler<'a> {
     inner: &'a mut ThreadSafeMixer,
-    asset_store: &'a mut AssetStore,
+    asset_store: &'a mut AssetEngine,
 }
 impl<'a> MixerHandler<'a> {
-    pub(crate) fn new(inner: &'a mut ThreadSafeMixer, asset_store: &'a mut AssetStore) -> Self {
+    pub(crate) fn new(inner: &'a mut ThreadSafeMixer, asset_store: &'a mut AssetEngine) -> Self {
         MixerHandler { inner, asset_store }
     }
 

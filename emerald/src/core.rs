@@ -30,7 +30,7 @@ pub struct Emerald<'c> {
     rendering_engine: &'c mut RenderingEngine,
     logging_engine: &'c mut LoggingEngine,
     input_engine: &'c mut InputEngine,
-    pub(crate) asset_store: &'c mut AssetStore,
+    pub(crate) asset_store: &'c mut AssetEngine,
     profile_cache: &'c mut ProfileCache,
     ctx: &'c mut GameEngineContext,
     resources: &'c mut anymap::AnyMap,
@@ -44,7 +44,7 @@ impl<'c> Emerald<'c> {
         input_engine: &'c mut InputEngine,
         logging_engine: &'c mut LoggingEngine,
         rendering_engine: &'c mut RenderingEngine,
-        asset_store: &'c mut AssetStore,
+        asset_store: &'c mut AssetEngine,
         profile_cache: &'c mut ProfileCache,
         ctx: &'c mut GameEngineContext,
         resources: &'c mut anymap::AnyMap,
@@ -64,19 +64,21 @@ impl<'c> Emerald<'c> {
     }
 
     pub fn set_asset_folder_root(&mut self, root: String) {
-        self.asset_store.set_asset_folder_root(root);
+        // self.asset_store.set_asset_folder_root(root);
     }
 
     pub fn set_user_data_folder_root(&mut self, root: String) {
-        self.asset_store.set_user_data_folder_root(root);
+        // self.asset_store.set_user_data_folder_root(root);
     }
 
     pub fn get_asset_folder_root(&mut self) -> String {
-        self.asset_store.get_asset_folder_root()
+        // self.asset_store.get_asset_folder_root()
+        "".to_string()
     }
 
     pub fn get_user_data_folder_root(&mut self) -> String {
-        self.asset_store.get_user_data_folder_root()
+        // self.asset_store.get_user_data_folder_root()
+        "".to_string()
     }
 
     pub fn set_cursor(&mut self, cursor: CursorIcon) {

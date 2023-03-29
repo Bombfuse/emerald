@@ -1,8 +1,6 @@
 use crate::assets::*;
 use crate::audio::*;
-use crate::ent::load_ent;
 use crate::ent::load_ent_from_toml;
-use crate::ent::EntLoadConfig;
 use crate::font::Font;
 use crate::font::FontImage;
 use crate::font::FontKey;
@@ -47,52 +45,55 @@ impl Default for AssetLoadConfig {
 }
 
 pub struct AssetLoader<'c> {
-    pub(crate) asset_store: &'c mut AssetStore,
+    pub(crate) asset_engine: &'c mut AssetEngine,
     rendering_engine: &'c mut RenderingEngine,
     _audio_engine: &'c mut AudioEngine,
 }
 impl<'c> AssetLoader<'c> {
     pub(crate) fn new(
-        asset_store: &'c mut AssetStore,
+        asset_engine: &'c mut AssetEngine,
         rendering_engine: &'c mut RenderingEngine,
         _audio_engine: &'c mut AudioEngine,
     ) -> Self {
         AssetLoader {
-            asset_store,
+            asset_engine,
             rendering_engine,
             _audio_engine,
         }
     }
 
     pub fn set_custom_component_loader(&mut self, custom_component_loader: CustomComponentLoader) {
-        self.asset_store.load_config.custom_component_loader = Some(custom_component_loader);
+        // self.asset_store.load_config.custom_component_loader = Some(custom_component_loader);
     }
 
     pub fn set_world_resource_loader(&mut self, world_resource_loader: WorldResourceLoader) {
-        self.asset_store.load_config.world_resource_loader = Some(world_resource_loader);
+        // self.asset_store.load_config.world_resource_loader = Some(world_resource_loader);
     }
 
     /// Retrieves bytes from the assets directory of the game
     pub fn asset_bytes<T: AsRef<str>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
-        let path: &str = file_path.as_ref();
-        if let Some(bytes) = self.asset_store.get_asset_bytes(&path) {
-            return Ok(bytes);
-        }
+        // let path: &str = file_path.as_ref();
+        // if let Some(bytes) = self.asset_store.get_asset_bytes(&path) {
+        //     return Ok(bytes);
+        // }
 
-        let bytes = self.asset_store.read_asset_file(&path)?;
+        // let bytes = self.asset_store.read_asset_file(&path)?;
 
-        Ok(bytes)
+        // Ok(bytes)
+
+        Ok(Vec::new())
     }
 
     /// Retrieves bytes from a file in the user directory of the game
     pub fn user_bytes<T: AsRef<str>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
-        let path: &str = file_path.as_ref();
-        if let Some(bytes) = self.asset_store.get_user_bytes(&path) {
-            return Ok(bytes);
-        }
+        // let path: &str = file_path.as_ref();
+        // if let Some(bytes) = self.asset_store.get_user_bytes(&path) {
+        //     return Ok(bytes);
+        // }
 
-        let bytes = self.asset_store.read_user_file(&path)?;
-        Ok(bytes)
+        // let bytes = self.asset_store.read_user_file(&path)?;
+        // Ok(bytes)
+        Ok(Vec::new())
     }
 
     /// Loads bytes from given path as a string
@@ -111,32 +112,32 @@ impl<'c> AssetLoader<'c> {
         let file_path: &str = file_path.as_ref();
         let key = FontKey::new(file_path.clone(), font_size);
 
-        if self.asset_store.get_font(&key).is_some() {
-            return Ok(key);
-        }
+        // if self.asset_store.get_font(&key).is_some() {
+        //     return Ok(key);
+        // }
 
-        let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
-        let font_texture_key = self.rendering_engine.load_texture_ext(
-            &mut self.asset_store,
-            font_image.width as u32,
-            font_image.height as u32,
-            &font_image.bytes,
-            TextureKey::new(key.0.clone()),
-        )?;
-        let font_bytes = self.asset_bytes(file_path)?;
+        // let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
+        // let font_texture_key = self.rendering_engine.load_texture_ext(
+        //     &mut self.asset_store,
+        //     font_image.width as u32,
+        //     font_image.height as u32,
+        //     &font_image.bytes,
+        //     TextureKey::new(key.0.clone()),
+        // )?;
+        // let font_bytes = self.asset_bytes(file_path)?;
 
-        let font_settings = fontdue::FontSettings {
-            scale: font_size as f32,
-            ..Default::default()
-        };
-        let inner_font = match fontdue::Font::from_bytes(font_bytes, font_settings) {
-            Ok(font) => font,
-            Err(e) => return Err(EmeraldError::new(e)),
-        };
-        let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
-        self.asset_store
-            .insert_fontdue_font(key.clone(), inner_font);
-        self.asset_store.insert_font(key.clone(), font)?;
+        // let font_settings = fontdue::FontSettings {
+        //     scale: font_size as f32,
+        //     ..Default::default()
+        // };
+        // let inner_font = match fontdue::Font::from_bytes(font_bytes, font_settings) {
+        //     Ok(font) => font,
+        //     Err(e) => return Err(EmeraldError::new(e)),
+        // };
+        // let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
+        // self.asset_store
+        //     .insert_fontdue_font(key.clone(), inner_font);
+        // self.asset_store.insert_font(key.clone(), font)?;
 
         Ok(key)
     }
@@ -192,15 +193,18 @@ impl<'c> AssetLoader<'c> {
 
     pub fn texture<T: AsRef<str>>(&mut self, path: T) -> Result<TextureKey, EmeraldError> {
         let path: &str = path.as_ref();
-        let key = TextureKey::new(path.clone());
 
-        if self.asset_store.get_texture(&key).is_some() {
-            return Ok(key);
-        }
+        // let key = TextureKey::new(path.clone());
 
-        let data = self.asset_bytes(path)?;
-        self.rendering_engine
-            .load_texture(&mut self.asset_store, &data, key)
+        // if self.asset_store.get_texture(&key).is_some() {
+        //     return Ok(key);
+        // }
+
+        // let data = self.asset_bytes(path)?;
+        // self.rendering_engine
+        //     .load_texture(&mut self.asset_store, &data, key);
+
+        // Ok(key)
     }
 
     /// Creating render textures is slightly expensive and should be used conservatively.
@@ -235,21 +239,21 @@ impl<'c> AssetLoader<'c> {
         };
 
         let key = SoundKey::new(path.clone(), sound_format);
-        if self.asset_store.contains_sound(&key) {
-            return Ok(key);
-        }
-        let sound_bytes = self.asset_bytes(path.clone())?;
-        let sound = Sound::new(sound_bytes, sound_format)?;
+        // if self.asset_store.contains_sound(&key) {
+        //     return Ok(key);
+        // }
+        // let sound_bytes = self.asset_bytes(path.clone())?;
+        // let sound = Sound::new(sound_bytes, sound_format)?;
 
-        if !self.asset_store.contains_sound(&key) {
-            self.asset_store.insert_sound(key.clone(), sound);
-        }
+        // if !self.asset_store.contains_sound(&key) {
+        //     self.asset_store.insert_sound(key.clone(), sound);
+        // }
 
         Ok(key)
     }
 
     pub fn pack_asset_bytes(&mut self, name: &str, bytes: Vec<u8>) -> Result<(), EmeraldError> {
-        self.asset_store.insert_asset_bytes(name.into(), bytes)?;
+        // self.asset_store.insert_asset_bytes(name.into(), bytes)?;
 
         Ok(())
     }
@@ -275,7 +279,7 @@ impl<'c> AssetLoader<'c> {
 
 #[cfg(feature = "hotreload")]
 pub(crate) mod hotreload {
-    use crate::{texture::TextureKey, AssetLoader, AssetStore};
+    use crate::{texture::TextureKey, AssetEngine, AssetLoader};
 
     #[derive(Clone, Copy, PartialEq, Eq)]
     pub enum HotReloadAssetType {
@@ -288,7 +292,7 @@ pub(crate) mod hotreload {
         pub asset_type: HotReloadAssetType,
     }
 
-    pub(crate) fn on_insert_texture(asset_store: &mut AssetStore, texture_path: &str) {
+    pub(crate) fn on_insert_texture(asset_store: &mut AssetEngine, texture_path: &str) {
         match std::fs::metadata(&texture_path) {
             Ok(metadata) => {
                 if let Ok(system_time) = metadata.modified() {
@@ -297,7 +301,7 @@ pub(crate) mod hotreload {
                         asset_type: HotReloadAssetType::Texture,
                     };
 
-                    asset_store
+                    asset_engine
                         .file_hot_reload_metadata
                         .insert(texture_path.to_string(), hot_reload_metadata);
                 }

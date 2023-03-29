@@ -21,7 +21,7 @@ use crate::{
     },
     texture::{Texture, TextureKey},
     tilemap::Tilemap,
-    AssetStore, Color, EmeraldError, Rectangle, Scale, Transform, Translation, UIButton, World,
+    AssetEngine, Color, EmeraldError, Rectangle, Scale, Transform, Translation, UIButton, World,
 };
 
 use super::components::{get_bounding_box_of_triangle, Camera, ColorRect, ColorTri, Label, Sprite};
@@ -113,7 +113,7 @@ impl RenderingEngine {
     pub async fn new(
         window: &winit::window::Window,
         settings: RenderSettings,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Result<Self, EmeraldError> {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(wgpu::Backends::all());
@@ -282,7 +282,7 @@ impl RenderingEngine {
         &mut self,
         world: &mut World,
         transform: Transform,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Result<(), EmeraldError> {
         let (camera, camera_transform) = get_camera_and_camera_transform(world);
         let camera_transform = camera_transform - transform;
@@ -319,7 +319,7 @@ impl RenderingEngine {
     pub fn draw_world(
         &mut self,
         world: &mut World,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Result<(), EmeraldError> {
         self.draw_world_with_transform(world, Transform::default(), asset_store)
     }
@@ -327,50 +327,50 @@ impl RenderingEngine {
     #[inline]
     pub fn push_draw_command(
         &mut self,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         draw_command: DrawCommand,
     ) -> Result<(), EmeraldError> {
-        match &draw_command.drawable {
-            Drawable::Label { label } => {
-                // prepass for caching glyphs, ideally we can do this inline
-                {
-                    self.layout.reset(&Default::default());
+        // match &draw_command.drawable {
+        //     Drawable::Label { label } => {
+        //         // prepass for caching glyphs, ideally we can do this inline
+        //         {
+        //             self.layout.reset(&Default::default());
 
-                    if let Some(font) = asset_store.get_fontdue_font(&label.font_key) {
-                        self.layout.append(
-                            &[font],
-                            &TextStyle::new(&label.text, label.font_size as f32, 0),
-                        );
-                    }
+        //             if let Some(font) = asset_store.get_fontdue_font(&label.font_key) {
+        //                 self.layout.append(
+        //                     &[font],
+        //                     &TextStyle::new(&label.text, label.font_size as f32, 0),
+        //                 );
+        //             }
 
-                    let mut to_cache = Vec::new();
-                    for glyph in self.layout.glyphs() {
-                        if let Some(font) = asset_store.get_font(&label.font_key) {
-                            if !font.characters.contains_key(&glyph.key) {
-                                to_cache.push(glyph.key);
-                            }
-                        }
-                    }
+        //             let mut to_cache = Vec::new();
+        //             for glyph in self.layout.glyphs() {
+        //                 if let Some(font) = asset_store.get_font(&label.font_key) {
+        //                     if !font.characters.contains_key(&glyph.key) {
+        //                         to_cache.push(glyph.key);
+        //                     }
+        //                 }
+        //             }
 
-                    for glyph_key in to_cache {
-                        crate::font::cache_glyph(
-                            self,
-                            asset_store,
-                            &label.font_key,
-                            glyph_key,
-                            label.font_size,
-                        )?;
-                    }
-                }
-            }
-            _ => {}
-        }
+        //             for glyph_key in to_cache {
+        //                 crate::font::cache_glyph(
+        //                     self,
+        //                     asset_store,
+        //                     &label.font_key,
+        //                     glyph_key,
+        //                     label.font_size,
+        //                 )?;
+        //             }
+        //         }
+        //     }
+        //     _ => {}
+        // }
 
         self.draw_queue.push_front(draw_command);
         Ok(())
     }
 
-    pub fn begin(&mut self, _asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+    pub fn begin(&mut self, _asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
         if self.active_render_texture_key.is_some() {
             return Err(EmeraldError::new("Cannot begin render. There is an active render_texture. Please finish rendering to your texture before beginning the final render pass."));
         }
@@ -381,7 +381,7 @@ impl RenderingEngine {
     pub fn begin_texture(
         &mut self,
         texture_key: TextureKey,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Result<(), EmeraldError> {
         if self.active_render_texture_key.is_some() {
             return Err(EmeraldError::new("Unable to begin_texture, a render texture is already active. Please complete your render pass on the texture before beginning another."));
@@ -394,7 +394,7 @@ impl RenderingEngine {
 
     pub fn render_texture(
         &mut self,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Result<TextureKey, EmeraldError> {
         match self.active_render_texture_key.take() {
             None => {
@@ -403,24 +403,24 @@ impl RenderingEngine {
             ));
             }
             Some(texture_key) => {
-                if let Some(texture) = asset_store.get_texture(&texture_key) {
-                    let view = texture.texture.create_view(&wgpu::TextureViewDescriptor {
-                        format: Some(self.config.format),
-                        ..Default::default()
-                    });
+                // if let Some(texture) = asset_store.get_texture(&texture_key) {
+                //     let view = texture.texture.create_view(&wgpu::TextureViewDescriptor {
+                //         format: Some(self.config.format),
+                //         ..Default::default()
+                //     });
 
-                    self.render_to_view(
-                        asset_store,
-                        view,
-                        PhysicalSize::new(texture.size.width, texture.size.height),
-                        &format!("render texture {:?}", texture_key),
-                    )?;
-                    return Ok(texture_key);
-                }
+                //     self.render_to_view(
+                //         asset_store,
+                //         view,
+                //         PhysicalSize::new(texture.size.width, texture.size.height),
+                //         &format!("render texture {:?}", texture_key),
+                //     )?;
+                //     return Ok(texture_key);
+                // }
 
                 Err(EmeraldError::new(format!(
                     "Unable to find texture {:?}",
-                    texture_key
+                    texture_key.get_path()
                 )))
             }
         }
@@ -428,13 +428,13 @@ impl RenderingEngine {
 
     pub fn load_texture(
         &mut self,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         data: &[u8],
         key: TextureKey,
     ) -> Result<TextureKey, EmeraldError> {
-        if asset_store.get_texture(&key).is_some() {
-            return Ok(key);
-        }
+        // if asset_store.get_texture(&key).is_some() {
+        //     return Ok(key);
+        // }
 
         Texture::from_bytes(
             &mut self.bind_groups,
@@ -449,15 +449,15 @@ impl RenderingEngine {
 
     pub fn load_texture_ext(
         &mut self,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         width: u32,
         height: u32,
         data: &[u8],
         key: TextureKey,
     ) -> Result<TextureKey, EmeraldError> {
-        if asset_store.get_texture(&key).is_some() {
-            return Ok(key);
-        }
+        // if asset_store.get_texture(&key).is_some() {
+        //     return Ok(key);
+        // }
 
         Texture::new(
             &mut self.bind_groups,
@@ -474,7 +474,7 @@ impl RenderingEngine {
 
     fn render_to_view(
         &mut self,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         view: TextureView,
         view_size: PhysicalSize<u32>,
         view_name: &str,
@@ -514,7 +514,7 @@ impl RenderingEngine {
         Ok(())
     }
 
-    pub fn render(&mut self, asset_store: &mut AssetStore) -> Result<(), EmeraldError> {
+    pub fn render(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
         let surface_texture = match self.surface.get_current_texture() {
             Ok(surface_texture) => Ok(surface_texture),
             Err(e) => {
@@ -541,7 +541,7 @@ impl RenderingEngine {
         &mut self,
         width: u32,
         height: u32,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Result<TextureKey, EmeraldError> {
         let data = (0..(width * height * 4))
             .into_iter()
@@ -568,7 +568,7 @@ impl RenderingEngine {
     fn consume_draw_queue<'a>(
         &'a mut self,
         render_pass: &mut wgpu::RenderPass<'a>,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Result<(), EmeraldError> {
         render_pass.set_pipeline(&self.texture_quad_render_pipeline);
 
@@ -685,17 +685,17 @@ impl RenderingEngine {
                         ..LayoutSettings::default()
                     });
 
-                    if let Some(font) = asset_store.get_fontdue_font(&label.font_key) {
-                        self.layout.append(
-                            &[font],
-                            &TextStyle::new(&label.text, label.font_size as f32, 0),
-                        );
-                    } else {
-                        return Err(EmeraldError::new(format!(
-                            "Font {:?} was not found in the asset store.",
-                            &label.font_key
-                        )));
-                    }
+                    // if let Some(font) = asset_store.get_fontdue_font(&label.font_key) {
+                    //     self.layout.append(
+                    //         &[font],
+                    //         &TextStyle::new(&label.text, label.font_size as f32, 0),
+                    //     );
+                    // } else {
+                    //     return Err(EmeraldError::new(format!(
+                    //         "Font {:?} was not found in the asset store.",
+                    //         &label.font_key
+                    //     )));
+                    // }
 
                     let mut remaining_char_count = if label.visible_characters < 0 {
                         label.text.len() as i64
@@ -709,58 +709,58 @@ impl RenderingEngine {
                         let x = glyph.x;
                         let y = glyph.y;
 
-                        if let Some(font) = asset_store.get_font_mut(&label.font_key) {
-                            if !font.characters.contains_key(&glyph_key) {
-                                return Err(EmeraldError::new(format!(
-                                    "Font {:?} does not contain cached glyph {:?}",
-                                    font.font_texture_key, glyph_key
-                                )));
-                            }
+                        // if let Some(font) = asset_store.get_font_mut(&label.font_key) {
+                        //     if !font.characters.contains_key(&glyph_key) {
+                        //         return Err(EmeraldError::new(format!(
+                        //             "Font {:?} does not contain cached glyph {:?}",
+                        //             font.font_texture_key, glyph_key
+                        //         )));
+                        //     }
 
-                            let font_data = &font.characters[&glyph_key];
-                            let left_coord = (font_data.offset_x as f32 + x) * label.scale;
-                            let top_coord = y * label.scale;
+                        //     let font_data = &font.characters[&glyph_key];
+                        //     let left_coord = (font_data.offset_x as f32 + x) * label.scale;
+                        //     let top_coord = y * label.scale;
 
-                            let target = Rectangle::new(
-                                font_data.glyph_x as f32,
-                                font_data.glyph_y as f32,
-                                font_data.glyph_w as f32,
-                                font_data.glyph_h as f32,
-                            );
+                        //     let target = Rectangle::new(
+                        //         font_data.glyph_x as f32,
+                        //         font_data.glyph_y as f32,
+                        //         font_data.glyph_w as f32,
+                        //         font_data.glyph_h as f32,
+                        //     );
 
-                            let mut transform = draw_command.transform;
-                            transform.translation.x += label.offset.x + left_coord;
-                            transform.translation.y += label.offset.y + top_coord;
+                        //     let mut transform = draw_command.transform;
+                        //     transform.translation.x += label.offset.x + left_coord;
+                        //     transform.translation.y += label.offset.y + top_coord;
 
-                            let scale = Vector2::new(label.scale, label.scale);
-                            let offset = label.offset;
-                            let rotation = 0.0;
-                            if label.centered {
-                                if let Some(width) = &label.max_width {
-                                    transform.translation.x -= width / 2.0;
-                                }
-                            }
+                        //     let scale = Vector2::new(label.scale, label.scale);
+                        //     let offset = label.offset;
+                        //     let rotation = 0.0;
+                        //     if label.centered {
+                        //         if let Some(width) = &label.max_width {
+                        //             transform.translation.x -= width / 2.0;
+                        //         }
+                        //     }
 
-                            if remaining_char_count < 0 || target.is_zero_sized() {
-                                continue;
-                            }
+                        //     if remaining_char_count < 0 || target.is_zero_sized() {
+                        //         continue;
+                        //     }
 
-                            to_draw.push((
-                                font.font_texture_key.clone(),
-                                target,
-                                offset,
-                                scale,
-                                rotation,
-                                transform,
-                            ));
+                        //     to_draw.push((
+                        //         font.font_texture_key.clone(),
+                        //         target,
+                        //         offset,
+                        //         scale,
+                        //         rotation,
+                        //         transform,
+                        //     ));
 
-                            remaining_char_count -= 1;
-                        } else {
-                            return Err(EmeraldError::new(format!(
-                                "Font not found: {:?}",
-                                label.font_key
-                            )));
-                        }
+                        //     remaining_char_count -= 1;
+                        // } else {
+                        //     return Err(EmeraldError::new(format!(
+                        //         "Font not found: {:?}",
+                        //         label.font_key
+                        //     )));
+                        // }
                     }
                     for (texture_key, target, offset, scale, rotation, transform) in to_draw {
                         draw_textured_quad(
@@ -793,71 +793,71 @@ impl RenderingEngine {
                     if !visible {
                         continue;
                     }
-                    let tileset_width;
-                    let tileset_height;
+                    // let tileset_width;
+                    // let tileset_height;
 
-                    if let Some(texture) = asset_store.get_texture(&texture_key) {
-                        tileset_width = texture.size.width as usize / tile_size.x;
-                        tileset_height = texture.size.height as usize / tile_size.y;
-                    } else {
-                        return Err(EmeraldError::new(format!(
-                            "Tilemap Texture {:?} not found.",
-                            texture_key
-                        )));
-                    }
+                    // if let Some(texture) = asset_store.get_texture(&texture_key) {
+                    //     tileset_width = texture.size.width as usize / tile_size.x;
+                    //     tileset_height = texture.size.height as usize / tile_size.y;
+                    // } else {
+                    //     return Err(EmeraldError::new(format!(
+                    //         "Tilemap Texture {:?} not found.",
+                    //         texture_key
+                    //     )));
+                    // }
 
-                    let tile_width = tile_size.x as f32;
-                    let tile_height = tile_size.y as f32;
+                    // let tile_width = tile_size.x as f32;
+                    // let tile_height = tile_size.y as f32;
 
-                    let mut x = 0;
-                    let mut y = 0;
-                    for tile in tiles {
-                        if tile >= 0 {
-                            let tile_id = tile as usize;
+                    // let mut x = 0;
+                    // let mut y = 0;
+                    // for tile in tiles {
+                    //     if tile >= 0 {
+                    //         let tile_id = tile as usize;
 
-                            let tile_x = tile_id % tileset_width;
-                            let tile_y = tileset_height - 1 - tile_id / tileset_width;
-                            let target = Rectangle::new(
-                                tile_x as f32 * tile_width,
-                                tile_y as f32 * tile_height,
-                                tile_width,
-                                tile_height,
-                            );
-                            let translation = draw_command.transform.translation.clone()
-                                + Translation::new(tile_width * x as f32, tile_height * y as f32);
+                    //         let tile_x = tile_id % tileset_width;
+                    //         let tile_y = tileset_height - 1 - tile_id / tileset_width;
+                    //         let target = Rectangle::new(
+                    //             tile_x as f32 * tile_width,
+                    //             tile_y as f32 * tile_height,
+                    //             tile_width,
+                    //             tile_height,
+                    //         );
+                    //         let translation = draw_command.transform.translation.clone()
+                    //             + Translation::new(tile_width * x as f32, tile_height * y as f32);
 
-                            let offset = Vector2::new(0.0, 0.0);
-                            let scale = Vector2::new(1.0, 1.0);
-                            let rotation = 0.0;
-                            let centered = true;
-                            let color = crate::colors::WHITE;
-                            let transform = Transform::from_translation(translation);
-                            let active_size = self.active_size;
+                    //         let offset = Vector2::new(0.0, 0.0);
+                    //         let scale = Vector2::new(1.0, 1.0);
+                    //         let rotation = 0.0;
+                    //         let centered = true;
+                    //         let color = crate::colors::WHITE;
+                    //         let transform = Transform::from_translation(translation);
+                    //         let active_size = self.active_size;
 
-                            draw_textured_quad(
-                                asset_store,
-                                texture_key.clone(),
-                                target,
-                                offset,
-                                scale,
-                                rotation,
-                                centered,
-                                color,
-                                transform,
-                                active_size,
-                                &mut self.vertices,
-                                &mut self.indices,
-                                &mut textured_tri_draws,
-                                &self.settings,
-                            )?;
-                        }
+                    //         draw_textured_quad(
+                    //             asset_store,
+                    //             texture_key.clone(),
+                    //             target,
+                    //             offset,
+                    //             scale,
+                    //             rotation,
+                    //             centered,
+                    //             color,
+                    //             transform,
+                    //             active_size,
+                    //             &mut self.vertices,
+                    //             &mut self.indices,
+                    //             &mut textured_tri_draws,
+                    //             &self.settings,
+                    //         )?;
+                    //     }
 
-                        x += 1;
-                        if x >= width {
-                            x = 0;
-                            y += 1;
-                        }
-                    }
+                    //     x += 1;
+                    //     if x >= width {
+                    //         x = 0;
+                    //         y += 1;
+                    //     }
+                    // }
                 }
             }
         }
@@ -892,7 +892,7 @@ impl RenderingEngine {
 
         for draw_call in textured_tri_draws {
             let indices_count = draw_call.count() as u32 * draw_call.indices_per_draw as u32;
-            if let Some(texture_bind_group) = self.bind_groups.get(&draw_call.key.0) {
+            if let Some(texture_bind_group) = self.bind_groups.get(draw_call.key.get_path()) {
                 render_pass.set_bind_group(0, texture_bind_group, &[]);
 
                 render_pass
@@ -906,7 +906,7 @@ impl RenderingEngine {
             } else {
                 return Err(EmeraldError::new(format!(
                     "Unable to find texture bind group for {:?}",
-                    &draw_call.key.0
+                    &draw_call.key.get_path()
                 )));
             }
         }
@@ -916,7 +916,7 @@ impl RenderingEngine {
     #[inline]
     pub fn draw_label(
         &mut self,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         label: &Label,
         transform: &Transform,
     ) -> Result<(), EmeraldError> {
@@ -935,30 +935,30 @@ impl RenderingEngine {
     #[inline]
     pub fn update_font_texture(
         &mut self,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         key: &FontKey,
     ) -> Result<(), EmeraldError> {
-        if let Some(font) = asset_store.get_font(key) {
-            if let Some(texture) = asset_store.get_texture(&font.font_texture_key) {
-                self.queue.write_texture(
-                    wgpu::ImageCopyTexture {
-                        aspect: wgpu::TextureAspect::All,
-                        texture: &texture.texture,
-                        mip_level: 0,
-                        origin: wgpu::Origin3d::ZERO,
-                    },
-                    &font.font_image.bytes,
-                    wgpu::ImageDataLayout {
-                        offset: 0,
-                        bytes_per_row: std::num::NonZeroU32::new(4 * font.font_image.width as u32),
-                        rows_per_image: std::num::NonZeroU32::new(font.font_image.height as u32),
-                    },
-                    texture.size,
-                );
+        // if let Some(font) = asset_store.get_font(key) {
+        //     if let Some(texture) = asset_store.get_texture(&font.font_texture_key) {
+        //         self.queue.write_texture(
+        //             wgpu::ImageCopyTexture {
+        //                 aspect: wgpu::TextureAspect::All,
+        //                 texture: &texture.texture,
+        //                 mip_level: 0,
+        //                 origin: wgpu::Origin3d::ZERO,
+        //             },
+        //             &font.font_image.bytes,
+        //             wgpu::ImageDataLayout {
+        //                 offset: 0,
+        //                 bytes_per_row: std::num::NonZeroU32::new(4 * font.font_image.width as u32),
+        //                 rows_per_image: std::num::NonZeroU32::new(font.font_image.height as u32),
+        //             },
+        //             texture.size,
+        //         );
 
-                return Ok(());
-            }
-        }
+        //         return Ok(());
+        //     }
+        // }
 
         Err(EmeraldError::new(format!(
             "Unable to update font texture {:?}",
@@ -976,7 +976,7 @@ const TEXTURED_QUAD_VERTEX_SET_SIZE: u64 = VERTEX_SIZE * TEXTURED_QUAD_VERTICES_
 const TEXTURED_QUAD_INDICES_SET_SIZE: u64 = INDEX_SIZE * TEXTURED_QUAD_INDICES_PER_DRAW as u64; // 6 indices to draw a quad using 4 vertices
 
 fn draw_textured_quad(
-    asset_store: &mut AssetStore,
+    asset_store: &mut AssetEngine,
     texture_key: TextureKey,
     mut target: Rectangle,
     offset: Vector2<f32>,
@@ -991,172 +991,172 @@ fn draw_textured_quad(
     textured_tri_draws: &mut Vec<TexturedTriDraw>,
     settings: &RenderSettings,
 ) -> Result<(), EmeraldError> {
-    let texture_size;
-    if let Some(texture) = asset_store.get_texture(&texture_key) {
-        texture_size = (texture.size.width as f32, texture.size.height as f32);
+    // let texture_size;
+    // if let Some(texture) = asset_store.get_texture(&texture_key) {
+    //     texture_size = (texture.size.width as f32, texture.size.height as f32);
 
-        // Zeroed target means display entire texture
-        if target.is_zero_sized() {
-            target.width = texture_size.0;
-            target.height = texture_size.1;
-        }
-    } else {
-        return Err(EmeraldError::new(format!(
-            "Unable to find texture {:?}",
-            texture_key
-        )));
-    }
+    //     // Zeroed target means display entire texture
+    //     if target.is_zero_sized() {
+    //         target.width = texture_size.0;
+    //         target.height = texture_size.1;
+    //     }
+    // } else {
+    //     return Err(EmeraldError::new(format!(
+    //         "Unable to find texture {:?}",
+    //         texture_key
+    //     )));
+    // }
 
-    // Add magic numbers to target semi-middle of pixels
-    target.x += 0.275;
-    target.y += 0.275;
+    // // Add magic numbers to target semi-middle of pixels
+    // target.x += 0.275;
+    // target.y += 0.275;
 
-    let mut x = transform.translation.x + offset.x;
-    let mut y = transform.translation.y + offset.y;
+    // let mut x = transform.translation.x + offset.x;
+    // let mut y = transform.translation.y + offset.y;
 
-    if settings.pixel_snap {
-        x = x.floor();
-        y = y.floor();
-    }
+    // if settings.pixel_snap {
+    //     x = x.floor();
+    //     y = y.floor();
+    // }
 
-    let x = x / (active_size.width as f32 / 2.0);
-    let y = y / (active_size.height as f32 / 2.0);
+    // let x = x / (active_size.width as f32 / 2.0);
+    // let y = y / (active_size.height as f32 / 2.0);
 
-    let normalized_texture_size = (
-        target.width / (active_size.width as f32 / 2.0),
-        target.height / (active_size.height as f32 / 2.0),
-    );
+    // let normalized_texture_size = (
+    //     target.width / (active_size.width as f32 / 2.0),
+    //     target.height / (active_size.height as f32 / 2.0),
+    // );
 
-    {
-        let x = target.x / texture_size.0;
-        let y = target.y / texture_size.1;
-        let width = target.width / texture_size.0;
-        let height = target.height / texture_size.1;
-        target = Rectangle::new(x, y, width, height);
-    }
+    // {
+    //     let x = target.x / texture_size.0;
+    //     let y = target.y / texture_size.1;
+    //     let width = target.width / texture_size.0;
+    //     let height = target.height / texture_size.1;
+    //     target = Rectangle::new(x, y, width, height);
+    // }
 
-    let width = normalized_texture_size.0 * scale.x;
-    let height = normalized_texture_size.1 * scale.y;
-    let mut vertex_rect = Rectangle::new(x, y, width, height);
+    // let width = normalized_texture_size.0 * scale.x;
+    // let height = normalized_texture_size.1 * scale.y;
+    // let mut vertex_rect = Rectangle::new(x, y, width, height);
 
-    if centered {
-        vertex_rect.x -= width / 2.0;
-        vertex_rect.y -= height / 2.0;
-    }
-    let center_x = vertex_rect.x + vertex_rect.width / 2.0;
-    let center_y = vertex_rect.y + vertex_rect.height / 2.0;
+    // if centered {
+    //     vertex_rect.x -= width / 2.0;
+    //     vertex_rect.y -= height / 2.0;
+    // }
+    // let center_x = vertex_rect.x + vertex_rect.width / 2.0;
+    // let center_y = vertex_rect.y + vertex_rect.height / 2.0;
 
-    fn rotate_vertex(center_x: f32, center_y: f32, x: f32, y: f32, rotation: f32) -> [f32; 2] {
-        let diff_x = x - center_x;
-        let diff_y = y - center_y;
-        [
-            center_x + (rotation.cos() * diff_x) - (rotation.sin() * diff_y),
-            center_y + (rotation.sin() * diff_x) + (rotation.cos() * diff_y),
-        ]
-    }
+    // fn rotate_vertex(center_x: f32, center_y: f32, x: f32, y: f32, rotation: f32) -> [f32; 2] {
+    //     let diff_x = x - center_x;
+    //     let diff_y = y - center_y;
+    //     [
+    //         center_x + (rotation.cos() * diff_x) - (rotation.sin() * diff_y),
+    //         center_y + (rotation.sin() * diff_x) + (rotation.cos() * diff_y),
+    //     ]
+    // }
 
-    let color = color.to_percentage_slice();
-    let vertex_set = [
-        // Changed
-        Vertex {
-            position: rotate_vertex(
-                center_x,
-                center_y,
-                vertex_rect.x,
-                vertex_rect.y + vertex_rect.height,
-                rotation,
-            ),
-            tex_coords: [target.x, target.y],
-            color,
-        }, // A
-        Vertex {
-            position: rotate_vertex(center_x, center_y, vertex_rect.x, vertex_rect.y, rotation),
-            tex_coords: [target.x, target.y + target.height],
-            color,
-        }, // B
-        Vertex {
-            position: rotate_vertex(
-                center_x,
-                center_y,
-                vertex_rect.x + vertex_rect.width,
-                vertex_rect.y,
-                rotation,
-            ),
-            tex_coords: [target.x + target.width, target.y + target.height],
-            color,
-        }, // C
-        Vertex {
-            position: rotate_vertex(
-                center_x,
-                center_y,
-                vertex_rect.x + vertex_rect.width,
-                vertex_rect.y + vertex_rect.height,
-                rotation,
-            ),
-            tex_coords: [target.x + target.width, target.y],
-            color,
-        },
-    ];
+    // let color = color.to_percentage_slice();
+    // let vertex_set = [
+    //     // Changed
+    //     Vertex {
+    //         position: rotate_vertex(
+    //             center_x,
+    //             center_y,
+    //             vertex_rect.x,
+    //             vertex_rect.y + vertex_rect.height,
+    //             rotation,
+    //         ),
+    //         tex_coords: [target.x, target.y],
+    //         color,
+    //     }, // A
+    //     Vertex {
+    //         position: rotate_vertex(center_x, center_y, vertex_rect.x, vertex_rect.y, rotation),
+    //         tex_coords: [target.x, target.y + target.height],
+    //         color,
+    //     }, // B
+    //     Vertex {
+    //         position: rotate_vertex(
+    //             center_x,
+    //             center_y,
+    //             vertex_rect.x + vertex_rect.width,
+    //             vertex_rect.y,
+    //             rotation,
+    //         ),
+    //         tex_coords: [target.x + target.width, target.y + target.height],
+    //         color,
+    //     }, // C
+    //     Vertex {
+    //         position: rotate_vertex(
+    //             center_x,
+    //             center_y,
+    //             vertex_rect.x + vertex_rect.width,
+    //             vertex_rect.y + vertex_rect.height,
+    //             rotation,
+    //         ),
+    //         tex_coords: [target.x + target.width, target.y],
+    //         color,
+    //     },
+    // ];
 
-    if settings.frustrum_culling {
-        // Use vertex set bounding box for frustrum culling
-        if !Rectangle::new(-1.0, -1.0, 2.0, 2.0).intersects_with(&vertex_rect) {
-            return Ok(());
-        }
-    }
+    // if settings.frustrum_culling {
+    //     // Use vertex set bounding box for frustrum culling
+    //     if !Rectangle::new(-1.0, -1.0, 2.0, 2.0).intersects_with(&vertex_rect) {
+    //         return Ok(());
+    //     }
+    // }
 
-    let len = textured_tri_draws.len();
-    let same_texture = len > 0
-        && textured_tri_draws
-            .last()
-            .filter(|draw| {
-                draw.key.0 == texture_key.0
-                    && draw.indices_per_draw == TEXTURED_QUAD_INDICES_PER_DRAW // check that the previous draw is also for quads
-                    && draw.vertices_per_draw == TEXTURED_QUAD_VERTICES_PER_DRAW
-            })
-            .is_some();
+    // let len = textured_tri_draws.len();
+    // let same_texture = len > 0
+    //     && textured_tri_draws
+    //         .last()
+    //         .filter(|draw| {
+    //             draw.key.0 == texture_key.0
+    //                 && draw.indices_per_draw == TEXTURED_QUAD_INDICES_PER_DRAW // check that the previous draw is also for quads
+    //                 && draw.vertices_per_draw == TEXTURED_QUAD_VERTICES_PER_DRAW
+    //         })
+    //         .is_some();
 
-    let mut index_start: u32 = 0;
-    if same_texture {
-        if let Some(draw) = textured_tri_draws.last_mut() {
-            index_start = draw.index_start();
-            draw.add(
-                TEXTURED_QUAD_VERTEX_SET_SIZE,
-                TEXTURED_QUAD_INDICES_SET_SIZE,
-            );
-        }
-    }
+    // let mut index_start: u32 = 0;
+    // if same_texture {
+    //     if let Some(draw) = textured_tri_draws.last_mut() {
+    //         index_start = draw.index_start();
+    //         draw.add(
+    //             TEXTURED_QUAD_VERTEX_SET_SIZE,
+    //             TEXTURED_QUAD_INDICES_SET_SIZE,
+    //         );
+    //     }
+    // }
 
-    let indices_set = [
-        index_start,
-        index_start + 1,
-        index_start + 2,
-        index_start,
-        index_start + 2,
-        index_start + 3,
-    ];
+    // let indices_set = [
+    //     index_start,
+    //     index_start + 1,
+    //     index_start + 2,
+    //     index_start,
+    //     index_start + 2,
+    //     index_start + 3,
+    // ];
 
-    vertices.extend(vertex_set);
-    indices.extend(indices_set);
+    // vertices.extend(vertex_set);
+    // indices.extend(indices_set);
 
-    if !same_texture {
-        let mut indices_start = 0;
-        let mut vertices_start = 0;
-        if let Some(draw) = textured_tri_draws.last() {
-            indices_start = draw.indices_range.end;
-            vertices_start = draw.vertices_range.end;
-        }
+    // if !same_texture {
+    //     let mut indices_start = 0;
+    //     let mut vertices_start = 0;
+    //     if let Some(draw) = textured_tri_draws.last() {
+    //         indices_start = draw.indices_range.end;
+    //         vertices_start = draw.vertices_range.end;
+    //     }
 
-        textured_tri_draws.push(TexturedTriDraw::new(
-            texture_key,
-            vertices_start,
-            TEXTURED_QUAD_VERTEX_SET_SIZE,
-            TEXTURED_QUAD_VERTICES_PER_DRAW,
-            indices_start,
-            TEXTURED_QUAD_INDICES_SET_SIZE,
-            TEXTURED_QUAD_INDICES_PER_DRAW,
-        ));
-    }
+    //     textured_tri_draws.push(TexturedTriDraw::new(
+    //         texture_key,
+    //         vertices_start,
+    //         TEXTURED_QUAD_VERTEX_SET_SIZE,
+    //         TEXTURED_QUAD_VERTICES_PER_DRAW,
+    //         indices_start,
+    //         TEXTURED_QUAD_INDICES_SET_SIZE,
+    //         TEXTURED_QUAD_INDICES_PER_DRAW,
+    //     ));
+    // }
 
     Ok(())
 }
@@ -1168,7 +1168,7 @@ const TEXTURED_TRI_VERTEX_SET_SIZE: u64 = VERTEX_SIZE * TEXTURED_TRI_VERTICES_PE
 /// 1 index per triangle vertex
 const TEXTURED_TRI_INDICES_SET_SIZE: u64 = INDEX_SIZE * TEXTURED_TRI_INDICES_PER_DRAW as u64;
 fn draw_textured_tri(
-    asset_store: &mut AssetStore,
+    asset_store: &mut AssetEngine,
     texture_key: TextureKey,
     mut points: [Vector2<f32>; 3],
     mut target: [Vector2<f32>; 3],
@@ -1180,105 +1180,105 @@ fn draw_textured_tri(
     textured_tri_draws: &mut Vec<TexturedTriDraw>,
     settings: &RenderSettings,
 ) -> Result<(), EmeraldError> {
-    let texture_size;
-    if let Some(texture) = asset_store.get_texture(&texture_key) {
-        texture_size = (texture.size.width as f32, texture.size.height as f32);
-    } else {
-        return Err(EmeraldError::new(format!(
-            "Unable to find texture {:?}",
-            texture_key
-        )));
-    }
+    // let texture_size;
+    // if let Some(texture) = asset_store.get_texture(&texture_key) {
+    //     texture_size = (texture.size.width as f32, texture.size.height as f32);
+    // } else {
+    //     return Err(EmeraldError::new(format!(
+    //         "Unable to find texture {:?}",
+    //         texture_key
+    //     )));
+    // }
 
-    for target_point in &mut target {
-        // Add magic numbers to target semi-middle of pixels
-        target_point.x += 0.275;
-        target_point.y += 0.275;
-    }
+    // for target_point in &mut target {
+    //     // Add magic numbers to target semi-middle of pixels
+    //     target_point.x += 0.275;
+    //     target_point.y += 0.275;
+    // }
 
-    let color = color.to_percentage_slice();
+    // let color = color.to_percentage_slice();
 
-    for point in &mut points {
-        point.x += transform.translation.x;
-        point.y += transform.translation.y;
+    // for point in &mut points {
+    //     point.x += transform.translation.x;
+    //     point.y += transform.translation.y;
 
-        if settings.pixel_snap {
-            point.x = point.x.floor();
-            point.y = point.y.floor();
-        }
+    //     if settings.pixel_snap {
+    //         point.x = point.x.floor();
+    //         point.y = point.y.floor();
+    //     }
 
-        point.x = point.x / (active_size.width as f32 / 2.0);
-        point.y = point.y / (active_size.height as f32 / 2.0);
-    }
+    //     point.x = point.x / (active_size.width as f32 / 2.0);
+    //     point.y = point.y / (active_size.height as f32 / 2.0);
+    // }
 
-    if settings.frustrum_culling {
-        // Use vertex set bounding box for frustrum culling
-        if !Rectangle::new(-1.0, -1.0, 2.0, 2.0)
-            .intersects_with(&get_bounding_box_of_triangle(&points))
-        {
-            return Ok(());
-        }
-    }
+    // if settings.frustrum_culling {
+    //     // Use vertex set bounding box for frustrum culling
+    //     if !Rectangle::new(-1.0, -1.0, 2.0, 2.0)
+    //         .intersects_with(&get_bounding_box_of_triangle(&points))
+    //     {
+    //         return Ok(());
+    //     }
+    // }
 
-    let len = textured_tri_draws.len();
-    let same_texture = len > 0
-        && textured_tri_draws
-            .last()
-            .filter(|draw| {
-                draw.key.0 == texture_key.0
-                    && draw.indices_per_draw == TEXTURED_TRI_INDICES_PER_DRAW
-                    && draw.vertices_per_draw == TEXTURED_TRI_VERTICES_PER_DRAW
-            })
-            .is_some();
+    // let len = textured_tri_draws.len();
+    // let same_texture = len > 0
+    //     && textured_tri_draws
+    //         .last()
+    //         .filter(|draw| {
+    //             draw.key.0 == texture_key.0
+    //                 && draw.indices_per_draw == TEXTURED_TRI_INDICES_PER_DRAW
+    //                 && draw.vertices_per_draw == TEXTURED_TRI_VERTICES_PER_DRAW
+    //         })
+    //         .is_some();
 
-    let mut index_start: u32 = 0;
-    if same_texture {
-        if let Some(draw) = textured_tri_draws.last_mut() {
-            index_start = draw.index_start();
-            draw.add(TEXTURED_TRI_VERTEX_SET_SIZE, TEXTURED_TRI_INDICES_SET_SIZE);
-        }
-    }
+    // let mut index_start: u32 = 0;
+    // if same_texture {
+    //     if let Some(draw) = textured_tri_draws.last_mut() {
+    //         index_start = draw.index_start();
+    //         draw.add(TEXTURED_TRI_VERTEX_SET_SIZE, TEXTURED_TRI_INDICES_SET_SIZE);
+    //     }
+    // }
 
-    let indices_set = [index_start, index_start + 1, index_start + 2];
-    let vertex_set = [
-        Vertex {
-            position: [points[0].x, points[0].y],
-            tex_coords: [target[0].x, target[0].y],
-            color,
-        },
-        Vertex {
-            position: [points[1].x, points[1].y],
-            tex_coords: [target[1].x, target[1].y],
-            color,
-        },
-        Vertex {
-            position: [points[2].x, points[2].y],
-            tex_coords: [target[2].x, target[2].y],
-            color,
-        },
-    ];
+    // let indices_set = [index_start, index_start + 1, index_start + 2];
+    // let vertex_set = [
+    //     Vertex {
+    //         position: [points[0].x, points[0].y],
+    //         tex_coords: [target[0].x, target[0].y],
+    //         color,
+    //     },
+    //     Vertex {
+    //         position: [points[1].x, points[1].y],
+    //         tex_coords: [target[1].x, target[1].y],
+    //         color,
+    //     },
+    //     Vertex {
+    //         position: [points[2].x, points[2].y],
+    //         tex_coords: [target[2].x, target[2].y],
+    //         color,
+    //     },
+    // ];
 
-    vertices.extend(vertex_set);
-    indices.extend(indices_set);
+    // vertices.extend(vertex_set);
+    // indices.extend(indices_set);
 
-    if !same_texture {
-        let mut indices_start = 0;
-        let mut vertices_start = 0;
-        if let Some(draw) = textured_tri_draws.last() {
-            indices_start = draw.indices_range.end;
-            vertices_start = draw.vertices_range.end;
-        }
+    // if !same_texture {
+    //     let mut indices_start = 0;
+    //     let mut vertices_start = 0;
+    //     if let Some(draw) = textured_tri_draws.last() {
+    //         indices_start = draw.indices_range.end;
+    //         vertices_start = draw.vertices_range.end;
+    //     }
 
-        textured_tri_draws.push(TexturedTriDraw::new(
-            texture_key,
-            vertices_start,
-            TEXTURED_TRI_VERTEX_SET_SIZE,
-            TEXTURED_TRI_VERTICES_PER_DRAW,
-            indices_start,
-            TEXTURED_TRI_INDICES_SET_SIZE,
-            TEXTURED_TRI_INDICES_PER_DRAW,
-        ));
-    }
+    //     textured_tri_draws.push(TexturedTriDraw::new(
+    //         texture_key,
+    //         vertices_start,
+    //         TEXTURED_TRI_VERTEX_SET_SIZE,
+    //         TEXTURED_TRI_VERTICES_PER_DRAW,
+    //         indices_start,
+    //         TEXTURED_TRI_INDICES_SET_SIZE,
+    //         TEXTURED_TRI_INDICES_PER_DRAW,
+    //     ));
+    // }
 
     Ok(())
 }
@@ -1388,7 +1388,7 @@ trait ToDrawable {
     fn get_visible_bounds(
         &self,
         transform: &Transform,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Option<Rectangle>;
 
     fn to_drawable(&self) -> Drawable;
@@ -1400,7 +1400,7 @@ impl ToDrawable for Tilemap {
     fn get_visible_bounds(
         &self,
         transform: &Transform,
-        _asset_store: &mut AssetStore,
+        _asset_store: &mut AssetEngine,
     ) -> Option<Rectangle> {
         let width = self.width * self.tile_size.x;
         let height = self.height * self.tile_size.y;
@@ -1444,7 +1444,7 @@ impl ToDrawable for AutoTilemap {
     fn get_visible_bounds(
         &self,
         transform: &Transform,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Option<Rectangle> {
         self.tilemap.get_visible_bounds(transform, asset_store)
     }
@@ -1466,7 +1466,7 @@ impl ToDrawable for Aseprite {
     fn get_visible_bounds(
         &self,
         transform: &Transform,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Option<Rectangle> {
         let mut sprite = self.get_sprite().clone();
         sprite.offset = self.offset.clone();
@@ -1496,28 +1496,28 @@ impl ToDrawable for Sprite {
     fn get_visible_bounds(
         &self,
         transform: &Transform,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Option<Rectangle> {
         let mut bounds = self.target.clone();
 
-        if bounds.is_zero_sized() {
-            if let Some(texture) = asset_store.get_texture(&self.texture_key) {
-                bounds.width = texture.size.width as f32;
-                bounds.height = texture.size.height as f32;
-            }
-        }
+        // if bounds.is_zero_sized() {
+        //     if let Some(texture) = asset_store.get_texture(&self.texture_key) {
+        //         bounds.width = texture.size.width as f32;
+        //         bounds.height = texture.size.height as f32;
+        //     }
+        // }
 
-        // Set the visibility rect at the position of the sprite
-        bounds.x = transform.translation.x + self.offset.x;
-        bounds.y = transform.translation.y + self.offset.y;
+        // // Set the visibility rect at the position of the sprite
+        // bounds.x = transform.translation.x + self.offset.x;
+        // bounds.y = transform.translation.y + self.offset.y;
 
-        bounds.width *= self.scale.x;
-        bounds.height *= self.scale.y;
+        // bounds.width *= self.scale.x;
+        // bounds.height *= self.scale.y;
 
-        if self.centered {
-            bounds.x -= bounds.width as f32 / 2.0;
-            bounds.y -= bounds.height as f32 / 2.0;
-        }
+        // if self.centered {
+        //     bounds.x -= bounds.width as f32 / 2.0;
+        //     bounds.y -= bounds.height as f32 / 2.0;
+        // }
 
         // Take the sprite's scale factor into account
 
@@ -1539,7 +1539,7 @@ impl ToDrawable for UIButton {
     fn get_visible_bounds(
         &self,
         transform: &Transform,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) -> Option<Rectangle> {
         let sprite = Sprite::from_texture(self.current_texture().clone());
         sprite.get_visible_bounds(transform, asset_store)
@@ -1561,7 +1561,7 @@ impl ToDrawable for ColorRect {
     fn get_visible_bounds(
         &self,
         transform: &Transform,
-        _asset_store: &mut AssetStore,
+        _asset_store: &mut AssetEngine,
     ) -> Option<Rectangle> {
         let mut bounds = Rectangle::new(
             transform.translation.x + self.offset.x,
@@ -1599,7 +1599,7 @@ impl ToDrawable for Label {
     fn get_visible_bounds(
         &self,
         _transform: &Transform,
-        _asset_store: &mut AssetStore,
+        _asset_store: &mut AssetEngine,
     ) -> Option<Rectangle> {
         None
     }
@@ -1663,7 +1663,7 @@ impl DrawCommandAdder {
         &self,
         draw_queue: &mut Vec<DrawCommand>,
         world: &'a World,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
     ) where
         D: hecs::Component + ToDrawable + 'a,
     {

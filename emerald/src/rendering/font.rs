@@ -1,7 +1,7 @@
 // // Credit to not-fl3/macroquad text: https://github.com/not-fl3/macroquad/blob/0.3/src/text.rs
 // use crate::rendering::*;
 // use crate::texture::TextureKey;
-// use crate::{AssetStore, Color, EmeraldError};
+// use crate::{AssetEngine, Color, EmeraldError};
 
 // use fontdue::layout::GlyphRasterConfig;
 // pub use fontdue::layout::{HorizontalAlign, VerticalAlign, WrapStyle};
@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use fontdue::layout::GlyphRasterConfig;
 
 use crate::{
-    rendering_engine::RenderingEngine, texture::TextureKey, AssetStore, Color, EmeraldError,
+    rendering_engine::RenderingEngine, texture::TextureKey, AssetEngine, Color, EmeraldError,
 };
 
 // TODO: We should include a real default font with the game engine
@@ -115,127 +115,127 @@ impl Font {
 
 pub(crate) fn cache_glyph(
     rendering_engine: &mut RenderingEngine,
-    asset_store: &mut AssetStore,
+    asset_store: &mut AssetEngine,
     font_key: &FontKey,
     glyph_key: GlyphRasterConfig,
     size: u16,
 ) -> Result<(), EmeraldError> {
-    let mut recache_characters = None;
+    // let mut recache_characters = None;
     let mut update_font_texture = false;
 
-    let mut optional_metrics = None;
-    let mut optional_bitmap = None;
+    // let mut optional_metrics = None;
+    // let mut optional_bitmap = None;
 
-    let mut to_update = Vec::new();
+    // let mut to_update = Vec::new();
 
-    if let Some(font) = asset_store.get_fontdue_font(font_key) {
-        let (metrics, bitmap) = font.rasterize_config(glyph_key);
-        optional_metrics = Some(metrics);
-        optional_bitmap = Some(bitmap);
-    } else {
-        return Err(EmeraldError::new(format!(
-            "Unable to get Fontdue Font while caching font glyph: {:?}",
-            font_key
-        )));
-    }
+    // if let Some(font) = asset_store.get_fontdue_font(font_key) {
+    //     let (metrics, bitmap) = font.rasterize_config(glyph_key);
+    //     optional_metrics = Some(metrics);
+    //     optional_bitmap = Some(bitmap);
+    // } else {
+    //     return Err(EmeraldError::new(format!(
+    //         "Unable to get Fontdue Font while caching font glyph: {:?}",
+    //         font_key
+    //     )));
+    // }
 
-    if let (Some(metrics), Some(bitmap)) = (optional_metrics, optional_bitmap) {
-        if let Some(font) = asset_store.get_font_mut(font_key) {
-            if metrics.advance_height != 0.0 {
-                return Err(EmeraldError::new("Vertical fonts are not supported"));
-            }
+    // if let (Some(metrics), Some(bitmap)) = (optional_metrics, optional_bitmap) {
+    //     if let Some(font) = asset_store.get_font_mut(font_key) {
+    //         if metrics.advance_height != 0.0 {
+    //             return Err(EmeraldError::new("Vertical fonts are not supported"));
+    //         }
 
-            let (width, height) = (metrics.width, metrics.height);
-            let advance = metrics.advance_width;
-            let (offset_x, offset_y) = (metrics.xmin, metrics.ymin);
+    //         let (width, height) = (metrics.width, metrics.height);
+    //         let advance = metrics.advance_width;
+    //         let (offset_x, offset_y) = (metrics.xmin, metrics.ymin);
 
-            let x = if font.cursor_x + (width as u16) < font.font_image.width {
-                if height as u16 > font.max_line_height {
-                    font.max_line_height = height as u16;
-                }
-                let res = font.cursor_x;
-                font.cursor_x += width as u16 + Font::GAP;
-                res
-            } else {
-                font.cursor_y += font.max_line_height + Font::GAP;
-                font.cursor_x = width as u16 + Font::GAP;
-                font.max_line_height = height as u16;
-                Font::GAP
-            };
+    //         let x = if font.cursor_x + (width as u16) < font.font_image.width {
+    //             if height as u16 > font.max_line_height {
+    //                 font.max_line_height = height as u16;
+    //             }
+    //             let res = font.cursor_x;
+    //             font.cursor_x += width as u16 + Font::GAP;
+    //             res
+    //         } else {
+    //             font.cursor_y += font.max_line_height + Font::GAP;
+    //             font.cursor_x = width as u16 + Font::GAP;
+    //             font.max_line_height = height as u16;
+    //             Font::GAP
+    //         };
 
-            let y = font.cursor_y;
+    //         let y = font.cursor_y;
 
-            let character_info = CharacterInfo {
-                glyph_x: x as _,
-                glyph_y: y as _,
-                glyph_w: width as _,
-                glyph_h: height as _,
+    //         let character_info = CharacterInfo {
+    //             glyph_x: x as _,
+    //             glyph_y: y as _,
+    //             glyph_w: width as _,
+    //             glyph_h: height as _,
 
-                _advance: advance,
-                offset_x,
-                _offset_y: offset_y,
-            };
+    //             _advance: advance,
+    //             offset_x,
+    //             _offset_y: offset_y,
+    //         };
 
-            font.characters.insert(glyph_key, character_info);
+    //         font.characters.insert(glyph_key, character_info);
 
-            // texture bounds exceeded
-            if font.cursor_y + height as u16 > font.font_image.height {
-                // reset glyph asset_store state
-                let characters = font.characters.drain().collect::<Vec<_>>();
-                font.cursor_x = 0;
-                font.cursor_y = 0;
-                font.max_line_height = 0;
+    //         // texture bounds exceeded
+    //         if font.cursor_y + height as u16 > font.font_image.height {
+    //             // reset glyph asset_store state
+    //             let characters = font.characters.drain().collect::<Vec<_>>();
+    //             font.cursor_x = 0;
+    //             font.cursor_y = 0;
+    //             font.max_line_height = 0;
 
-                // increase font texture size
-                font.font_image = FontImage::gen_image_color(
-                    font.font_image.width * 2,
-                    font.font_image.height * 2,
-                    Color::new(0, 0, 0, 0),
-                );
+    //             // increase font texture size
+    //             font.font_image = FontImage::gen_image_color(
+    //                 font.font_image.width * 2,
+    //                 font.font_image.height * 2,
+    //                 Color::new(0, 0, 0, 0),
+    //             );
 
-                to_update.push((font.font_image.bytes.clone(), font.font_texture_key.clone()));
-                recache_characters = Some(characters);
-            } else {
-                for j in 0..height {
-                    for i in 0..width {
-                        let coverage = bitmap[j * width + i];
-                        font.font_image.set_pixel(
-                            x as u32 + i as u32,
-                            y as u32 + j as u32,
-                            Color::new(255, 255, 255, coverage),
-                        );
-                    }
-                }
+    //             to_update.push((font.font_image.bytes.clone(), font.font_texture_key.clone()));
+    //             recache_characters = Some(characters);
+    //         } else {
+    //             for j in 0..height {
+    //                 for i in 0..width {
+    //                     let coverage = bitmap[j * width + i];
+    //                     font.font_image.set_pixel(
+    //                         x as u32 + i as u32,
+    //                         y as u32 + j as u32,
+    //                         Color::new(255, 255, 255, coverage),
+    //                     );
+    //                 }
+    //             }
 
-                update_font_texture = true;
-            }
-        } else {
-            return Err(EmeraldError::new(format!(
-                "Unable to get Font while caching font glyph: {:?}",
-                font_key
-            )));
-        }
-    } else {
-        return Err(EmeraldError::new(format!(
-            "Unable to get Metrics while caching font glyph: {:?}",
-            font_key
-        )));
-    }
+    //             update_font_texture = true;
+    //         }
+    //     } else {
+    //         return Err(EmeraldError::new(format!(
+    //             "Unable to get Font while caching font glyph: {:?}",
+    //             font_key
+    //         )));
+    //     }
+    // } else {
+    //     return Err(EmeraldError::new(format!(
+    //         "Unable to get Metrics while caching font glyph: {:?}",
+    //         font_key
+    //     )));
+    // }
 
-    for (bytes, key) in to_update {
-        rendering_engine.load_texture(asset_store, &bytes, key)?;
-    }
+    // for (bytes, key) in to_update {
+    //     rendering_engine.load_texture(asset_store, &bytes, key)?;
+    // }
 
-    if update_font_texture {
-        rendering_engine.update_font_texture(asset_store, font_key)?;
-    }
+    // if update_font_texture {
+    //     rendering_engine.update_font_texture(asset_store, font_key)?;
+    // }
 
-    if let Some(characters) = recache_characters {
-        // recache all previously asset_stored symbols
-        for (glyph_key, _) in characters {
-            cache_glyph(rendering_engine, asset_store, font_key, glyph_key, size)?;
-        }
-    }
+    // if let Some(characters) = recache_characters {
+    //     // recache all previously asset_stored symbols
+    //     for (glyph_key, _) in characters {
+    //         cache_glyph(rendering_engine, asset_store, font_key, glyph_key, size)?;
+    //     }
+    // }
 
     Ok(())
 }

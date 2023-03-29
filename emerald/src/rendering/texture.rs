@@ -1,8 +1,9 @@
 use image::GenericImageView;
 
 use crate::{
+    asset_key::AssetKey,
     rendering_engine::{BindGroupLayoutId, BindGroupLayouts, BindGroups},
-    AssetStore, EmeraldError,
+    AssetEngine, EmeraldError,
 };
 pub const EMERALD_DEFAULT_TEXTURE_NAME: &str = "emerald_default_texture";
 
@@ -17,7 +18,7 @@ impl Texture {
     pub fn new(
         bind_groups: &mut BindGroups,
         bind_group_layouts: &BindGroupLayouts,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         width: u32,
@@ -43,7 +44,7 @@ impl Texture {
     pub fn new_render_target(
         bind_groups: &mut BindGroups,
         bind_group_layouts: &BindGroupLayouts,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         width: u32,
@@ -72,7 +73,7 @@ impl Texture {
     fn new_ext(
         bind_groups: &mut BindGroups,
         bind_group_layouts: &BindGroupLayouts,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         width: u32,
@@ -88,7 +89,7 @@ impl Texture {
             depth_or_array_layers: 1,
         };
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some(&key.0),
+            label: Some(key.get_path()),
             size,
             mip_level_count: 1,
             sample_count: 1,
@@ -147,11 +148,11 @@ impl Texture {
                         resource: wgpu::BindingResource::Sampler(&texture.sampler),
                     },
                 ],
-                label: Some(&format!("{:?}_group", &key.0)),
+                label: Some(&format!("{:?}_group", key.get_path())),
             });
 
-            bind_groups.insert(key.get_name(), texture_bind_group);
-            asset_store.insert_texture(key.clone(), texture);
+            bind_groups.insert(key.get_path().clone(), texture_bind_group);
+            // asset_store.insert_texture(key.clone(), texture);
         } else {
             return Err(EmeraldError::new(
                 "Unable to get TextureQuad bind group layout",
@@ -164,7 +165,7 @@ impl Texture {
     pub fn from_bytes(
         bind_groups: &mut BindGroups,
         bind_group_layouts: &BindGroupLayouts,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         bytes: &[u8],
@@ -182,7 +183,8 @@ impl Texture {
             ),
             Err(e) => Err(EmeraldError::new(format!(
                 "Error loading image from memory. Texture Key: {:?} Err: {:?}",
-                &key.0, e
+                key.get_path(),
+                e
             ))),
         }
     }
@@ -190,7 +192,7 @@ impl Texture {
     pub fn from_image(
         bind_groups: &mut BindGroups,
         bind_group_layouts: &BindGroupLayouts,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         img: &image::DynamicImage,
@@ -213,19 +215,13 @@ impl Texture {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct TextureKey(pub(crate) String);
-impl TextureKey {
-    pub(crate) fn new<T: Into<String>>(texture_path: T) -> Self {
-        TextureKey(texture_path.into())
-    }
-
-    pub fn get_name(&self) -> String {
-        self.0.clone()
-    }
+#[derive(Clone, PartialEq)]
+pub struct TextureKey {
+    asset_key: AssetKey,
+    path: String,
 }
-impl Default for TextureKey {
-    fn default() -> TextureKey {
-        TextureKey(String::from(EMERALD_DEFAULT_TEXTURE_NAME))
+impl TextureKey {
+    pub fn get_path(&self) -> &String {
+        &self.path
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     audio::{Mixer, SoundInstanceId, SoundKey},
-    AssetStore, EmeraldError,
+    AssetEngine, EmeraldError,
 };
 
 pub struct DummyMixer {}
@@ -14,7 +14,7 @@ impl Mixer for DummyMixer {
     fn play(
         &mut self,
         _key: SoundKey,
-        _asset_store: &mut AssetStore,
+        _asset_store: &mut AssetEngine,
     ) -> Result<SoundInstanceId, EmeraldError> {
         Ok(SoundInstanceId::new(0))
     }
@@ -22,7 +22,7 @@ impl Mixer for DummyMixer {
     fn play_and_loop(
         &mut self,
         _key: SoundKey,
-        _asset_store: &mut AssetStore,
+        _asset_store: &mut AssetEngine,
     ) -> Result<SoundInstanceId, EmeraldError> {
         Ok(SoundInstanceId::new(0))
     }

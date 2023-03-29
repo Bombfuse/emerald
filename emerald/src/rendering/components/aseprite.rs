@@ -38,7 +38,7 @@ impl Aseprite {
         bind_group_layouts: &BindGroupLayouts,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         path: &str,
         data: Vec<u8>,
     ) -> Result<Self, EmeraldError> {
@@ -383,7 +383,7 @@ impl Frame {
         bind_group_layouts: &BindGroupLayouts,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         path: &str,
         frame_index: u32,
         frame: asefile::Frame<'_>,
@@ -396,17 +396,17 @@ impl Frame {
             TextureKey::new(key)
         };
 
-        if asset_store.get_texture(&texture_key).is_none() {
-            Texture::from_image(
-                bind_groups,
-                bind_group_layouts,
-                asset_store,
-                device,
-                queue,
-                &image,
-                texture_key.clone(),
-            )?;
-        }
+        // if asset_store.get_texture(&texture_key).is_none() {
+        //     Texture::from_image(
+        //         bind_groups,
+        //         bind_group_layouts,
+        //         asset_store,
+        //         device,
+        //         queue,
+        //         &image,
+        //         texture_key.clone(),
+        //     )?;
+        // }
 
         Ok(Self {
             sprite: Sprite::from_texture(texture_key),
@@ -441,7 +441,7 @@ impl AsepriteData {
         bind_group_layouts: &BindGroupLayouts,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         path: &str,
         aseprite: asefile::AsepriteFile,
     ) -> Result<Self, EmeraldError> {

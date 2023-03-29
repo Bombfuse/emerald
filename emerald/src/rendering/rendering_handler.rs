@@ -7,19 +7,19 @@ use crate::{
     game_engine::GameEngineContext,
     rendering_engine::{DrawCommand, Drawable, RenderingEngine},
     texture::TextureKey,
-    AssetStore, Color, EmeraldError, Transform, World,
+    AssetEngine, Color, EmeraldError, Transform, World,
 };
 
 use super::components::{ColorRect, ColorTri, Label, Sprite};
 
 pub struct RenderingHandler<'c> {
-    asset_store: &'c mut AssetStore,
+    asset_store: &'c mut AssetEngine,
     rendering_engine: &'c mut RenderingEngine,
     ctx: &'c mut GameEngineContext,
 }
 impl<'c> RenderingHandler<'c> {
     pub(crate) fn new(
-        asset_store: &'c mut AssetStore,
+        asset_store: &'c mut AssetEngine,
         rendering_engine: &'c mut RenderingEngine,
         ctx: &'c mut GameEngineContext,
     ) -> Self {

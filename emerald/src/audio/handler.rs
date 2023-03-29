@@ -1,12 +1,12 @@
 use crate::EmeraldError;
-use crate::{audio::*, AssetStore};
+use crate::{audio::*, AssetEngine};
 
 pub struct AudioHandler<'a> {
     audio_engine: &'a mut AudioEngine,
-    asset_store: &'a mut AssetStore,
+    asset_store: &'a mut AssetEngine,
 }
 impl<'a> AudioHandler<'a> {
-    pub(crate) fn new(audio_engine: &'a mut AudioEngine, asset_store: &'a mut AssetStore) -> Self {
+    pub(crate) fn new(audio_engine: &'a mut AudioEngine, asset_store: &'a mut AssetEngine) -> Self {
         AudioHandler {
             audio_engine,
             asset_store,

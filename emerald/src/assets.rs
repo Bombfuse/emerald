@@ -1,7 +1,10 @@
+mod asset_engine;
 mod asset_loader;
-mod asset_store;
 mod writer;
 
+pub mod asset_key;
+pub mod asset_storage;
+
+pub(crate) use asset_engine::*;
 pub use asset_loader::*;
-pub(crate) use asset_store::*;
 pub use writer::*;
