@@ -13,22 +13,23 @@ use std::collections::HashMap;
 use fontdue::layout::GlyphRasterConfig;
 
 use crate::{
-    rendering_engine::RenderingEngine, texture::TextureKey, AssetEngine, Color, EmeraldError,
+    asset_key::AssetKey, rendering_engine::RenderingEngine, texture::TextureKey, AssetEngine,
+    Color, EmeraldError,
 };
 
-// TODO: We should include a real default font with the game engine
-pub(crate) const DEFAULT_FONT_TEXTURE_PATH: &str = "ghosty_spooky_mister_mime_dude";
-
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub struct FontKey(pub(crate) String, pub(crate) u32);
-impl FontKey {
-    pub fn new<T: Into<String>>(font_path: T, font_size: u32) -> Self {
-        FontKey(font_path.into(), font_size)
-    }
+#[derive(Clone, Debug)]
+pub struct FontKey {
+    size: u32,
+    path: String,
+    asset_key: AssetKey,
 }
-impl Default for FontKey {
-    fn default() -> FontKey {
-        FontKey::new(DEFAULT_FONT_TEXTURE_PATH, 40)
+impl FontKey {
+    pub fn new<T: Into<String>>(asset_key: AssetKey, font_path: T, font_size: u32) -> Self {
+        FontKey {
+            asset_key,
+            path: font_path.into(),
+            size: font_size,
+        }
     }
 }
 
@@ -85,25 +86,25 @@ impl FontImage {
 }
 
 pub(crate) struct Font {
-    pub _font_key: FontKey,
     pub characters: HashMap<GlyphRasterConfig, CharacterInfo>,
     pub font_texture_key: TextureKey,
     pub font_image: FontImage,
     pub cursor_x: u16,
     pub cursor_y: u16,
     pub max_line_height: u16,
+    pub inner: fontdue::Font,
 }
 impl Font {
     pub const GAP: u16 = 2;
 
     pub fn new(
-        font_key: FontKey,
+        inner: fontdue::Font,
         font_texture_key: TextureKey,
         font_image: FontImage,
     ) -> Result<Font, EmeraldError> {
         Ok(Font {
             font_image,
-            _font_key: font_key,
+            inner,
             font_texture_key,
             characters: HashMap::new(),
             cursor_x: 0,

@@ -4,30 +4,86 @@ use std::{
 };
 
 use crate::{
-    asset_key::{Asset, AssetKey},
+    asset_key::{Asset, AssetId, AssetKey},
     asset_storage::AssetStorage,
     EmeraldError,
 };
 
+const DEFAULT_ASSET_FOLDER: &str = "./assets/";
+
 pub(crate) struct AssetEngine {
+    pub(crate) asset_folder_root: String,
     asset_stores: HashMap<TypeId, AssetStorage>,
 }
 impl AssetEngine {
     pub(crate) fn new() -> Self {
         Self {
+            asset_folder_root: DEFAULT_ASSET_FOLDER.to_string(),
             asset_stores: HashMap::new(),
         }
     }
 
+    pub fn get_asset_key_by_path<T: Any>(&self, path: &str) -> Option<AssetKey> {
+        let type_id = std::any::TypeId::of::<T>();
+
+        self.asset_stores
+            .get(&type_id)
+            .map(|store| store.get_asset_key(path))
+            .flatten()
+    }
+
+    pub fn get_asset<T: Any>(&self, asset_id: &AssetId) -> Option<&T> {
+        let type_id = std::any::TypeId::of::<T>();
+        self.asset_stores
+            .get(&type_id)
+            .map(|store| {
+                store
+                    .get(asset_id)
+                    .map(|asset| asset.downcast_ref::<T>())
+                    .flatten()
+            })
+            .flatten()
+    }
+
+    pub fn get_asset_mut<T: Any>(&mut self, asset_id: &AssetId) -> Option<&mut T> {
+        let type_id = std::any::TypeId::of::<T>();
+        self.asset_stores
+            .get_mut(&type_id)
+            .map(|store| {
+                store
+                    .get_mut(asset_id)
+                    .map(|asset| asset.downcast_mut::<T>())
+                    .flatten()
+            })
+            .flatten()
+    }
+
     pub fn add_asset(&mut self, asset: Asset) -> Result<AssetKey, EmeraldError> {
+        self.add_asset_ext(asset, None)
+    }
+
+    pub fn add_asset_with_label<T: Into<String>>(
+        &mut self,
+        asset: Asset,
+        path: T,
+    ) -> Result<AssetKey, EmeraldError> {
+        self.add_asset_ext(asset, Some(path.into()))
+    }
+
+    pub fn add_asset_ext(
+        &mut self,
+        asset: Asset,
+        path: Option<String>,
+    ) -> Result<AssetKey, EmeraldError> {
         let type_id = (&*asset).type_id();
 
         if !self.asset_stores.contains_key(&type_id) {
-            self.asset_stores.insert(type_id, AssetStorage::new());
+            self.asset_stores
+                .insert(type_id, AssetStorage::new(type_id));
         }
 
         if let Some(asset_store) = self.asset_stores.get_mut(&type_id) {
-            return asset_store.add(asset, type_id);
+            return asset_store.add(asset, path);
         }
 
         Err(EmeraldError::new(format!(
@@ -36,8 +92,34 @@ impl AssetEngine {
         )))
     }
 
+    pub fn read_asset_file(&mut self, relative_path: &str) -> Result<Vec<u8>, EmeraldError> {
+        let full_path = self.get_full_asset_path(relative_path);
+        read_file(&full_path)
+    }
+
+    pub fn get_full_asset_path(&self, path: &str) -> String {
+        // If it already contains the correct directory then just return it
+        if path.contains(&self.asset_folder_root) {
+            return path.to_string();
+        }
+
+        let mut full_path = self.asset_folder_root.clone();
+        full_path.push_str(path);
+
+        full_path
+    }
+
+    pub fn count(&self) -> usize {
+        self.asset_stores
+            .iter()
+            .map(|(_, store)| store.count())
+            .sum()
+    }
+
     /// Called after each frame, cleans up unused assets.
     pub fn update(&mut self) -> Result<(), EmeraldError> {
+        let now = std::time::Instant::now();
+        println!("assets: {:?}", self.count());
         let mut to_remove = Vec::new();
         for (id, store) in self.asset_stores.iter_mut() {
             store.update()?;
@@ -47,10 +129,12 @@ impl AssetEngine {
             }
         }
 
+        println!("stores to remove: {:?}", to_remove.len());
         for id in to_remove {
             self.asset_stores.remove(&id);
         }
 
+        println!("assets update {:?}", std::time::Instant::now() - now);
         Ok(())
     }
 }
@@ -213,12 +297,6 @@ mod tests {
 //         let full_path = self.get_full_asset_path(relative_path);
 //         self.get_bytes(full_path)
 //     }
-
-//     pub fn read_asset_file(&mut self, relative_path: &str) -> Result<Vec<u8>, EmeraldError> {
-//         let full_path = self.get_full_asset_path(relative_path);
-//         read_file(&full_path)
-//     }
-
 //     pub fn _insert_user_bytes(
 //         &mut self,
 //         relative_path: String,
@@ -273,18 +351,6 @@ mod tests {
 //             self,
 //             &self.get_full_asset_path(&key.get_name()),
 //         )
-//     }
-
-//     pub fn get_full_asset_path(&self, path: &str) -> String {
-//         // If it already contains the correct directory then just return it
-//         if path.contains(&self.asset_folder_root) {
-//             return path.to_string();
-//         }
-
-//         let mut full_path = self.asset_folder_root.clone();
-//         full_path.push_str(path);
-
-//         full_path
 //     }
 
 //     pub fn get_full_user_data_path(&self, path: &str) -> String {
@@ -393,58 +459,58 @@ mod tests {
 //     }
 // }
 
-// #[cfg(target_arch = "wasm32")]
-// fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
-//     Err(EmeraldError::new(format!(
-//         "Unable to get bytes for {}",
-//         path
-//     )))
-// }
+#[cfg(target_arch = "wasm32")]
+fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
+    Err(EmeraldError::new(format!(
+        "Unable to get bytes for {}",
+        path
+    )))
+}
 
-// #[cfg(target_os = "android")]
-// fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
-//     // Based on https://github.com/not-fl3/miniquad/blob/4be5328760ff356494caf59cc853bcb395bce5d2/src/fs.rs#L38-L53
+#[cfg(target_os = "android")]
+fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
+    // Based on https://github.com/not-fl3/miniquad/blob/4be5328760ff356494caf59cc853bcb395bce5d2/src/fs.rs#L38-L53
 
-//     let filename = std::ffi::CString::new(path).unwrap();
+    let filename = std::ffi::CString::new(path).unwrap();
 
-//     let mut data: sapp_android::android_asset = unsafe { std::mem::zeroed() };
+    let mut data: sapp_android::android_asset = unsafe { std::mem::zeroed() };
 
-//     unsafe { sapp_android::sapp_load_asset(filename.as_ptr(), &mut data as _) };
+    unsafe { sapp_android::sapp_load_asset(filename.as_ptr(), &mut data as _) };
 
-//     if data.content.is_null() == false {
-//         let slice = unsafe { std::slice::from_raw_parts(data.content, data.content_length as _) };
-//         let response = slice.iter().map(|c| *c as _).collect::<Vec<_>>();
-//         Ok(response)
-//     } else {
-//         Err(EmeraldError::new(format!(
-//             "Unable to load asset `{}`",
-//             path
-//         )))
-//     }
-// }
+    if data.content.is_null() == false {
+        let slice = unsafe { std::slice::from_raw_parts(data.content, data.content_length as _) };
+        let response = slice.iter().map(|c| *c as _).collect::<Vec<_>>();
+        Ok(response)
+    } else {
+        Err(EmeraldError::new(format!(
+            "Unable to load asset `{}`",
+            path
+        )))
+    }
+}
 
-// #[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
-// fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
-//     use std::fs::File;
-//     use std::io::Read;
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
+fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
+    use std::fs::File;
+    use std::io::Read;
 
-//     let current_dir = std::env::current_dir()?;
-//     let file_path = current_dir.join(path);
-//     let file_path = file_path.into_os_string().into_string()?;
+    let current_dir = std::env::current_dir()?;
+    let file_path = current_dir.join(path);
+    let file_path = file_path.into_os_string().into_string()?;
 
-//     let mut contents = vec![];
-//     let mut file = match File::open(file_path) {
-//         Ok(file) => file,
-//         Err(e) => {
-//             return Err(EmeraldError::new(format!(
-//                 "Error loading file {:?}: {:?}",
-//                 path, e
-//             )))
-//         }
-//     };
-//     file.read_to_end(&mut contents)?;
-//     Ok(contents)
-// }
+    let mut contents = vec![];
+    let mut file = match File::open(file_path) {
+        Ok(file) => file,
+        Err(e) => {
+            return Err(EmeraldError::new(format!(
+                "Error loading file {:?}: {:?}",
+                path, e
+            )))
+        }
+    };
+    file.read_to_end(&mut contents)?;
+    Ok(contents)
+}
 
 // // Source
 // // https://github.com/dirs-dev/dirs-sys-rs/blob/main/src/lib.rs

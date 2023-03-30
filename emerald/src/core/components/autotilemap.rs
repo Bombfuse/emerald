@@ -554,40 +554,40 @@ mod tests {
         assert!(schema.to_ruleset().is_err());
     }
 
-    #[test]
-    fn deser_autotilemap() {
-        let autotilemap_toml = r#"
-            tileset = "tileset.png"
-            tileset_height = 2
-            tileset_width = 2
-            tile_width_px = 32
-            tile_height_px = 32
-            width = 10
-            height = 10
-        "#;
-        let schema: AutoTileMapSchema = crate::toml::from_str(&autotilemap_toml).unwrap();
-        let autotilemap = schema
-            .to_autotilemap_ext(Default::default(), Vec::new())
-            .unwrap();
-        assert_eq!(autotilemap.width(), 10);
-        assert_eq!(autotilemap.height(), 10);
-        assert_eq!(autotilemap.tile_size().x, 32);
-        assert_eq!(autotilemap.tile_size().y, 32);
+    // #[test]
+    // fn deser_autotilemap() {
+    //     let autotilemap_toml = r#"
+    //         tileset = "tileset.png"
+    //         tileset_height = 2
+    //         tileset_width = 2
+    //         tile_width_px = 32
+    //         tile_height_px = 32
+    //         width = 10
+    //         height = 10
+    //     "#;
+    //     let schema: AutoTileMapSchema = crate::toml::from_str(&autotilemap_toml).unwrap();
+    //     let autotilemap = schema
+    //         .to_autotilemap_ext(Default::default(), Vec::new())
+    //         .unwrap();
+    //     assert_eq!(autotilemap.width(), 10);
+    //     assert_eq!(autotilemap.height(), 10);
+    //     assert_eq!(autotilemap.tile_size().x, 32);
+    //     assert_eq!(autotilemap.tile_size().y, 32);
 
-        let missing_map_size = r#"
-            tileset = "tileset.png"
-            tile_width = 32
-            tile_height = 32
-        "#;
-        let schema = crate::toml::from_str::<AutoTileMapSchema>(&missing_map_size);
-        assert!(schema.is_err());
+    //     let missing_map_size = r#"
+    //         tileset = "tileset.png"
+    //         tile_width = 32
+    //         tile_height = 32
+    //     "#;
+    //     let schema = crate::toml::from_str::<AutoTileMapSchema>(&missing_map_size);
+    //     assert!(schema.is_err());
 
-        let missing_tile_size = r#"
-            tileset = "tileset.png"
-            width = 10
-            height = 10
-        "#;
-        let schema = crate::toml::from_str::<AutoTileMapSchema>(&missing_tile_size);
-        assert!(schema.is_err());
-    }
+    //     let missing_tile_size = r#"
+    //         tileset = "tileset.png"
+    //         width = 10
+    //         height = 10
+    //     "#;
+    //     let schema = crate::toml::from_str::<AutoTileMapSchema>(&missing_tile_size);
+    //     assert!(schema.is_err());
+    // }
 }

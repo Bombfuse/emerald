@@ -28,24 +28,13 @@ impl Label {
             font_key,
             text: text.into(),
             font_size,
-            ..Default::default()
-        }
-    }
-}
-impl Default for Label {
-    fn default() -> Label {
-        Label {
-            text: String::from(""),
             offset: Vector2::new(0.0, 0.0),
-            font_key: FontKey::default(),
             scale: 1.0,
-            font_size: 12,
             z_index: 0.0,
             centered: true,
             color: WHITE,
             visible: true,
             visible_characters: -1,
-
             horizontal_align: HorizontalAlign::Center,
             vertical_align: VerticalAlign::Middle,
             wrap_style: WrapStyle::Word,

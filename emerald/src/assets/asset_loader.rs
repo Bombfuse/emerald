@@ -1,3 +1,5 @@
+use wgpu::BindGroupLayout;
+
 use crate::assets::*;
 use crate::audio::*;
 use crate::ent::load_ent_from_toml;
@@ -6,6 +8,8 @@ use crate::font::FontImage;
 use crate::font::FontKey;
 use crate::rendering::components::Sprite;
 use crate::rendering_engine::RenderingEngine;
+use crate::texture::get_texture_key;
+use crate::texture::Texture;
 use crate::texture::TextureKey;
 use crate::*;
 
@@ -72,16 +76,16 @@ impl<'c> AssetLoader<'c> {
 
     /// Retrieves bytes from the assets directory of the game
     pub fn asset_bytes<T: AsRef<str>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
-        // let path: &str = file_path.as_ref();
-        // if let Some(bytes) = self.asset_store.get_asset_bytes(&path) {
-        //     return Ok(bytes);
-        // }
+        let path: &str = file_path.as_ref();
 
-        // let bytes = self.asset_store.read_asset_file(&path)?;
+        if let Some(key) = self.asset_engine.get_asset_key_by_path::<Vec<u8>>(path) {
+            if let Some(bytes) = self.asset_engine.get_asset::<Vec<u8>>(&key.asset_id) {
+                return Ok(bytes.clone());
+            }
+        }
 
-        // Ok(bytes)
-
-        Ok(Vec::new())
+        let bytes = self.asset_engine.read_asset_file(&path)?;
+        Ok(bytes)
     }
 
     /// Retrieves bytes from a file in the user directory of the game
@@ -110,36 +114,35 @@ impl<'c> AssetLoader<'c> {
         font_size: u32,
     ) -> Result<FontKey, EmeraldError> {
         let file_path: &str = file_path.as_ref();
-        let key = FontKey::new(file_path.clone(), font_size);
+        // let key = FontKey::new(file_path.clone(), font_size);
 
-        // if self.asset_store.get_font(&key).is_some() {
+        // if self.asset_engine.get_font(&key).is_some() {
         //     return Ok(key);
         // }
 
-        // let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
-        // let font_texture_key = self.rendering_engine.load_texture_ext(
-        //     &mut self.asset_store,
-        //     font_image.width as u32,
-        //     font_image.height as u32,
-        //     &font_image.bytes,
-        //     TextureKey::new(key.0.clone()),
-        // )?;
-        // let font_bytes = self.asset_bytes(file_path)?;
+        let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
+        let font_texture_key = self.rendering_engine.load_texture_ext(
+            file_path,
+            &mut self.asset_engine,
+            font_image.width as u32,
+            font_image.height as u32,
+            &font_image.bytes,
+        )?;
+        let font_bytes = self.asset_bytes(file_path)?;
+        let font_settings = fontdue::FontSettings {
+            scale: font_size as f32,
+            ..Default::default()
+        };
+        let inner_font = match fontdue::Font::from_bytes(font_bytes, font_settings) {
+            Ok(font) => font,
+            Err(e) => return Err(EmeraldError::new(e)),
+        };
+        let font = Font::new(inner_font, font_texture_key.clone(), font_image)?;
+        let key = self
+            .asset_engine
+            .add_asset_with_label(Box::new(font), file_path)?;
 
-        // let font_settings = fontdue::FontSettings {
-        //     scale: font_size as f32,
-        //     ..Default::default()
-        // };
-        // let inner_font = match fontdue::Font::from_bytes(font_bytes, font_settings) {
-        //     Ok(font) => font,
-        //     Err(e) => return Err(EmeraldError::new(e)),
-        // };
-        // let font = Font::new(key.clone(), font_texture_key.clone(), font_image)?;
-        // self.asset_store
-        //     .insert_fontdue_font(key.clone(), inner_font);
-        // self.asset_store.insert_font(key.clone(), font)?;
-
-        Ok(key)
+        Ok(FontKey::new(key, file_path, font_size))
     }
 
     pub fn ent<T: AsRef<str>>(
@@ -163,11 +166,10 @@ impl<'c> AssetLoader<'c> {
         let path = path.as_ref();
         let data = self.asset_bytes(path)?;
         Aseprite::new(
-            &mut self.rendering_engine.bind_groups,
             &self.rendering_engine.bind_group_layouts,
             &self.rendering_engine.device,
             &self.rendering_engine.queue,
-            self.asset_store,
+            self.asset_engine,
             path,
             data,
         )
@@ -194,17 +196,13 @@ impl<'c> AssetLoader<'c> {
     pub fn texture<T: AsRef<str>>(&mut self, path: T) -> Result<TextureKey, EmeraldError> {
         let path: &str = path.as_ref();
 
-        // let key = TextureKey::new(path.clone());
+        if let Some(key) = get_texture_key(&mut self.asset_engine, path) {
+            return Ok(key);
+        }
 
-        // if self.asset_store.get_texture(&key).is_some() {
-        //     return Ok(key);
-        // }
-
-        // let data = self.asset_bytes(path)?;
-        // self.rendering_engine
-        //     .load_texture(&mut self.asset_store, &data, key);
-
-        // Ok(key)
+        let data = self.asset_bytes(path)?;
+        self.rendering_engine
+            .load_texture(path, &mut self.asset_engine, &data)
     }
 
     /// Creating render textures is slightly expensive and should be used conservatively.
@@ -212,13 +210,12 @@ impl<'c> AssetLoader<'c> {
     /// If you need a render texture with a new size, you should create a new render texture.
     pub fn render_texture(&mut self, w: usize, h: usize) -> Result<TextureKey, EmeraldError> {
         self.rendering_engine
-            .create_render_texture(w as _, h as _, &mut self.asset_store)
+            .create_render_texture(w as _, h as _, &mut self.asset_engine)
     }
 
     pub fn sprite<T: AsRef<str>>(&mut self, path: T) -> Result<Sprite, EmeraldError> {
         let path: &str = path.as_ref();
         let texture_key = self.texture(path)?;
-
         Ok(Sprite::from_texture(texture_key))
     }
 

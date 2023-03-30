@@ -8,17 +8,23 @@ use crate::{
 };
 
 pub(crate) struct AssetStorage {
+    asset_type_id: TypeId,
     asset_uid: AssetId,
     assets: HashMap<AssetId, Asset>,
     asset_references: HashMap<AssetId, isize>,
+    asset_paths: HashMap<AssetId, String>,
+    path_asset_ids: HashMap<String, AssetId>,
     ref_change_channel: RefChangeChannel,
 }
 impl AssetStorage {
-    pub fn new() -> Self {
+    pub fn new(asset_type_id: TypeId) -> Self {
         Self {
+            asset_type_id,
             asset_uid: 0,
             assets: HashMap::new(),
             asset_references: HashMap::new(),
+            asset_paths: HashMap::new(),
+            path_asset_ids: HashMap::new(),
             ref_change_channel: RefChangeChannel::default(),
         }
     }
@@ -31,15 +37,51 @@ impl AssetStorage {
         self.count() == 0
     }
 
-    pub fn add(&mut self, asset: Asset, type_id: TypeId) -> Result<AssetKey, EmeraldError> {
+    pub fn add<T: Into<String>>(
+        &mut self,
+        asset: Asset,
+        file_path: Option<T>,
+    ) -> Result<AssetKey, EmeraldError> {
+        let path: Option<String> = file_path.map(|f| f.into());
+        if let Some(path) = &path {
+            if let Some(asset_id) = self.get_asset_id(path) {
+                return self.overwrite_asset(asset, asset_id);
+            }
+        }
+
+        return self.add_new_asset(asset, path);
+    }
+
+    fn overwrite_asset(
+        &mut self,
+        asset: Asset,
+        asset_id: AssetId,
+    ) -> Result<AssetKey, EmeraldError> {
+        self.assets.insert(asset_id, asset);
+
+        let key = AssetKey {
+            type_id: self.asset_type_id,
+            asset_id,
+            ref_sender: self.ref_change_channel.sender.clone(),
+        };
+
+        Ok(key)
+    }
+
+    fn add_new_asset(
+        &mut self,
+        asset: Asset,
+        path: Option<String>,
+    ) -> Result<AssetKey, EmeraldError> {
         let asset_id = self.asset_uid;
         self.asset_uid += 1;
 
         self.assets.insert(asset_id, asset);
         self.asset_references.insert(asset_id, 1);
+        path.map(|path| self.set_asset_path(asset_id, path));
 
         let key = AssetKey {
-            type_id,
+            type_id: self.asset_type_id,
             asset_id,
             ref_sender: self.ref_change_channel.sender.clone(),
         };
@@ -55,12 +97,47 @@ impl AssetStorage {
         self.assets.get_mut(id)
     }
 
+    pub fn get_asset_key(&self, path: &str) -> Option<AssetKey> {
+        self.get_asset_id(path).map(|asset_id| {
+            AssetKey::new(
+                asset_id,
+                self.asset_type_id,
+                self.ref_change_channel.sender.clone(),
+            )
+        })
+    }
+
+    pub fn get_asset_id(&self, path: &str) -> Option<AssetId> {
+        self.path_asset_ids.get(path).map(|id| id.clone())
+    }
+
+    fn add_ref_count_by_asset_id(&mut self, asset_id: AssetId, amount: isize) -> isize {
+        if !self.asset_references.contains_key(&asset_id) {
+            self.asset_references.insert(asset_id, 0);
+        }
+
+        self.asset_references
+            .get_mut(&asset_id)
+            .map(|count| {
+                *count += amount;
+                count.clone()
+            })
+            .unwrap()
+    }
+
     /// Consumes all asset reference messages and then
     /// frees all assets that have no references to them.
     pub fn update(&mut self) -> Result<(), EmeraldError> {
+        let now = std::time::Instant::now();
+
         let mut changes_by_asset_id = HashMap::new();
 
         loop {
+            if self.ref_change_channel.receiver.is_empty() {
+                break;
+            }
+            println!("receiver len {:?}", self.ref_change_channel.receiver.len());
+
             let ref_change = match self.ref_change_channel.receiver.try_recv() {
                 Ok(message) => message,
                 Err(TryRecvError::Empty) => break,
@@ -72,6 +149,9 @@ impl AssetStorage {
                 RefChange::Decrement(id) => decrement_by_asset_id(&mut changes_by_asset_id, id),
             };
         }
+        println!("asset store loop {:?}", std::time::Instant::now() - now);
+
+        println!("{:?}", changes_by_asset_id);
 
         let mut to_free = Vec::new();
         for (id, change_value) in changes_by_asset_id {
@@ -79,25 +159,32 @@ impl AssetStorage {
                 self.asset_references.insert(id, 0);
             }
 
-            self.asset_references.get_mut(&id).map(|count| {
-                *count += change_value;
-
-                if *count <= 0 {
-                    to_free.push(id);
-                }
-            });
+            if self.add_ref_count_by_asset_id(id, change_value) <= 0 {
+                to_free.push(id);
+            }
         }
+        println!("asset store alter {:?}", std::time::Instant::now() - now);
 
+        println!("assets to_free: {:?}", to_free.len());
         for id in to_free {
             self.free_asset(&id)
         }
-
+        println!("asset store update {:?}", std::time::Instant::now() - now);
         Ok(())
+    }
+
+    fn set_asset_path(&mut self, asset_id: AssetId, path: String) {
+        self.asset_paths.insert(asset_id, path.clone());
+        self.path_asset_ids.insert(path, asset_id);
     }
 
     fn free_asset(&mut self, id: &AssetId) {
         self.asset_references.remove(&id);
         self.assets.remove(&id);
+
+        self.asset_paths
+            .remove(&id)
+            .map(|path| self.path_asset_ids.remove(&path));
     }
 }
 
@@ -130,25 +217,25 @@ mod tests {
 
     #[test]
     fn asset_counts() {
-        let mut asset_storage = AssetStorage::new();
         let expected_value = 10;
         let asset = TestAsset {
             value: expected_value,
         };
         let type_id = asset.type_id();
-        let _key = asset_storage.add(Box::new(asset), type_id).unwrap();
+        let mut asset_storage = AssetStorage::new(type_id);
+        let _key = asset_storage.add(Box::new(asset), Some("test")).unwrap();
         assert_eq!(asset_storage.count(), 1);
     }
 
     #[test]
     fn auto_drops_assets() {
-        let mut asset_storage = AssetStorage::new();
         let expected_value = 10;
         let asset = TestAsset {
             value: expected_value,
         };
         let type_id = asset.type_id();
-        let key = asset_storage.add(Box::new(asset), type_id).unwrap();
+        let mut asset_storage = AssetStorage::new(type_id);
+        let key = asset_storage.add(Box::new(asset), Some("test")).unwrap();
         asset_storage.update().unwrap();
         assert_eq!(asset_storage.count(), 1);
         assert_eq!(
@@ -157,6 +244,38 @@ mod tests {
         );
 
         let key2 = key.clone();
+        asset_storage.update().unwrap();
+        assert_eq!(
+            *asset_storage.asset_references.get(&key.asset_id).unwrap(),
+            2
+        );
+
+        drop(key);
+        asset_storage.update().unwrap();
+        assert_eq!(asset_storage.count(), 1);
+
+        drop(key2);
+        asset_storage.update().unwrap();
+        assert_eq!(asset_storage.count(), 0);
+    }
+
+    #[test]
+    fn get_asset_key_bumps_up_ref_counter() {
+        let expected_value = 10;
+        let asset = TestAsset {
+            value: expected_value,
+        };
+        let type_id = asset.type_id();
+        let mut asset_storage = AssetStorage::new(type_id);
+        let key = asset_storage.add(Box::new(asset), Some("test")).unwrap();
+        asset_storage.update().unwrap();
+        assert_eq!(
+            *asset_storage.asset_references.get(&key.asset_id).unwrap(),
+            1
+        );
+
+        let key2 = asset_storage.get_asset_key("test").unwrap();
+        asset_storage.update().unwrap();
         asset_storage.update().unwrap();
         assert_eq!(
             *asset_storage.asset_references.get(&key.asset_id).unwrap(),

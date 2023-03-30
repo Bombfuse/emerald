@@ -6,6 +6,7 @@ pub(crate) type AssetId = usize;
 
 pub type Asset = Box<dyn Any>;
 
+#[derive(Debug)]
 pub struct AssetKey {
     pub(crate) type_id: TypeId,
     pub(crate) asset_id: AssetId,
@@ -13,6 +14,8 @@ pub struct AssetKey {
 }
 impl AssetKey {
     pub(crate) fn new(asset_id: AssetId, type_id: TypeId, ref_sender: Sender<RefChange>) -> Self {
+        ref_sender.send(RefChange::Increment(asset_id)).unwrap();
+
         Self {
             type_id,
             asset_id,
@@ -42,7 +45,10 @@ impl Drop for AssetKey {
     fn drop(&mut self) {
         self.ref_sender
             .send(RefChange::Decrement(self.asset_id))
-            .unwrap();
+            .expect(&format!(
+                "Fatal Error: Failed to drop asset {:?}",
+                (self.type_id, self.asset_id)
+            ));
     }
 }
 
