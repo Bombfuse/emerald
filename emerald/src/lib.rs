@@ -180,8 +180,4 @@ async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldE
 
         _ => {}
     });
-
-    game_engine.clean_up();
-
-    Ok(())
 }

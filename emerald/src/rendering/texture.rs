@@ -3,7 +3,7 @@ use wgpu::{BindGroup, BindGroupLayout};
 
 use crate::{
     asset_key::AssetKey,
-    rendering_engine::{BindGroupLayoutId, BindGroupLayouts, BindGroups},
+    rendering_engine::{BindGroupLayoutId, BindGroupLayouts},
     AssetEngine, EmeraldError,
 };
 pub const EMERALD_DEFAULT_TEXTURE_NAME: &str = "emerald_default_texture";
@@ -201,8 +201,8 @@ impl Texture {
 
 pub(crate) fn get_texture_key(asset_engine: &mut AssetEngine, label: &str) -> Option<TextureKey> {
     if let (Some(texture_asset_key), Some(bind_group_key)) = (
-        asset_engine.get_asset_key_by_path::<Texture>(label),
-        asset_engine.get_asset_key_by_path::<BindGroup>(label),
+        asset_engine.get_asset_key_by_label::<Texture>(label),
+        asset_engine.get_asset_key_by_label::<BindGroup>(label),
     ) {
         return Some(TextureKey::new(label, texture_asset_key, bind_group_key));
     }

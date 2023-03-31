@@ -13,7 +13,7 @@ pub(crate) struct AssetStorage {
     assets: HashMap<AssetId, Asset>,
     asset_references: HashMap<AssetId, isize>,
     asset_paths: HashMap<AssetId, String>,
-    path_asset_ids: HashMap<String, AssetId>,
+    label_asset_ids: HashMap<String, AssetId>,
     ref_change_channel: RefChangeChannel,
 }
 impl AssetStorage {
@@ -24,7 +24,7 @@ impl AssetStorage {
             assets: HashMap::new(),
             asset_references: HashMap::new(),
             asset_paths: HashMap::new(),
-            path_asset_ids: HashMap::new(),
+            label_asset_ids: HashMap::new(),
             ref_change_channel: RefChangeChannel::default(),
         }
     }
@@ -78,7 +78,7 @@ impl AssetStorage {
 
         self.assets.insert(asset_id, asset);
         self.asset_references.insert(asset_id, 1);
-        path.map(|path| self.set_asset_path(asset_id, path));
+        path.map(|path| self.set_asset_label(asset_id, path));
 
         let key = AssetKey {
             type_id: self.asset_type_id,
@@ -107,8 +107,20 @@ impl AssetStorage {
         })
     }
 
+    pub fn get_asset_key_by_id(&self, id: &AssetId) -> Option<AssetKey> {
+        if self.assets.contains_key(id) {
+            Some(AssetKey::new(
+                *id,
+                self.asset_type_id,
+                self.ref_change_channel.sender.clone(),
+            ))
+        } else {
+            None
+        }
+    }
+
     pub fn get_asset_id(&self, path: &str) -> Option<AssetId> {
-        self.path_asset_ids.get(path).map(|id| id.clone())
+        self.label_asset_ids.get(path).map(|id| id.clone())
     }
 
     fn add_ref_count_by_asset_id(&mut self, asset_id: AssetId, amount: isize) -> isize {
@@ -128,15 +140,12 @@ impl AssetStorage {
     /// Consumes all asset reference messages and then
     /// frees all assets that have no references to them.
     pub fn update(&mut self) -> Result<(), EmeraldError> {
-        let now = std::time::Instant::now();
-
         let mut changes_by_asset_id = HashMap::new();
 
         loop {
             if self.ref_change_channel.receiver.is_empty() {
                 break;
             }
-            println!("receiver len {:?}", self.ref_change_channel.receiver.len());
 
             let ref_change = match self.ref_change_channel.receiver.try_recv() {
                 Ok(message) => message,
@@ -149,9 +158,6 @@ impl AssetStorage {
                 RefChange::Decrement(id) => decrement_by_asset_id(&mut changes_by_asset_id, id),
             };
         }
-        println!("asset store loop {:?}", std::time::Instant::now() - now);
-
-        println!("{:?}", changes_by_asset_id);
 
         let mut to_free = Vec::new();
         for (id, change_value) in changes_by_asset_id {
@@ -163,19 +169,16 @@ impl AssetStorage {
                 to_free.push(id);
             }
         }
-        println!("asset store alter {:?}", std::time::Instant::now() - now);
 
-        println!("assets to_free: {:?}", to_free.len());
         for id in to_free {
             self.free_asset(&id)
         }
-        println!("asset store update {:?}", std::time::Instant::now() - now);
         Ok(())
     }
 
-    fn set_asset_path(&mut self, asset_id: AssetId, path: String) {
+    fn set_asset_label(&mut self, asset_id: AssetId, path: String) {
         self.asset_paths.insert(asset_id, path.clone());
-        self.path_asset_ids.insert(path, asset_id);
+        self.label_asset_ids.insert(path, asset_id);
     }
 
     fn free_asset(&mut self, id: &AssetId) {
@@ -184,7 +187,7 @@ impl AssetStorage {
 
         self.asset_paths
             .remove(&id)
-            .map(|path| self.path_asset_ids.remove(&path));
+            .map(|path| self.label_asset_ids.remove(&path));
     }
 }
 

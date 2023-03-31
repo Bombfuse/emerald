@@ -78,7 +78,7 @@ impl<'c> AssetLoader<'c> {
     pub fn asset_bytes<T: AsRef<str>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
         let path: &str = file_path.as_ref();
 
-        if let Some(key) = self.asset_engine.get_asset_key_by_path::<Vec<u8>>(path) {
+        if let Some(key) = self.asset_engine.get_asset_key_by_label::<Vec<u8>>(path) {
             if let Some(bytes) = self.asset_engine.get_asset::<Vec<u8>>(&key.asset_id) {
                 return Ok(bytes.clone());
             }
@@ -114,11 +114,10 @@ impl<'c> AssetLoader<'c> {
         font_size: u32,
     ) -> Result<FontKey, EmeraldError> {
         let file_path: &str = file_path.as_ref();
-        // let key = FontKey::new(file_path.clone(), font_size);
 
-        // if self.asset_engine.get_font(&key).is_some() {
-        //     return Ok(key);
-        // }
+        if let Some(key) = self.asset_engine.get_asset_key_by_label::<Font>(&file_path) {
+            return Ok(FontKey::new(key, file_path, font_size));
+        }
 
         let font_image = FontImage::gen_image_color(512, 512, Color::new(0, 0, 0, 0));
         let font_texture_key = self.rendering_engine.load_texture_ext(

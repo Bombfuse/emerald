@@ -1,7 +1,7 @@
 use std::convert::TryInto;
 use std::sync::Arc;
 
-use crate::rendering_engine::{BindGroupLayouts, BindGroups};
+use crate::rendering_engine::BindGroupLayouts;
 use crate::texture::{get_texture_key, Texture, TextureKey};
 use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};

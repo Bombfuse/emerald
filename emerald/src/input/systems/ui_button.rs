@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     screen_translation_to_world_translation,
+    texture::Texture,
     transform::{Transform, Translation},
     Emerald, TouchState, UIButton, World,
 };
@@ -86,26 +87,25 @@ fn is_translation_inside_button(
 ) -> bool {
     let mut is_inside = false;
 
-    let texture_key = if ui_button.is_pressed() {
-        &ui_button.pressed_texture
-    } else {
-        &ui_button.unpressed_texture
-    };
+    let texture_key = ui_button.current_texture();
 
-    // if let Some(texture) = emd.asset_store.get_texture(texture_key) {
-    //     if (translation.x >= ui_button_transform.translation.x - texture.size.width as f32 / 2.0)
-    //         && (translation.x
-    //             <= ui_button_transform.translation.x + texture.size.width as f32 / 2.0)
-    //     {
-    //         if (translation.y
-    //             >= ui_button_transform.translation.y - texture.size.height as f32 / 2.0)
-    //             && (translation.y
-    //                 <= ui_button_transform.translation.y + texture.size.height as f32 / 2.0)
-    //         {
-    //             is_inside = true;
-    //         }
-    //     }
-    // }
+    if let Some(texture) = emd
+        .asset_engine
+        .get_asset::<Texture>(&texture_key.asset_key.asset_id)
+    {
+        if (translation.x >= ui_button_transform.translation.x - texture.size.width as f32 / 2.0)
+            && (translation.x
+                <= ui_button_transform.translation.x + texture.size.width as f32 / 2.0)
+        {
+            if (translation.y
+                >= ui_button_transform.translation.y - texture.size.height as f32 / 2.0)
+                && (translation.y
+                    <= ui_button_transform.translation.y + texture.size.height as f32 / 2.0)
+            {
+                is_inside = true;
+            }
+        }
+    }
 
     is_inside
 }

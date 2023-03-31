@@ -27,12 +27,13 @@ pub(crate) struct GameEngine {
     audio_engine: AudioEngine,
     profile_cache: ProfileCache,
     input_engine: InputEngine,
-    asset_engine: AssetEngine,
     logging_engine: LoggingEngine,
     resources: Resources,
-
     last_instant: f64,
     fps_tracker: VecDeque<f64>,
+
+    // Declare last so that it drops last, needed so that asset ref channels stay open while game is dropped
+    asset_engine: AssetEngine,
 }
 impl GameEngine {
     pub async fn new(
@@ -161,7 +162,6 @@ impl GameEngine {
             &mut self.resources,
         );
         self.game.draw(emd);
-        // self.rendering_engine.post_draw(ctx, &mut self.asset_store);
 
         Ok(())
     }
@@ -171,6 +171,7 @@ impl GameEngine {
         drop(self.game);
         drop(self.rendering_engine);
         drop(self.audio_engine);
+        drop(self.resources);
 
         // Clean up all assets
         self.asset_engine.update().unwrap();

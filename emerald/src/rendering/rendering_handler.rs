@@ -4,27 +4,25 @@ use rapier2d::{
 };
 
 use crate::{
-    game_engine::GameEngineContext,
-    rendering_engine::{DrawCommand, Drawable, RenderingEngine},
-    texture::TextureKey,
+    game_engine::GameEngineContext, rendering_engine::RenderingEngine, texture::TextureKey,
     AssetEngine, Color, EmeraldError, Transform, World,
 };
 
 use super::components::{ColorRect, ColorTri, Label, Sprite};
 
 pub struct RenderingHandler<'c> {
-    asset_store: &'c mut AssetEngine,
+    asset_engine: &'c mut AssetEngine,
     rendering_engine: &'c mut RenderingEngine,
     ctx: &'c mut GameEngineContext,
 }
 impl<'c> RenderingHandler<'c> {
     pub(crate) fn new(
-        asset_store: &'c mut AssetEngine,
+        asset_engine: &'c mut AssetEngine,
         rendering_engine: &'c mut RenderingEngine,
         ctx: &'c mut GameEngineContext,
     ) -> Self {
         RenderingHandler {
-            asset_store,
+            asset_engine,
             rendering_engine,
             ctx,
         }
@@ -32,7 +30,7 @@ impl<'c> RenderingHandler<'c> {
 
     pub fn draw_world(&mut self, world: &mut World) -> Result<(), EmeraldError> {
         self.rendering_engine
-            .draw_world(world, &mut self.asset_store)
+            .draw_world(world, &mut self.asset_engine)
     }
 
     /// Draws the world with the given transform applied to the active camera.
@@ -42,7 +40,7 @@ impl<'c> RenderingHandler<'c> {
         transform: Transform,
     ) -> Result<(), EmeraldError> {
         self.rendering_engine
-            .draw_world_with_transform(world, transform, &mut self.asset_store)
+            .draw_world_with_transform(world, transform, &mut self.asset_engine)
     }
 
     pub fn draw_colliders(
@@ -118,21 +116,13 @@ impl<'c> RenderingHandler<'c> {
         sprite: &Sprite,
         transform: &Transform,
     ) -> Result<(), EmeraldError> {
-        self.rendering_engine.push_draw_command(
-            &mut self.asset_store,
-            DrawCommand {
-                drawable: Drawable::Sprite {
-                    sprite: sprite.clone(),
-                },
-                transform: *transform,
-                z_index: sprite.z_index,
-            },
-        )
+        self.rendering_engine
+            .draw_sprite(&mut self.asset_engine, sprite, transform)
     }
 
     pub fn draw_label(&mut self, label: &Label, transform: &Transform) -> Result<(), EmeraldError> {
         self.rendering_engine
-            .draw_label(&mut self.asset_store, label, transform)
+            .draw_label(&mut self.asset_engine, label, transform)
     }
 
     /// Draw a triangle with the given points at the given transform.
@@ -142,16 +132,8 @@ impl<'c> RenderingHandler<'c> {
         color_tri: &ColorTri,
         transform: &Transform,
     ) -> Result<(), EmeraldError> {
-        self.rendering_engine.push_draw_command(
-            &mut self.asset_store,
-            DrawCommand {
-                drawable: Drawable::ColorTri {
-                    color_tri: color_tri.clone(),
-                },
-                transform: transform.clone(),
-                z_index: color_tri.z_index,
-            },
-        )
+        self.rendering_engine
+            .draw_color_tri(&mut self.asset_engine, color_tri, transform)
     }
 
     pub fn draw_convex_polygon(
@@ -189,37 +171,29 @@ impl<'c> RenderingHandler<'c> {
         color_rect: &ColorRect,
         transform: &Transform,
     ) -> Result<(), EmeraldError> {
-        self.rendering_engine.push_draw_command(
-            &mut self.asset_store,
-            DrawCommand {
-                drawable: Drawable::ColorRect {
-                    color_rect: *color_rect,
-                },
-                transform: *transform,
-                z_index: color_rect.z_index,
-            },
-        )
+        self.rendering_engine
+            .draw_color_rect(&mut self.asset_engine, color_rect, transform)
     }
 
     /// Begin drawing to the screen
     pub fn begin(&mut self) -> Result<(), EmeraldError> {
-        self.rendering_engine.begin(&mut self.asset_store)
+        self.rendering_engine.begin(&mut self.asset_engine)
     }
 
     /// Begin drawing to the screen
-    pub fn begin_texture(&mut self, texture_key: TextureKey) -> Result<(), EmeraldError> {
+    pub fn begin_texture(&mut self, texture_key: &TextureKey) -> Result<(), EmeraldError> {
         self.rendering_engine
-            .begin_texture(texture_key, &mut self.asset_store)
+            .begin_texture(texture_key, &mut self.asset_engine)
     }
 
     /// Commit all drawings to the screen
     pub fn render(&mut self) -> Result<(), EmeraldError> {
-        self.rendering_engine.render(&mut self.asset_store)
+        self.rendering_engine.render(&mut self.asset_engine)
     }
 
-    /// Commit all drawings to the screen
-    pub fn render_texture(&mut self) -> Result<TextureKey, EmeraldError> {
-        self.rendering_engine.render_texture(&mut self.asset_store)
+    /// Commit all drawings to the active key
+    pub fn render_texture(&mut self) -> Result<(), EmeraldError> {
+        self.rendering_engine.render_texture(&mut self.asset_engine)
     }
 
     pub fn set_fullscreen(&mut self, fs: bool) -> Result<(), EmeraldError> {

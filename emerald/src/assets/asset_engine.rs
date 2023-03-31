@@ -23,12 +23,21 @@ impl AssetEngine {
         }
     }
 
-    pub fn get_asset_key_by_path<T: Any>(&self, path: &str) -> Option<AssetKey> {
+    pub fn get_asset_key_by_label<T: Any>(&self, path: &str) -> Option<AssetKey> {
         let type_id = std::any::TypeId::of::<T>();
 
         self.asset_stores
             .get(&type_id)
             .map(|store| store.get_asset_key(path))
+            .flatten()
+    }
+
+    pub fn get_asset_key_by_id<T: Any>(&self, id: &AssetId) -> Option<AssetKey> {
+        let type_id = std::any::TypeId::of::<T>();
+
+        self.asset_stores
+            .get(&type_id)
+            .map(|store| store.get_asset_key_by_id(id))
             .flatten()
     }
 
@@ -118,8 +127,6 @@ impl AssetEngine {
 
     /// Called after each frame, cleans up unused assets.
     pub fn update(&mut self) -> Result<(), EmeraldError> {
-        let now = std::time::Instant::now();
-        println!("assets: {:?}", self.count());
         let mut to_remove = Vec::new();
         for (id, store) in self.asset_stores.iter_mut() {
             store.update()?;
@@ -129,13 +136,16 @@ impl AssetEngine {
             }
         }
 
-        println!("stores to remove: {:?}", to_remove.len());
         for id in to_remove {
             self.asset_stores.remove(&id);
         }
 
-        println!("assets update {:?}", std::time::Instant::now() - now);
         Ok(())
+    }
+}
+impl Drop for AssetEngine {
+    fn drop(&mut self) {
+        self.update().unwrap();
     }
 }
 
