@@ -9,7 +9,7 @@ use kira::{
     sound::{handle::SoundHandle, SoundId},
 };
 
-use crate::{AssetEngine, EmeraldError, Mixer, SoundInstanceId, SoundKey, ThreadSafeMixer};
+use crate::{AssetEngine, EmeraldError, Mixer, Sound, SoundInstanceId, SoundKey, ThreadSafeMixer};
 
 pub(crate) struct KiraMixer {
     inner: Arc<Mutex<AudioManager>>,
@@ -45,75 +45,75 @@ impl Mixer for KiraMixer {
     /// Applies the volume of the mixer to the sound.
     fn play(
         &mut self,
-        key: SoundKey,
-        asset_store: &mut AssetEngine,
+        key: &SoundKey,
+        asset_engine: &mut AssetEngine,
     ) -> Result<SoundInstanceId, EmeraldError> {
-        // if let Some(sound) = asset_store.sound_map.get(&key) {
-        //     let id = sound.inner.id();
+        if let Some(sound) = asset_engine.get_asset::<Sound>(&key.asset_key.asset_id) {
+            let id = sound.inner.id();
 
-        //     let mut sound_handle = if let Some(sound_handle) = self.sound_handles.get_mut(&id) {
-        //         sound_handle.clone()
-        //     } else {
-        //         let handle = {
-        //             let mut inner = self.get_inner_handle()?;
-        //             inner.add_sound(sound.inner.clone())?
-        //         };
-        //         self.sound_handles.insert(id, handle.clone());
+            let mut sound_handle = if let Some(sound_handle) = self.sound_handles.get_mut(&id) {
+                sound_handle.clone()
+            } else {
+                let handle = {
+                    let mut inner = self.get_inner_handle()?;
+                    inner.add_sound(sound.inner.clone())?
+                };
+                self.sound_handles.insert(id, handle.clone());
 
-        //         handle
-        //     };
+                handle
+            };
 
-        //     let instance_handle = sound_handle.play(InstanceSettings::new().volume(self.volume))?;
+            let instance_handle = sound_handle.play(InstanceSettings::new().volume(self.volume))?;
 
-        //     let id = SoundInstanceId::new(self.sound_instance_uid);
-        //     self.sound_instance_uid += 1;
-        //     self.instances.insert(id, instance_handle);
+            let id = SoundInstanceId::new(self.sound_instance_uid);
+            self.sound_instance_uid += 1;
+            self.instances.insert(id, instance_handle);
 
-        //     return Ok(id);
-        // }
+            return Ok(id);
+        }
 
         Err(EmeraldError::new(format!(
-            "Sound for {:?} is not loaded in the asset store.",
+            "Sound for {:?} is not loaded in the asset engine.",
             key
         )))
     }
 
     fn play_and_loop(
         &mut self,
-        key: SoundKey,
-        asset_store: &mut AssetEngine,
+        key: &SoundKey,
+        asset_engine: &mut AssetEngine,
     ) -> Result<SoundInstanceId, EmeraldError> {
-        // if let Some(sound) = asset_store.sound_map.get(&key) {
-        //     let id = sound.inner.id();
+        if let Some(sound) = asset_engine.get_asset::<Sound>(&key.asset_key.asset_id) {
+            let id = sound.inner.id();
 
-        //     let mut sound_handle = if let Some(sound_handle) = self.sound_handles.get_mut(&id) {
-        //         sound_handle.clone()
-        //     } else {
-        //         let handle = {
-        //             let mut inner = self.get_inner_handle()?;
-        //             inner.add_sound(sound.inner.clone())?
-        //         };
+            let mut sound_handle = if let Some(sound_handle) = self.sound_handles.get_mut(&id) {
+                sound_handle.clone()
+            } else {
+                let handle = {
+                    let mut inner = self.get_inner_handle()?;
+                    inner.add_sound(sound.inner.clone())?
+                };
 
-        //         self.sound_handles.insert(id, handle.clone());
+                self.sound_handles.insert(id, handle.clone());
 
-        //         handle
-        //     };
+                handle
+            };
 
-        //     let instance_handle = sound_handle.play(
-        //         InstanceSettings::new()
-        //             .volume(self.volume)
-        //             .loop_start(kira::instance::InstanceLoopStart::Custom(0.0)),
-        //     )?;
+            let instance_handle = sound_handle.play(
+                InstanceSettings::new()
+                    .volume(self.volume)
+                    .loop_start(kira::instance::InstanceLoopStart::Custom(0.0)),
+            )?;
 
-        //     let id = SoundInstanceId::new(self.sound_instance_uid);
-        //     self.sound_instance_uid += 1;
-        //     self.instances.insert(id, instance_handle);
+            let id = SoundInstanceId::new(self.sound_instance_uid);
+            self.sound_instance_uid += 1;
+            self.instances.insert(id, instance_handle);
 
-        //     return Ok(id);
-        // }
+            return Ok(id);
+        }
 
         Err(EmeraldError::new(format!(
-            "Sound for {:?} is not loaded in the asset store.",
+            "Sound for {:?} is not loaded in the asset engine.",
             key
         )))
     }

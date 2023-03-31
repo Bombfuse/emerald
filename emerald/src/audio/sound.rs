@@ -1,4 +1,4 @@
-use crate::EmeraldError;
+use crate::{asset_key::AssetKey, EmeraldError};
 
 #[derive(Clone, Debug, Copy, Hash, Eq, PartialEq)]
 pub enum SoundFormat {
@@ -16,11 +16,14 @@ impl SoundInstanceId {
 }
 
 /// A key to sound data in the engine.
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct SoundKey(String, SoundFormat);
+#[derive(Clone, Debug)]
+pub struct SoundKey {
+    pub(crate) asset_key: AssetKey,
+    format: SoundFormat,
+}
 impl SoundKey {
-    pub fn new<T: Into<String>>(sound_path: T, format: SoundFormat) -> Self {
-        SoundKey(sound_path.into(), format)
+    pub fn new(asset_key: AssetKey, format: SoundFormat) -> Self {
+        SoundKey { asset_key, format }
     }
 }
 

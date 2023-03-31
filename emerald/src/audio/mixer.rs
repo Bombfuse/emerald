@@ -22,12 +22,12 @@ pub(crate) type ThreadSafeMixer = Box<dyn Mixer + Send + Sync>;
 pub(crate) trait Mixer {
     fn play(
         &mut self,
-        sound: SoundKey,
+        sound: &SoundKey,
         asset_store: &mut AssetEngine,
     ) -> Result<SoundInstanceId, EmeraldError>;
     fn play_and_loop(
         &mut self,
-        sound: SoundKey,
+        sound: &SoundKey,
         asset_store: &mut AssetEngine,
     ) -> Result<SoundInstanceId, EmeraldError>;
     fn get_volume(&self) -> Result<f32, EmeraldError>;
@@ -93,10 +93,10 @@ impl<'a> MixerHandler<'a> {
         MixerHandler { inner, asset_store }
     }
 
-    pub fn play(&mut self, key: SoundKey) -> Result<SoundInstanceId, EmeraldError> {
+    pub fn play(&mut self, key: &SoundKey) -> Result<SoundInstanceId, EmeraldError> {
         self.inner.play(key, &mut self.asset_store)
     }
-    pub fn play_and_loop(&mut self, key: SoundKey) -> Result<SoundInstanceId, EmeraldError> {
+    pub fn play_and_loop(&mut self, key: &SoundKey) -> Result<SoundInstanceId, EmeraldError> {
         self.inner.play_and_loop(key, &mut self.asset_store)
     }
     pub fn get_volume(&self) -> Result<f32, EmeraldError> {

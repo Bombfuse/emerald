@@ -97,6 +97,21 @@ impl AssetStorage {
         self.assets.get_mut(id)
     }
 
+    pub fn get_by_label(&self, label: &str) -> Option<&Asset> {
+        self.label_asset_ids
+            .get(label)
+            .map(|id| self.get(id))
+            .flatten()
+    }
+
+    pub fn get_mut_by_label(&mut self, label: &str) -> Option<&mut Asset> {
+        if let Some(id) = self.label_asset_ids.get(label).map(|id| *id) {
+            return self.get_mut(&id);
+        }
+
+        None
+    }
+
     pub fn get_asset_key(&self, path: &str) -> Option<AssetKey> {
         self.get_asset_id(path).map(|asset_id| {
             AssetKey::new(

@@ -72,8 +72,7 @@ impl<'c> Emerald<'c> {
     }
 
     pub fn get_asset_folder_root(&mut self) -> String {
-        // self.asset_store.get_asset_folder_root()
-        "".to_string()
+        self.asset_engine.asset_folder_root.clone()
     }
 
     pub fn get_user_data_folder_root(&mut self) -> String {

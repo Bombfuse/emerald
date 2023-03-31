@@ -1,5 +1,6 @@
 use wgpu::BindGroupLayout;
 
+use crate::asset_key::AssetKey;
 use crate::assets::*;
 use crate::audio::*;
 use crate::ent::load_ent_from_toml;
@@ -67,11 +68,11 @@ impl<'c> AssetLoader<'c> {
     }
 
     pub fn set_custom_component_loader(&mut self, custom_component_loader: CustomComponentLoader) {
-        // self.asset_store.load_config.custom_component_loader = Some(custom_component_loader);
+        self.asset_engine.load_config.custom_component_loader = Some(custom_component_loader);
     }
 
     pub fn set_world_resource_loader(&mut self, world_resource_loader: WorldResourceLoader) {
-        // self.asset_store.load_config.world_resource_loader = Some(world_resource_loader);
+        self.asset_engine.load_config.world_resource_loader = Some(world_resource_loader);
     }
 
     /// Retrieves bytes from the assets directory of the game
@@ -90,14 +91,13 @@ impl<'c> AssetLoader<'c> {
 
     /// Retrieves bytes from a file in the user directory of the game
     pub fn user_bytes<T: AsRef<str>>(&mut self, file_path: T) -> Result<Vec<u8>, EmeraldError> {
-        // let path: &str = file_path.as_ref();
-        // if let Some(bytes) = self.asset_store.get_user_bytes(&path) {
-        //     return Ok(bytes);
-        // }
+        let path: &str = file_path.as_ref();
+        if let Some(bytes) = self.asset_engine.get_asset_by_label::<Vec<u8>>(&path) {
+            return Ok(bytes.clone());
+        }
 
-        // let bytes = self.asset_store.read_user_file(&path)?;
-        // Ok(bytes)
-        Ok(Vec::new())
+        let bytes = self.asset_engine.read_user_file(&path)?;
+        Ok(bytes)
     }
 
     /// Loads bytes from given path as a string
@@ -234,24 +234,23 @@ impl<'c> AssetLoader<'c> {
             }
         };
 
-        let key = SoundKey::new(path.clone(), sound_format);
-        // if self.asset_store.contains_sound(&key) {
-        //     return Ok(key);
-        // }
-        // let sound_bytes = self.asset_bytes(path.clone())?;
-        // let sound = Sound::new(sound_bytes, sound_format)?;
+        if let Some(asset_key) = self.asset_engine.get_asset_key_by_label::<Sound>(path) {
+            return Ok(SoundKey::new(asset_key, sound_format));
+        }
 
-        // if !self.asset_store.contains_sound(&key) {
-        //     self.asset_store.insert_sound(key.clone(), sound);
-        // }
-
-        Ok(key)
+        let sound_bytes = self.asset_bytes(path.clone())?;
+        let sound = Sound::new(sound_bytes, sound_format)?;
+        let asset_key = self.asset_engine.add_asset(Box::new(sound))?;
+        Ok(SoundKey::new(asset_key, sound_format))
     }
 
-    pub fn pack_asset_bytes(&mut self, name: &str, bytes: Vec<u8>) -> Result<(), EmeraldError> {
-        // self.asset_store.insert_asset_bytes(name.into(), bytes)?;
-
-        Ok(())
+    pub fn pack_asset_bytes(
+        &mut self,
+        name: &str,
+        bytes: Vec<u8>,
+    ) -> Result<AssetKey, EmeraldError> {
+        self.asset_engine
+            .add_asset_with_label(Box::new(bytes), name)
     }
 
     pub fn preload_texture<T: AsRef<str>>(&mut self, name: T) -> Result<(), EmeraldError> {

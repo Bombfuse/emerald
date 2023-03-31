@@ -6,21 +6,49 @@ use std::{
 use crate::{
     asset_key::{Asset, AssetId, AssetKey},
     asset_storage::AssetStorage,
-    EmeraldError,
+    texture::Texture,
+    AssetLoadConfig, EmeraldError, Sound,
 };
 
 const DEFAULT_ASSET_FOLDER: &str = "./assets/";
+const DEFAULT_USER_DATA_FOLDER: &str = "./";
 
 pub(crate) struct AssetEngine {
+    pub(crate) user_data_folder_root: String,
     pub(crate) asset_folder_root: String,
+    pub(crate) load_config: AssetLoadConfig,
     asset_stores: HashMap<TypeId, AssetStorage>,
 }
 impl AssetEngine {
     pub(crate) fn new() -> Self {
         Self {
+            user_data_folder_root: DEFAULT_USER_DATA_FOLDER.to_string(),
             asset_folder_root: DEFAULT_ASSET_FOLDER.to_string(),
             asset_stores: HashMap::new(),
+            load_config: AssetLoadConfig::default(),
         }
+    }
+
+    pub fn get_asset_by_label<T: Any>(&self, label: &str) -> Option<&T> {
+        let type_id = std::any::TypeId::of::<T>();
+
+        self.asset_stores
+            .get(&type_id)
+            .map(|store| store.get_by_label(label))
+            .flatten()
+            .map(|asset| asset.downcast_ref())
+            .flatten()
+    }
+
+    pub fn get_asset_mut_by_label<T: Any>(&mut self, label: &str) -> Option<&mut T> {
+        let type_id = std::any::TypeId::of::<T>();
+
+        self.asset_stores
+            .get_mut(&type_id)
+            .map(|store| store.get_mut_by_label(label))
+            .flatten()
+            .map(|asset| asset.downcast_mut())
+            .flatten()
     }
 
     pub fn get_asset_key_by_label<T: Any>(&self, path: &str) -> Option<AssetKey> {
@@ -106,6 +134,23 @@ impl AssetEngine {
         read_file(&full_path)
     }
 
+    pub fn read_user_file(&mut self, relative_path: &str) -> Result<Vec<u8>, EmeraldError> {
+        let full_path = self.get_full_user_data_path(relative_path);
+        read_file(&full_path)
+    }
+
+    pub fn get_full_user_data_path(&self, path: &str) -> String {
+        // If it already contains the correct directory then just return it
+        if path.contains(&self.user_data_folder_root) {
+            return path.to_string();
+        }
+
+        let mut full_path = self.user_data_folder_root.clone();
+        full_path.push_str(path);
+
+        full_path
+    }
+
     pub fn get_full_asset_path(&self, path: &str) -> String {
         // If it already contains the correct directory then just return it
         if path.contains(&self.asset_folder_root) {
@@ -118,11 +163,20 @@ impl AssetEngine {
         full_path
     }
 
-    pub fn count(&self) -> usize {
+    pub fn total_count(&self) -> usize {
         self.asset_stores
             .iter()
             .map(|(_, store)| store.count())
             .sum()
+    }
+
+    pub fn count<T: Any>(&self) -> usize {
+        let type_id = std::any::TypeId::of::<T>();
+
+        self.asset_stores
+            .get(&type_id)
+            .map(|store| store.count())
+            .unwrap_or(0)
     }
 
     /// Called after each frame, cleans up unused assets.
@@ -139,6 +193,9 @@ impl AssetEngine {
         for id in to_remove {
             self.asset_stores.remove(&id);
         }
+
+        println!("sound count {:?}", self.count::<Sound>());
+        println!("texture count {:?}", self.count::<Texture>());
 
         Ok(())
     }
@@ -275,197 +332,6 @@ mod tests {
 //             #[cfg(feature = "hotreload")]
 //             file_hot_reload_metadata: HashMap::new(),
 //         })
-//     }
-
-//     pub fn set_asset_folder_root(&mut self, root: String) {
-//         self.asset_folder_root = root;
-//     }
-
-//     pub fn set_user_data_folder_root(&mut self, root: String) {
-//         self.user_data_folder_root = root;
-//     }
-
-//     pub fn get_asset_folder_root(&mut self) -> String {
-//         self.asset_folder_root.clone()
-//     }
-
-//     pub fn get_user_data_folder_root(&mut self) -> String {
-//         self.user_data_folder_root.clone()
-//     }
-
-//     pub fn insert_asset_bytes(
-//         &mut self,
-//         relative_path: String,
-//         bytes: Vec<u8>,
-//     ) -> Result<(), EmeraldError> {
-//         let path = self.get_full_asset_path(&relative_path);
-//         self.bytes.insert(path, bytes);
-
-//         Ok(())
-//     }
-//     pub fn get_asset_bytes(&mut self, relative_path: &str) -> Option<Vec<u8>> {
-//         let full_path = self.get_full_asset_path(relative_path);
-//         self.get_bytes(full_path)
-//     }
-//     pub fn _insert_user_bytes(
-//         &mut self,
-//         relative_path: String,
-//         bytes: Vec<u8>,
-//     ) -> Result<(), EmeraldError> {
-//         let path = self.get_full_user_data_path(&relative_path);
-//         self.bytes.insert(path, bytes);
-
-//         Ok(())
-//     }
-//     pub fn get_user_bytes(&mut self, relative_path: &str) -> Option<Vec<u8>> {
-//         let full_path = self.get_full_user_data_path(relative_path);
-//         self.get_bytes(full_path)
-//     }
-//     pub fn read_user_file(&mut self, relative_path: &str) -> Result<Vec<u8>, EmeraldError> {
-//         let full_path = self.get_full_user_data_path(relative_path);
-//         read_file(&full_path)
-//     }
-
-//     fn get_bytes(&mut self, path: String) -> Option<Vec<u8>> {
-//         if let Some(bytes) = self.bytes.get(&path) {
-//             return Some(bytes.clone());
-//         }
-
-//         None
-//     }
-
-//     pub fn insert_fontdue_font(&mut self, key: FontKey, font: fontdue::Font) {
-//         self.fontdue_fonts.push(font);
-//         self.fontdue_key_map
-//             .insert(key, self.fontdue_fonts.len() - 1);
-//     }
-
-//     pub fn insert_font(&mut self, key: FontKey, font: Font) -> Result<(), EmeraldError> {
-//         self.fonts.push(font);
-//         self.font_key_map.insert(key, self.fonts.len() - 1);
-
-//         Ok(())
-//     }
-
-//     pub fn insert_texture(&mut self, key: TextureKey, texture: Texture) {
-//         if self.get_texture(&key).is_some() {
-//             self.remove_texture(key.clone());
-//         }
-
-//         self.textures.push(texture);
-//         self.texture_key_map
-//             .insert(key.clone(), self.textures.len() - 1);
-
-//         #[cfg(feature = "hotreload")]
-//         crate::assets::hotreload::on_insert_texture(
-//             self,
-//             &self.get_full_asset_path(&key.get_name()),
-//         )
-//     }
-
-//     pub fn get_full_user_data_path(&self, path: &str) -> String {
-//         // If it already contains the correct directory then just return it
-//         if path.contains(&self.user_data_folder_root) {
-//             return path.to_string();
-//         }
-
-//         let mut full_path = self.user_data_folder_root.clone();
-//         full_path.push_str(path);
-
-//         full_path
-//     }
-
-//     pub fn get_fontdue_font(&self, key: &FontKey) -> Option<&fontdue::Font> {
-//         if let Some(index) = self.fontdue_key_map.get(key) {
-//             return self.fontdue_fonts.get(*index);
-//         }
-
-//         None
-//     }
-
-//     pub fn _get_fontdue_font_mut(&mut self, key: &FontKey) -> Option<&mut fontdue::Font> {
-//         if let Some(index) = self.fontdue_key_map.get(key) {
-//             return self.fontdue_fonts.get_mut(*index);
-//         }
-
-//         None
-//     }
-
-//     pub fn get_font(&self, key: &FontKey) -> Option<&Font> {
-//         if let Some(index) = self.font_key_map.get(key) {
-//             return self.fonts.get(*index);
-//         }
-
-//         None
-//     }
-
-//     pub fn get_font_mut(&mut self, key: &FontKey) -> Option<&mut Font> {
-//         if let Some(index) = self.fontdue_key_map.get(key) {
-//             return self.fonts.get_mut(*index);
-//         }
-
-//         None
-//     }
-
-//     pub fn get_texture(&self, key: &TextureKey) -> Option<&Texture> {
-//         if let Some(index) = self.texture_key_map.get(key) {
-//             return self.textures.get(*index);
-//         }
-
-//         None
-//     }
-
-//     pub fn _get_texture_mut(&mut self, key: &TextureKey) -> Option<&mut Texture> {
-//         if let Some(index) = self.texture_key_map.get(key) {
-//             return self.textures.get_mut(*index);
-//         }
-
-//         None
-//     }
-
-//     pub fn remove_texture(&mut self, key: TextureKey) -> Option<Texture> {
-//         let mut i: i32 = -1;
-
-//         if let Some(index) = self.texture_key_map.get(&key) {
-//             i = *index as _;
-//         }
-
-//         if i >= 0 {
-//             // No need to reset map if only the end texture is removed.
-//             let reset_map = (i as usize) != self.textures.len();
-//             self.texture_key_map.remove(&key);
-//             let texture = self.textures.remove(i as _);
-
-//             if reset_map {
-//                 self.update_texture_key_map();
-//             }
-
-//             return Some(texture);
-//         }
-
-//         None
-//     }
-
-//     #[inline]
-//     pub fn update_texture_key_map(&mut self) {
-//         self.texture_key_map = HashMap::with_capacity(self.textures.len());
-
-//         let mut i = 0;
-
-//         for texture in &self.textures {
-//             self.texture_key_map.insert(texture.key.clone(), i);
-//             i += 1;
-//         }
-//     }
-
-//     #[inline]
-//     pub fn contains_sound(&self, key: &SoundKey) -> bool {
-//         self.sound_map.contains_key(key)
-//     }
-
-//     #[inline]
-//     pub fn insert_sound(&mut self, key: SoundKey, sound: Sound) {
-//         self.sound_map.insert(key, sound);
 //     }
 // }
 

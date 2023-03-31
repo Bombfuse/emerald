@@ -602,6 +602,7 @@ impl RenderingEngine {
 
         self.vertices.clear();
         self.indices.clear();
+        self.active_size = self.size;
 
         Ok(())
     }
@@ -609,12 +610,22 @@ impl RenderingEngine {
     pub fn begin_texture(
         &mut self,
         texture_key: &TextureKey,
-        _asset_store: &mut AssetEngine,
+        asset_engine: &mut AssetEngine,
     ) -> Result<(), EmeraldError> {
         if self.active_render_texture_asset_id.is_some() {
             return Err(EmeraldError::new("Unable to begin_texture, a render texture is already active. Please complete your render pass on the texture before beginning another."));
         }
+        self.vertices.clear();
+        self.indices.clear();
 
+        if let Some(texture) = asset_engine.get_asset::<Texture>(&texture_key.asset_key.asset_id) {
+            self.active_size = PhysicalSize::new(texture.size.width, texture.size.height);
+        } else {
+            return Err(EmeraldError::new(format!(
+                "Cannot begin rendering to texture. Texture {:?} does not exist.",
+                texture_key
+            )));
+        }
         self.active_render_texture_asset_id = Some(texture_key.asset_key.asset_id);
 
         Ok(())
@@ -634,12 +645,7 @@ impl RenderingEngine {
                         ..Default::default()
                     });
 
-                    self.render_to_view(
-                        asset_store,
-                        view,
-                        PhysicalSize::new(texture.size.width, texture.size.height),
-                        &format!("render texture {:?}", id),
-                    )?;
+                    self.render_to_view(asset_store, view, &format!("render texture {:?}", id))?;
 
                     return Ok(());
                 }
@@ -692,7 +698,6 @@ impl RenderingEngine {
         &mut self,
         asset_store: &mut AssetEngine,
         view: TextureView,
-        view_size: PhysicalSize<u32>,
         view_name: &str,
     ) -> Result<(), EmeraldError> {
         let mut encoder = self
@@ -701,7 +706,6 @@ impl RenderingEngine {
                 label: Some(&format!("Encoder: {:?}", view_name)),
             });
 
-        self.active_size = view_size;
         {
             let (r, g, b, a) = self.settings.background_color.to_percentage_linear();
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -747,7 +751,7 @@ impl RenderingEngine {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        self.render_to_view(asset_store, view, self.size, "Surface Pass")?;
+        self.render_to_view(asset_store, view, "Surface Pass")?;
 
         surface_texture.present();
         Ok(())
@@ -821,7 +825,7 @@ impl RenderingEngine {
                 .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&self.vertices));
         }
 
-        for draw_call in self.draw_queue.drain(..) {
+        while let Some(draw_call) = self.draw_queue.pop_back() {
             let indices_count = draw_call.count() as u32 * draw_call.indices_per_draw as u32;
 
             if let Some(texture_bind_group) =

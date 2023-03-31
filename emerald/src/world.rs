@@ -384,14 +384,14 @@ pub(crate) fn load_world(
     let mut toml = toml.parse::<toml::Value>()?;
     let mut world = World::new();
 
-    // if let Some(merge_handler) = loader
-    //     .asset_store
-    //     .load_config
-    //     .world_load_config
-    //     .merge_handler
-    // {
-    //     world.set_merge_handler(merge_handler);
-    // }
+    if let Some(merge_handler) = loader
+        .asset_engine
+        .load_config
+        .world_load_config
+        .merge_handler
+    {
+        world.set_merge_handler(merge_handler);
+    }
 
     if let Some(table) = toml.as_table_mut() {
         if let Some(physics_val) = table.remove(PHYSICS_SCHEMA_KEY) {
@@ -413,11 +413,11 @@ pub(crate) fn load_world(
             }
         }
 
-        // if let Some(world_resource_loader) = loader.asset_store.load_config.world_resource_loader {
-        //     for (key, value) in table.to_owned() {
-        //         (world_resource_loader)(loader, &mut world, value, key)?;
-        //     }
-        // }
+        if let Some(world_resource_loader) = loader.asset_engine.load_config.world_resource_loader {
+            for (key, value) in table.to_owned() {
+                (world_resource_loader)(loader, &mut world, value, key)?;
+            }
+        }
     }
 
     Ok(world)
