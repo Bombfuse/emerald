@@ -193,8 +193,6 @@ impl AssetEngine {
         for id in to_remove {
             self.asset_stores.remove(&id);
         }
-        println!("sound count {:?}", self.count::<Sound>());
-        println!("texture count {:?}", self.count::<Texture>());
 
         Ok(())
     }
