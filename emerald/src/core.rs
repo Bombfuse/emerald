@@ -68,7 +68,7 @@ impl<'c> Emerald<'c> {
     }
 
     pub fn set_user_data_folder_root(&mut self, root: String) {
-        // self.asset_store.set_user_data_folder_root(root);
+        self.asset_engine.user_data_folder_root = root;
     }
 
     pub fn get_asset_folder_root(&mut self) -> String {
@@ -76,8 +76,7 @@ impl<'c> Emerald<'c> {
     }
 
     pub fn get_user_data_folder_root(&mut self) -> String {
-        // self.asset_store.get_user_data_folder_root()
-        "".to_string()
+        self.asset_engine.user_data_folder_root.clone()
     }
 
     pub fn set_cursor(&mut self, cursor: CursorIcon) {

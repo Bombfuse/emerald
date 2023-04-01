@@ -1,14 +1,12 @@
-use std::convert::TryInto;
 use std::sync::Arc;
 
 use crate::rendering_engine::BindGroupLayouts;
-use crate::texture::{get_texture_key, Texture, TextureKey};
+use crate::texture::{get_texture_key, Texture};
 use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
 
 use asefile::AnimationDirection;
-use image::{DynamicImage, EncodableLayout};
-use wgpu::BindGroupLayout;
+use image::DynamicImage;
 
 use super::Sprite;
 

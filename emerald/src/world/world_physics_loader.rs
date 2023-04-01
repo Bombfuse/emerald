@@ -9,7 +9,7 @@ struct WorldPhysicsSchema {
 }
 
 pub(crate) fn load_world_physics<'a>(
-    loader: &mut AssetLoader<'a>,
+    _loader: &mut AssetLoader<'a>,
     world: &mut World,
     toml: &toml::Value,
 ) -> Result<(), EmeraldError> {
