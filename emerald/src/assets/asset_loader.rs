@@ -1,5 +1,3 @@
-use wgpu::BindGroupLayout;
-
 use crate::asset_key::AssetKey;
 use crate::assets::*;
 use crate::audio::*;
@@ -10,7 +8,6 @@ use crate::font::FontKey;
 use crate::rendering::components::Sprite;
 use crate::rendering_engine::RenderingEngine;
 use crate::texture::get_texture_key;
-use crate::texture::Texture;
 use crate::texture::TextureKey;
 use crate::*;
 

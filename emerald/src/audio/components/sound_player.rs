@@ -1,4 +1,4 @@
-use std::{cell::Ref, collections::HashMap};
+use std::collections::HashMap;
 
 use crate::{Emerald, EmeraldError, SoundInstanceId, SoundKey};
 
@@ -14,6 +14,10 @@ impl SoundPlayer {
             mixer: mixer.into(),
             keys: HashMap::new(),
         }
+    }
+
+    pub fn add_sound(&mut self, label: &str, key: SoundKey) {
+        self.keys.insert(label.to_string(), key);
     }
 
     pub fn play(&self, emd: &mut Emerald, label: &str) -> Result<SoundInstanceId, EmeraldError> {

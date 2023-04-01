@@ -1,4 +1,7 @@
-use emerald::{render_settings::RenderSettings, rendering::components::Label, *};
+use emerald::{
+    audio::components::sound_player::SoundPlayer, render_settings::RenderSettings,
+    rendering::components::Label, *,
+};
 
 /// Music found from https://opengameart.org/content/5-chiptunes-action
 pub fn main() {
@@ -7,13 +10,24 @@ pub fn main() {
         ..Default::default()
     };
     settings.render_settings = render_settings;
-    emerald::start(Box::new(Example {}), settings)
+    emerald::start(
+        Box::new(Example {
+            world: World::new(),
+        }),
+        settings,
+    )
 }
 
-pub struct Example {}
+pub struct Example {
+    world: World,
+}
 impl Game for Example {
     fn initialize(&mut self, mut emd: Emerald) {
         emd.set_asset_folder_root(String::from("./examples/assets/"));
+
+        let mut sound_player = SoundPlayer::new("sfx");
+        sound_player.add_sound("test", emd.loader().sound("test_sound.wav").unwrap());
+        self.world.spawn((sound_player,));
     }
 
     fn update(&mut self, mut emd: Emerald) {
@@ -40,6 +54,12 @@ impl Game for Example {
                 .unwrap()
                 .set_volume(volume + 0.1)
                 .unwrap();
+        }
+
+        if emd.input().is_key_just_pressed(KeyCode::C) {
+            for (_, player) in self.world.query::<&SoundPlayer>().iter() {
+                player.play(&mut emd, "test").unwrap();
+            }
         }
 
         if emd.input().is_key_just_pressed(KeyCode::Space) {
