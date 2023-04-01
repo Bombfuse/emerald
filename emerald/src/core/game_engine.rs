@@ -7,7 +7,7 @@ use winit::{
 
 use crate::{
     profiling::profile_cache::ProfileCache, rendering_engine::RenderingEngine,
-    resources::Resources, AssetStore, AudioEngine, Emerald, EmeraldError, Game, GameSettings,
+    resources::Resources, AssetEngine, AudioEngine, Emerald, EmeraldError, Game, GameSettings,
     InputEngine, LoggingEngine,
 };
 
@@ -27,12 +27,13 @@ pub(crate) struct GameEngine {
     audio_engine: AudioEngine,
     profile_cache: ProfileCache,
     input_engine: InputEngine,
-    asset_store: AssetStore,
     logging_engine: LoggingEngine,
     resources: Resources,
-
     last_instant: f64,
     fps_tracker: VecDeque<f64>,
+
+    // Declare last so that it drops last, needed so that asset ref channels stay open while game is dropped
+    asset_engine: AssetEngine,
 }
 impl GameEngine {
     pub async fn new(
@@ -40,9 +41,9 @@ impl GameEngine {
         window: &winit::window::Window,
         settings: &GameSettings,
     ) -> Result<Self, EmeraldError> {
-        let mut asset_store = AssetStore::new(settings.title.clone()).unwrap();
+        let mut asset_engine = AssetEngine::new();
         let rendering_engine =
-            RenderingEngine::new(window, settings.render_settings.clone(), &mut asset_store)
+            RenderingEngine::new(window, settings.render_settings.clone(), &mut asset_engine)
                 .await?;
 
         let audio_engine = AudioEngine::new();
@@ -58,7 +59,7 @@ impl GameEngine {
             game,
             rendering_engine,
             logging_engine,
-            asset_store,
+            asset_engine,
             audio_engine,
             input_engine,
             profile_cache,
@@ -80,7 +81,7 @@ impl GameEngine {
             &mut self.input_engine,
             &mut self.logging_engine,
             &mut self.rendering_engine,
-            &mut self.asset_store,
+            &mut self.asset_engine,
             &mut self.profile_cache,
             ctx,
             &mut self.resources,
@@ -129,7 +130,7 @@ impl GameEngine {
             &mut self.input_engine,
             &mut self.logging_engine,
             &mut self.rendering_engine,
-            &mut self.asset_store,
+            &mut self.asset_engine,
             &mut self.profile_cache,
             ctx,
             &mut self.resources,
@@ -139,6 +140,7 @@ impl GameEngine {
         self.logging_engine.update().unwrap();
         self.input_engine.update_and_rollover().unwrap();
         self.audio_engine.post_update().unwrap();
+        self.asset_engine.update().unwrap();
 
         Ok(())
     }
@@ -154,15 +156,25 @@ impl GameEngine {
             &mut self.input_engine,
             &mut self.logging_engine,
             &mut self.rendering_engine,
-            &mut self.asset_store,
+            &mut self.asset_engine,
             &mut self.profile_cache,
             ctx,
             &mut self.resources,
         );
         self.game.draw(emd);
-        // self.rendering_engine.post_draw(ctx, &mut self.asset_store);
 
         Ok(())
+    }
+
+    /// Final task before exiting program
+    pub fn clean_up(mut self) {
+        drop(self.game);
+        drop(self.rendering_engine);
+        drop(self.audio_engine);
+        drop(self.resources);
+
+        // Clean up all assets
+        self.asset_engine.update().unwrap();
     }
 
     #[inline]

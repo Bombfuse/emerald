@@ -1,7 +1,7 @@
 // // Credit to not-fl3/macroquad text: https://github.com/not-fl3/macroquad/blob/0.3/src/text.rs
 // use crate::rendering::*;
 // use crate::texture::TextureKey;
-// use crate::{AssetStore, Color, EmeraldError};
+// use crate::{AssetEngine, Color, EmeraldError};
 
 // use fontdue::layout::GlyphRasterConfig;
 // pub use fontdue::layout::{HorizontalAlign, VerticalAlign, WrapStyle};
@@ -13,22 +13,23 @@ use std::collections::HashMap;
 use fontdue::layout::GlyphRasterConfig;
 
 use crate::{
-    rendering_engine::RenderingEngine, texture::TextureKey, AssetStore, Color, EmeraldError,
+    asset_key::AssetKey, rendering_engine::RenderingEngine, texture::TextureKey, AssetEngine,
+    Color, EmeraldError,
 };
 
-// TODO: We should include a real default font with the game engine
-pub(crate) const DEFAULT_FONT_TEXTURE_PATH: &str = "ghosty_spooky_mister_mime_dude";
-
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub struct FontKey(pub(crate) String, pub(crate) u32);
-impl FontKey {
-    pub fn new<T: Into<String>>(font_path: T, font_size: u32) -> Self {
-        FontKey(font_path.into(), font_size)
-    }
+#[derive(Clone, Debug)]
+pub struct FontKey {
+    size: u32,
+    path: String,
+    pub(crate) asset_key: AssetKey,
 }
-impl Default for FontKey {
-    fn default() -> FontKey {
-        FontKey::new(DEFAULT_FONT_TEXTURE_PATH, 40)
+impl FontKey {
+    pub fn new<T: Into<String>>(asset_key: AssetKey, font_path: T, font_size: u32) -> Self {
+        FontKey {
+            asset_key,
+            path: font_path.into(),
+            size: font_size,
+        }
     }
 }
 
@@ -85,25 +86,25 @@ impl FontImage {
 }
 
 pub(crate) struct Font {
-    pub _font_key: FontKey,
     pub characters: HashMap<GlyphRasterConfig, CharacterInfo>,
     pub font_texture_key: TextureKey,
     pub font_image: FontImage,
     pub cursor_x: u16,
     pub cursor_y: u16,
     pub max_line_height: u16,
+    pub inner: fontdue::Font,
 }
 impl Font {
     pub const GAP: u16 = 2;
 
     pub fn new(
-        font_key: FontKey,
+        inner: fontdue::Font,
         font_texture_key: TextureKey,
         font_image: FontImage,
     ) -> Result<Font, EmeraldError> {
         Ok(Font {
             font_image,
-            _font_key: font_key,
+            inner,
             font_texture_key,
             characters: HashMap::new(),
             cursor_x: 0,
@@ -115,21 +116,22 @@ impl Font {
 
 pub(crate) fn cache_glyph(
     rendering_engine: &mut RenderingEngine,
-    asset_store: &mut AssetStore,
+    asset_engine: &mut AssetEngine,
     font_key: &FontKey,
     glyph_key: GlyphRasterConfig,
     size: u16,
 ) -> Result<(), EmeraldError> {
-    let mut recache_characters = None;
+    // let mut recache_characters = None;
     let mut update_font_texture = false;
 
     let mut optional_metrics = None;
     let mut optional_bitmap = None;
+    let mut recache_characters = None;
 
     let mut to_update = Vec::new();
 
-    if let Some(font) = asset_store.get_fontdue_font(font_key) {
-        let (metrics, bitmap) = font.rasterize_config(glyph_key);
+    if let Some(font) = asset_engine.get_asset::<Font>(&font_key.asset_key.asset_id) {
+        let (metrics, bitmap) = font.inner.rasterize_config(glyph_key);
         optional_metrics = Some(metrics);
         optional_bitmap = Some(bitmap);
     } else {
@@ -140,7 +142,7 @@ pub(crate) fn cache_glyph(
     }
 
     if let (Some(metrics), Some(bitmap)) = (optional_metrics, optional_bitmap) {
-        if let Some(font) = asset_store.get_font_mut(font_key) {
+        if let Some(font) = asset_engine.get_asset_mut::<Font>(&font_key.asset_key.asset_id) {
             if metrics.advance_height != 0.0 {
                 return Err(EmeraldError::new("Vertical fonts are not supported"));
             }
@@ -193,7 +195,10 @@ pub(crate) fn cache_glyph(
                     Color::new(0, 0, 0, 0),
                 );
 
-                to_update.push((font.font_image.bytes.clone(), font.font_texture_key.clone()));
+                to_update.push((
+                    font.font_image.bytes.clone(),
+                    font.font_texture_key.label().to_string(),
+                ));
                 recache_characters = Some(characters);
             } else {
                 for j in 0..height {
@@ -222,18 +227,18 @@ pub(crate) fn cache_glyph(
         )));
     }
 
-    for (bytes, key) in to_update {
-        rendering_engine.load_texture(asset_store, &bytes, key)?;
+    for (bytes, label) in to_update {
+        rendering_engine.load_texture(&label, asset_engine, &bytes)?;
     }
 
     if update_font_texture {
-        rendering_engine.update_font_texture(asset_store, font_key)?;
+        rendering_engine.update_font_texture(asset_engine, font_key)?;
     }
 
     if let Some(characters) = recache_characters {
         // recache all previously asset_stored symbols
         for (glyph_key, _) in characters {
-            cache_glyph(rendering_engine, asset_store, font_key, glyph_key, size)?;
+            cache_glyph(rendering_engine, asset_engine, font_key, glyph_key, size)?;
         }
     }
 

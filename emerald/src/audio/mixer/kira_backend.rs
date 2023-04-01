@@ -9,7 +9,7 @@ use kira::{
     sound::{handle::SoundHandle, SoundId},
 };
 
-use crate::{AssetStore, EmeraldError, Mixer, SoundInstanceId, SoundKey, ThreadSafeMixer};
+use crate::{AssetEngine, EmeraldError, Mixer, Sound, SoundInstanceId, SoundKey, ThreadSafeMixer};
 
 pub(crate) struct KiraMixer {
     inner: Arc<Mutex<AudioManager>>,
@@ -45,10 +45,10 @@ impl Mixer for KiraMixer {
     /// Applies the volume of the mixer to the sound.
     fn play(
         &mut self,
-        key: SoundKey,
-        asset_store: &mut AssetStore,
+        key: &SoundKey,
+        asset_engine: &mut AssetEngine,
     ) -> Result<SoundInstanceId, EmeraldError> {
-        if let Some(sound) = asset_store.sound_map.get(&key) {
+        if let Some(sound) = asset_engine.get_asset::<Sound>(&key.asset_key.asset_id) {
             let id = sound.inner.id();
 
             let mut sound_handle = if let Some(sound_handle) = self.sound_handles.get_mut(&id) {
@@ -73,17 +73,17 @@ impl Mixer for KiraMixer {
         }
 
         Err(EmeraldError::new(format!(
-            "Sound for {:?} is not loaded in the asset store.",
+            "Sound for {:?} is not loaded in the asset engine.",
             key
         )))
     }
 
     fn play_and_loop(
         &mut self,
-        key: SoundKey,
-        asset_store: &mut AssetStore,
+        key: &SoundKey,
+        asset_engine: &mut AssetEngine,
     ) -> Result<SoundInstanceId, EmeraldError> {
-        if let Some(sound) = asset_store.sound_map.get(&key) {
+        if let Some(sound) = asset_engine.get_asset::<Sound>(&key.asset_key.asset_id) {
             let id = sound.inner.id();
 
             let mut sound_handle = if let Some(sound_handle) = self.sound_handles.get_mut(&id) {
@@ -113,7 +113,7 @@ impl Mixer for KiraMixer {
         }
 
         Err(EmeraldError::new(format!(
-            "Sound for {:?} is not loaded in the asset store.",
+            "Sound for {:?} is not loaded in the asset engine.",
             key
         )))
     }

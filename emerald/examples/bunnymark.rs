@@ -1,4 +1,5 @@
 use emerald::{
+    font::FontKey,
     rendering::components::{Label, Sprite},
     *,
 };
@@ -25,6 +26,8 @@ pub fn main() {
         Box::new(BunnymarkGame {
             count: 0,
             world: World::new(),
+            fps_label: None,
+            bunnymark_label: None,
         }),
         settings,
     )
@@ -33,6 +36,8 @@ pub fn main() {
 pub struct BunnymarkGame {
     count: u64,
     world: World,
+    fps_label: Option<Label>,
+    bunnymark_label: Option<Label>,
 }
 impl Game for BunnymarkGame {
     fn initialize(&mut self, mut emd: Emerald) {
@@ -49,10 +54,15 @@ impl Game for BunnymarkGame {
             transform.translation.y += 1.0;
             (transform, sprite.clone(), Velocity::new(5.0, 3.0))
         }));
+
+        let font = emd.loader().font("Roboto-Light.ttf", 40).unwrap();
+        self.bunnymark_label = Some(Label::new("", font.clone(), 40));
+        self.fps_label = Some(Label::new("", font, 40));
     }
 
     #[inline]
     fn update(&mut self, mut emd: Emerald) {
+        let now = std::time::Instant::now();
         let (screen_width, screen_height) = emd.screen_size();
         let screen_width = screen_width as f32;
         let screen_height = screen_height as f32;
@@ -101,26 +111,30 @@ impl Game for BunnymarkGame {
             transform.translation.x += vel.x;
             transform.translation.y += vel.y;
         }
+        println!("update {:?}", std::time::Instant::now() - now);
     }
 
     fn draw(&mut self, mut emd: Emerald) {
+        let now = std::time::Instant::now();
         emd.graphics().begin().unwrap();
         emd.graphics().draw_world(&mut self.world).unwrap();
 
-        let font = emd.loader().font("Roboto-Light.ttf", 40).unwrap();
-        let label = Label::new(format!("FPS: {}", emd.fps() as u32), font.clone(), 40);
-        let bunnycount_label = Label::new(format!("{} bunnies", (self.count)), font, 40);
-
+        self.fps_label.as_mut().unwrap().text = format!("FPS: {}", emd.fps() as usize);
+        self.bunnymark_label.as_mut().unwrap().text = format!("{} bunnies", (self.count));
         emd.graphics()
-            .draw_label(&label, &Transform::from_translation((-300.0, 150.0)))
+            .draw_label(
+                &self.fps_label.as_ref().unwrap(),
+                &Transform::from_translation((-300.0, 150.0)),
+            )
             .unwrap();
         emd.graphics()
             .draw_label(
-                &bunnycount_label,
+                &self.bunnymark_label.as_ref().unwrap(),
                 &Transform::from_translation((-300.0, 100.0)),
             )
             .unwrap();
 
         emd.graphics().render().unwrap();
+        println!("draw {:?}", std::time::Instant::now() - now);
     }
 }

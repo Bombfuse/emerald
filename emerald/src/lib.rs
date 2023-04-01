@@ -37,6 +37,10 @@ pub use toml;
 
 pub use winit::window::CursorIcon;
 
+#[cfg(feature = "gamepads")]
+pub use gamepad;
+#[cfg(feature = "gamepads")]
+pub use gamepad::{Button, Joystick};
 pub use rapier2d::{
     crossbeam,
     dynamics::{RigidBody, RigidBodyBuilder, RigidBodyHandle},
@@ -45,11 +49,6 @@ pub use rapier2d::{
     na::Vector2,
     parry,
 };
-
-#[cfg(feature = "gamepads")]
-pub use gamepad;
-#[cfg(feature = "gamepads")]
-pub use gamepad::{Button, Joystick};
 
 pub fn start(game: Box<dyn Game>, settings: GameSettings) {
     pollster::block_on(start_async(game, settings)).unwrap();
@@ -181,6 +180,4 @@ async fn run(game: Box<dyn Game>, settings: GameSettings) -> Result<(), EmeraldE
 
         _ => {}
     });
-
-    Ok(())
 }

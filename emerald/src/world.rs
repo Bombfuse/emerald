@@ -139,7 +139,6 @@ impl World {
         &mut self.resources
     }
 
-
     #[inline]
     pub fn resources_ref(&self) -> &Resources {
         &self.resources
@@ -386,7 +385,7 @@ pub(crate) fn load_world(
     let mut world = World::new();
 
     if let Some(merge_handler) = loader
-        .asset_store
+        .asset_engine
         .load_config
         .world_load_config
         .merge_handler
@@ -414,7 +413,7 @@ pub(crate) fn load_world(
             }
         }
 
-        if let Some(world_resource_loader) = loader.asset_store.load_config.world_resource_loader {
+        if let Some(world_resource_loader) = loader.asset_engine.load_config.world_resource_loader {
             for (key, value) in table.to_owned() {
                 (world_resource_loader)(loader, &mut world, value, key)?;
             }

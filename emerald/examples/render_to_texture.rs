@@ -70,13 +70,11 @@ impl Game for MyGame {
         if input.is_key_just_pressed(KeyCode::S) {
             self.scale *= 2.0;
         }
-
-        println!("pos {:?}", self.pos);
     }
 
     fn draw(&mut self, mut emd: Emerald) {
         emd.graphics()
-            .begin_texture(self.render_texture.as_ref().unwrap().clone())
+            .begin_texture(&self.render_texture.as_ref().unwrap())
             .unwrap();
 
         let rabbit = emd.loader().sprite("bunny.png").unwrap();
@@ -90,21 +88,17 @@ impl Game for MyGame {
             .draw_sprite(&rabbit, &Transform::default())
             .unwrap();
 
-        let texture_key = emd.graphics().render_texture().unwrap();
+        emd.graphics().render_texture().unwrap();
 
-        let e = std::time::Instant::now();
-
-        // println!("{:?}", screen_sprite);
-        let now = std::time::Instant::now();
-
-        let mut screen_sprite = Sprite::from_texture(texture_key);
+        let mut screen_sprite = Sprite::from_texture(self.render_texture.as_ref().unwrap().clone());
         screen_sprite.centered = true;
         screen_sprite.scale.x = self.scale;
         screen_sprite.scale.y = self.scale;
 
         emd.graphics().begin().unwrap();
-        emd.graphics().draw_sprite(&screen_sprite, &self.pos).ok();
+        emd.graphics()
+            .draw_sprite(&screen_sprite, &self.pos)
+            .unwrap();
         emd.graphics().render().unwrap();
-        let e = std::time::Instant::now();
     }
 }

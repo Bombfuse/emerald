@@ -1,8 +1,10 @@
 use image::GenericImageView;
+use wgpu::{BindGroup, BindGroupLayout};
 
 use crate::{
-    rendering_engine::{BindGroupLayoutId, BindGroupLayouts, BindGroups},
-    AssetStore, EmeraldError,
+    asset_key::AssetKey,
+    rendering_engine::{BindGroupLayoutId, BindGroupLayouts},
+    AssetEngine, EmeraldError,
 };
 pub const EMERALD_DEFAULT_TEXTURE_NAME: &str = "emerald_default_texture";
 
@@ -10,23 +12,21 @@ pub(crate) struct Texture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
-    pub key: TextureKey,
     pub size: wgpu::Extent3d,
 }
 impl Texture {
     pub fn new(
-        bind_groups: &mut BindGroups,
+        label: &str,
         bind_group_layouts: &BindGroupLayouts,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         width: u32,
         height: u32,
         data: &[u8],
-        key: TextureKey,
     ) -> Result<TextureKey, EmeraldError> {
         Self::new_ext(
-            bind_groups,
+            label,
             bind_group_layouts,
             asset_store,
             device,
@@ -34,26 +34,24 @@ impl Texture {
             width,
             height,
             data,
-            key,
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             wgpu::TextureFormat::Rgba8UnormSrgb,
         )
     }
 
     pub fn new_render_target(
-        bind_groups: &mut BindGroups,
+        label: &str,
         bind_group_layouts: &BindGroupLayouts,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         width: u32,
         height: u32,
         data: &[u8],
-        key: TextureKey,
         format: wgpu::TextureFormat,
     ) -> Result<TextureKey, EmeraldError> {
         Self::new_ext(
-            bind_groups,
+            label,
             bind_group_layouts,
             asset_store,
             device,
@@ -61,7 +59,6 @@ impl Texture {
             width,
             height,
             data,
-            key,
             wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -70,15 +67,14 @@ impl Texture {
     }
 
     fn new_ext(
-        bind_groups: &mut BindGroups,
+        label: &str,
         bind_group_layouts: &BindGroupLayouts,
-        asset_store: &mut AssetStore,
+        asset_engine: &mut AssetEngine,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         width: u32,
         height: u32,
         data: &[u8],
-        key: TextureKey,
         usage: wgpu::TextureUsages,
         format: wgpu::TextureFormat,
     ) -> Result<TextureKey, EmeraldError> {
@@ -88,7 +84,7 @@ impl Texture {
             depth_or_array_layers: 1,
         };
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some(&key.0),
+            label: Some(label),
             size,
             mip_level_count: 1,
             sample_count: 1,
@@ -112,7 +108,6 @@ impl Texture {
             texture,
             view,
             sampler,
-            key: key.clone(),
             size,
         };
 
@@ -147,60 +142,52 @@ impl Texture {
                         resource: wgpu::BindingResource::Sampler(&texture.sampler),
                     },
                 ],
-                label: Some(&format!("{:?}_group", &key.0)),
+                label: Some(&format!("{:?}_group", label)),
             });
 
-            bind_groups.insert(key.get_name(), texture_bind_group);
-            asset_store.insert_texture(key.clone(), texture);
-        } else {
-            return Err(EmeraldError::new(
-                "Unable to get TextureQuad bind group layout",
-            ));
-        }
+            let bind_group_key =
+                asset_engine.add_asset_with_label(Box::new(texture_bind_group), label)?;
+            let asset_key = asset_engine.add_asset_with_label(Box::new(texture), label)?;
 
-        Ok(key)
+            return Ok(TextureKey::new(label, asset_key, bind_group_key));
+        }
+        return Err(EmeraldError::new(
+            "Unable to get TextureQuad bind group layout",
+        ));
     }
 
     pub fn from_bytes(
-        bind_groups: &mut BindGroups,
+        label: &str,
         bind_group_layouts: &BindGroupLayouts,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         bytes: &[u8],
-        key: TextureKey,
     ) -> Result<TextureKey, EmeraldError> {
         match image::load_from_memory(bytes) {
-            Ok(img) => Self::from_image(
-                bind_groups,
-                bind_group_layouts,
-                asset_store,
-                device,
-                queue,
-                &img,
-                key,
-            ),
+            Ok(img) => {
+                Self::from_image(label, bind_group_layouts, asset_store, device, queue, &img)
+            }
             Err(e) => Err(EmeraldError::new(format!(
                 "Error loading image from memory. Texture Key: {:?} Err: {:?}",
-                &key.0, e
+                label, e
             ))),
         }
     }
 
     pub fn from_image(
-        bind_groups: &mut BindGroups,
+        label: &str,
         bind_group_layouts: &BindGroupLayouts,
-        asset_store: &mut AssetStore,
+        asset_store: &mut AssetEngine,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         img: &image::DynamicImage,
-        key: TextureKey,
     ) -> Result<TextureKey, EmeraldError> {
         let rgba = img.to_rgba8();
         let dimensions = img.dimensions();
 
         Self::new(
-            bind_groups,
+            label,
             bind_group_layouts,
             asset_store,
             device,
@@ -208,24 +195,37 @@ impl Texture {
             dimensions.0,
             dimensions.1,
             &rgba,
-            key,
         )
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct TextureKey(pub(crate) String);
-impl TextureKey {
-    pub(crate) fn new<T: Into<String>>(texture_path: T) -> Self {
-        TextureKey(texture_path.into())
+pub(crate) fn get_texture_key(asset_engine: &mut AssetEngine, label: &str) -> Option<TextureKey> {
+    if let (Some(texture_asset_key), Some(bind_group_key)) = (
+        asset_engine.get_asset_key_by_label::<Texture>(label),
+        asset_engine.get_asset_key_by_label::<BindGroup>(label),
+    ) {
+        return Some(TextureKey::new(label, texture_asset_key, bind_group_key));
     }
 
-    pub fn get_name(&self) -> String {
-        self.0.clone()
-    }
+    None
 }
-impl Default for TextureKey {
-    fn default() -> TextureKey {
-        TextureKey(String::from(EMERALD_DEFAULT_TEXTURE_NAME))
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextureKey {
+    label: String,
+    pub(crate) asset_key: AssetKey,
+    pub(crate) bind_group_key: AssetKey,
+}
+impl TextureKey {
+    pub(crate) fn new(label: &str, asset_key: AssetKey, bind_group_key: AssetKey) -> Self {
+        TextureKey {
+            label: label.to_string(),
+            asset_key,
+            bind_group_key,
+        }
+    }
+
+    pub fn label(&self) -> &str {
+        &self.label
     }
 }

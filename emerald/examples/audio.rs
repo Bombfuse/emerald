@@ -47,18 +47,14 @@ impl Game for Example {
             emd.audio()
                 .mixer("test")
                 .unwrap()
-                .play_and_loop(snd)
+                .play_and_loop(&snd)
                 .unwrap();
         }
 
         if emd.input().is_key_just_pressed(KeyCode::Z) {
             for _ in 0..10 {
                 let snd = emd.loader().sound("test_sound.wav").unwrap();
-                emd.audio()
-                    .mixer("test2")
-                    .unwrap()
-                    .play(snd.clone())
-                    .unwrap();
+                emd.audio().mixer("test2").unwrap().play(&snd).unwrap();
             }
         }
     }

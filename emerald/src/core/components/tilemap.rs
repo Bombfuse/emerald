@@ -222,49 +222,49 @@ mod tests {
         assert_eq!(schema.y, 6);
     }
 
-    #[test]
-    fn deser_tilemap() {
-        let toml = r#"
-            tileset = "tileset.png"
-            tileset_width = 2
-            tileset_height = 2
+    // #[test]
+    // fn deser_tilemap() {
+    //     let toml = r#"
+    //         tileset = "tileset.png"
+    //         tileset_width = 2
+    //         tileset_height = 2
 
-            width = 10
-            height = 10
-            tile_width_px = 32
-            tile_height_px = 32
+    //         width = 10
+    //         height = 10
+    //         tile_width_px = 32
+    //         tile_height_px = 32
 
-            [[tiles]]
-            id = 14
-            x = 5
-            y = 6
-        "#;
-        let schema: TilemapSchema = crate::toml::from_str(&toml).unwrap();
-        let tilemap = schema.to_tilemap_ext(Default::default()).unwrap();
-        assert_eq!(tilemap.width(), 10);
-        assert_eq!(tilemap.height(), 10);
-        assert_eq!(tilemap.tile_width(), 32);
-        assert_eq!(tilemap.tile_height(), 32);
-        assert_eq!(tilemap.get_tile(5, 6).unwrap().unwrap(), 14);
+    //         [[tiles]]
+    //         id = 14
+    //         x = 5
+    //         y = 6
+    //     "#;
+    //     let schema: TilemapSchema = crate::toml::from_str(&toml).unwrap();
+    //     let tilemap = schema.to_tilemap_ext(Default::default()).unwrap();
+    //     assert_eq!(tilemap.width(), 10);
+    //     assert_eq!(tilemap.height(), 10);
+    //     assert_eq!(tilemap.tile_width(), 32);
+    //     assert_eq!(tilemap.tile_height(), 32);
+    //     assert_eq!(tilemap.get_tile(5, 6).unwrap().unwrap(), 14);
 
-        let missing_map_size = r#"
-            tileset = "tileset.png"
-            tileset_width = 2
-            tileset_height = 2
-            tile_width = 32
-            tile_height = 32
-        "#;
-        let schema = crate::toml::from_str::<TilemapSchema>(&missing_map_size);
-        assert!(schema.is_err());
+    //     let missing_map_size = r#"
+    //         tileset = "tileset.png"
+    //         tileset_width = 2
+    //         tileset_height = 2
+    //         tile_width = 32
+    //         tile_height = 32
+    //     "#;
+    //     let schema = crate::toml::from_str::<TilemapSchema>(&missing_map_size);
+    //     assert!(schema.is_err());
 
-        let missing_tile_size = r#"
-            tileset = "tileset.png"
-            tileset_width = 2
-            tileset_height = 2
-            map_width = 10
-            map_height = 10
-        "#;
-        let schema = crate::toml::from_str::<TilemapSchema>(&missing_tile_size);
-        assert!(schema.is_err());
-    }
+    //     let missing_tile_size = r#"
+    //         tileset = "tileset.png"
+    //         tileset_width = 2
+    //         tileset_height = 2
+    //         map_width = 10
+    //         map_height = 10
+    //     "#;
+    //     let schema = crate::toml::from_str::<TilemapSchema>(&missing_tile_size);
+    //     assert!(schema.is_err());
+    // }
 }

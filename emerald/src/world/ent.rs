@@ -105,7 +105,7 @@ pub(crate) fn load_ent(
                 }
                 _ => {
                     if loader
-                        .asset_store
+                        .asset_engine
                         .load_config
                         .custom_component_loader
                         .is_some()
@@ -120,7 +120,7 @@ pub(crate) fn load_ent(
     }
 
     // Custom components are loaded after all engine components
-    if let Some(custom_component_loader) = loader.asset_store.load_config.custom_component_loader {
+    if let Some(custom_component_loader) = loader.asset_engine.load_config.custom_component_loader {
         for (key, value) in custom_components {
             custom_component_loader(loader, entity, world, value, key)?;
         }

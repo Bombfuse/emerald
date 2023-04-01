@@ -17,20 +17,12 @@ impl Sprite {
     pub fn from_texture(texture_key: TextureKey) -> Self {
         Sprite {
             texture_key,
-            ..Default::default()
-        }
-    }
-}
-impl Default for Sprite {
-    fn default() -> Sprite {
-        Sprite {
             target: Rectangle::new(0.0, 0.0, 0.0, 0.0),
             rotation: 0.0,
             scale: Vector2::new(1.0, 1.0),
             offset: Vector2::new(0.0, 0.0),
             color: WHITE,
             centered: true,
-            texture_key: TextureKey::default(),
             z_index: 0.0,
             visible: true,
         }

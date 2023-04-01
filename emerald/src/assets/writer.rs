@@ -19,7 +19,6 @@ impl Writer {
         let path = self.user_directory.clone() + &relative_path.into();
         let mut file = File::create(path)?;
         file.write_all(bytes)?;
-
         Ok(())
     }
 }
