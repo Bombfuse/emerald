@@ -8,7 +8,8 @@ use crate::{
 
 use self::{
     ent_color_rect_loader::load_ent_color_rect, ent_label_loader::load_ent_label,
-    ent_sprite_loader::load_ent_sprite, ent_transform_loader::load_ent_transform,
+    ent_sound_player_loader::SOUND_PLAYER_SCHEMA_KEY, ent_sprite_loader::load_ent_sprite,
+    ent_transform_loader::load_ent_transform,
 };
 #[cfg(feature = "aseprite")]
 pub(crate) mod ent_aseprite_loader;
@@ -16,6 +17,7 @@ pub(crate) mod ent_aseprite_loader;
 pub(crate) mod ent_color_rect_loader;
 pub(crate) mod ent_label_loader;
 pub(crate) mod ent_rigid_body_loader;
+pub(crate) mod ent_sound_player_loader;
 pub(crate) mod ent_sprite_loader;
 pub(crate) mod ent_transform_loader;
 
@@ -78,6 +80,13 @@ pub(crate) fn load_ent(
                 SPRITE_SCHEMA_KEY => {
                     if let Some(sprite_value) = table.remove(SPRITE_SCHEMA_KEY) {
                         load_ent_sprite(loader, entity, world, &sprite_value)?;
+                    }
+                }
+                SOUND_PLAYER_SCHEMA_KEY => {
+                    if let Some(value) = table.remove(SOUND_PLAYER_SCHEMA_KEY) {
+                        ent_sound_player_loader::load_ent_sound_player(
+                            loader, entity, world, &value,
+                        )?;
                     }
                 }
                 RIGID_BODY_SCHEMA_KEY => {
