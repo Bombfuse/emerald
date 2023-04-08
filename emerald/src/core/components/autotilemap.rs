@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     texture::TextureKey,
-    tilemap::{get_tilemap_index, TileId, Tilemap},
+    tilemap::{get_tilemap_index, TileId, Tilemap, TilesetResource},
     AssetLoader, Emerald, EmeraldError, World,
 };
 
@@ -244,19 +244,17 @@ struct AutoTileSchema {
 
 #[derive(Deserialize, Serialize)]
 struct AutoTileMapSchema {
-    pub tileset: String,
-
-    /// Height of tileset in tiles
-    pub tileset_height: usize,
-    /// Width of tileset in tiles
-    pub tileset_width: usize,
-    pub tile_height_px: usize,
-    pub tile_width_px: usize,
+    #[serde(default)]
+    pub tileset: Option<TilesetResource>,
+    /// Path to the rulesets resource.
+    /// Appends onto any defined rulesets in this autotilemap.
+    #[serde(default)]
+    pub tileset_resource: Option<String>,
 
     /// Path to the rulesets resource.
     /// Appends onto any defined rulesets in this autotilemap.
     #[serde(default)]
-    pub resource: Option<String>,
+    pub rulesets_resource: Option<String>,
 
     #[serde(default)]
     pub rulesets: Vec<AutoTileRulesetSchema>,
@@ -275,36 +273,36 @@ struct AutoTileMapSchema {
 }
 impl AutoTileMapSchema {
     pub fn to_autotilemap(self, loader: &mut AssetLoader) -> Result<AutoTilemap, EmeraldError> {
-        let tileset = loader.texture(self.tileset.clone())?;
-        let mut rulesets = Vec::new();
+        let mut ruleset_schemas = Vec::new();
 
-        if let Some(resource) = &self.resource {
+        if let Some(resource) = &self.rulesets_resource {
             let toml = loader.string(resource.clone())?;
             let resource = crate::toml::from_str::<AutoTileRulesetsResource>(&toml)?;
-            rulesets = resource.rulesets;
+            ruleset_schemas = resource.rulesets;
         }
 
-        self.to_autotilemap_ext(tileset, rulesets)
-    }
+        let tileset_resource = if let Some(resource) = self.tileset {
+            resource
+        } else {
+            let data = loader.string(&self.tileset_resource.unwrap())?;
+            crate::toml::from_str::<TilesetResource>(&data)?
+        };
 
-    pub fn to_autotilemap_ext(
-        self,
-        tileset: TextureKey,
-        extra_rulesets: Vec<AutoTileRulesetSchema>,
-    ) -> Result<AutoTilemap, EmeraldError> {
-        let mut ruleset_schemas = self.rulesets;
-        ruleset_schemas.extend(extra_rulesets);
-
+        ruleset_schemas.extend(self.rulesets);
         let rulesets = ruleset_schemas
             .into_iter()
             .map(|ruleset_schema| ruleset_schema.to_ruleset())
             .collect::<Result<Vec<AutoTileRuleset>, EmeraldError>>()?;
-
+        let texture = loader.texture(tileset_resource.texture)?;
+        let tile_size = Vector2::new(
+            texture.size().0 as usize / tileset_resource.width,
+            texture.size().1 as usize / tileset_resource.height,
+        );
         let mut autotilemap = AutoTilemap::new(
-            tileset,
-            Vector2::new(self.tile_width_px, self.tile_height_px),
-            self.tileset_width,
-            self.tileset_height,
+            texture,
+            tile_size,
+            tileset_resource.width,
+            tileset_resource.height,
             self.width,
             self.height,
             rulesets,
@@ -554,40 +552,28 @@ mod tests {
         assert!(schema.to_ruleset().is_err());
     }
 
-    // #[test]
-    // fn deser_autotilemap() {
-    //     let autotilemap_toml = r#"
-    //         tileset = "tileset.png"
-    //         tileset_height = 2
-    //         tileset_width = 2
-    //         tile_width_px = 32
-    //         tile_height_px = 32
-    //         width = 10
-    //         height = 10
-    //     "#;
-    //     let schema: AutoTileMapSchema = crate::toml::from_str(&autotilemap_toml).unwrap();
-    //     let autotilemap = schema
-    //         .to_autotilemap_ext(Default::default(), Vec::new())
-    //         .unwrap();
-    //     assert_eq!(autotilemap.width(), 10);
-    //     assert_eq!(autotilemap.height(), 10);
-    //     assert_eq!(autotilemap.tile_size().x, 32);
-    //     assert_eq!(autotilemap.tile_size().y, 32);
+    #[test]
+    fn deser_autotilemap() {
+        let autotilemap_toml = r#"
+            width = 10
+            height = 11
+            [tileset]
+            texture = "test"
+            width = 1
+            height = 2
+        "#;
+        let schema: AutoTileMapSchema = crate::toml::from_str(&autotilemap_toml).unwrap();
+        assert_eq!(schema.width, 10);
+        assert_eq!(schema.height, 11);
+        assert_eq!(&schema.tileset.as_ref().unwrap().texture, "test");
+        assert_eq!(schema.tileset.as_ref().unwrap().width, 1);
+        assert_eq!(schema.tileset.as_ref().unwrap().height, 2);
 
-    //     let missing_map_size = r#"
-    //         tileset = "tileset.png"
-    //         tile_width = 32
-    //         tile_height = 32
-    //     "#;
-    //     let schema = crate::toml::from_str::<AutoTileMapSchema>(&missing_map_size);
-    //     assert!(schema.is_err());
-
-    //     let missing_tile_size = r#"
-    //         tileset = "tileset.png"
-    //         width = 10
-    //         height = 10
-    //     "#;
-    //     let schema = crate::toml::from_str::<AutoTileMapSchema>(&missing_tile_size);
-    //     assert!(schema.is_err());
-    // }
+        let missing_map_size = r#"
+            tile_width = 32
+            tile_height = 32
+        "#;
+        let schema = crate::toml::from_str::<AutoTileMapSchema>(&missing_map_size);
+        assert!(schema.is_err());
+    }
 }
