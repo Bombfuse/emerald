@@ -24,6 +24,14 @@ pub(crate) fn load_ent_transform<'a>(
         ));
     }
 
+    let transform = load_transform_from_toml(toml)?;
+
+    world.insert_one(entity, transform)?;
+
+    Ok(())
+}
+
+pub(crate) fn load_transform_from_toml(toml: &toml::Value) -> Result<Transform, EmeraldError> {
     let schema: EntTransformSchema = toml::from_str(&toml.to_string())?;
     let mut transform = Transform::default();
 
@@ -39,7 +47,5 @@ pub(crate) fn load_ent_transform<'a>(
         transform.scale = Scale::new(scale.x, scale.y);
     }
 
-    world.insert_one(entity, transform)?;
-
-    Ok(())
+    Ok(transform)
 }

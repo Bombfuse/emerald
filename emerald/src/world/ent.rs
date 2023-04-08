@@ -24,7 +24,7 @@ pub(crate) mod ent_transform_loader;
 const SPRITE_SCHEMA_KEY: &str = "sprite";
 const RIGID_BODY_SCHEMA_KEY: &str = "rigid_body";
 const ASEPRITE_SCHEMA_KEY: &str = "aseprite";
-const TRANSFORM_SCHEMA_KEY: &str = "transform";
+pub(crate) const TRANSFORM_SCHEMA_KEY: &str = "transform";
 const LABEL_SCHEMA_KEY: &str = "label";
 const COLOR_RECT_SCHEMA_KEY: &str = "color_rect";
 const AUTOTILEMAP_SCHEMA_KEY: &str = "autotilemap";
