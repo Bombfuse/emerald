@@ -86,7 +86,7 @@ impl World {
         }
 
         if let Some(merge_handler) = self.merge_handler {
-            (merge_handler)(self, entity_id_shift_map)?;
+            (merge_handler)(self, &mut other_world, entity_id_shift_map)?;
         }
 
         Ok(())

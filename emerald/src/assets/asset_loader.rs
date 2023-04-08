@@ -24,8 +24,11 @@ pub type WorldResourceLoader =
     fn(&mut AssetLoader<'_>, &mut World, toml::Value, String) -> Result<(), EmeraldError>;
 
 /// A function defined by the user that handles merge results.
-/// Given the base world a mapping of OldEntity -> NewEntity ids.
-pub type WorldMergeHandler = fn(&mut World, HashMap<Entity, Entity>) -> Result<(), EmeraldError>;
+/// Given the base world, the other world, and a mapping of OldEntity -> NewEntity ids.
+/// Note: The other world will have had all of its entities removed by this point, but its resources will be in tact.
+/// This is so that you can manage resource merging according to your games logic.
+pub type WorldMergeHandler =
+    fn(&mut World, &mut World, HashMap<Entity, Entity>) -> Result<(), EmeraldError>;
 
 pub struct AssetLoadConfig {
     /// The default configuration to use when loading worlds.
