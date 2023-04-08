@@ -17,7 +17,10 @@ use hecs::{
 use rapier2d::prelude::{RigidBodyBuilder, RigidBodyHandle};
 
 use self::{
-    ent::{load_ent, EntLoadConfig},
+    ent::{
+        ent_transform_loader::load_transform_from_toml, load_ent, EntLoadConfig,
+        TRANSFORM_SCHEMA_KEY,
+    },
     world_physics_loader::load_world_physics,
 };
 
@@ -402,9 +405,18 @@ pub(crate) fn load_world(
             if let Some(entities) = entities_val.as_array_mut() {
                 for value in entities {
                     // check if this is a ent path reference
-                    if let Some(path) = value.get("path") {
+                    if let Some(path) = value.as_table_mut().map(|e| e.remove("path")).flatten() {
                         if let Some(path) = path.as_str() {
-                            loader.ent(&mut world, path, Transform::default())?;
+                            let transform = if let Some(toml) = value
+                                .as_table_mut()
+                                .map(|e| e.remove(TRANSFORM_SCHEMA_KEY))
+                                .flatten()
+                            {
+                                load_transform_from_toml(&toml)?
+                            } else {
+                                Transform::default()
+                            };
+                            loader.ent(&mut world, path, transform)?;
                         }
                     } else {
                         load_ent(loader, &mut world, value, Transform::default())?;
