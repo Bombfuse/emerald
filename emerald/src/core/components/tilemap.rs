@@ -12,16 +12,32 @@ struct TileSchema {
 }
 
 #[derive(Deserialize, Serialize)]
+pub struct TilesetResource {
+    pub texture: String,
+    /// Height in tiles
+    pub height: usize,
+    /// Width in tiles
+    pub width: usize,
+}
+
+fn load_tileset_resource<T: Into<String>>(
+    emd: &mut Emerald,
+    resource_path: T,
+) -> Result<TilesetResource, EmeraldError> {
+    let data = emd.loader().string(resource_path.into())?;
+    let resource = crate::toml::from_str::<TilesetResource>(&data)?;
+
+    Ok(resource)
+}
+
+#[derive(Deserialize, Serialize)]
 struct TilemapSchema {
-    tileset: String,
     width: usize,
     height: usize,
-    /// Height of tileset in tiles
-    tileset_height: usize,
-    /// Width of tileset in tiles
-    tileset_width: usize,
-    tile_height_px: usize,
-    tile_width_px: usize,
+    #[serde(default)]
+    tileset: Option<TilesetResource>,
+    #[serde(default)]
+    resource: Option<String>,
     #[serde(default = "default_visibility")]
     visible: bool,
     #[serde(default)]
@@ -33,16 +49,29 @@ struct TilemapSchema {
 }
 impl TilemapSchema {
     pub fn to_tilemap(self, loader: &mut AssetLoader) -> Result<Tilemap, EmeraldError> {
-        let tileset = loader.texture(self.tileset.clone())?;
-        self.to_tilemap_ext(tileset)
-    }
+        if self.tileset.is_none() && self.resource.is_none() {
+            return Err(EmeraldError::new(
+                "Tilemaps require either a tileset texture or a path to a tileset resource.",
+            ));
+        }
 
-    pub fn to_tilemap_ext(self, tileset: TextureKey) -> Result<Tilemap, EmeraldError> {
+        let resource = if let Some(resource) = self.tileset {
+            resource
+        } else {
+            let data = loader.string(&self.resource.unwrap())?;
+            crate::toml::from_str::<TilesetResource>(&data)?
+        };
+
+        let texture = loader.texture(resource.texture.clone())?;
+        let tile_size = Vector2::new(
+            texture.size().0 as usize / resource.width,
+            texture.size().1 as usize / resource.height,
+        );
         let mut tilemap = Tilemap::new(
-            tileset,
-            Vector2::new(self.tile_width_px, self.tile_height_px),
-            self.tileset_width,
-            self.tileset_height,
+            texture,
+            tile_size,
+            resource.width,
+            resource.height,
             self.width,
             self.height,
         );

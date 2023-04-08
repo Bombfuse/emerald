@@ -144,12 +144,17 @@ impl Texture {
                 ],
                 label: Some(&format!("{:?}_group", label)),
             });
+            let cached_size = (texture.size.width, texture.size.height);
 
             let bind_group_key =
                 asset_engine.add_asset_with_label(Box::new(texture_bind_group), label)?;
             let asset_key = asset_engine.add_asset_with_label(Box::new(texture), label)?;
-
-            return Ok(TextureKey::new(label, asset_key, bind_group_key));
+            return Ok(TextureKey::new(
+                label,
+                cached_size,
+                asset_key,
+                bind_group_key,
+            ));
         }
         return Err(EmeraldError::new(
             "Unable to get TextureQuad bind group layout",
@@ -204,7 +209,14 @@ pub(crate) fn get_texture_key(asset_engine: &mut AssetEngine, label: &str) -> Op
         asset_engine.get_asset_key_by_label::<Texture>(label),
         asset_engine.get_asset_key_by_label::<BindGroup>(label),
     ) {
-        return Some(TextureKey::new(label, texture_asset_key, bind_group_key));
+        if let Some(texture) = asset_engine.get_asset::<Texture>(&texture_asset_key.asset_id) {
+            return Some(TextureKey::new(
+                label,
+                (texture.size.width, texture.size.height),
+                texture_asset_key,
+                bind_group_key,
+            ));
+        }
     }
 
     None
@@ -213,16 +225,29 @@ pub(crate) fn get_texture_key(asset_engine: &mut AssetEngine, label: &str) -> Op
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextureKey {
     label: String,
+    cached_size: (u32, u32),
     pub(crate) asset_key: AssetKey,
     pub(crate) bind_group_key: AssetKey,
 }
 impl TextureKey {
-    pub(crate) fn new(label: &str, asset_key: AssetKey, bind_group_key: AssetKey) -> Self {
+    pub(crate) fn new(
+        label: &str,
+        cached_size: (u32, u32),
+        asset_key: AssetKey,
+        bind_group_key: AssetKey,
+    ) -> Self {
         TextureKey {
             label: label.to_string(),
             asset_key,
             bind_group_key,
+            cached_size,
         }
+    }
+
+    /// Returns the size of the texture at the time this key was created.
+    /// This can be innacurate if the texture has been resized since then.
+    pub fn size(&self) -> (u32, u32) {
+        self.cached_size
     }
 
     pub fn label(&self) -> &str {
