@@ -15,10 +15,10 @@ struct AutoTileRulesetsResource {
 }
 
 pub fn load_autotile_rulesets_from_resource<T: Into<String>>(
-    emd: &mut Emerald,
+    loader: &mut AssetLoader,
     resource_path: T,
 ) -> Result<Vec<AutoTileRuleset>, EmeraldError> {
-    let data = emd.loader().string(resource_path.into())?;
+    let data = loader.string(resource_path.into())?;
     let resource = crate::toml::from_str::<AutoTileRulesetsResource>(&data)?;
     let rulesets = resource
         .rulesets
