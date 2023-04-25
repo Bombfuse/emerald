@@ -37,6 +37,10 @@ impl Rectangle {
         }
     }
 
+    pub fn contains_point(&self, x: f32, y: f32) -> bool {
+        x >= self.x && x <= self.x + self.width && y >= self.y && y <= self.y + self.height
+    }
+
     // Zeroed out rectangle. When a sprite uses a zeroed out rect, it draws the whole sprite.
     pub fn zeroed() -> Self {
         Rectangle::new(0.0, 0.0, 0.0, 0.0)
@@ -95,6 +99,18 @@ impl Rectangle {
 #[cfg(test)]
 pub mod tests {
     use crate::Rectangle;
+
+    #[test]
+    fn rect_contains_point() {
+        let rect = Rectangle::new(10.0, 10.0, 5.0, 5.0);
+
+        assert!(rect.contains_point(10.0, 10.0));
+        assert!(rect.contains_point(15.0, 15.0));
+        assert!(rect.contains_point(12.0, 12.0));
+
+        assert!(!rect.contains_point(16.0, 12.0));
+        assert!(!rect.contains_point(0.0, 12.0));
+    }
 
     #[test]
     fn exact_overlap_intersects() {
