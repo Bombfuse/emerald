@@ -22,6 +22,7 @@ impl Velocity {
 pub fn main() {
     let mut settings = GameSettings::default();
     settings.render_settings.resolution = (320 * 5, 180 * 5);
+
     emerald::start(
         Box::new(BunnymarkGame {
             count: 0,
@@ -52,7 +53,7 @@ impl Game for BunnymarkGame {
         self.world.spawn_batch((0..start).map(|_| {
             transform.translation.x += 1.0;
             transform.translation.y += 1.0;
-            (transform, sprite.clone(), Velocity::new(5.0, 3.0))
+            (transform, sprite.clone(), Velocity::new(500.0, 300.0))
         }));
 
         let font = emd.loader().font("Roboto-Light.ttf", 40).unwrap();
@@ -62,6 +63,8 @@ impl Game for BunnymarkGame {
 
     #[inline]
     fn update(&mut self, mut emd: Emerald) {
+        let delta = emd.delta();
+
         let now = std::time::Instant::now();
         let (screen_width, screen_height) = emd.screen_size();
         let screen_width = screen_width as f32;
@@ -79,7 +82,7 @@ impl Game for BunnymarkGame {
                 transform.translation.x += 6.0;
                 transform.translation.y += 1.0;
 
-                (transform, sprite.clone(), Velocity::new(5.0, 3.0))
+                (transform, sprite.clone(), Velocity::new(500.0, 300.0))
             }));
         }
 
@@ -100,16 +103,16 @@ impl Game for BunnymarkGame {
 
             if transform.translation.y >= screen_height / 2.0 - sprite_width {
                 transform.translation.y = screen_height / 2.0 - sprite_width;
-                vel.y = -3.0;
+                vel.y *= -1.0;
             }
 
             if transform.translation.y <= -screen_height / 2.0 {
                 transform.translation.y = -screen_height / 2.0;
-                vel.y = 3.0;
+                vel.y *= -1.0;
             }
 
-            transform.translation.x += vel.x;
-            transform.translation.y += vel.y;
+            transform.translation.x += vel.x * delta;
+            transform.translation.y += vel.y * delta;
         }
         println!("update {:?}", std::time::Instant::now() - now);
     }
