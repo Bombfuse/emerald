@@ -1,6 +1,6 @@
 [package]
 name = "emerald"
-version = "0.3.212"
+version = "0.3.213"
 authors = ["Bombfuse <eiffeldud@gmail.com>"]
 edition = "2018"
 description = "A lite, fully featured 2D game engine."
@@ -31,7 +31,7 @@ hecs = { version = "0.9", default-features = false }
 image = { version = "0.23.14", default-features = false, features = [ "png" ] }
 serde = { version = "1.0.145", features=["derive"] }
 bytemuck = { version = "1.12.1", features = ["derive"] }
-gamepad = { version = "0.1.5", optional = true }
+gamepad = { version = "0.1.6", optional = true }
 asefile =  { version = "0.3.4", optional = true }
 anymap = { version = "0.12.1", default-features = false }
 
