@@ -8,6 +8,8 @@ pub struct RenderSettings {
     pub high_dpi: bool,
     pub resizable_window: bool,
 
+    pub present_mode: PresentMode,
+
     // Whether or not the game engine should automatically cull sprites that are not in camera view
     pub frustrum_culling: bool,
     pub pixel_snap: bool,
@@ -19,6 +21,7 @@ impl Default for RenderSettings {
             fullscreen: false,
             resolution: (800, 600),
             high_dpi: false,
+            present_mode: wgpu::PresentMode::AutoVsync,
             resizable_window: true,
             frustrum_culling: true,
             pixel_snap: true,
