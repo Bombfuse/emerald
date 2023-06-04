@@ -7,7 +7,7 @@ use crate::{
     asset_key::{Asset, AssetId, AssetKey},
     asset_storage::AssetStorage,
     texture::Texture,
-    AssetLoadConfig, EmeraldError, Sound,
+    AssetLoadConfig, AssetLoadContext, EmeraldError, OnAssetLoadCallback, Sound,
 };
 
 const DEFAULT_ASSET_FOLDER: &str = "./assets/";
@@ -17,6 +17,7 @@ pub(crate) struct AssetEngine {
     pub(crate) user_data_folder_root: String,
     pub(crate) asset_folder_root: String,
     pub(crate) load_config: AssetLoadConfig,
+    pub(crate) on_asset_load_callback: Option<OnAssetLoadCallback>,
     asset_stores: HashMap<TypeId, AssetStorage>,
 }
 impl AssetEngine {
@@ -26,6 +27,7 @@ impl AssetEngine {
             asset_folder_root: DEFAULT_ASSET_FOLDER.to_string(),
             asset_stores: HashMap::new(),
             load_config: AssetLoadConfig::default(),
+            on_asset_load_callback: None,
         }
     }
 
@@ -131,7 +133,14 @@ impl AssetEngine {
 
     pub fn read_asset_file(&mut self, relative_path: &str) -> Result<Vec<u8>, EmeraldError> {
         let full_path = self.get_full_asset_path(relative_path);
-        read_file(&full_path)
+        read_file(&full_path).map(|bytes| {
+            if let Some(callback) = &self.on_asset_load_callback {
+                let context = AssetLoadContext { path: &full_path };
+                (callback)(context)
+            }
+
+            bytes
+        })
     }
 
     pub fn read_user_file(&mut self, relative_path: &str) -> Result<Vec<u8>, EmeraldError> {
