@@ -101,14 +101,15 @@ pub mod tests {
     use crate::Rectangle;
 
     #[test]
-    fn contains_point() {
-        let rect_a = Rectangle::new(0.0, 0.0, 10.0, 10.0);
+    fn rect_contains_point() {
+        let rect = Rectangle::new(10.0, 10.0, 5.0, 5.0);
 
-        assert!(rect_a.contains_point(0.0, 0.0));
-        assert!(rect_a.contains_point(10.0, 10.0));
+        assert!(rect.contains_point(10.0, 10.0));
+        assert!(rect.contains_point(15.0, 15.0));
+        assert!(rect.contains_point(12.0, 12.0));
 
-        assert!(!rect_a.contains_point(10.5, 10.0));
-        assert!(!rect_a.contains_point(5.0, 11.0));
+        assert!(!rect.contains_point(16.0, 12.0));
+        assert!(!rect.contains_point(0.0, 12.0));
     }
 
     #[test]
