@@ -30,7 +30,10 @@ pub type WorldResourceLoader =
 pub type WorldMergeHandler =
     fn(&mut World, &mut World, HashMap<Entity, Entity>) -> Result<(), EmeraldError>;
 
-pub type OnAssetLoadCallback = fn(&String);
+pub struct AssetLoadContext<'a> {
+    pub path: &'a String,
+}
+pub type OnAssetLoadCallback = fn(AssetLoadContext);
 pub struct AssetLoadConfig {
     /// The default configuration to use when loading worlds.
     pub world_load_config: WorldLoadConfig,

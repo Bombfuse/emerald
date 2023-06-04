@@ -7,7 +7,7 @@ use crate::{
     asset_key::{Asset, AssetId, AssetKey},
     asset_storage::AssetStorage,
     texture::Texture,
-    AssetLoadConfig, EmeraldError, OnAssetLoadCallback, Sound,
+    AssetLoadConfig, AssetLoadContext, EmeraldError, OnAssetLoadCallback, Sound,
 };
 
 const DEFAULT_ASSET_FOLDER: &str = "./assets/";
@@ -135,7 +135,8 @@ impl AssetEngine {
         let full_path = self.get_full_asset_path(relative_path);
         read_file(&full_path).map(|bytes| {
             if let Some(callback) = &self.on_asset_load_callback {
-                (callback)(&full_path)
+                let context = AssetLoadContext { path: &full_path };
+                (callback)(context)
             }
 
             bytes
