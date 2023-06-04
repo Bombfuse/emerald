@@ -21,6 +21,10 @@ impl Rectangle {
         }
     }
 
+    pub fn contains_point(&self, x: f32, y: f32) -> bool {
+        x >= self.x && y >= self.y && x <= self.x + self.width && y <= self.y + self.height
+    }
+
     /// Creates a `Rectangle` from its bottom-left point and its size.
     pub fn from_point_and_size(
         point: impl Into<crate::Vector2<f32>>,
@@ -95,6 +99,17 @@ impl Rectangle {
 #[cfg(test)]
 pub mod tests {
     use crate::Rectangle;
+
+    #[test]
+    fn contains_point() {
+        let rect_a = Rectangle::new(0.0, 0.0, 10.0, 10.0);
+
+        assert!(rect_a.contains_point(0.0, 0.0));
+        assert!(rect_a.contains_point(10.0, 10.0));
+
+        assert!(!rect_a.contains_point(10.5, 10.0));
+        assert!(!rect_a.contains_point(5.0, 11.0));
+    }
 
     #[test]
     fn exact_overlap_intersects() {

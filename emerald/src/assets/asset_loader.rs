@@ -30,6 +30,7 @@ pub type WorldResourceLoader =
 pub type WorldMergeHandler =
     fn(&mut World, &mut World, HashMap<Entity, Entity>) -> Result<(), EmeraldError>;
 
+pub type OnAssetLoadCallback = fn(&String);
 pub struct AssetLoadConfig {
     /// The default configuration to use when loading worlds.
     pub world_load_config: WorldLoadConfig,
@@ -73,6 +74,14 @@ impl<'c> AssetLoader<'c> {
 
     pub fn set_world_resource_loader(&mut self, world_resource_loader: WorldResourceLoader) {
         self.asset_engine.load_config.world_resource_loader = Some(world_resource_loader);
+    }
+
+    pub fn set_on_asset_load_callback(&mut self, callback: OnAssetLoadCallback) {
+        self.asset_engine.on_asset_load_callback = Some(callback);
+    }
+
+    pub fn remove_on_asset_load_callback(&mut self) {
+        self.asset_engine.on_asset_load_callback = None;
     }
 
     /// Retrieves bytes from the assets directory of the game
