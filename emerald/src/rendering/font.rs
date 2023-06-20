@@ -1,13 +1,3 @@
-// // Credit to not-fl3/macroquad text: https://github.com/not-fl3/macroquad/blob/0.3/src/text.rs
-// use crate::rendering::*;
-// use crate::texture::TextureKey;
-// use crate::{AssetEngine, Color, EmeraldError};
-
-// use fontdue::layout::GlyphRasterConfig;
-// pub use fontdue::layout::{HorizontalAlign, VerticalAlign, WrapStyle};
-
-// use std::collections::HashMap;
-
 use std::collections::HashMap;
 
 use fontdue::layout::GlyphRasterConfig;

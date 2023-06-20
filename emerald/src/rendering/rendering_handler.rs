@@ -12,13 +12,13 @@ use super::components::{ColorRect, ColorTri, Label, Sprite};
 
 pub struct RenderingHandler<'c> {
     asset_engine: &'c mut AssetEngine,
-    rendering_engine: &'c mut RenderingEngine,
+    rendering_engine: &'c mut Box<dyn RenderingEngine>,
     ctx: &'c mut GameEngineContext,
 }
 impl<'c> RenderingHandler<'c> {
     pub(crate) fn new(
         asset_engine: &'c mut AssetEngine,
-        rendering_engine: &'c mut RenderingEngine,
+        rendering_engine: &'c mut Box<dyn RenderingEngine>,
         ctx: &'c mut GameEngineContext,
     ) -> Self {
         RenderingHandler {
@@ -197,22 +197,10 @@ impl<'c> RenderingHandler<'c> {
     }
 
     pub fn set_fullscreen(&mut self, fs: bool) -> Result<(), EmeraldError> {
-        if let Some(window) = &mut self.ctx.window {
-            if fs {
-                window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
-            } else {
-                window.set_fullscreen(None);
-            };
-        }
         Ok(())
     }
 
     pub fn set_window_size(&mut self, width: u32, height: u32) -> Result<(), EmeraldError> {
-        if let Some(window) = &mut self.ctx.window {
-            let size = winit::dpi::PhysicalSize::new(width, height);
-            window.set_inner_size(size);
-        }
-
         Ok(())
     }
 }

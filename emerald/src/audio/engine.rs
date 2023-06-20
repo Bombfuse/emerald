@@ -1,51 +1,12 @@
 use crate::{audio::*, EmeraldError};
-use std::collections::HashMap;
 
-pub(crate) struct AudioEngine {
-    mixers: HashMap<String, ThreadSafeMixer>,
-}
-impl AudioEngine {
-    pub(crate) fn new() -> Self {
-        AudioEngine {
-            mixers: HashMap::new(),
-        }
-    }
+pub trait AudioEngine {
+    /// Fetches or creates a mixer with the given name.
+    fn mixer(&mut self, mixer_name: &str) -> Result<&mut ThreadSafeMixer, EmeraldError>;
 
-    pub(crate) fn mixer<T: Into<String>>(
-        &mut self,
-        mixer_name: T,
-    ) -> Result<&mut ThreadSafeMixer, EmeraldError> {
-        let mixer_name: String = mixer_name.into();
+    /// Called at the end of each frame.
+    fn post_update(&mut self) -> Result<(), EmeraldError>;
 
-        if !self.mixers.contains_key(&mixer_name) {
-            self.mixers
-                .insert(mixer_name.clone(), crate::audio::mixer::new_mixer()?);
-        }
-
-        if let Some(mixer) = self.mixers.get_mut(&mixer_name) {
-            return Ok(mixer);
-        }
-
-        Err(EmeraldError::new(format!(
-            "Error creating and/or retrieving the mixer: {:?}",
-            mixer_name
-        )))
-    }
-
-    pub(crate) fn post_update(&mut self) -> Result<(), EmeraldError> {
-        for mixer in self.mixers.values_mut() {
-            mixer.post_update()?;
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn clear(&mut self) -> Result<(), EmeraldError> {
-        for mixer in self.mixers.values_mut() {
-            mixer.clear()?;
-        }
-
-        self.mixers = HashMap::new();
-        Ok(())
-    }
+    /// Clear all mixers and audio.
+    fn clear(&mut self) -> Result<(), EmeraldError>;
 }

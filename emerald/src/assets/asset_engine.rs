@@ -6,7 +6,6 @@ use std::{
 use crate::{
     asset_key::{Asset, AssetId, AssetKey},
     asset_storage::AssetStorage,
-    texture::Texture,
     AssetLoadConfig, AssetLoadContext, EmeraldError, OnAssetLoadCallback, Sound,
 };
 
@@ -255,91 +254,6 @@ mod tests {
         assert!(!engine.asset_stores.contains_key(&type_id));
     }
 }
-
-// use crate::font::{Font, FontKey};
-// use crate::texture::{Texture, TextureKey};
-// use crate::{AssetLoadConfig, EmeraldError, Sound, SoundKey};
-
-// use std::collections::HashMap;
-// use std::fs::create_dir;
-// use std::path::Path;
-
-// const INITIAL_TEXTURE_STORAGE_CAPACITY: usize = 100;
-// const INITIAL_FONT_STORAGE_CAPACITY: usize = 100;
-
-// const DEFAULT_ASSET_FOLDER: &str = "./assets/";
-
-// /// Default to storing user data in the application directory.
-// /// Note: This will destroy any user/save files if the game is re-installed.
-// const DEFAULT_USER_DATA_FOLDER: &str = "./";
-
-// // const INITIAL_SOUND_STORAGE_CAPACITY: usize = 100;
-
-// /// The AssetEngine stores all Textures, Fonts, and Audio for the game.
-// /// It stores the data contiguously, and does caching internally.
-// /// Assets can be loaded via the `AssetLoader` and inserted into the AssetEngine.
-// /// Assets can be manually removed from the store if memory management becomes a concern.
-// pub(crate) struct AssetEngine {
-//     pub(crate) load_config: AssetLoadConfig,
-
-//     bytes: HashMap<String, Vec<u8>>,
-
-//     fonts: Vec<Font>,
-//     fontdue_fonts: Vec<fontdue::Font>,
-//     textures: Vec<Texture>,
-
-//     fontdue_key_map: HashMap<FontKey, usize>,
-//     font_key_map: HashMap<FontKey, usize>,
-//     pub texture_key_map: HashMap<TextureKey, usize>,
-
-//     pub sound_map: HashMap<SoundKey, Sound>,
-//     asset_folder_root: String,
-//     user_data_folder_root: String,
-
-//     #[cfg(feature = "hotreload")]
-//     pub(crate) file_hot_reload_metadata:
-//         HashMap<String, crate::assets::hotreload::HotReloadMetadata>,
-// }
-// impl AssetEngine {
-//     pub fn new(_game_name: String) -> Result<Self, EmeraldError> {
-//         let mut texture_key_map = HashMap::new();
-//         texture_key_map.insert(TextureKey::default(), 0);
-//         let textures = Vec::with_capacity(INITIAL_TEXTURE_STORAGE_CAPACITY);
-
-//         let asset_folder_root = String::from(DEFAULT_ASSET_FOLDER);
-
-//         #[cfg(not(target_os = "windows"))]
-//         let user_data_folder_root = String::from(DEFAULT_USER_DATA_FOLDER);
-
-//         #[cfg(target_os = "windows")]
-//         let user_data_folder_root =
-//             String::from(format!("{}/{}/", get_app_data_directory(), _game_name));
-
-//         #[cfg(not(target_arch = "wasm32"))]
-//         if !Path::new(&user_data_folder_root).exists() {
-//             create_dir(&user_data_folder_root)?;
-//         }
-
-//         Ok(AssetEngine {
-//             load_config: Default::default(),
-//             bytes: HashMap::new(),
-//             fontdue_fonts: Vec::with_capacity(INITIAL_FONT_STORAGE_CAPACITY),
-//             fonts: Vec::with_capacity(INITIAL_FONT_STORAGE_CAPACITY),
-//             textures,
-
-//             fontdue_key_map: HashMap::new(),
-//             font_key_map: HashMap::new(),
-//             texture_key_map,
-
-//             sound_map: HashMap::new(),
-//             asset_folder_root,
-//             user_data_folder_root,
-
-//             #[cfg(feature = "hotreload")]
-//             file_hot_reload_metadata: HashMap::new(),
-//         })
-//     }
-// }
 
 #[cfg(target_arch = "wasm32")]
 fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {

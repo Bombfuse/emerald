@@ -1,33 +1,20 @@
 use std::collections::VecDeque;
 
-use winit::{
-    dpi::PhysicalSize,
-    event::{ElementState, VirtualKeyCode, WindowEvent},
-};
-
 use crate::{
-    profiling::profile_cache::ProfileCache, rendering_engine::RenderingEngine,
-    resources::Resources, AssetEngine, AudioEngine, Emerald, EmeraldError, Game, GameSettings,
-    InputEngine, LoggingEngine,
+    rendering_engine::RenderingEngine, resources::Resources, AssetEngine, AudioEngine, Emerald,
+    EmeraldError, Game, GameSettings, InputEngine,
 };
 
 pub(crate) struct GameEngineContext {
-    pub window: Option<winit::window::Window>,
     pub user_requesting_quit: bool,
 }
-impl GameEngineContext {
-    pub fn get_window_id(&self) -> Option<winit::window::WindowId> {
-        self.window.as_ref().map(|window| window.id().clone())
-    }
-}
+impl GameEngineContext {}
 
 pub(crate) struct GameEngine {
     game: Box<dyn Game>,
-    rendering_engine: RenderingEngine,
-    audio_engine: AudioEngine,
-    profile_cache: ProfileCache,
-    input_engine: InputEngine,
-    logging_engine: LoggingEngine,
+    rendering_engine: Box<dyn RenderingEngine>,
+    audio_engine: Box<dyn AudioEngine>,
+    input_engine: Box<dyn InputEngine>,
     resources: Resources,
     last_instant: f64,
     fps_tracker: VecDeque<f64>,
@@ -36,20 +23,13 @@ pub(crate) struct GameEngine {
     asset_engine: AssetEngine,
 }
 impl GameEngine {
-    pub async fn new(
-        game: Box<dyn Game>,
-        window: &winit::window::Window,
-        settings: &GameSettings,
-    ) -> Result<Self, EmeraldError> {
+    pub async fn new(game: Box<dyn Game>, settings: &GameSettings) -> Result<Self, EmeraldError> {
         let mut asset_engine = AssetEngine::new();
         let rendering_engine =
-            RenderingEngine::new(window, settings.render_settings.clone(), &mut asset_engine)
-                .await?;
+            RenderingEngine::new(settings.render_settings.clone(), &mut asset_engine).await?;
 
         let audio_engine = AudioEngine::new();
         let input_engine = InputEngine::new();
-        let profile_cache = ProfileCache::new(Default::default());
-        let logging_engine = LoggingEngine::new();
 
         let starting_amount = 50;
         let mut fps_tracker = VecDeque::with_capacity(starting_amount);
@@ -58,11 +38,9 @@ impl GameEngine {
         Ok(Self {
             game,
             rendering_engine,
-            logging_engine,
             asset_engine,
             audio_engine,
             input_engine,
-            profile_cache,
             last_instant: date::now(),
             fps_tracker,
             resources: Resources::new(),
@@ -79,10 +57,8 @@ impl GameEngine {
             self.get_fps(),
             &mut self.audio_engine,
             &mut self.input_engine,
-            &mut self.logging_engine,
             &mut self.rendering_engine,
             &mut self.asset_engine,
-            &mut self.profile_cache,
             ctx,
             &mut self.resources,
         );
@@ -92,16 +68,9 @@ impl GameEngine {
         Ok(())
     }
 
-    pub fn input(&mut self, event: &WindowEvent) -> bool {
-        false
-    }
-
-    pub fn resize_window(&mut self, new_size: PhysicalSize<u32>) {
-        self.rendering_engine.resize_window(new_size);
-    }
-
-    pub fn window_size(&self) -> PhysicalSize<u32> {
-        self.rendering_engine.size
+    pub fn resize_window(&mut self, new_size: (u32 u32)) {
+        self.rendering_engine
+            .resize_window(new_size);
     }
 
     pub fn handle_cursor_move(&mut self, position: &winit::dpi::PhysicalPosition<f64>) {
@@ -128,16 +97,13 @@ impl GameEngine {
             self.get_fps(),
             &mut self.audio_engine,
             &mut self.input_engine,
-            &mut self.logging_engine,
             &mut self.rendering_engine,
             &mut self.asset_engine,
-            &mut self.profile_cache,
             ctx,
             &mut self.resources,
         );
 
         self.game.update(emd);
-        self.logging_engine.update().unwrap();
         self.input_engine.update_and_rollover().unwrap();
         self.audio_engine.post_update().unwrap();
         self.asset_engine.update().unwrap();
@@ -154,10 +120,8 @@ impl GameEngine {
             self.get_fps(),
             &mut self.audio_engine,
             &mut self.input_engine,
-            &mut self.logging_engine,
             &mut self.rendering_engine,
             &mut self.asset_engine,
-            &mut self.profile_cache,
             ctx,
             &mut self.resources,
         );

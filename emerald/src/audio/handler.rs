@@ -13,13 +13,8 @@ impl<'a> AudioHandler<'a> {
         }
     }
 
-    pub fn mixer<T: Into<String>>(
-        &mut self,
-        mixer_name: T,
-    ) -> Result<MixerHandler<'_>, EmeraldError> {
-        let mixer_name: String = mixer_name.into();
-
-        if let Ok(mixer) = self.audio_engine.mixer(mixer_name.clone()) {
+    pub fn mixer(&mut self, mixer_name: &str) -> Result<MixerHandler<'_>, EmeraldError> {
+        if let Ok(mixer) = self.audio_engine.mixer(mixer_name) {
             return Ok(MixerHandler::new(mixer, &mut self.asset_store));
         }
 

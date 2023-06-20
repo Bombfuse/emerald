@@ -5,10 +5,10 @@ use std::collections::HashMap;
 use gamepad::{Button, Joystick};
 
 pub struct InputHandler<'a> {
-    engine: &'a mut InputEngine,
+    engine: &'a mut Box<dyn InputEngine>,
 }
 impl<'a> InputHandler<'a> {
-    pub(crate) fn new(engine: &'a mut InputEngine) -> Self {
+    pub(crate) fn new(engine: &'a mut Box<dyn InputEngine>) -> Self {
         Self { engine }
     }
 

@@ -86,200 +86,49 @@ impl TexturedTriDraw {
 
 pub(crate) type BindGroupLayouts = HashMap<BindGroupLayoutId, BindGroupLayout>;
 
-pub(crate) struct RenderingEngine {
-    pub surface: wgpu::Surface,
-    pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
-    pub config: wgpu::SurfaceConfiguration,
-    pub size: winit::dpi::PhysicalSize<u32>,
-    pub settings: RenderSettings,
-
-    pub texture_quad_render_pipeline: RenderPipeline,
-    pub bind_group_layouts: BindGroupLayouts,
-    pub draw_queue: VecDeque<TexturedTriDraw>,
-
-    pub index_buffer: wgpu::Buffer,
-    pub vertex_buffer: wgpu::Buffer,
-
-    vertices: Vec<Vertex>,
-    indices: Vec<u32>,
-
-    pub render_texture_uid: usize,
-
-    color_rect_texture: TextureKey,
-
-    pub active_render_texture_asset_id: Option<AssetId>,
-    pub active_size: winit::dpi::PhysicalSize<u32>,
-
-    layout: Layout,
+#[derive(Clone, Copy, PartialEq)]
+pub struct ScreenSize {
+    pub width: u32,
+    pub height: u32,
 }
-impl RenderingEngine {
-    pub async fn new(
-        window: &winit::window::Window,
-        settings: RenderSettings,
+
+pub struct DrawTexturedQuadCommand<'a> {
+    /// The area to render of the texture
+    pub texture_target_area: Rectangle,
+    asset_engine: &'a mut AssetEngine,
+    texture_asset_id: AssetId,
+    texture_bind_group_asset_id: AssetId,
+    offset: Vector2<f32>,
+    scale: Vector2<f32>,
+    rotation: f32,
+    centered: bool,
+    color: Color,
+    transform: &'a Transform,
+    current_render_target_size: ScreenSize,
+}
+
+pub trait RenderingEngine {
+    fn draw_textured_quad(&mut self, command: DrawTexturedQuadCommand) -> Result<(), EmeraldError>;
+    fn draw_textured_tri(&mut self) -> Result<(), EmeraldError>;
+    fn screen_size(&self) -> ScreenSize;
+
+    /// Resize the game window to the new size.
+    fn resize_window(&mut self, new_size: (u32, u32));
+
+    /// Gets a copy of the texture key for the given label if it exists
+    fn get_texture_key(&self, asset_engine: &mut AssetEngine, label: &str) -> Option<TextureKey>;
+
+    #[inline]
+    fn draw_world(
+        &mut self,
+        world: &mut World,
         asset_store: &mut AssetEngine,
-    ) -> Result<Self, EmeraldError> {
-        let size = window.inner_size();
-        let instance = wgpu::Instance::new(wgpu::Backends::all());
-        let surface = unsafe { instance.create_surface(window) };
-        let adapter = get_adapter(&instance, &surface).await?;
-        let (device, queue) = get_device_and_queue(&adapter).await?;
-        let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface.get_supported_formats(&adapter)[0],
-            width: size.width,
-            height: size.height,
-            present_mode: settings.present_mode,
-            alpha_mode: wgpu::CompositeAlphaMode::Auto,
-        };
-
-        let mut bind_group_layouts = HashMap::new();
-        let draw_queue = VecDeque::new();
-
-        let camera_uniform = CameraUniform::new(config.width as f32, config.height as f32);
-        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let texture_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        // This should match the filterable field of the
-                        // corresponding Texture entry above.
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
-                label: Some("texture_bind_group_layout"),
-            });
-
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Textured Quad Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/textured_quad.wgsl").into()),
-        });
-
-        let render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout],
-                push_constant_ranges: &[],
-            });
-
-        let texture_quad_render_pipeline =
-            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("Render Pipeline"),
-                layout: Some(&render_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &shader,
-                    entry_point: "vs_main",
-                    buffers: &[Vertex::desc()],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &shader,
-                    entry_point: "fs_main",
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: config.format,
-                        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                }),
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: Some(wgpu::Face::Back),
-                    polygon_mode: wgpu::PolygonMode::Fill,
-                    unclipped_depth: false,
-                    conservative: false,
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview: None,
-            });
-
-        bind_group_layouts.insert(BindGroupLayoutId::TextureQuad, texture_bind_group_layout);
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(shaders::textured_quad::VERTICES),
-            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(shaders::textured_quad::INDICES),
-            usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let color_rect_texture = Texture::new(
-            "emd_default_texture",
-            &bind_group_layouts,
-            asset_store,
-            &device,
-            &queue,
-            1,
-            1,
-            &[255, 255, 255, 255],
-        )?;
-
-        Ok(Self {
-            surface,
-            device,
-            queue,
-            config,
-            size,
-            active_size: size,
-            settings,
-
-            texture_quad_render_pipeline,
-            bind_group_layouts,
-            draw_queue,
-
-            vertex_buffer,
-            index_buffer,
-            vertices: Vec::new(),
-            indices: Vec::new(),
-
-            color_rect_texture,
-
-            render_texture_uid: 0,
-
-            active_render_texture_asset_id: None,
-            layout: Layout::new(fontdue::layout::CoordinateSystem::PositiveYUp),
-        })
-    }
-
-    pub fn resize_window(&mut self, new_size: PhysicalSize<u32>) {
-        if new_size.width > 0 && new_size.height > 0 {
-            self.size = new_size;
-            self.config.width = new_size.width;
-            self.config.height = new_size.height;
-            self.surface.configure(&self.device, &self.config);
-            // future todo: resize any depth textures here
-        }
+    ) -> Result<(), EmeraldError> {
+        self.draw_world_with_transform(world, Transform::default(), asset_store)
     }
 
     #[inline]
-    pub fn draw_world_with_transform(
+    fn draw_world_with_transform(
         &mut self,
         world: &mut World,
         transform: Transform,
@@ -362,16 +211,7 @@ impl RenderingEngine {
         Ok(())
     }
 
-    #[inline]
-    pub fn draw_world(
-        &mut self,
-        world: &mut World,
-        asset_store: &mut AssetEngine,
-    ) -> Result<(), EmeraldError> {
-        self.draw_world_with_transform(world, Transform::default(), asset_store)
-    }
-
-    pub fn draw_ui_button(
+    fn draw_ui_button(
         &mut self,
         asset_engine: &mut AssetEngine,
         ui_button: &UIButton,
@@ -382,7 +222,7 @@ impl RenderingEngine {
         }
 
         let texture = ui_button.current_texture();
-        draw_textured_quad(
+        self.draw_textured_quad(
             asset_engine,
             texture.asset_key.asset_id,
             texture.bind_group_key.asset_id,
@@ -393,15 +233,10 @@ impl RenderingEngine {
             true,
             WHITE,
             transform,
-            self.active_size.clone(),
-            &mut self.vertices,
-            &mut self.indices,
-            &mut self.draw_queue,
-            &self.settings,
         )
     }
 
-    pub fn draw_aseprite(
+    fn draw_aseprite(
         &mut self,
         asset_engine: &mut AssetEngine,
         aseprite: &Aseprite,
@@ -431,7 +266,7 @@ impl RenderingEngine {
         )
     }
 
-    pub fn draw_tilemap(
+    fn draw_tilemap(
         &mut self,
         asset_engine: &mut AssetEngine,
         tilemap: &Tilemap,
@@ -511,7 +346,7 @@ impl RenderingEngine {
         Ok(())
     }
 
-    pub fn draw_sprite(
+    fn draw_sprite(
         &mut self,
         asset_engine: &mut AssetEngine,
         sprite: &Sprite,
@@ -540,7 +375,7 @@ impl RenderingEngine {
         )
     }
 
-    pub fn draw_color_rect(
+    fn draw_color_rect(
         &mut self,
         asset_engine: &mut AssetEngine,
         color_rect: &ColorRect,
@@ -569,7 +404,7 @@ impl RenderingEngine {
         )
     }
 
-    pub fn draw_color_tri(
+    fn draw_color_tri(
         &mut self,
         asset_engine: &mut AssetEngine,
         color_tri: &ColorTri,
@@ -595,7 +430,7 @@ impl RenderingEngine {
         )
     }
 
-    pub fn begin(&mut self, _asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
+    fn begin(&mut self, _asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
         if self.active_render_texture_asset_id.is_some() {
             return Err(EmeraldError::new("Cannot begin render. There is an active render_texture. Please finish rendering to your texture before beginning the final render pass."));
         }
@@ -607,7 +442,7 @@ impl RenderingEngine {
         Ok(())
     }
 
-    pub fn begin_texture(
+    fn begin_texture(
         &mut self,
         texture_key: &TextureKey,
         asset_engine: &mut AssetEngine,
@@ -631,7 +466,7 @@ impl RenderingEngine {
         Ok(())
     }
 
-    pub fn render_texture(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
+    fn render_texture(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
         match self.active_render_texture_asset_id.take() {
             None => {
                 return Err(EmeraldError::new(
@@ -658,7 +493,7 @@ impl RenderingEngine {
         }
     }
 
-    pub fn load_texture(
+    fn load_texture(
         &mut self,
         label: &str,
         asset_store: &mut AssetEngine,
@@ -674,7 +509,7 @@ impl RenderingEngine {
         )
     }
 
-    pub fn load_texture_ext(
+    fn load_texture_ext(
         &mut self,
         label: &str,
         asset_store: &mut AssetEngine,
@@ -734,7 +569,7 @@ impl RenderingEngine {
         Ok(())
     }
 
-    pub fn render(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
+    fn render(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
         let surface_texture = match self.surface.get_current_texture() {
             Ok(surface_texture) => Ok(surface_texture),
             Err(e) => {
@@ -757,7 +592,7 @@ impl RenderingEngine {
         Ok(())
     }
 
-    pub fn create_render_texture(
+    fn create_render_texture(
         &mut self,
         width: u32,
         height: u32,
@@ -852,7 +687,7 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn draw_label(
+    fn draw_label(
         &mut self,
         asset_engine: &mut AssetEngine,
         label: &Label,
@@ -1016,7 +851,7 @@ impl RenderingEngine {
     }
 
     #[inline]
-    pub fn update_font_texture(
+    fn update_font_texture(
         &mut self,
         asset_store: &mut AssetEngine,
         key: &FontKey,
@@ -1674,7 +1509,7 @@ struct DrawCommandAdder {
 }
 
 impl DrawCommandAdder {
-    fn new(engine: &RenderingEngine, world: &World) -> Self {
+    fn new(engine: &Box<impl RenderingEngine>, world: &World) -> Self {
         let (camera, camera_transform) = get_camera_and_camera_transform(world);
         let camera_bounds = if engine.settings.frustrum_culling {
             let screen_size = (

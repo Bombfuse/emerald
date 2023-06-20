@@ -1,18 +1,5 @@
 use crate::{audio::sound::SoundInstanceId, AssetEngine, EmeraldError, SoundKey};
 
-#[cfg(feature = "audio")]
-mod kira_backend;
-
-#[cfg(feature = "audio")]
-use kira::manager::AudioManager;
-#[cfg(feature = "audio")]
-use kira_backend::KiraMixer as BackendMixer;
-
-#[cfg(not(feature = "audio"))]
-mod dummy;
-#[cfg(not(feature = "audio"))]
-use dummy::DummyMixer as BackendMixer;
-
 #[cfg(target_arch = "wasm32")]
 pub(crate) type ThreadSafeMixer = Box<dyn Mixer>;
 
@@ -43,45 +30,6 @@ pub(crate) trait Mixer {
     fn resume(&mut self, snd_instance_id: SoundInstanceId) -> Result<(), EmeraldError>;
     fn clear(&mut self) -> Result<(), EmeraldError>;
     fn post_update(&mut self) -> Result<(), EmeraldError>;
-}
-
-#[cfg(not(feature = "audio"))]
-pub(crate) fn new_mixer() -> Result<ThreadSafeMixer, EmeraldError> {
-    let mixer = BackendMixer::new()?;
-
-    Ok(mixer)
-}
-
-#[cfg(feature = "audio")]
-use std::sync::{Arc, Mutex};
-
-#[cfg(feature = "audio")]
-static mut KIRA_AUDIO_MANAGER: Option<Arc<Mutex<AudioManager>>> = None;
-
-#[cfg(feature = "audio")]
-pub(crate) fn new_mixer() -> Result<ThreadSafeMixer, EmeraldError> {
-    use kira::manager::AudioManagerSettings;
-
-    unsafe {
-        if KIRA_AUDIO_MANAGER.is_none() {
-            let audio_manager = AudioManager::new(AudioManagerSettings {
-                num_sounds: 1000,
-                num_instances: 1000,
-                ..Default::default()
-            })?;
-            KIRA_AUDIO_MANAGER = Some(Arc::new(Mutex::new(audio_manager)));
-        }
-
-        if let Some(audio_manager) = &mut KIRA_AUDIO_MANAGER {
-            let mixer = BackendMixer::new(audio_manager.clone())?;
-
-            return Ok(mixer);
-        }
-    }
-
-    Err(EmeraldError::new(
-        "Unable to find or creat the kira audio manager",
-    ))
 }
 
 pub struct MixerHandler<'a> {

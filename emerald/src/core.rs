@@ -14,24 +14,27 @@ use winit::window::CursorIcon;
 use crate::assets::*;
 use crate::audio::*;
 use crate::input::*;
-use crate::logging::*;
-use crate::profiling::profile_cache::ProfileCache;
-use crate::profiling::profiler::Profiler;
 use crate::rendering_engine::RenderingEngine;
 use crate::rendering_handler::RenderingHandler;
 
 use self::game_engine::date;
 use self::game_engine::GameEngineContext;
 
+/// Builder for the Emerald context
+pub struct EmeraldBuilder {}
+impl EmeraldBuilder {
+    pub fn new() -> Self {
+        EmeraldBuilder {}
+    }
+}
+
 pub struct Emerald<'c> {
     delta: f32,
     fps: f64,
-    audio_engine: &'c mut AudioEngine,
-    rendering_engine: &'c mut RenderingEngine,
-    logging_engine: &'c mut LoggingEngine,
-    input_engine: &'c mut InputEngine,
+    audio_engine: &'c mut Box<dyn AudioEngine>,
+    rendering_engine: &'c mut Box<dyn RenderingEngine>,
+    input_engine: &'c mut Box<dyn InputEngine>,
     pub(crate) asset_engine: &'c mut AssetEngine,
-    profile_cache: &'c mut ProfileCache,
     ctx: &'c mut GameEngineContext,
     resources: &'c mut anymap::AnyMap,
 }
@@ -40,12 +43,10 @@ impl<'c> Emerald<'c> {
     pub(crate) fn new(
         delta: f32,
         fps: f64,
-        audio_engine: &'c mut AudioEngine,
-        input_engine: &'c mut InputEngine,
-        logging_engine: &'c mut LoggingEngine,
-        rendering_engine: &'c mut RenderingEngine,
+        audio_engine: &'c mut Box<dyn AudioEngine>,
+        input_engine: &'c mut Box<dyn InputEngine>,
+        rendering_engine: &'c mut Box<dyn RenderingEngine>,
         asset_engine: &'c mut AssetEngine,
-        profile_cache: &'c mut ProfileCache,
         ctx: &'c mut GameEngineContext,
         resources: &'c mut anymap::AnyMap,
     ) -> Self {
@@ -55,9 +56,7 @@ impl<'c> Emerald<'c> {
             audio_engine,
             rendering_engine,
             input_engine,
-            logging_engine,
             asset_engine,
-            profile_cache,
             ctx,
             resources,
         }
@@ -104,11 +103,10 @@ impl<'c> Emerald<'c> {
     }
 
     #[inline]
+    #[deprecated = "Use emd.graphics().screen_size() instead."]
     pub fn screen_size(&self) -> (u32, u32) {
-        (
-            self.rendering_engine.size.width,
-            self.rendering_engine.size.height,
-        )
+        let size = self.rendering_engine.screen_size();
+        (size.width, size.height)
     }
 
     #[inline]
@@ -135,12 +133,6 @@ impl<'c> Emerald<'c> {
         )
     }
 
-    pub fn profiler<T: Into<String>>(&mut self, profile_name: T) -> Profiler<'_> {
-        let now = self.now();
-
-        Profiler::new(&mut self.profile_cache, profile_name, now)
-    }
-
     // ************* Asset API ************* //
     #[inline]
     pub fn loader(&mut self) -> AssetLoader<'_> {
@@ -165,14 +157,6 @@ impl<'c> Emerald<'c> {
     }
     // ************************************* //
 
-    /// Logging
-    // ************* Logging API ************* //
-    #[inline]
-    pub fn logger(&mut self) -> &mut LoggingEngine {
-        &mut self.logging_engine
-    }
-    // ************************************* //
-
     #[inline]
     pub fn resources(&mut self) -> &mut anymap::AnyMap {
         &mut self.resources
@@ -186,17 +170,20 @@ impl<'c> Emerald<'c> {
 
     /// Makes all touches also be registered as mouse events.
     #[inline]
+    #[deprecated = "Use emd.input().touches_to_mouse(enabled) instead."]
     pub fn touches_to_mouse(&mut self, enabled: bool) {
-        self.input_engine.touches_to_mouse = enabled;
+        self.input_engine.touches_to_mouse(enabled);
     }
 
     /// Makes mouse clicks treated as touch event.
     #[inline]
+    #[deprecated = "Use emd.input().mouse_to_touch(enabled) instead."]
     pub fn mouse_to_touch(&mut self, enabled: bool) {
-        self.input_engine.mouse_to_touch = enabled;
+        self.input_engine.mouse_to_touch(enabled);
     }
 
     #[inline]
+    #[deprecated = "Use emd.input().set_key_pressed(keycode, is_pressed) instead."]
     pub fn set_key_pressed(&mut self, keycode: KeyCode, is_pressed: bool) {
         if is_pressed {
             self.input_engine.set_key_down(keycode, false);

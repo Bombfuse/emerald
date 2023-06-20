@@ -7,14 +7,12 @@ use crate::font::FontImage;
 use crate::font::FontKey;
 use crate::rendering::components::Sprite;
 use crate::rendering_engine::RenderingEngine;
-use crate::texture::get_texture_key;
 use crate::texture::TextureKey;
 use crate::*;
 
 use std::collections::HashMap;
 use std::ffi::OsStr;
 
-#[cfg(feature = "aseprite")]
 use crate::rendering::components::Aseprite;
 
 pub type CustomComponentLoader =
@@ -55,14 +53,14 @@ impl Default for AssetLoadConfig {
 
 pub struct AssetLoader<'c> {
     pub(crate) asset_engine: &'c mut AssetEngine,
-    rendering_engine: &'c mut RenderingEngine,
-    _audio_engine: &'c mut AudioEngine,
+    rendering_engine: &'c mut Box<dyn RenderingEngine>,
+    _audio_engine: &'c mut Box<dyn AudioEngine>,
 }
 impl<'c> AssetLoader<'c> {
     pub(crate) fn new(
         asset_engine: &'c mut AssetEngine,
-        rendering_engine: &'c mut RenderingEngine,
-        _audio_engine: &'c mut AudioEngine,
+        rendering_engine: &'c mut Box<dyn RenderingEngine>,
+        _audio_engine: &'c mut Box<dyn AudioEngine>,
     ) -> Self {
         AssetLoader {
             asset_engine,
@@ -207,7 +205,10 @@ impl<'c> AssetLoader<'c> {
     pub fn texture<T: AsRef<str>>(&mut self, path: T) -> Result<TextureKey, EmeraldError> {
         let path: &str = path.as_ref();
 
-        if let Some(key) = get_texture_key(&mut self.asset_engine, path) {
+        if let Some(key) = self
+            .rendering_engine
+            .get_texture_key(&mut self.asset_engine, path)
+        {
             return Ok(key);
         }
 

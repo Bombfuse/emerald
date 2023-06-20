@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::rendering_engine::BindGroupLayouts;
-use crate::texture::{get_texture_key, Texture};
 use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
 
@@ -33,22 +32,12 @@ impl Aseprite {
     }
 
     pub(crate) fn new(
-        bind_group_layouts: &BindGroupLayouts,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
         asset_store: &mut AssetEngine,
         path: &str,
         data: Vec<u8>,
     ) -> Result<Self, EmeraldError> {
         let aseprite = asefile::AsepriteFile::read(std::io::Cursor::new(data))?;
-        let data = AsepriteData::from_asefile(
-            bind_group_layouts,
-            device,
-            queue,
-            asset_store,
-            path,
-            aseprite,
-        )?;
+        let data = AsepriteData::from_asefile(asset_store, path, aseprite)?;
         Ok(Self::from_data(data))
     }
 
@@ -376,37 +365,35 @@ struct Frame {
 
 impl Frame {
     fn from_asefile(
-        bind_group_layouts: &BindGroupLayouts,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
         asset_engine: &mut AssetEngine,
         path: &str,
         frame_index: u32,
         frame: asefile::Frame<'_>,
     ) -> Result<Self, EmeraldError> {
-        let image = DynamicImage::ImageRgba8(frame.image());
+        // let image = DynamicImage::ImageRgba8(frame.image());
 
-        let mut label = path.to_owned();
-        label.push('#');
-        label.push_str(&frame_index.to_string());
+        // let mut label = path.to_owned();
+        // label.push('#');
+        // label.push_str(&frame_index.to_string());
 
-        let texture_key = if let Some(key) = get_texture_key(asset_engine, &label) {
-            key
-        } else {
-            Texture::from_image(
-                &label,
-                bind_group_layouts,
-                asset_engine,
-                device,
-                queue,
-                &image,
-            )?
-        };
+        // let texture_key = if let Some(key) = get_texture_key(asset_engine, &label) {
+        //     key
+        // } else {
+        //     Texture::from_image(
+        //         &label,
+        //         bind_group_layouts,
+        //         asset_engine,
+        //         device,
+        //         queue,
+        //         &image,
+        //     )?
+        // };
 
-        Ok(Self {
-            sprite: Sprite::from_texture(texture_key),
-            duration: frame.duration() as f32 / 1000.0,
-        })
+        // Ok(Self {
+        //     sprite: Sprite::from_texture(texture_key),
+        //     duration: frame.duration() as f32 / 1000.0,
+        // })
+        todo!("fix aseprite loading")
     }
 
     fn from_sprite_and_json(
@@ -432,9 +419,6 @@ pub(crate) struct AsepriteData {
 
 impl AsepriteData {
     fn from_asefile(
-        bind_group_layouts: &BindGroupLayouts,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
         asset_store: &mut AssetEngine,
         path: &str,
         aseprite: asefile::AsepriteFile,
@@ -442,15 +426,7 @@ impl AsepriteData {
         let frames: Vec<Frame> = (0..aseprite.num_frames())
             .map(|frame_index| {
                 let frame = aseprite.frame(frame_index);
-                Frame::from_asefile(
-                    bind_group_layouts,
-                    device,
-                    queue,
-                    asset_store,
-                    path,
-                    frame_index,
-                    frame,
-                )
+                Frame::from_asefile(asset_store, path, frame_index, frame)
             })
             .collect::<Result<_, EmeraldError>>()?;
 
