@@ -1,9 +1,14 @@
 [package]
-name = "emerald_default_runner"
+name = "emd_desktop"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-emerald = { path = "../emerald" }
+bytemuck = "1.13.1"
+emerald = { path = "../../emerald" }
+fontdue = "0.7.3"
+image = "0.24.6"
+wgpu = "0.16.1"
+winit = "0.28.6"

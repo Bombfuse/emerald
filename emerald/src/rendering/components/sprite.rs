@@ -1,4 +1,4 @@
-use crate::{texture::TextureKey, *};
+use crate::{asset_key::AssetKey, *};
 
 #[derive(Clone, Debug)]
 pub struct Sprite {
@@ -10,11 +10,11 @@ pub struct Sprite {
     pub visible: bool,
     pub color: Color,
     pub centered: bool,
-    pub(crate) texture_key: TextureKey,
+    pub(crate) texture_key: AssetKey,
     pub z_index: f32,
 }
 impl Sprite {
-    pub fn from_texture(texture_key: TextureKey) -> Self {
+    pub fn from_texture(texture_key: AssetKey) -> Self {
         Sprite {
             texture_key,
             target: Rectangle::new(0.0, 0.0, 0.0, 0.0),

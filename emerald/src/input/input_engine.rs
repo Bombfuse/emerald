@@ -1,30 +1,58 @@
-use crate::{input::*, EmeraldError};
+use rapier2d::na::Vector2;
 
-#[cfg(feature = "gamepads")]
-use gamepad::{Button, GamepadEngine, GamepadState};
-use winit::event::{ElementState, VirtualKeyCode};
+use crate::{input::*, AssetEngine, EmeraldError};
 
 use std::collections::{HashMap, HashSet};
 
-use super::touch_state::TouchState;
-pub(crate) struct Action {
+pub struct Action {
     pub key_bindings: HashSet<KeyCode>,
-    #[cfg(feature = "gamepads")]
     pub button_bindings: HashMap<usize, HashSet<Button>>,
 }
 impl Action {
     pub fn new() -> Self {
         Self {
             key_bindings: HashSet::new(),
-            #[cfg(feature = "gamepads")]
             button_bindings: HashMap::new(),
         }
     }
 }
 
-pub type ActionId = String;
+pub type ActionId = str;
 
-pub trait InputEngine {}
+pub trait InputEngine {
+    fn initialize(&mut self, asset_engine: &mut AssetEngine);
+
+    fn is_action_just_pressed(&mut self, action_label: &str) -> bool;
+    fn is_action_pressed(&mut self, action_label: &str) -> bool;
+
+    fn is_key_just_pressed(&mut self, key: KeyCode) -> bool;
+    fn is_key_pressed(&mut self, key: KeyCode) -> bool;
+
+    fn is_button_just_pressed(&mut self, button: Button, index: u8) -> bool;
+    fn is_button_pressed(&mut self, button: Button, index: u8) -> bool;
+
+    fn joystick(&mut self, joystick: Joystick, index: u8) -> Vector2<f32>;
+    fn joystick_raw(&mut self, joystick: Joystick, index: u8) -> Vector2<f32>;
+
+    fn add_action(&mut self, action_label: &str, action: Action);
+    fn add_action_key(&mut self, action_label: &str, key_code: KeyCode);
+    fn add_action_button(&mut self, action_label: &str, button: Button);
+    fn remove_action_key(&mut self, action_label: &str, key_code: KeyCode);
+    fn remove_action_button(&mut self, action_label: &str, button: Button);
+    fn remove_action(&mut self, action_label: &str) -> Option<Action>;
+
+    fn key_states_mut(&mut self) -> &mut HashMap<KeyCode, ButtonState>;
+    fn button_states_mut(&mut self) -> &mut HashMap<Button, ButtonState>;
+
+    fn update_and_rollover(&mut self) {
+        for (_, state) in self.key_states_mut() {
+            state.rollover();
+        }
+        for (_, state) in self.button_states_mut() {
+            state.rollover();
+        }
+    }
+}
 
 // pub(crate) struct InputEngine {
 //     #[cfg(feature = "gamepads")]

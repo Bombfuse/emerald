@@ -3,7 +3,7 @@ use rapier2d::na::Vector2;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    texture::TextureKey,
+    asset_key::AssetKey,
     tilemap::{get_tilemap_index, TileId, Tilemap, TilesetResource},
     AssetLoader, Emerald, EmeraldError, World,
 };
@@ -294,10 +294,7 @@ impl AutoTileMapSchema {
             .map(|ruleset_schema| ruleset_schema.to_ruleset())
             .collect::<Result<Vec<AutoTileRuleset>, EmeraldError>>()?;
         let texture = loader.texture(tileset_resource.texture)?;
-        let tile_size = Vector2::new(
-            texture.size().0 as usize / tileset_resource.width,
-            texture.size().1 as usize / tileset_resource.height,
-        );
+        let tile_size = Vector2::new(tileset_resource.tile_width, tileset_resource.tile_height);
         let mut autotilemap = AutoTilemap::new(
             texture,
             tile_size,
@@ -326,7 +323,7 @@ pub struct AutoTilemap {
 }
 impl AutoTilemap {
     pub fn new(
-        tilesheet: TextureKey,
+        tilesheet: AssetKey,
         // Size of a tile in the grid, in pixels
         tile_size: Vector2<usize>,
         // Width of tilesheet in tiles
@@ -388,7 +385,7 @@ impl AutoTilemap {
         self.tilemap.height
     }
 
-    pub fn tilesheet(&self) -> TextureKey {
+    pub fn tilesheet(&self) -> AssetKey {
         self.tilemap.tilesheet.clone()
     }
 

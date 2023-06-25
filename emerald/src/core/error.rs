@@ -18,42 +18,6 @@ impl std::fmt::Display for EmeraldError {
     }
 }
 
-// Kira audio backend error translations
-#[cfg(feature = "audio")]
-impl From<kira::CommandError> for EmeraldError {
-    fn from(e: kira::CommandError) -> EmeraldError {
-        EmeraldError {
-            message: format!("kira::ComandError {:?}", &e.to_string()),
-        }
-    }
-}
-
-#[cfg(feature = "audio")]
-impl From<kira::manager::error::SetupError> for EmeraldError {
-    fn from(e: kira::manager::error::SetupError) -> EmeraldError {
-        EmeraldError {
-            message: format!("kira::manager::error::SetupError {:?}", &e.to_string()),
-        }
-    }
-}
-#[cfg(feature = "audio")]
-impl From<kira::manager::error::AddSoundError> for EmeraldError {
-    fn from(e: kira::manager::error::AddSoundError) -> EmeraldError {
-        EmeraldError {
-            message: format!("kira::manager::error::SetupError {:?}", &e.to_string()),
-        }
-    }
-}
-
-#[cfg(feature = "audio")]
-impl From<kira::sound::error::SoundFromFileError> for EmeraldError {
-    fn from(e: kira::sound::error::SoundFromFileError) -> EmeraldError {
-        EmeraldError {
-            message: format!("kira::manager::error::SetupError {:?}", &e.to_string()),
-        }
-    }
-}
-
 impl From<serde_json::Error> for EmeraldError {
     fn from(e: serde_json::Error) -> EmeraldError {
         EmeraldError {
@@ -133,14 +97,6 @@ impl From<hecs::ComponentError> for EmeraldError {
     }
 }
 
-#[cfg(feature = "gamepads")]
-impl From<gamepad::GamepadError> for EmeraldError {
-    fn from(e: gamepad::GamepadError) -> EmeraldError {
-        EmeraldError { message: e.msg }
-    }
-}
-
-#[cfg(feature = "aseprite")]
 impl From<asefile::AsepriteParseError> for EmeraldError {
     fn from(e: asefile::AsepriteParseError) -> EmeraldError {
         use asefile::AsepriteParseError::*;

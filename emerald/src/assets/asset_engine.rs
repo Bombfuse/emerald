@@ -12,7 +12,7 @@ use crate::{
 const DEFAULT_ASSET_FOLDER: &str = "./assets/";
 const DEFAULT_USER_DATA_FOLDER: &str = "./";
 
-pub(crate) struct AssetEngine {
+pub struct AssetEngine {
     pub(crate) user_data_folder_root: String,
     pub(crate) asset_folder_root: String,
     pub(crate) load_config: AssetLoadConfig,

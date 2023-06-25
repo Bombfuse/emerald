@@ -4,7 +4,7 @@ use rapier2d::{
 };
 
 use crate::{
-    game_engine::GameEngineContext, rendering_engine::RenderingEngine, texture::TextureKey,
+    asset_key::AssetKey, game_engine::GameEngineContext, rendering_engine::RenderingEngine,
     AssetEngine, Color, EmeraldError, Transform, World,
 };
 
@@ -181,7 +181,7 @@ impl<'c> RenderingHandler<'c> {
     }
 
     /// Begin drawing to the screen
-    pub fn begin_texture(&mut self, texture_key: &TextureKey) -> Result<(), EmeraldError> {
+    pub fn begin_texture(&mut self, texture_key: &AssetKey) -> Result<(), EmeraldError> {
         self.rendering_engine
             .begin_texture(texture_key, &mut self.asset_engine)
     }

@@ -2,14 +2,16 @@ mod button_state;
 mod components;
 mod input_engine;
 mod input_handler;
+mod input_types;
 mod mouse_state;
 mod systems;
 mod touch_state;
 
 pub use button_state::*;
 pub use components::*;
-pub(crate) use input_engine::*;
+pub use input_engine::*;
 pub use input_handler::*;
+pub use input_types::*;
 pub use mouse_state::*;
 pub use systems::*;
 pub use touch_state::*;

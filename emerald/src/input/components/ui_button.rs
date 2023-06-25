@@ -1,8 +1,8 @@
-use crate::{texture::TextureKey, Rectangle};
+use crate::{asset_key::AssetKey, Rectangle};
 
 pub struct UIButton {
-    pub pressed_texture: TextureKey,
-    pub unpressed_texture: TextureKey,
+    pub pressed_texture: AssetKey,
+    pub unpressed_texture: AssetKey,
 
     /// Custom bounding box for the pressed area of the button, overwrites the usage of the texture for the box.
     pub custom_pressed_bounding_box: Option<Rectangle>,
@@ -17,7 +17,7 @@ pub struct UIButton {
     pub visible: bool,
 }
 impl UIButton {
-    pub fn new(pressed_texture: TextureKey, unpressed_texture: TextureKey) -> Self {
+    pub fn new(pressed_texture: AssetKey, unpressed_texture: AssetKey) -> Self {
         UIButton {
             unpressed_texture,
             pressed_texture,
@@ -62,7 +62,7 @@ impl UIButton {
         self.was_pressed = false;
     }
 
-    pub(crate) fn current_texture(&self) -> &TextureKey {
+    pub(crate) fn current_texture(&self) -> &AssetKey {
         if self.is_pressed() {
             &self.pressed_texture
         } else {

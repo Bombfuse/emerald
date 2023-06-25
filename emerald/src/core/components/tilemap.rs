@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{texture::TextureKey, *};
+use crate::{asset_key::AssetKey, *};
 
 pub type TileId = usize;
 
@@ -14,10 +14,18 @@ struct TileSchema {
 #[derive(Deserialize, Serialize)]
 pub struct TilesetResource {
     pub texture: String,
-    /// Height in tiles
-    pub height: usize,
-    /// Width in tiles
+
+    /// Number of tiles in a row
     pub width: usize,
+
+    /// Number of tiles in a column
+    pub height: usize,
+
+    /// Width of a tile in pixels
+    pub tile_width: usize,
+
+    /// Height of a tile in pixels
+    pub tile_height: usize,
 }
 
 fn load_tileset_resource<T: Into<String>>(
@@ -63,10 +71,7 @@ impl TilemapSchema {
         };
 
         let texture = loader.texture(resource.texture.clone())?;
-        let tile_size = Vector2::new(
-            texture.size().0 as usize / resource.width,
-            texture.size().1 as usize / resource.height,
-        );
+        let tile_size = Vector2::new(resource.tile_width, resource.tile_height);
         let mut tilemap = Tilemap::new(
             texture,
             tile_size,
@@ -91,7 +96,7 @@ fn default_visibility() -> bool {
 pub struct Tilemap {
     pub(crate) width: usize,
     pub(crate) height: usize,
-    pub(crate) tilesheet: TextureKey,
+    pub(crate) tilesheet: AssetKey,
     pub(crate) tile_size: Vector2<usize>,
     pub(crate) tiles: Vec<Option<TileId>>,
     // Width of tilesheet in tiles
@@ -103,7 +108,7 @@ pub struct Tilemap {
 }
 impl Tilemap {
     pub fn new(
-        tilesheet: TextureKey,
+        tilesheet: AssetKey,
         // Size of a tile in the grid, in pixels
         tile_size: Vector2<usize>,
         // Width of tilesheet in tiles
@@ -193,7 +198,7 @@ impl Tilemap {
         self.tile_size.y
     }
 
-    pub fn set_tilesheet(&mut self, tilesheet: TextureKey) {
+    pub fn set_tilesheet(&mut self, tilesheet: AssetKey) {
         self.tilesheet = tilesheet
     }
 }

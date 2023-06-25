@@ -1,6 +1,5 @@
 pub mod components;
 pub mod font;
 pub mod render_settings;
-pub(crate) mod rendering_engine;
-pub(crate) mod rendering_handler;
-pub mod texture;
+pub mod rendering_engine;
+pub mod rendering_handler;

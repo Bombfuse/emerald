@@ -2,5 +2,6 @@
 members = [
     "emerald",
     "editor",
+    "runners/emd_desktop"
 ]
 resolver = "2"

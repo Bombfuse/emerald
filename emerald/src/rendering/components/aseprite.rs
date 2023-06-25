@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use crate::rendering_engine::BindGroupLayouts;
 use crate::*;
 use crate::{Color, EmeraldError, Rectangle, Vector2, WHITE};
 

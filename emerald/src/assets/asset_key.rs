@@ -2,7 +2,7 @@ use std::any::{Any, TypeId};
 
 use rapier2d::crossbeam::channel::{Receiver, Sender};
 
-pub(crate) type AssetId = usize;
+pub type AssetId = usize;
 
 pub type Asset = Box<dyn Any>;
 
@@ -21,6 +21,13 @@ impl AssetKey {
             asset_id,
             ref_sender,
         }
+    }
+
+    pub fn asset_id(&self) -> AssetId {
+        self.asset_id
+    }
+    pub fn type_id(&self) -> TypeId {
+        self.type_id
     }
 }
 impl PartialEq for AssetKey {

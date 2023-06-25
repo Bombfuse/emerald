@@ -7,7 +7,6 @@ use crate::font::FontImage;
 use crate::font::FontKey;
 use crate::rendering::components::Sprite;
 use crate::rendering_engine::RenderingEngine;
-use crate::texture::TextureKey;
 use crate::*;
 
 use std::collections::HashMap;
@@ -202,7 +201,7 @@ impl<'c> AssetLoader<'c> {
         Ok(aseprite)
     }
 
-    pub fn texture<T: AsRef<str>>(&mut self, path: T) -> Result<TextureKey, EmeraldError> {
+    pub fn texture<T: AsRef<str>>(&mut self, path: T) -> Result<AssetKey, EmeraldError> {
         let path: &str = path.as_ref();
 
         if let Some(key) = self
@@ -220,7 +219,7 @@ impl<'c> AssetLoader<'c> {
     /// Creating render textures is slightly expensive and should be used conservatively.
     /// Please re-use render textures you've created before if possible.
     /// If you need a render texture with a new size, you should create a new render texture.
-    pub fn render_texture(&mut self, w: usize, h: usize) -> Result<TextureKey, EmeraldError> {
+    pub fn render_texture(&mut self, w: usize, h: usize) -> Result<AssetKey, EmeraldError> {
         self.rendering_engine
             .create_render_texture(w as _, h as _, &mut self.asset_engine)
     }

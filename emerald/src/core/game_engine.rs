@@ -5,12 +5,12 @@ use crate::{
     EmeraldError, Game, GameSettings, InputEngine,
 };
 
-pub(crate) struct GameEngineContext {
+pub struct GameEngineContext {
     pub user_requesting_quit: bool,
 }
 impl GameEngineContext {}
 
-pub(crate) struct GameEngine {
+pub struct GameEngine {
     game: Box<dyn Game>,
     rendering_engine: Box<dyn RenderingEngine>,
     audio_engine: Box<dyn AudioEngine>,
@@ -23,14 +23,14 @@ pub(crate) struct GameEngine {
     asset_engine: AssetEngine,
 }
 impl GameEngine {
-    pub async fn new(game: Box<dyn Game>, settings: &GameSettings) -> Result<Self, EmeraldError> {
-        let mut asset_engine = AssetEngine::new();
-        let rendering_engine =
-            RenderingEngine::new(settings.render_settings.clone(), &mut asset_engine).await?;
-
-        let audio_engine = AudioEngine::new();
-        let input_engine = InputEngine::new();
-
+    pub fn new(
+        game: Box<dyn Game>,
+        rendering_engine: Box<dyn RenderingEngine>,
+        audio_engine: Box<dyn AudioEngine>,
+        input_engine: Box<dyn InputEngine>,
+        settings: &GameSettings,
+    ) -> Result<Self, EmeraldError> {
+        let asset_engine = AssetEngine::new();
         let starting_amount = 50;
         let mut fps_tracker = VecDeque::with_capacity(starting_amount);
         fps_tracker.resize(starting_amount, 1.0 / 60.0);
@@ -68,24 +68,6 @@ impl GameEngine {
         Ok(())
     }
 
-    pub fn resize_window(&mut self, new_size: (u32 u32)) {
-        self.rendering_engine
-            .resize_window(new_size);
-    }
-
-    pub fn handle_cursor_move(&mut self, position: &winit::dpi::PhysicalPosition<f64>) {
-        self.input_engine.handle_cursor_move(position)
-    }
-
-    pub fn handle_mouse_input(&mut self, button: &winit::event::MouseButton, state: &ElementState) {
-        self.input_engine.handle_mouse_input(button, state)
-    }
-
-    pub fn handle_virtual_keycode(&mut self, virtual_keycode: VirtualKeyCode, state: ElementState) {
-        self.input_engine
-            .handle_virtual_keycode(virtual_keycode, state)
-    }
-
     pub fn update(&mut self, ctx: &mut GameEngineContext) -> Result<(), EmeraldError> {
         let now = date::now();
         let delta = now - self.last_instant;
@@ -104,14 +86,14 @@ impl GameEngine {
         );
 
         self.game.update(emd);
-        self.input_engine.update_and_rollover().unwrap();
+        self.input_engine.update_and_rollover();
         self.audio_engine.post_update().unwrap();
         self.asset_engine.update().unwrap();
 
         Ok(())
     }
 
-    pub fn render(&mut self, ctx: &mut GameEngineContext) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, ctx: &mut GameEngineContext) -> Result<(), EmeraldError> {
         let start_of_frame = date::now();
         let delta = start_of_frame - self.last_instant;
 
@@ -128,17 +110,6 @@ impl GameEngine {
         self.game.draw(emd);
 
         Ok(())
-    }
-
-    /// Final task before exiting program
-    pub fn clean_up(mut self) {
-        drop(self.game);
-        drop(self.rendering_engine);
-        drop(self.audio_engine);
-        drop(self.resources);
-
-        // Clean up all assets
-        self.asset_engine.update().unwrap();
     }
 
     #[inline]

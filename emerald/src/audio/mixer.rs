@@ -1,12 +1,12 @@
 use crate::{audio::sound::SoundInstanceId, AssetEngine, EmeraldError, SoundKey};
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) type ThreadSafeMixer = Box<dyn Mixer>;
+pub type ThreadSafeMixer = Box<dyn Mixer>;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) type ThreadSafeMixer = Box<dyn Mixer + Send + Sync>;
+pub type ThreadSafeMixer = Box<dyn Mixer + Send + Sync>;
 
-pub(crate) trait Mixer {
+pub trait Mixer {
     fn play(
         &mut self,
         sound: &SoundKey,

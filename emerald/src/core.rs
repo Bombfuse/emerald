@@ -9,7 +9,6 @@ pub use components::*;
 pub use error::*;
 pub use game::*;
 pub use game_settings::*;
-use winit::window::CursorIcon;
 
 use crate::assets::*;
 use crate::audio::*;
@@ -19,14 +18,6 @@ use crate::rendering_handler::RenderingHandler;
 
 use self::game_engine::date;
 use self::game_engine::GameEngineContext;
-
-/// Builder for the Emerald context
-pub struct EmeraldBuilder {}
-impl EmeraldBuilder {
-    pub fn new() -> Self {
-        EmeraldBuilder {}
-    }
-}
 
 pub struct Emerald<'c> {
     delta: f32,
@@ -76,12 +67,6 @@ impl<'c> Emerald<'c> {
 
     pub fn get_user_data_folder_root(&mut self) -> String {
         self.asset_engine.user_data_folder_root.clone()
-    }
-
-    pub fn set_cursor(&mut self, cursor: CursorIcon) {
-        if let Some(window) = &self.ctx.window {
-            window.set_cursor_icon(cursor);
-        }
     }
 
     // ************* General API ***************
@@ -172,24 +157,27 @@ impl<'c> Emerald<'c> {
     #[inline]
     #[deprecated = "Use emd.input().touches_to_mouse(enabled) instead."]
     pub fn touches_to_mouse(&mut self, enabled: bool) {
-        self.input_engine.touches_to_mouse(enabled);
+        // self.input_engine.touches_to_mouse(enabled);
+        todo!()
     }
 
     /// Makes mouse clicks treated as touch event.
     #[inline]
     #[deprecated = "Use emd.input().mouse_to_touch(enabled) instead."]
     pub fn mouse_to_touch(&mut self, enabled: bool) {
-        self.input_engine.mouse_to_touch(enabled);
+        // self.input_engine.mouse_to_touch(enabled);
+        todo!()
     }
 
     #[inline]
     #[deprecated = "Use emd.input().set_key_pressed(keycode, is_pressed) instead."]
     pub fn set_key_pressed(&mut self, keycode: KeyCode, is_pressed: bool) {
-        if is_pressed {
-            self.input_engine.set_key_down(keycode, false);
-        } else {
-            self.input_engine.set_key_up(keycode);
-        }
+        // if is_pressed {
+        //     self.input_engine.set_key_down(keycode, false);
+        // } else {
+        //     self.input_engine.set_key_up(keycode);
+        // }
+        todo!()
     }
     // ************************************* //
 }

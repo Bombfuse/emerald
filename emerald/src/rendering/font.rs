@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use fontdue::layout::GlyphRasterConfig;
 
 use crate::{
-    asset_key::AssetKey, rendering_engine::RenderingEngine, texture::TextureKey, AssetEngine,
-    Color, EmeraldError,
+    asset_key::AssetKey, rendering_engine::RenderingEngine, AssetEngine, Color, EmeraldError,
 };
 
 #[derive(Clone, Debug)]
@@ -77,7 +76,7 @@ impl FontImage {
 
 pub(crate) struct Font {
     pub characters: HashMap<GlyphRasterConfig, CharacterInfo>,
-    pub font_texture_key: TextureKey,
+    pub font_texture_key: AssetKey,
     pub font_image: FontImage,
     pub cursor_x: u16,
     pub cursor_y: u16,
@@ -89,7 +88,7 @@ impl Font {
 
     pub fn new(
         inner: fontdue::Font,
-        font_texture_key: TextureKey,
+        font_texture_key: AssetKey,
         font_image: FontImage,
     ) -> Result<Font, EmeraldError> {
         Ok(Font {
@@ -104,8 +103,8 @@ impl Font {
     }
 }
 
-pub(crate) fn cache_glyph(
-    rendering_engine: &mut RenderingEngine,
+pub fn cache_glyph(
+    rendering_engine: &mut Box<dyn RenderingEngine>,
     asset_engine: &mut AssetEngine,
     font_key: &FontKey,
     glyph_key: GlyphRasterConfig,
@@ -185,10 +184,7 @@ pub(crate) fn cache_glyph(
                     Color::new(0, 0, 0, 0),
                 );
 
-                to_update.push((
-                    font.font_image.bytes.clone(),
-                    font.font_texture_key.label().to_string(),
-                ));
+                to_update.push((font.font_image.bytes.clone(), font_key.path.clone()));
                 recache_characters = Some(characters);
             } else {
                 for j in 0..height {
