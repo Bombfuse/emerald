@@ -10,5 +10,6 @@ bytemuck = "1.13.1"
 emerald = { path = "../../emerald" }
 fontdue = "0.7.3"
 image = "0.24.6"
+pollster = "0.3.0"
 wgpu = "0.16.1"
 winit = "0.28.6"

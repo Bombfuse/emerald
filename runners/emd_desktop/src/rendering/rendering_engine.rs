@@ -1,8 +1,9 @@
+use emerald::font::{Font, FontKey};
 use emerald::render_settings::RenderSettings;
+use emerald::rendering::components::get_bounding_box_of_triangle;
 use emerald::rendering_engine::{DrawCommand, RenderingEngine};
-use emerald::texture::TextureKey;
-use emerald::EmeraldError;
 use emerald::{assets::asset_engine::AssetEngine, rendering_engine::DrawableType};
+use emerald::{Color, EmeraldError, Rectangle, Transform, Vector2};
 impl RenderingEngine for DesktopRenderingEngine {
     fn initialize(&mut self, asset_engine: &mut AssetEngine) {}
 
@@ -28,40 +29,87 @@ impl RenderingEngine for DesktopRenderingEngine {
         todo!()
     }
 
-    fn get_texture_key(
-        &self,
-        asset_engine: &mut AssetEngine,
-        label: &str,
-    ) -> Option<emerald::texture::TextureKey> {
+    fn get_texture_key(&self, asset_engine: &mut AssetEngine, label: &str) -> Option<AssetKey> {
         todo!()
     }
 
-    fn begin(&mut self, _asset_store: &mut AssetEngine) -> Result<(), emerald::EmeraldError> {
+    fn begin(&mut self, _asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
+        if self.active_render_texture_asset_id.is_some() {
+            return Err(EmeraldError::new("Cannot begin render. There is an active render_texture. Please finish rendering to your texture before beginning the final render pass."));
+        }
+
+        self.vertices.clear();
+        self.indices.clear();
+        self.active_size = self.size;
+
         Ok(())
     }
 
     fn begin_texture(
         &mut self,
-        texture_key: &emerald::texture::TextureKey,
+        texture_key: &AssetKey,
         asset_engine: &mut AssetEngine,
-    ) -> Result<(), emerald::EmeraldError> {
-        todo!()
+    ) -> Result<(), EmeraldError> {
+        if self.active_render_texture_asset_id.is_some() {
+            return Err(EmeraldError::new("Unable to begin_texture, a render texture is already active. Please complete your render pass on the texture before beginning another."));
+        }
+        self.vertices.clear();
+        self.indices.clear();
+
+        if let Some(texture) = asset_engine.get_asset::<Texture>(&texture_key.asset_id()) {
+            self.active_size = PhysicalSize::new(texture.size.width, texture.size.height);
+        } else {
+            return Err(EmeraldError::new(format!(
+                "Cannot begin rendering to texture. Texture {:?} does not exist.",
+                texture_key
+            )));
+        }
+        self.active_render_texture_asset_id = Some(texture_key.asset_id());
+
+        Ok(())
     }
 
-    fn render_texture(
-        &mut self,
-        asset_store: &mut AssetEngine,
-    ) -> Result<(), emerald::EmeraldError> {
-        todo!()
+    fn render_texture(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
+        match self.active_render_texture_asset_id.take() {
+            None => {
+                return Err(EmeraldError::new(
+                "Unable to render_texture, there is no active render texture. Please user begin_texture to set the active render texture.",
+            ));
+            }
+            Some(id) => {
+                if let Some(texture) = asset_store.get_asset::<Texture>(&id) {
+                    let view = texture.texture.create_view(&wgpu::TextureViewDescriptor {
+                        format: Some(self.config.format),
+                        ..Default::default()
+                    });
+
+                    self.render_to_view(asset_store, view, &format!("render texture {:?}", id))?;
+
+                    return Ok(());
+                }
+
+                Err(EmeraldError::new(format!(
+                    "Unable to find texture {:?}",
+                    id
+                )))
+            }
+        }
     }
 
     fn load_texture(
         &mut self,
         label: &str,
-        asset_engine: &mut AssetEngine,
+        asset_store: &mut AssetEngine,
         data: &[u8],
-    ) -> Result<emerald::texture::TextureKey, emerald::EmeraldError> {
-        todo!()
+    ) -> Result<AssetKey, EmeraldError> {
+        Texture::from_bytes(
+            label,
+            &self.bind_group_layouts,
+            asset_store,
+            &self.device,
+            &self.queue,
+            &data,
+        )
     }
 
     fn load_texture_ext(
@@ -71,11 +119,39 @@ impl RenderingEngine for DesktopRenderingEngine {
         width: u32,
         height: u32,
         data: &[u8],
-    ) -> Result<emerald::texture::TextureKey, emerald::EmeraldError> {
-        todo!()
+    ) -> Result<AssetKey, EmeraldError> {
+        Texture::new(
+            label,
+            &self.bind_group_layouts,
+            asset_store,
+            &self.device,
+            &self.queue,
+            width,
+            height,
+            &data,
+        )
     }
 
-    fn render(&mut self, asset_store: &mut AssetEngine) -> Result<(), emerald::EmeraldError> {
+    fn render(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
+        let surface_texture = match self.surface.get_current_texture() {
+            Ok(surface_texture) => Ok(surface_texture),
+            Err(e) => {
+                match e {
+                    wgpu::SurfaceError::Lost => self.resize_window(self.size),
+                    // outdated surface texture, no point rendering to it, just skip
+                    wgpu::SurfaceError::Outdated => return Ok(()),
+                    _ => {}
+                };
+                Err(EmeraldError::new(format!("{:?}", e)))
+            }
+        }?;
+        let view = surface_texture
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        self.render_to_view(asset_store, view, "Surface Pass")?;
+
+        surface_texture.present();
         Ok(())
     }
 
@@ -84,8 +160,26 @@ impl RenderingEngine for DesktopRenderingEngine {
         width: u32,
         height: u32,
         asset_store: &mut AssetEngine,
-    ) -> Result<emerald::texture::TextureKey, emerald::EmeraldError> {
-        todo!()
+    ) -> Result<AssetKey, EmeraldError> {
+        let data = (0..(width * height * 4))
+            .into_iter()
+            .map(|_| 0)
+            .collect::<Vec<u8>>();
+        let label = format!("emd_rt_{}", self.render_texture_uid);
+        let key = Texture::new_render_target(
+            &label,
+            &self.bind_group_layouts,
+            asset_store,
+            &self.device,
+            &self.queue,
+            width,
+            height,
+            &data,
+            self.config.format,
+        )?;
+        self.render_texture_uid += 1;
+
+        Ok(key)
     }
 }
 
@@ -96,7 +190,7 @@ use std::{
     ops::Range,
 };
 
-use emerald::asset_key::AssetId;
+use emerald::asset_key::{AssetId, AssetKey};
 use fontdue::layout::{Layout, LayoutSettings, TextStyle};
 use wgpu::{util::DeviceExt, TextureView};
 use wgpu::{
@@ -184,7 +278,7 @@ pub(crate) struct DesktopRenderingEngine {
 
     pub render_texture_uid: usize,
 
-    color_rect_texture: TextureKey,
+    color_rect_texture: AssetKey,
 
     pub active_render_texture_asset_id: Option<AssetId>,
     pub active_size: winit::dpi::PhysicalSize<u32>,
@@ -192,7 +286,7 @@ pub(crate) struct DesktopRenderingEngine {
     layout: Layout,
 }
 impl DesktopRenderingEngine {
-    pub async fn new(
+    pub fn new(
         window: &winit::window::Window,
         settings: RenderSettings,
         asset_store: &mut AssetEngine,
@@ -200,26 +294,22 @@ impl DesktopRenderingEngine {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(InstanceDescriptor::default());
         let surface = unsafe { instance.create_surface(window).unwrap() };
-        let adapter = get_adapter(&instance, &surface).await?;
-        let (device, queue) = get_device_and_queue(&adapter).await?;
+        let adapter = pollster::block_on(get_adapter(&instance, &surface))?;
+        let (device, queue) = pollster::block_on(get_device_and_queue(&adapter))?;
+        let capabilities = surface.get_capabilities(&adapter);
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface.get_supported_formats(&adapter)[0],
+            format: capabilities.formats[0],
+            view_formats: capabilities.formats.clone(),
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::AutoNoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
         };
+        surface.configure(&device, &config);
 
         let mut bind_group_layouts = HashMap::new();
         let draw_queue = VecDeque::new();
-
-        let camera_uniform = CameraUniform::new(config.width as f32, config.height as f32);
-        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
 
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -356,105 +446,6 @@ impl DesktopRenderingEngine {
         }
     }
 
-    pub fn begin(&mut self, _asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
-        if self.active_render_texture_asset_id.is_some() {
-            return Err(EmeraldError::new("Cannot begin render. There is an active render_texture. Please finish rendering to your texture before beginning the final render pass."));
-        }
-
-        self.vertices.clear();
-        self.indices.clear();
-        self.active_size = self.size;
-
-        Ok(())
-    }
-
-    pub fn begin_texture(
-        &mut self,
-        texture_key: &TextureKey,
-        asset_engine: &mut AssetEngine,
-    ) -> Result<(), EmeraldError> {
-        if self.active_render_texture_asset_id.is_some() {
-            return Err(EmeraldError::new("Unable to begin_texture, a render texture is already active. Please complete your render pass on the texture before beginning another."));
-        }
-        self.vertices.clear();
-        self.indices.clear();
-
-        if let Some(texture) = asset_engine.get_asset::<Texture>(&texture_key.asset_key.asset_id) {
-            self.active_size = PhysicalSize::new(texture.size.width, texture.size.height);
-        } else {
-            return Err(EmeraldError::new(format!(
-                "Cannot begin rendering to texture. Texture {:?} does not exist.",
-                texture_key
-            )));
-        }
-        self.active_render_texture_asset_id = Some(texture_key.asset_key.asset_id);
-
-        Ok(())
-    }
-
-    pub fn render_texture(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
-        match self.active_render_texture_asset_id.take() {
-            None => {
-                return Err(EmeraldError::new(
-                "Unable to render_texture, there is no active render texture. Please user begin_texture to set the active render texture.",
-            ));
-            }
-            Some(id) => {
-                if let Some(texture) = asset_store.get_asset::<Texture>(&id) {
-                    let view = texture.texture.create_view(&wgpu::TextureViewDescriptor {
-                        format: Some(self.config.format),
-                        ..Default::default()
-                    });
-
-                    self.render_to_view(asset_store, view, &format!("render texture {:?}", id))?;
-
-                    return Ok(());
-                }
-
-                Err(EmeraldError::new(format!(
-                    "Unable to find texture {:?}",
-                    id
-                )))
-            }
-        }
-    }
-
-    pub fn load_texture(
-        &mut self,
-        label: &str,
-        asset_store: &mut AssetEngine,
-        data: &[u8],
-    ) -> Result<TextureKey, EmeraldError> {
-        Texture::from_bytes(
-            label,
-            &self.bind_group_layouts,
-            asset_store,
-            &self.device,
-            &self.queue,
-            &data,
-        )
-    }
-
-    pub fn load_texture_ext(
-        &mut self,
-        label: &str,
-        asset_store: &mut AssetEngine,
-        width: u32,
-        height: u32,
-        data: &[u8],
-    ) -> Result<TextureKey, EmeraldError> {
-        Texture::new(
-            label,
-            &self.bind_group_layouts,
-            asset_store,
-            &self.device,
-            &self.queue,
-            width,
-            height,
-            &data,
-        )
-    }
-
     fn render_to_view(
         &mut self,
         asset_store: &mut AssetEngine,
@@ -493,56 +484,6 @@ impl DesktopRenderingEngine {
         self.queue.submit([encoder.finish()]);
 
         Ok(())
-    }
-
-    pub fn render(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
-        let surface_texture = match self.surface.get_current_texture() {
-            Ok(surface_texture) => Ok(surface_texture),
-            Err(e) => {
-                match e {
-                    wgpu::SurfaceError::Lost => self.resize_window(self.size),
-                    // outdated surface texture, no point rendering to it, just skip
-                    wgpu::SurfaceError::Outdated => return Ok(()),
-                    _ => {}
-                };
-                Err(EmeraldError::new(format!("{:?}", e)))
-            }
-        }?;
-        let view = surface_texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-
-        self.render_to_view(asset_store, view, "Surface Pass")?;
-
-        surface_texture.present();
-        Ok(())
-    }
-
-    pub fn create_render_texture(
-        &mut self,
-        width: u32,
-        height: u32,
-        asset_store: &mut AssetEngine,
-    ) -> Result<TextureKey, EmeraldError> {
-        let data = (0..(width * height * 4))
-            .into_iter()
-            .map(|_| 0)
-            .collect::<Vec<u8>>();
-        let label = format!("emd_rt_{}", self.render_texture_uid);
-        let key = Texture::new_render_target(
-            &label,
-            &self.bind_group_layouts,
-            asset_store,
-            &self.device,
-            &self.queue,
-            width,
-            height,
-            &data,
-            self.config.format,
-        )?;
-        self.render_texture_uid += 1;
-
-        Ok(key)
     }
 
     #[inline]
@@ -618,9 +559,9 @@ impl DesktopRenderingEngine {
         asset_store: &mut AssetEngine,
         key: &FontKey,
     ) -> Result<(), EmeraldError> {
-        if let Some(font) = asset_store.get_asset::<Font>(&key.asset_key.asset_id) {
+        if let Some(font) = asset_store.get_asset::<Font>(&key.asset_key().asset_id()) {
             if let Some(texture) =
-                asset_store.get_asset::<Texture>(&font.font_texture_key.asset_key.asset_id)
+                asset_store.get_asset::<Texture>(&font.font_texture_key.asset_id())
             {
                 self.queue.write_texture(
                     wgpu::ImageCopyTexture {
@@ -632,8 +573,8 @@ impl DesktopRenderingEngine {
                     &font.font_image.bytes,
                     wgpu::ImageDataLayout {
                         offset: 0,
-                        bytes_per_row: std::num::NonZeroU32::new(4 * font.font_image.width as u32),
-                        rows_per_image: std::num::NonZeroU32::new(font.font_image.height as u32),
+                        bytes_per_row: Some(4 * font.font_image.width as u32),
+                        rows_per_image: Some(font.font_image.height as u32),
                     },
                     texture.size,
                 );

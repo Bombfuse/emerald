@@ -1,4 +1,4 @@
-use emerald::{asset_key::AssetKey, texture::TextureKey, AssetEngine, EmeraldError};
+use emerald::{asset_key::AssetKey, AssetEngine, EmeraldError};
 use image::GenericImageView;
 use wgpu::{BindGroup, BindGroupLayout};
 
@@ -22,7 +22,7 @@ impl Texture {
         width: u32,
         height: u32,
         data: &[u8],
-    ) -> Result<TextureKey, EmeraldError> {
+    ) -> Result<AssetKey, EmeraldError> {
         Self::new_ext(
             label,
             bind_group_layouts,
@@ -47,7 +47,7 @@ impl Texture {
         height: u32,
         data: &[u8],
         format: wgpu::TextureFormat,
-    ) -> Result<TextureKey, EmeraldError> {
+    ) -> Result<AssetKey, EmeraldError> {
         Self::new_ext(
             label,
             bind_group_layouts,
@@ -75,7 +75,7 @@ impl Texture {
         data: &[u8],
         usage: wgpu::TextureUsages,
         format: wgpu::TextureFormat,
-    ) -> Result<TextureKey, EmeraldError> {
+    ) -> Result<AssetKey, EmeraldError> {
         let size = wgpu::Extent3d {
             width,
             height,
@@ -148,12 +148,7 @@ impl Texture {
             let bind_group_key =
                 asset_engine.add_asset_with_label(Box::new(texture_bind_group), label)?;
             let asset_key = asset_engine.add_asset_with_label(Box::new(texture), label)?;
-            return Ok(TextureKey::new(
-                label,
-                cached_size,
-                asset_key,
-                bind_group_key,
-            ));
+            return Ok(asset_key);
         }
         return Err(EmeraldError::new(
             "Unable to get TextureQuad bind group layout",
@@ -167,7 +162,7 @@ impl Texture {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         bytes: &[u8],
-    ) -> Result<TextureKey, EmeraldError> {
+    ) -> Result<AssetKey, EmeraldError> {
         match image::load_from_memory(bytes) {
             Ok(img) => {
                 Self::from_image(label, bind_group_layouts, asset_store, device, queue, &img)
@@ -186,7 +181,7 @@ impl Texture {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         img: &image::DynamicImage,
-    ) -> Result<TextureKey, EmeraldError> {
+    ) -> Result<AssetKey, EmeraldError> {
         let rgba = img.to_rgba8();
         let dimensions = img.dimensions();
 
