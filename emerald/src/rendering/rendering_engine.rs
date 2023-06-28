@@ -120,6 +120,7 @@ pub trait RenderingEngine {
     fn initialize(&mut self, asset_engine: &mut AssetEngine);
     fn draw_textured_quad(&mut self, command: DrawTexturedQuadCommand) -> Result<(), EmeraldError>;
     fn draw_textured_tri(&mut self, command: DrawTexturedTriCommand) -> Result<(), EmeraldError>;
+    fn current_render_target_size(&self) -> ScreenSize;
     fn screen_size(&self) -> ScreenSize;
 
     /// Resize the game window to the new size.
@@ -350,7 +351,7 @@ pub trait RenderingEngine {
             centered: sprite.centered,
             color: sprite.color.clone(),
             transform,
-            current_render_target_size: self.screen_size(),
+            current_render_target_size: self.current_render_target_size(),
             pixel_snap: true,
             frustrum_culling: true,
         })
