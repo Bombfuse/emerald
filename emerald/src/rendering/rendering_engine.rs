@@ -94,6 +94,12 @@ pub struct DrawTexturedQuadCommand<'a> {
     pub color: Color,
     pub transform: &'a Transform,
     pub current_render_target_size: ScreenSize,
+
+    /// If the texture should snap to the nearest pixel
+    pub pixel_snap: bool,
+
+    /// If the texture should be culled if outside of view
+    pub frustrum_culling: bool,
 }
 
 pub struct DrawTexturedTriCommand<'a> {
@@ -117,7 +123,8 @@ pub trait RenderingEngine {
     fn screen_size(&self) -> ScreenSize;
 
     /// Resize the game window to the new size.
-    fn resize_window(&mut self, new_size: (u32, u32));
+    fn resize_window(&mut self, new_size: ScreenSize);
+    fn handle_window_resize(&mut self, screen_size: ScreenSize);
 
     /// Gets a copy of the texture key for the given label if it exists
     fn get_texture_key(&self, asset_engine: &mut AssetEngine, label: &str) -> Option<AssetKey>;
@@ -333,24 +340,20 @@ pub trait RenderingEngine {
             return Ok(());
         }
 
-        // draw_textured_quad(
-        //     asset_engine,
-        //     sprite.texture_key.asset_key.asset_id,
-        //     sprite.texture_key.bind_group_key.asset_id,
-        //     sprite.target,
-        //     sprite.offset,
-        //     sprite.scale,
-        //     sprite.rotation,
-        //     sprite.centered,
-        //     sprite.color,
-        //     transform,
-        //     self.active_size.clone(),
-        //     &mut self.vertices,
-        //     &mut self.indices,
-        //     &mut self.draw_queue,
-        //     &self.settings,
-        // )
-        todo!()
+        self.draw_textured_quad(DrawTexturedQuadCommand {
+            texture_target_area: sprite.target.clone(),
+            asset_engine,
+            texture_asset_id: sprite.texture_key.asset_id(),
+            offset: sprite.offset.clone(),
+            scale: sprite.scale.clone(),
+            rotation: sprite.rotation,
+            centered: sprite.centered,
+            color: sprite.color.clone(),
+            transform,
+            current_render_target_size: self.screen_size(),
+            pixel_snap: true,
+            frustrum_culling: true,
+        })
     }
 
     fn draw_color_rect(

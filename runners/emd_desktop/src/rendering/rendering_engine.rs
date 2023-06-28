@@ -1,188 +1,9 @@
 use emerald::font::{Font, FontKey};
 use emerald::render_settings::RenderSettings;
 use emerald::rendering::components::get_bounding_box_of_triangle;
-use emerald::rendering_engine::{DrawCommand, RenderingEngine};
+use emerald::rendering_engine::{DrawCommand, RenderingEngine, ScreenSize};
 use emerald::{assets::asset_engine::AssetEngine, rendering_engine::DrawableType};
 use emerald::{Color, EmeraldError, Rectangle, Transform, Vector2};
-impl RenderingEngine for DesktopRenderingEngine {
-    fn initialize(&mut self, asset_engine: &mut AssetEngine) {}
-
-    fn draw_textured_quad(
-        &mut self,
-        command: emerald::rendering_engine::DrawTexturedQuadCommand,
-    ) -> Result<(), emerald::EmeraldError> {
-        todo!()
-    }
-
-    fn draw_textured_tri(
-        &mut self,
-        command: emerald::rendering_engine::DrawTexturedTriCommand,
-    ) -> Result<(), emerald::EmeraldError> {
-        todo!()
-    }
-
-    fn screen_size(&self) -> emerald::rendering_engine::ScreenSize {
-        todo!()
-    }
-
-    fn resize_window(&mut self, new_size: (u32, u32)) {
-        todo!()
-    }
-
-    fn get_texture_key(&self, asset_engine: &mut AssetEngine, label: &str) -> Option<AssetKey> {
-        todo!()
-    }
-
-    fn begin(&mut self, _asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
-        if self.active_render_texture_asset_id.is_some() {
-            return Err(EmeraldError::new("Cannot begin render. There is an active render_texture. Please finish rendering to your texture before beginning the final render pass."));
-        }
-
-        self.vertices.clear();
-        self.indices.clear();
-        self.active_size = self.size;
-
-        Ok(())
-    }
-
-    fn begin_texture(
-        &mut self,
-        texture_key: &AssetKey,
-        asset_engine: &mut AssetEngine,
-    ) -> Result<(), EmeraldError> {
-        if self.active_render_texture_asset_id.is_some() {
-            return Err(EmeraldError::new("Unable to begin_texture, a render texture is already active. Please complete your render pass on the texture before beginning another."));
-        }
-        self.vertices.clear();
-        self.indices.clear();
-
-        if let Some(texture) = asset_engine.get_asset::<Texture>(&texture_key.asset_id()) {
-            self.active_size = PhysicalSize::new(texture.size.width, texture.size.height);
-        } else {
-            return Err(EmeraldError::new(format!(
-                "Cannot begin rendering to texture. Texture {:?} does not exist.",
-                texture_key
-            )));
-        }
-        self.active_render_texture_asset_id = Some(texture_key.asset_id());
-
-        Ok(())
-    }
-
-    fn render_texture(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
-        match self.active_render_texture_asset_id.take() {
-            None => {
-                return Err(EmeraldError::new(
-                "Unable to render_texture, there is no active render texture. Please user begin_texture to set the active render texture.",
-            ));
-            }
-            Some(id) => {
-                if let Some(texture) = asset_store.get_asset::<Texture>(&id) {
-                    let view = texture.texture.create_view(&wgpu::TextureViewDescriptor {
-                        format: Some(self.config.format),
-                        ..Default::default()
-                    });
-
-                    self.render_to_view(asset_store, view, &format!("render texture {:?}", id))?;
-
-                    return Ok(());
-                }
-
-                Err(EmeraldError::new(format!(
-                    "Unable to find texture {:?}",
-                    id
-                )))
-            }
-        }
-    }
-
-    fn load_texture(
-        &mut self,
-        label: &str,
-        asset_store: &mut AssetEngine,
-        data: &[u8],
-    ) -> Result<AssetKey, EmeraldError> {
-        Texture::from_bytes(
-            label,
-            &self.bind_group_layouts,
-            asset_store,
-            &self.device,
-            &self.queue,
-            &data,
-        )
-    }
-
-    fn load_texture_ext(
-        &mut self,
-        label: &str,
-        asset_store: &mut AssetEngine,
-        width: u32,
-        height: u32,
-        data: &[u8],
-    ) -> Result<AssetKey, EmeraldError> {
-        Texture::new(
-            label,
-            &self.bind_group_layouts,
-            asset_store,
-            &self.device,
-            &self.queue,
-            width,
-            height,
-            &data,
-        )
-    }
-
-    fn render(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
-        let surface_texture = match self.surface.get_current_texture() {
-            Ok(surface_texture) => Ok(surface_texture),
-            Err(e) => {
-                match e {
-                    wgpu::SurfaceError::Lost => self.resize_window(self.size),
-                    // outdated surface texture, no point rendering to it, just skip
-                    wgpu::SurfaceError::Outdated => return Ok(()),
-                    _ => {}
-                };
-                Err(EmeraldError::new(format!("{:?}", e)))
-            }
-        }?;
-        let view = surface_texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-
-        self.render_to_view(asset_store, view, "Surface Pass")?;
-
-        surface_texture.present();
-        Ok(())
-    }
-
-    fn create_render_texture(
-        &mut self,
-        width: u32,
-        height: u32,
-        asset_store: &mut AssetEngine,
-    ) -> Result<AssetKey, EmeraldError> {
-        let data = (0..(width * height * 4))
-            .into_iter()
-            .map(|_| 0)
-            .collect::<Vec<u8>>();
-        let label = format!("emd_rt_{}", self.render_texture_uid);
-        let key = Texture::new_render_target(
-            &label,
-            &self.bind_group_layouts,
-            asset_store,
-            &self.device,
-            &self.queue,
-            width,
-            height,
-            &data,
-            self.config.format,
-        )?;
-        self.render_texture_uid += 1;
-
-        Ok(key)
-    }
-}
-
 use std::{
     any::TypeId,
     collections::{HashMap, VecDeque},
@@ -587,6 +408,381 @@ impl DesktopRenderingEngine {
             "Unable to update font texture {:?}",
             key
         )))
+    }
+}
+
+impl RenderingEngine for DesktopRenderingEngine {
+    fn initialize(&mut self, asset_engine: &mut AssetEngine) {}
+
+    fn draw_textured_quad(
+        &mut self,
+        cmd: emerald::rendering_engine::DrawTexturedQuadCommand,
+    ) -> Result<(), emerald::EmeraldError> {
+        let mut target = cmd.texture_target_area;
+        let texture_asset_id = cmd.texture_asset_id;
+        let transform = cmd.transform;
+        let active_size = cmd.current_render_target_size;
+        let offset = cmd.offset;
+        let texture_bind_group_asset_id = cmd
+            .asset_engine
+            .get_asset::<Texture>(&cmd.texture_asset_id)
+            .map(|t| t.bind_group_key.as_ref().map(|k| k.asset_id()))
+            .flatten();
+
+        if texture_bind_group_asset_id.is_none() {
+            return Err(EmeraldError::new(format!(
+                "Unable to find bind group for Texture {}",
+                texture_asset_id
+            )));
+        }
+        let texture_bind_group_asset_id = texture_bind_group_asset_id.unwrap();
+
+        let texture_size;
+        if let Some(texture) = cmd.asset_engine.get_asset::<Texture>(&texture_asset_id) {
+            texture_size = (texture.size.width as f32, texture.size.height as f32);
+
+            // Zeroed target means display entire texture
+            if target.is_zero_sized() {
+                target.width = texture_size.0;
+                target.height = texture_size.1;
+            }
+        } else {
+            return Err(EmeraldError::new(format!(
+                "Unable to find Texture for AssetId {:?}",
+                texture_asset_id
+            )));
+        }
+
+        // Add magic numbers to target semi-middle of pixels
+        target.x += 0.275;
+        target.y += 0.275;
+
+        let mut x = transform.translation.x + offset.x;
+        let mut y = transform.translation.y + offset.y;
+
+        if cmd.pixel_snap {
+            x = x.floor();
+            y = y.floor();
+        }
+
+        let x = x / (active_size.width as f32 / 2.0);
+        let y = y / (active_size.height as f32 / 2.0);
+
+        let normalized_texture_size = (
+            target.width / (active_size.width as f32 / 2.0),
+            target.height / (active_size.height as f32 / 2.0),
+        );
+
+        {
+            let x = target.x / texture_size.0;
+            let y = target.y / texture_size.1;
+            let width = target.width / texture_size.0;
+            let height = target.height / texture_size.1;
+            target = Rectangle::new(x, y, width, height);
+        }
+
+        let width = normalized_texture_size.0 * cmd.scale.x;
+        let height = normalized_texture_size.1 * cmd.scale.y;
+        let mut vertex_rect = Rectangle::new(x, y, width, height);
+
+        if cmd.centered {
+            vertex_rect.x -= width / 2.0;
+            vertex_rect.y -= height / 2.0;
+        }
+        let center_x = vertex_rect.x + vertex_rect.width / 2.0;
+        let center_y = vertex_rect.y + vertex_rect.height / 2.0;
+
+        fn rotate_vertex(center_x: f32, center_y: f32, x: f32, y: f32, rotation: f32) -> [f32; 2] {
+            let diff_x = x - center_x;
+            let diff_y = y - center_y;
+            [
+                center_x + (rotation.cos() * diff_x) - (rotation.sin() * diff_y),
+                center_y + (rotation.sin() * diff_x) + (rotation.cos() * diff_y),
+            ]
+        }
+
+        let rotation = cmd.rotation;
+        let color = cmd.color.to_percentage_slice();
+        let vertex_set = [
+            // Changed
+            Vertex {
+                position: rotate_vertex(
+                    center_x,
+                    center_y,
+                    vertex_rect.x,
+                    vertex_rect.y + vertex_rect.height,
+                    rotation,
+                ),
+                tex_coords: [target.x, target.y],
+                color,
+            }, // A
+            Vertex {
+                position: rotate_vertex(center_x, center_y, vertex_rect.x, vertex_rect.y, rotation),
+                tex_coords: [target.x, target.y + target.height],
+                color,
+            }, // B
+            Vertex {
+                position: rotate_vertex(
+                    center_x,
+                    center_y,
+                    vertex_rect.x + vertex_rect.width,
+                    vertex_rect.y,
+                    rotation,
+                ),
+                tex_coords: [target.x + target.width, target.y + target.height],
+                color,
+            }, // C
+            Vertex {
+                position: rotate_vertex(
+                    center_x,
+                    center_y,
+                    vertex_rect.x + vertex_rect.width,
+                    vertex_rect.y + vertex_rect.height,
+                    rotation,
+                ),
+                tex_coords: [target.x + target.width, target.y],
+                color,
+            },
+        ];
+
+        if cmd.frustrum_culling {
+            // Use vertex set bounding box for frustrum culling
+            if !Rectangle::new(-1.0, -1.0, 2.0, 2.0).intersects_with(&vertex_rect) {
+                return Ok(());
+            }
+        }
+
+        let len = self.draw_queue.len();
+        let same_texture = len > 0
+            && self
+                .draw_queue
+                .front()
+                .filter(|draw| {
+                    draw.texture_asset_id == texture_asset_id
+                        && draw.indices_per_draw == TEXTURED_QUAD_INDICES_PER_DRAW // check that the previous draw is also for quads
+                        && draw.vertices_per_draw == TEXTURED_QUAD_VERTICES_PER_DRAW
+                })
+                .is_some();
+
+        let mut index_start: u32 = 0;
+        if same_texture {
+            if let Some(draw) = self.draw_queue.front_mut() {
+                index_start = draw.index_start();
+                draw.add(
+                    TEXTURED_QUAD_VERTEX_SET_SIZE,
+                    TEXTURED_QUAD_INDICES_SET_SIZE,
+                );
+            }
+        }
+
+        let indices_set = [
+            index_start,
+            index_start + 1,
+            index_start + 2,
+            index_start,
+            index_start + 2,
+            index_start + 3,
+        ];
+
+        self.vertices.extend(vertex_set);
+        self.indices.extend(indices_set);
+
+        if !same_texture {
+            let mut indices_start = 0;
+            let mut vertices_start = 0;
+            if let Some(draw) = self.draw_queue.front() {
+                indices_start = draw.indices_range.end;
+                vertices_start = draw.vertices_range.end;
+            }
+
+            self.draw_queue.push_front(TexturedTriDraw::new(
+                texture_asset_id,
+                texture_bind_group_asset_id,
+                vertices_start,
+                TEXTURED_QUAD_VERTEX_SET_SIZE,
+                TEXTURED_QUAD_VERTICES_PER_DRAW,
+                indices_start,
+                TEXTURED_QUAD_INDICES_SET_SIZE,
+                TEXTURED_QUAD_INDICES_PER_DRAW,
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn draw_textured_tri(
+        &mut self,
+        command: emerald::rendering_engine::DrawTexturedTriCommand,
+    ) -> Result<(), emerald::EmeraldError> {
+        todo!()
+    }
+
+    fn screen_size(&self) -> ScreenSize {
+        ScreenSize {
+            width: self.size.width,
+            height: self.size.height,
+        }
+    }
+
+    fn resize_window(&mut self, size: ScreenSize) {
+        self.size = PhysicalSize::new(size.width, size.height);
+    }
+
+    fn get_texture_key(&self, asset_engine: &mut AssetEngine, label: &str) -> Option<AssetKey> {
+        asset_engine.get_asset_key_by_label::<Texture>(label)
+    }
+
+    fn begin(&mut self, _asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
+        if self.active_render_texture_asset_id.is_some() {
+            return Err(EmeraldError::new("Cannot begin render. There is an active render_texture. Please finish rendering to your texture before beginning the final render pass."));
+        }
+
+        self.vertices.clear();
+        self.indices.clear();
+        self.active_size = self.size;
+
+        Ok(())
+    }
+
+    fn begin_texture(
+        &mut self,
+        texture_key: &AssetKey,
+        asset_engine: &mut AssetEngine,
+    ) -> Result<(), EmeraldError> {
+        if self.active_render_texture_asset_id.is_some() {
+            return Err(EmeraldError::new("Unable to begin_texture, a render texture is already active. Please complete your render pass on the texture before beginning another."));
+        }
+        self.vertices.clear();
+        self.indices.clear();
+
+        if let Some(texture) = asset_engine.get_asset::<Texture>(&texture_key.asset_id()) {
+            self.active_size = PhysicalSize::new(texture.size.width, texture.size.height);
+        } else {
+            return Err(EmeraldError::new(format!(
+                "Cannot begin rendering to texture. Texture {:?} does not exist.",
+                texture_key
+            )));
+        }
+        self.active_render_texture_asset_id = Some(texture_key.asset_id());
+
+        Ok(())
+    }
+
+    fn render_texture(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
+        match self.active_render_texture_asset_id.take() {
+            None => {
+                return Err(EmeraldError::new(
+                "Unable to render_texture, there is no active render texture. Please user begin_texture to set the active render texture.",
+            ));
+            }
+            Some(id) => {
+                if let Some(texture) = asset_store.get_asset::<Texture>(&id) {
+                    let view = texture.texture.create_view(&wgpu::TextureViewDescriptor {
+                        format: Some(self.config.format),
+                        ..Default::default()
+                    });
+
+                    self.render_to_view(asset_store, view, &format!("render texture {:?}", id))?;
+
+                    return Ok(());
+                }
+
+                Err(EmeraldError::new(format!(
+                    "Unable to find texture {:?}",
+                    id
+                )))
+            }
+        }
+    }
+
+    fn load_texture(
+        &mut self,
+        label: &str,
+        asset_store: &mut AssetEngine,
+        data: &[u8],
+    ) -> Result<AssetKey, EmeraldError> {
+        Texture::from_bytes(
+            label,
+            &self.bind_group_layouts,
+            asset_store,
+            &self.device,
+            &self.queue,
+            &data,
+        )
+    }
+
+    fn load_texture_ext(
+        &mut self,
+        label: &str,
+        asset_store: &mut AssetEngine,
+        width: u32,
+        height: u32,
+        data: &[u8],
+    ) -> Result<AssetKey, EmeraldError> {
+        Texture::new(
+            label,
+            &self.bind_group_layouts,
+            asset_store,
+            &self.device,
+            &self.queue,
+            width,
+            height,
+            &data,
+        )
+    }
+
+    fn render(&mut self, asset_store: &mut AssetEngine) -> Result<(), EmeraldError> {
+        let surface_texture = match self.surface.get_current_texture() {
+            Ok(surface_texture) => Ok(surface_texture),
+            Err(e) => {
+                match e {
+                    wgpu::SurfaceError::Lost => self.resize_window(self.size),
+                    // outdated surface texture, no point rendering to it, just skip
+                    wgpu::SurfaceError::Outdated => return Ok(()),
+                    _ => {}
+                };
+                Err(EmeraldError::new(format!("{:?}", e)))
+            }
+        }?;
+        let view = surface_texture
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        self.render_to_view(asset_store, view, "Surface Pass")?;
+
+        surface_texture.present();
+        Ok(())
+    }
+
+    fn create_render_texture(
+        &mut self,
+        width: u32,
+        height: u32,
+        asset_store: &mut AssetEngine,
+    ) -> Result<AssetKey, EmeraldError> {
+        let data = (0..(width * height * 4))
+            .into_iter()
+            .map(|_| 0)
+            .collect::<Vec<u8>>();
+        let label = format!("emd_rt_{}", self.render_texture_uid);
+        let key = Texture::new_render_target(
+            &label,
+            &self.bind_group_layouts,
+            asset_store,
+            &self.device,
+            &self.queue,
+            width,
+            height,
+            &data,
+            self.config.format,
+        )?;
+        self.render_texture_uid += 1;
+
+        Ok(key)
+    }
+
+    fn handle_window_resize(&mut self, screen_size: ScreenSize) {
+        self.size = PhysicalSize::new(screen_size.width, screen_size.height);
     }
 }
 

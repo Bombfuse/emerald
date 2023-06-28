@@ -25,6 +25,8 @@ pub trait InputEngine {
     fn is_action_just_pressed(&mut self, action_label: &str) -> bool;
     fn is_action_pressed(&mut self, action_label: &str) -> bool;
 
+    fn mouse(&self) -> MouseState;
+
     fn is_key_just_pressed(&mut self, key: KeyCode) -> bool;
     fn is_key_pressed(&mut self, key: KeyCode) -> bool;
 
@@ -42,14 +44,20 @@ pub trait InputEngine {
     fn remove_action(&mut self, action_label: &str) -> Option<Action>;
 
     fn key_states_mut(&mut self) -> &mut HashMap<KeyCode, ButtonState>;
-    fn button_states_mut(&mut self) -> &mut HashMap<Button, ButtonState>;
+    fn controller_states_mut(&mut self) -> &mut HashMap<u8, HashMap<Button, ButtonState>>;
+
+    fn handle_cursor_move(&mut self, new_position: Vector2<f32>);
+    fn handle_mouse_input(&mut self, button: MouseButton, is_pressed: bool);
+    fn handle_key_input(&mut self, key_code: KeyCode);
 
     fn update_and_rollover(&mut self) {
         for (_, state) in self.key_states_mut() {
             state.rollover();
         }
-        for (_, state) in self.button_states_mut() {
-            state.rollover();
+        for (_, buttons) in self.controller_states_mut() {
+            for (_, button) in buttons {
+                button.rollover();
+            }
         }
     }
 }

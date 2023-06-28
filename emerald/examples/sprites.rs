@@ -1,14 +1,9 @@
 use emerald::{rendering::components::Sprite, *};
 
 pub fn main() {
-    let mut settings = GameSettings::default();
-    settings.render_settings.resolution = (320, 180);
-    emerald::start(
-        Box::new(SpritesExample {
-            world: World::new(),
-        }),
-        settings,
-    )
+    emd_desktop::start(Box::new(SpritesExample {
+        world: World::new(),
+    }))
 }
 
 pub struct SpritesExample {

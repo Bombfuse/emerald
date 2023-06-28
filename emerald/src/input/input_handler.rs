@@ -69,7 +69,7 @@ impl<'a> InputHandler<'a> {
 
     #[inline]
     pub fn mouse(&self) -> MouseState {
-        todo!()
+        self.engine.mouse().clone()
     }
 
     #[inline]

@@ -11,6 +11,7 @@ pub(crate) struct Texture {
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
     pub size: wgpu::Extent3d,
+    pub bind_group_key: Option<AssetKey>,
 }
 impl Texture {
     pub fn new(
@@ -103,11 +104,12 @@ impl Texture {
             ..Default::default()
         });
 
-        let texture = Self {
+        let mut texture = Self {
             texture,
             view,
             sampler,
             size,
+            bind_group_key: None,
         };
 
         queue.write_texture(
@@ -143,10 +145,10 @@ impl Texture {
                 ],
                 label: Some(&format!("{:?}_group", label)),
             });
-            let cached_size = (texture.size.width, texture.size.height);
 
             let bind_group_key =
                 asset_engine.add_asset_with_label(Box::new(texture_bind_group), label)?;
+            texture.bind_group_key = Some(bind_group_key);
             let asset_key = asset_engine.add_asset_with_label(Box::new(texture), label)?;
             return Ok(asset_key);
         }

@@ -12,9 +12,9 @@ impl GameEngineContext {}
 
 pub struct GameEngine {
     game: Box<dyn Game>,
-    rendering_engine: Box<dyn RenderingEngine>,
-    audio_engine: Box<dyn AudioEngine>,
-    input_engine: Box<dyn InputEngine>,
+    pub rendering_engine: Box<dyn RenderingEngine>,
+    pub audio_engine: Box<dyn AudioEngine>,
+    pub input_engine: Box<dyn InputEngine>,
     resources: Resources,
     last_instant: f64,
     fps_tracker: VecDeque<f64>,
@@ -28,9 +28,9 @@ impl GameEngine {
         rendering_engine: Box<dyn RenderingEngine>,
         audio_engine: Box<dyn AudioEngine>,
         input_engine: Box<dyn InputEngine>,
+        asset_engine: AssetEngine,
         settings: &GameSettings,
     ) -> Result<Self, EmeraldError> {
-        let asset_engine = AssetEngine::new();
         let starting_amount = 50;
         let mut fps_tracker = VecDeque::with_capacity(starting_amount);
         fps_tracker.resize(starting_amount, 1.0 / 60.0);

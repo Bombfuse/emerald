@@ -20,7 +20,7 @@ pub struct AssetEngine {
     asset_stores: HashMap<TypeId, AssetStorage>,
 }
 impl AssetEngine {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             user_data_folder_root: DEFAULT_USER_DATA_FOLDER.to_string(),
             asset_folder_root: DEFAULT_ASSET_FOLDER.to_string(),

@@ -33,3 +33,6 @@ bytemuck = { version = "1.12.1", features = ["derive"] }
 asefile =  { version = "0.3.4" }
 anymap = { version = "0.12.1", default-features = false }
 
+
+[dev-dependencies]
+emd_desktop = { path = "../runners/emd_desktop" }

@@ -5,12 +5,9 @@ use emerald::{
 };
 
 pub fn main() {
-    emerald::start(
-        Box::new(AutotilemapExample {
-            world: World::new(),
-        }),
-        GameSettings::default(),
-    )
+    emd_desktop::start(Box::new(AutotilemapExample {
+        world: World::new(),
+    }))
 }
 
 pub struct AutotilemapExample {

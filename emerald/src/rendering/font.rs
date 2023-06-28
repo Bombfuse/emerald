@@ -20,9 +20,13 @@ impl FontKey {
             size: font_size,
         }
     }
+
+    pub fn asset_key(&self) -> &AssetKey {
+        &self.asset_key
+    }
 }
 
-pub(crate) struct CharacterInfo {
+pub struct CharacterInfo {
     pub offset_x: i32,
     pub _offset_y: i32,
     pub _advance: f32,
@@ -33,7 +37,7 @@ pub(crate) struct CharacterInfo {
     pub glyph_h: u32,
 }
 
-pub(crate) struct FontImage {
+pub struct FontImage {
     pub bytes: Vec<u8>,
     pub width: u16,
     pub height: u16,
@@ -74,7 +78,7 @@ impl FontImage {
     }
 }
 
-pub(crate) struct Font {
+pub struct Font {
     pub characters: HashMap<GlyphRasterConfig, CharacterInfo>,
     pub font_texture_key: AssetKey,
     pub font_image: FontImage,
