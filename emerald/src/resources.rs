@@ -1,1 +1,3 @@
-pub type Resources = anymap::AnyMap;
+use anymap::any::Any;
+
+pub type Resources = anymap::Map<dyn Any + Sync>;

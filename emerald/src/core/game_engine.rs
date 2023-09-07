@@ -1,8 +1,8 @@
 use std::collections::VecDeque;
 
 use crate::{
-    rendering_engine::RenderingEngine, resources::Resources, AssetEngine, AudioEngine, Emerald,
-    EmeraldError, Game, GameSettings, InputEngine,
+    file_loader::FileLoader, rendering_engine::RenderingEngine, resources::Resources, AssetEngine,
+    AudioEngine, Emerald, EmeraldError, Game, GameSettings, InputEngine,
 };
 
 pub struct GameEngineContext {
@@ -11,10 +11,11 @@ pub struct GameEngineContext {
 impl GameEngineContext {}
 
 pub struct GameEngine {
-    game: Box<dyn Game>,
+    game: Box<dyn Game + 'static>,
     pub rendering_engine: Box<dyn RenderingEngine>,
     pub audio_engine: Box<dyn AudioEngine>,
     pub input_engine: Box<dyn InputEngine>,
+    pub file_loader: Box<dyn FileLoader>,
     resources: Resources,
     last_instant: f64,
     fps_tracker: VecDeque<f64>,
@@ -24,10 +25,11 @@ pub struct GameEngine {
 }
 impl GameEngine {
     pub fn new(
-        game: Box<dyn Game>,
+        game: Box<dyn Game + 'static>,
         rendering_engine: Box<dyn RenderingEngine>,
         audio_engine: Box<dyn AudioEngine>,
         input_engine: Box<dyn InputEngine>,
+        file_loader: Box<dyn FileLoader>,
         asset_engine: AssetEngine,
         settings: &GameSettings,
     ) -> Result<Self, EmeraldError> {
@@ -38,6 +40,7 @@ impl GameEngine {
         Ok(Self {
             game,
             rendering_engine,
+            file_loader,
             asset_engine,
             audio_engine,
             input_engine,
@@ -58,6 +61,7 @@ impl GameEngine {
             &mut self.audio_engine,
             &mut self.input_engine,
             &mut self.rendering_engine,
+            &mut self.file_loader,
             &mut self.asset_engine,
             ctx,
             &mut self.resources,
@@ -80,6 +84,7 @@ impl GameEngine {
             &mut self.audio_engine,
             &mut self.input_engine,
             &mut self.rendering_engine,
+            &mut self.file_loader,
             &mut self.asset_engine,
             ctx,
             &mut self.resources,
@@ -103,6 +108,7 @@ impl GameEngine {
             &mut self.audio_engine,
             &mut self.input_engine,
             &mut self.rendering_engine,
+            &mut self.file_loader,
             &mut self.asset_engine,
             ctx,
             &mut self.resources,

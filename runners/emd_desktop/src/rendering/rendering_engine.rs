@@ -784,6 +784,13 @@ impl RenderingEngine for DesktopRenderingEngine {
     fn handle_window_resize(&mut self, screen_size: ScreenSize) {
         self.size = PhysicalSize::new(screen_size.width, screen_size.height);
     }
+
+    fn current_render_target_size(&self) -> ScreenSize {
+        ScreenSize {
+            width: self.active_size.width,
+            height: self.active_size.height,
+        }
+    }
 }
 
 const VERTEX_SIZE: u64 = std::mem::size_of::<Vertex>() as u64;

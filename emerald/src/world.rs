@@ -12,7 +12,7 @@ use crate::{
 
 use hecs::{
     Bundle, Component, ComponentRef, DynamicBundle, Entity, EntityRef, NoSuchEntity, Query,
-    QueryBorrow, QueryItem, QueryOne, SpawnBatchIter,
+    QueryBorrow, QueryItem, QueryOne, RefMut, SpawnBatchIter,
 };
 use rapier2d::prelude::{RigidBodyBuilder, RigidBodyHandle};
 
@@ -230,6 +230,20 @@ impl World {
 
     pub fn get<'a, T: ComponentRef<'a>>(&'a self, entity: Entity) -> Result<T::Ref, EmeraldError> {
         match self.inner.get::<T>(entity.clone()) {
+            Ok(component_ref) => Ok(component_ref),
+            Err(e) => Err(EmeraldError::new(format!(
+                "Error getting component for entity {:?}. {:?}",
+                entity, e
+            ))),
+        }
+    }
+
+    /// @deprecated
+    pub fn get_mut<'a, T: Component>(
+        &'a self,
+        entity: Entity,
+    ) -> Result<RefMut<'_, T>, EmeraldError> {
+        match self.inner.get::<&mut T>(entity.clone()) {
             Ok(component_ref) => Ok(component_ref),
             Err(e) => Err(EmeraldError::new(format!(
                 "Error getting component for entity {:?}. {:?}",

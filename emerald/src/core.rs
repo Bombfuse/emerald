@@ -12,9 +12,11 @@ pub use game_settings::*;
 
 use crate::assets::*;
 use crate::audio::*;
+use crate::file_loader::FileLoader;
 use crate::input::*;
 use crate::rendering_engine::RenderingEngine;
 use crate::rendering_handler::RenderingHandler;
+use crate::resources::Resources;
 
 use self::game_engine::date;
 use self::game_engine::GameEngineContext;
@@ -25,9 +27,10 @@ pub struct Emerald<'c> {
     audio_engine: &'c mut Box<dyn AudioEngine>,
     rendering_engine: &'c mut Box<dyn RenderingEngine>,
     input_engine: &'c mut Box<dyn InputEngine>,
+    file_loader: &'c mut Box<dyn FileLoader>,
     pub(crate) asset_engine: &'c mut AssetEngine,
     ctx: &'c mut GameEngineContext,
-    resources: &'c mut anymap::AnyMap,
+    resources: &'c mut Resources,
 }
 impl<'c> Emerald<'c> {
     #[inline]
@@ -37,9 +40,10 @@ impl<'c> Emerald<'c> {
         audio_engine: &'c mut Box<dyn AudioEngine>,
         input_engine: &'c mut Box<dyn InputEngine>,
         rendering_engine: &'c mut Box<dyn RenderingEngine>,
+        file_loader: &'c mut Box<dyn FileLoader>,
         asset_engine: &'c mut AssetEngine,
         ctx: &'c mut GameEngineContext,
-        resources: &'c mut anymap::AnyMap,
+        resources: &'c mut Resources,
     ) -> Self {
         Emerald {
             delta,
@@ -47,6 +51,7 @@ impl<'c> Emerald<'c> {
             audio_engine,
             rendering_engine,
             input_engine,
+            file_loader,
             asset_engine,
             ctx,
             resources,
@@ -101,11 +106,6 @@ impl<'c> Emerald<'c> {
 
     /// Requests the game engine to shut down, this will usually happen when the current frame has completed.
     pub fn quit(&mut self) {
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            self.audio_engine.clear().ok();
-        }
-
         self.ctx.user_requesting_quit = true;
     }
     // *****************************************
@@ -143,7 +143,7 @@ impl<'c> Emerald<'c> {
     // ************************************* //
 
     #[inline]
-    pub fn resources(&mut self) -> &mut anymap::AnyMap {
+    pub fn resources(&mut self) -> &mut Resources {
         &mut self.resources
     }
 

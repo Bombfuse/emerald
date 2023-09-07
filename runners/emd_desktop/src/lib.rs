@@ -1,4 +1,5 @@
 mod audio;
+mod file_loader;
 mod input;
 mod rendering;
 
@@ -7,6 +8,7 @@ use emerald::core::game_engine::GameEngine;
 use emerald::game_engine::GameEngineContext;
 use emerald::rendering_engine::ScreenSize;
 use emerald::{AssetEngine, Game, GameSettings, KeyCode, MouseButton, Vector2};
+use file_loader::DesktopFileLoader;
 use input::input_engine::DesktopInputEngine;
 use rendering::rendering_engine::DesktopRenderingEngine;
 use winit::dpi::PhysicalSize;
@@ -45,6 +47,7 @@ pub fn start(game: Box<dyn Game>) {
         rendering_engine,
         Box::new(DesktopAudioEngine {}),
         Box::new(DesktopInputEngine::new()),
+        Box::new(DesktopFileLoader::new()),
         asset_engine,
         &settings,
     )

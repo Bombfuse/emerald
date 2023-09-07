@@ -1,5 +1,10 @@
 #[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
-pub enum Button {}
+pub enum Button {
+    South,
+    North,
+    East,
+    West,
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
 pub enum Joystick {
