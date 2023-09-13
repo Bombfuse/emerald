@@ -373,9 +373,13 @@ impl DesktopRenderingEngine {
         }
         Ok(())
     }
+}
+
+impl RenderingEngine for DesktopRenderingEngine {
+    fn initialize(&mut self, asset_engine: &mut AssetEngine) {}
 
     #[inline]
-    pub fn update_font_texture(
+    fn update_font_texture(
         &mut self,
         asset_store: &mut AssetEngine,
         key: &FontKey,
@@ -409,10 +413,6 @@ impl DesktopRenderingEngine {
             key
         )))
     }
-}
-
-impl RenderingEngine for DesktopRenderingEngine {
-    fn initialize(&mut self, asset_engine: &mut AssetEngine) {}
 
     fn draw_textured_quad(
         &mut self,
@@ -790,6 +790,14 @@ impl RenderingEngine for DesktopRenderingEngine {
             width: self.active_size.width,
             height: self.active_size.height,
         }
+    }
+
+    fn layout(&self) -> &Layout {
+        &self.layout
+    }
+
+    fn layout_mut(&mut self) -> &mut Layout {
+        &mut self.layout
     }
 }
 

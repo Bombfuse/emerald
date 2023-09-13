@@ -65,6 +65,11 @@ impl<'a> PhysicsHandler<'a> {
         self.physics_engine.get_colliding_entities(entity)
     }
 
+    #[deprecated(note = "use `world.physics().get_collider_handles(entities)` instead")]
+    pub fn get_colliders(&self, entity: Entity) -> Vec<ColliderHandle> {
+        self.get_collider_handles(entity)
+    }
+
     pub fn get_collider_handles(&self, entity: Entity) -> Vec<ColliderHandle> {
         self.physics_engine.get_colliders_handles(entity)
     }

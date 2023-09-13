@@ -16,8 +16,7 @@ use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 
-pub fn start(game: Box<dyn Game>) {
-    let settings = GameSettings::default();
+pub fn start(game: Box<dyn Game>, settings: GameSettings) {
     let mut ctx = GameEngineContext {
         user_requesting_quit: false,
     };
