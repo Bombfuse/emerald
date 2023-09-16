@@ -4,8 +4,13 @@ use serde::{Deserialize, Serialize};
 /// The core piece of an entity, determines it's transformative state and position in the world.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct Transform {
+    #[serde(default)]
     pub translation: Translation,
+
+    #[serde(default)]
     pub rotation: f32,
+
+    #[serde(default)]
     pub scale: Scale,
 }
 impl Transform {

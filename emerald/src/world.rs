@@ -15,6 +15,7 @@ use hecs::{
     QueryBorrow, QueryItem, QueryOne, RefMut, SpawnBatchIter,
 };
 use rapier2d::prelude::{RigidBodyBuilder, RigidBodyHandle};
+use serde::Deserialize;
 
 use self::{
     ent::{
@@ -393,6 +394,14 @@ impl Default for WorldLoadConfig {
 
 const PHYSICS_SCHEMA_KEY: &str = "physics";
 const ENTITIES_SCHEMA_KEY: &str = "entities";
+const ENTITIES_ALT_SCHEMA_KEY: &str = "entity";
+const WORLD_MERGE_SCHEMA_KEY: &str = "world_merge";
+
+#[derive(Deserialize)]
+struct WorldMerge {
+    path: String,
+    transform: Transform,
+}
 
 pub(crate) fn load_world(
     loader: &mut AssetLoader<'_>,
@@ -415,8 +424,36 @@ pub(crate) fn load_world(
             load_world_physics(loader, &mut world, &physics_val)?;
         }
 
-        if let Some(mut entities_val) = table.remove(ENTITIES_SCHEMA_KEY) {
-            if let Some(entities) = entities_val.as_array_mut() {
+        if let Some(mut values) = table.remove(WORLD_MERGE_SCHEMA_KEY) {
+            // TODO: if any sub world fails to merge, log the error
+            values.as_array_mut().map(|values| {
+                for value in values {
+                    value
+                        .to_owned()
+                        .try_into::<WorldMerge>()
+                        .ok()
+                        .map(|world_merge| {
+                            println!("attempting load");
+                            loader.string(&world_merge.path).ok().map(|toml_str| {
+                                load_world(loader, toml_str).ok().map(|sub_world| {
+                                    world.merge(sub_world, world_merge.transform).ok();
+                                });
+                            });
+                        });
+                }
+            });
+        }
+
+        let mut entities_vals = Vec::new();
+        if let Some(entities_val) = table.remove(ENTITIES_SCHEMA_KEY) {
+            entities_vals.push(entities_val);
+        }
+        if let Some(entities_val) = table.remove(ENTITIES_ALT_SCHEMA_KEY) {
+            entities_vals.push(entities_val);
+        }
+
+        for mut val in entities_vals {
+            if let Some(entities) = val.as_array_mut() {
                 for value in entities {
                     // check if this is a ent path reference
                     if let Some(path) = value.as_table_mut().map(|e| e.remove("path")).flatten() {

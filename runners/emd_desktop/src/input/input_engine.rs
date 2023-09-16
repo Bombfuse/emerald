@@ -21,11 +21,11 @@ impl InputEngine for DesktopInputEngine {
     fn initialize(&mut self, asset_engine: &mut AssetEngine) {}
 
     fn is_action_just_pressed(&mut self, action_label: &str) -> bool {
-        todo!()
+        false
     }
 
     fn is_action_pressed(&mut self, action_label: &str) -> bool {
-        todo!()
+        false
     }
 
     fn is_key_just_pressed(&mut self, key: emerald::KeyCode) -> bool {
