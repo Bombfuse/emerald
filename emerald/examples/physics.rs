@@ -198,7 +198,7 @@ impl Game for MyGame {
                 )
                 .unwrap();
         }
-        // emd.graphics().draw_colliders(Color::new(255, 0, 0, 130));
+        // emd.graphics().draw_colliders(&mut self.world, Color::new(255, 0, 0, 130));
         emd.graphics().render().unwrap();
     }
 }
