@@ -4,8 +4,14 @@ use crate::{input::*, AssetEngine, EmeraldError};
 
 use std::collections::{HashMap, HashSet};
 
+pub enum KeyState {
+    Pressed,
+    Released,
+}
 pub struct Action {
     pub key_bindings: HashSet<KeyCode>,
+
+    /// Map of gamepad index to buttons
     pub button_bindings: HashMap<usize, HashSet<Button>>,
 }
 impl Action {
@@ -14,6 +20,26 @@ impl Action {
             key_bindings: HashSet::new(),
             button_bindings: HashMap::new(),
         }
+    }
+
+    pub fn add_button(&mut self, index: usize, button: Button) {
+        if !self.button_bindings.contains_key(&index) {
+            self.button_bindings.insert(index, HashSet::new());
+        }
+
+        self.button_bindings
+            .get_mut(&index)
+            .map(|buttons| buttons.insert(button));
+    }
+
+    pub fn add_key(&mut self, key: KeyCode) {
+        self.key_bindings.insert(key);
+    }
+
+    pub fn remove_button(&mut self, index: usize, button: Button) {
+        self.button_bindings
+            .get_mut(&index)
+            .map(|buttons| buttons.remove(&button));
     }
 }
 
@@ -38,9 +64,9 @@ pub trait InputEngine {
 
     fn add_action(&mut self, action_label: &str, action: Action);
     fn add_action_key(&mut self, action_label: &str, key_code: KeyCode);
-    fn add_action_button(&mut self, action_label: &str, button: Button);
+    fn add_action_button(&mut self, action_label: &str, button: Button, gamepad_index: usize);
     fn remove_action_key(&mut self, action_label: &str, key_code: KeyCode);
-    fn remove_action_button(&mut self, action_label: &str, button: Button);
+    fn remove_action_button(&mut self, action_label: &str, button: Button, gamepad_index: usize);
     fn remove_action(&mut self, action_label: &str) -> Option<Action>;
 
     fn key_states_mut(&mut self) -> &mut HashMap<KeyCode, ButtonState>;
@@ -48,7 +74,7 @@ pub trait InputEngine {
 
     fn handle_cursor_move(&mut self, new_position: Vector2<f32>);
     fn handle_mouse_input(&mut self, button: MouseButton, is_pressed: bool);
-    fn handle_key_input(&mut self, key_code: KeyCode);
+    fn handle_key_input(&mut self, key_code: KeyCode, state: KeyState);
 
     fn update_and_rollover(&mut self) {
         for (_, state) in self.key_states_mut() {

@@ -372,23 +372,22 @@ pub trait RenderingEngine {
             return Ok(());
         }
 
-        // draw_textured_quad(
+        // TODO: use created texture to draw a color rect scaling up to the target size
+
+        // self.draw_textured_quad(DrawTexturedQuadCommand {
+        //     texture_target_area: sprite.target.clone(),
         //     asset_engine,
-        //     self.color_rect_texture.asset_key.asset_id,
-        //     self.color_rect_texture.bind_group_key.asset_id,
-        //     Rectangle::new(0.0, 0.0, 0.0, 0.0),
-        //     Vector2::new(0.0, 0.0),
-        //     Vector2::new(color_rect.width as f32, color_rect.height as f32),
-        //     color_rect.rotation,
-        //     color_rect.centered,
-        //     color_rect.color,
+        //     texture_asset_id: color_rect.texture_key.asset_id(),
+        //     offset: color_rect.offset.clone(),
+        //     scale: Vector2::new(1.0, 1.0),
+        //     rotation: color_rect.rotation,
+        //     centered: color_rect.centered,
+        //     color: color_rect.color,
         //     transform,
-        //     self.active_size.clone(),
-        //     &mut self.vertices,
-        //     &mut self.indices,
-        //     &mut self.draw_queue,
-        //     &self.settings,
-        // )
+        //     current_render_target_size: self.current_render_target_size(),
+        //     pixel_snap: true,
+        //     frustrum_culling: true,
+        // })
         todo!()
     }
 
@@ -474,7 +473,6 @@ pub trait RenderingEngine {
             return Ok(());
         }
 
-        println!("draw label {:?}", &label.text);
         self.layout_mut().reset(&Default::default());
 
         let mut to_cache = Vec::new();

@@ -9,8 +9,9 @@ impl ButtonState {
     }
 
     #[inline]
-    pub(crate) fn rollover(&mut self) {
+    pub fn rollover(&mut self) {
         self.was_pressed = self.is_pressed;
+        self.is_pressed = false;
     }
 
     #[inline]

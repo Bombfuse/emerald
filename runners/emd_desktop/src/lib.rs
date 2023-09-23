@@ -7,7 +7,7 @@ use audio::audio_engine::DesktopAudioEngine;
 use emerald::core::game_engine::GameEngine;
 use emerald::game_engine::GameEngineContext;
 use emerald::rendering_engine::ScreenSize;
-use emerald::{AssetEngine, Game, GameSettings, KeyCode, MouseButton, Vector2};
+use emerald::{AssetEngine, Game, GameSettings, KeyCode, KeyState, MouseButton, Vector2};
 use file_loader::DesktopFileLoader;
 use input::input_engine::DesktopInputEngine;
 use rendering::rendering_engine::DesktopRenderingEngine;
@@ -106,7 +106,13 @@ pub fn start(game: Box<dyn Game>, settings: GameSettings) {
                     WindowEvent::KeyboardInput { input, .. } => {
                         if let Some(virtual_keycode) = input.virtual_keycode {
                             let key_code = virtual_keycode_to_keycode(virtual_keycode);
-                            game_engine.input_engine.handle_key_input(key_code);
+                            game_engine.input_engine.handle_key_input(
+                                key_code,
+                                match input.state {
+                                    winit::event::ElementState::Pressed => KeyState::Pressed,
+                                    winit::event::ElementState::Released => KeyState::Released,
+                                },
+                            );
                         }
                     }
                     WindowEvent::MouseInput { button, state, .. } => {

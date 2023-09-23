@@ -1,11 +1,15 @@
 use std::collections::HashMap;
 
-use emerald::{AssetEngine, Button, ButtonState, InputEngine, KeyCode, MouseState, Translation};
+use emerald::{
+    Action, ActionId, AssetEngine, Button, ButtonState, InputEngine, KeyCode, KeyState, MouseState,
+    Translation,
+};
 
 pub struct DesktopInputEngine {
     key_states: HashMap<KeyCode, ButtonState>,
     controller_states: HashMap<u8, HashMap<Button, ButtonState>>,
     mouse: MouseState,
+    actions: HashMap<String, Action>,
 }
 impl DesktopInputEngine {
     pub fn new() -> Self {
@@ -13,57 +17,116 @@ impl DesktopInputEngine {
             key_states: HashMap::new(),
             controller_states: HashMap::new(),
             mouse: MouseState::new(),
+            actions: HashMap::new(),
         }
     }
+
+    fn get_action_mut(&mut self, action_id: &ActionId) -> &mut Action {
+        if !self.actions.contains_key(action_id) {
+            self.actions.insert(action_id.to_string(), Action::new());
+        }
+
+        self.actions.get_mut(action_id).unwrap()
+    }
+}
+
+type ControllerStates = HashMap<u8, HashMap<Button, ButtonState>>;
+fn is_key_just_pressed(key_states: &HashMap<KeyCode, ButtonState>, key: &KeyCode) -> bool {
+    key_states
+        .get(&key)
+        .map(|state| state.is_just_pressed())
+        .unwrap_or(false)
+}
+fn is_key_pressed(key_states: &HashMap<KeyCode, ButtonState>, key: &KeyCode) -> bool {
+    key_states
+        .get(&key)
+        .map(|state| state.is_pressed)
+        .unwrap_or(false)
+}
+
+fn is_button_just_pressed(
+    controller_states: &ControllerStates,
+    index: u8,
+    button: &Button,
+) -> bool {
+    controller_states
+        .get(&index)
+        .map(|c| c.get(&button).map(|b| b.is_just_pressed()))
+        .flatten()
+        .unwrap_or(false)
+}
+
+fn is_button_pressed(controller_states: &ControllerStates, index: u8, button: &Button) -> bool {
+    controller_states
+        .get(&index)
+        .map(|c| c.get(&button).map(|b| b.is_pressed))
+        .flatten()
+        .unwrap_or(false)
 }
 
 impl InputEngine for DesktopInputEngine {
     fn initialize(&mut self, asset_engine: &mut AssetEngine) {}
 
     fn is_action_just_pressed(&mut self, action_label: &str) -> bool {
-        false
+        self.actions
+            .get(action_label)
+            .map(|action| {
+                for key in &action.key_bindings {
+                    if is_key_just_pressed(&self.key_states, key) {
+                        return true;
+                    }
+                }
+
+                for (index, buttons) in &action.button_bindings {
+                    for button in buttons {
+                        if is_button_just_pressed(&self.controller_states, *index as u8, &button) {
+                            return true;
+                        }
+                    }
+                }
+
+                false
+            })
+            .unwrap_or(false)
     }
 
     fn is_action_pressed(&mut self, action_label: &str) -> bool {
-        false
+        self.actions
+            .get(action_label)
+            .map(|action| {
+                for key in &action.key_bindings {
+                    if is_key_pressed(&self.key_states, key) {
+                        return true;
+                    }
+                }
+
+                for (index, buttons) in &action.button_bindings {
+                    for button in buttons {
+                        if is_button_pressed(&self.controller_states, *index as u8, &button) {
+                            return true;
+                        }
+                    }
+                }
+
+                false
+            })
+            .unwrap_or(false)
     }
 
     fn is_key_just_pressed(&mut self, key: emerald::KeyCode) -> bool {
-        self.key_states
-            .get(&key)
-            .map(|state| state.is_just_pressed())
-            .unwrap_or(false)
+        is_key_just_pressed(&self.key_states, &key)
     }
 
     fn is_key_pressed(&mut self, key: emerald::KeyCode) -> bool {
-        self.key_states
-            .get(&key)
-            .map(|state| state.is_pressed)
-            .unwrap_or(false)
+        is_key_pressed(&self.key_states, &key)
     }
 
     fn is_button_just_pressed(&mut self, button: emerald::Button, index: u8) -> bool {
-        self.controller_states
-            .get(&index)
-            .map(|buttons| {
-                buttons
-                    .get(&button)
-                    .map(|state| state.is_just_pressed())
-                    .unwrap_or(false)
-            })
-            .unwrap_or(false)
+        is_button_just_pressed(&self.controller_states, index, &button)
     }
 
     fn is_button_pressed(&mut self, button: emerald::Button, index: u8) -> bool {
-        self.controller_states
-            .get(&index)
-            .map(|buttons| {
-                buttons
-                    .get(&button)
-                    .map(|state| state.is_pressed)
-                    .unwrap_or(false)
-            })
-            .unwrap_or(false)
+        is_button_pressed(&self.controller_states, index, &button)
     }
 
     fn joystick(&mut self, joystick: emerald::Joystick, index: u8) -> emerald::Vector2<f32> {
@@ -75,23 +138,36 @@ impl InputEngine for DesktopInputEngine {
     }
 
     fn add_action(&mut self, action_label: &str, action: emerald::Action) {
-        todo!()
+        self.actions.insert(action_label.to_string(), action);
     }
 
     fn add_action_key(&mut self, action_label: &str, key_code: emerald::KeyCode) {
-        todo!()
+        self.get_action_mut(action_label).add_key(key_code);
     }
 
-    fn add_action_button(&mut self, action_label: &str, button: emerald::Button) {
-        todo!()
+    fn add_action_button(
+        &mut self,
+        action_label: &str,
+        button: emerald::Button,
+        gamepad_index: usize,
+    ) {
+        self.get_action_mut(action_label)
+            .add_button(gamepad_index, button);
     }
 
     fn remove_action_key(&mut self, action_label: &str, key_code: emerald::KeyCode) {
         todo!()
     }
 
-    fn remove_action_button(&mut self, action_label: &str, button: emerald::Button) {
-        todo!()
+    fn remove_action_button(
+        &mut self,
+        action_label: &str,
+        button: emerald::Button,
+        gamepad_index: usize,
+    ) {
+        self.actions
+            .get_mut(action_label)
+            .map(|action| action.remove_button(gamepad_index, button));
     }
 
     fn remove_action(&mut self, action_label: &str) -> Option<emerald::Action> {
@@ -126,13 +202,16 @@ impl InputEngine for DesktopInputEngine {
         }
     }
 
-    fn handle_key_input(&mut self, key_code: KeyCode) {
+    fn handle_key_input(&mut self, key_code: KeyCode, state: KeyState) {
         if !self.key_states.contains_key(&key_code) {
             self.key_states.insert(key_code, ButtonState::new());
         }
 
-        self.key_states
-            .get_mut(&key_code)
-            .map(|button| button.is_pressed = true);
+        self.key_states.get_mut(&key_code).map(|button| {
+            button.is_pressed = match state {
+                KeyState::Pressed => true,
+                KeyState::Released => false,
+            }
+        });
     }
 }

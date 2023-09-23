@@ -11,10 +11,15 @@ impl<'a> InputHandler<'a> {
         Self { engine }
     }
 
+    pub fn add_action_binding_keys(&mut self, action_id: &ActionId, key_codes: Vec<KeyCode>) {
+        for key_code in key_codes {
+            self.add_action_binding_key(action_id, key_code);
+        }
+    }
+
     #[inline]
     pub fn add_action_binding_key(&mut self, action_id: &ActionId, key_code: KeyCode) {
-        // self.engine.add_action_binding_key(action_id, key_code)
-        todo!()
+        self.engine.add_action_key(action_id, key_code)
     }
 
     #[inline]
@@ -24,9 +29,8 @@ impl<'a> InputHandler<'a> {
         button: Button,
         gamepad_index: usize,
     ) {
-        // self.engine
-        //     .add_action_binding_button(action_id, button, gamepad_index)
-        todo!()
+        self.engine
+            .add_action_button(action_id, button, gamepad_index)
     }
 
     #[inline]

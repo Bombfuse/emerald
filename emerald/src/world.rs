@@ -400,6 +400,8 @@ const WORLD_MERGE_SCHEMA_KEY: &str = "world_merge";
 #[derive(Deserialize)]
 struct WorldMerge {
     path: String,
+
+    #[serde(default)]
     transform: Transform,
 }
 
@@ -433,7 +435,6 @@ pub(crate) fn load_world(
                         .try_into::<WorldMerge>()
                         .ok()
                         .map(|world_merge| {
-                            println!("attempting load");
                             loader.string(&world_merge.path).ok().map(|toml_str| {
                                 load_world(loader, toml_str).ok().map(|sub_world| {
                                     world.merge(sub_world, world_merge.transform).ok();
