@@ -1,6 +1,6 @@
 use emerald::{asset_key::AssetKey, AssetEngine, EmeraldError};
 use image::GenericImageView;
-use wgpu::{BindGroup, BindGroupLayout};
+
 
 use super::rendering_engine::{BindGroupLayoutId, BindGroupLayouts};
 

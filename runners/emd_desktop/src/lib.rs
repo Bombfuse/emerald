@@ -68,6 +68,13 @@ pub fn start(game: Box<dyn Game>, settings: GameSettings) {
                         return;
                     }
                 }
+                let size = window.inner_size();
+                game_engine
+                    .rendering_engine
+                    .handle_window_resize(ScreenSize {
+                        width: size.width,
+                        height: size.height,
+                    });
                 match game_engine.render(&mut ctx) {
                     Ok(_) => {}
                     // Reconfigure the surface if lost
@@ -135,7 +142,7 @@ pub fn start(game: Box<dyn Game>, settings: GameSettings) {
                             .input_engine
                             .handle_cursor_move(Vector2::new(position.x as f32, position.y as f32));
                     }
-                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                    WindowEvent::CloseRequested => ctx.user_requesting_quit = true,
                     _ => {}
                 }
             }

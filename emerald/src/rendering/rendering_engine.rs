@@ -130,6 +130,10 @@ pub trait RenderingEngine {
     ) -> Result<(), EmeraldError>;
     /// Resize the game window to the new size.
     fn resize_window(&mut self, new_size: ScreenSize);
+
+    /// The window has been resized, the rendering engine should handle this.
+    /// May be called every frame with the same value, engine should do a check to make sure its different
+    /// than its current size.
     fn handle_window_resize(&mut self, screen_size: ScreenSize);
 
     /// Gets a copy of the texture key for the given label if it exists

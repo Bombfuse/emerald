@@ -1,18 +1,17 @@
+use emerald::assets::asset_engine::AssetEngine;
 use emerald::font::{Font, FontKey};
 use emerald::render_settings::RenderSettings;
 use emerald::rendering::components::get_bounding_box_of_triangle;
-use emerald::rendering_engine::{DrawCommand, RenderingEngine, ScreenSize};
-use emerald::{assets::asset_engine::AssetEngine, rendering_engine::DrawableType};
+use emerald::rendering_engine::{RenderingEngine, ScreenSize};
 use emerald::{Color, EmeraldError, Rectangle, Transform, Vector2};
 use std::{
-    any::TypeId,
     collections::{HashMap, VecDeque},
     hash::Hash,
     ops::Range,
 };
 
 use emerald::asset_key::{AssetId, AssetKey};
-use fontdue::layout::{Layout, LayoutSettings, TextStyle};
+use fontdue::layout::Layout;
 use wgpu::{util::DeviceExt, TextureView};
 use wgpu::{
     Adapter, BindGroup, BindGroupLayout, Device, InstanceDescriptor, Queue, RenderPipeline, Surface,
@@ -20,7 +19,7 @@ use wgpu::{
 use winit::dpi::PhysicalSize;
 
 use super::shaders;
-use super::shaders::textured_quad::{CameraUniform, Vertex};
+use super::shaders::textured_quad::Vertex;
 use super::texture::Texture;
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum BindGroupLayoutId {
@@ -257,16 +256,6 @@ impl DesktopRenderingEngine {
         })
     }
 
-    pub fn resize_window(&mut self, new_size: PhysicalSize<u32>) {
-        if new_size.width > 0 && new_size.height > 0 {
-            self.size = new_size;
-            self.config.width = new_size.width;
-            self.config.height = new_size.height;
-            self.surface.configure(&self.device, &self.config);
-            // future todo: resize any depth textures here
-        }
-    }
-
     fn render_to_view(
         &mut self,
         asset_store: &mut AssetEngine,
@@ -376,7 +365,7 @@ impl DesktopRenderingEngine {
 }
 
 impl RenderingEngine for DesktopRenderingEngine {
-    fn initialize(&mut self, asset_engine: &mut AssetEngine) {}
+    fn initialize(&mut self, _asset_engine: &mut AssetEngine) {}
 
     #[inline]
     fn update_font_texture(
@@ -612,7 +601,7 @@ impl RenderingEngine for DesktopRenderingEngine {
 
     fn draw_textured_tri(
         &mut self,
-        command: emerald::rendering_engine::DrawTexturedTriCommand,
+        _command: emerald::rendering_engine::DrawTexturedTriCommand,
     ) -> Result<(), emerald::EmeraldError> {
         todo!()
     }
@@ -624,8 +613,14 @@ impl RenderingEngine for DesktopRenderingEngine {
         }
     }
 
-    fn resize_window(&mut self, size: ScreenSize) {
-        self.size = PhysicalSize::new(size.width, size.height);
+    fn resize_window(&mut self, new_size: ScreenSize) {
+        if new_size.width > 0 && new_size.height > 0 {
+            self.size = PhysicalSize::new(new_size.width, new_size.height);
+            self.config.width = new_size.width;
+            self.config.height = new_size.height;
+            self.surface.configure(&self.device, &self.config);
+            // future todo: resize any depth textures here
+        }
     }
 
     fn get_texture_key(&self, asset_engine: &mut AssetEngine, label: &str) -> Option<AssetKey> {
@@ -736,7 +731,10 @@ impl RenderingEngine for DesktopRenderingEngine {
             Ok(surface_texture) => Ok(surface_texture),
             Err(e) => {
                 match e {
-                    wgpu::SurfaceError::Lost => self.resize_window(self.size),
+                    wgpu::SurfaceError::Lost => self.resize_window(ScreenSize {
+                        width: self.size.width,
+                        height: self.size.height,
+                    }),
                     // outdated surface texture, no point rendering to it, just skip
                     wgpu::SurfaceError::Outdated => return Ok(()),
                     _ => {}
@@ -782,7 +780,9 @@ impl RenderingEngine for DesktopRenderingEngine {
     }
 
     fn handle_window_resize(&mut self, screen_size: ScreenSize) {
-        self.size = PhysicalSize::new(screen_size.width, screen_size.height);
+        if self.size.width != screen_size.width || self.size.height != screen_size.height {
+            self.resize_window(screen_size)
+        }
     }
 
     fn current_render_target_size(&self) -> ScreenSize {

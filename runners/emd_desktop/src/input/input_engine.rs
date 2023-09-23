@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use emerald::{
     Action, ActionId, AssetEngine, Button, ButtonState, InputEngine, KeyCode, KeyState, MouseState,
-    Translation,
 };
 
 pub struct DesktopInputEngine {
@@ -65,7 +64,7 @@ fn is_button_pressed(controller_states: &ControllerStates, index: u8, button: &B
 }
 
 impl InputEngine for DesktopInputEngine {
-    fn initialize(&mut self, asset_engine: &mut AssetEngine) {}
+    fn initialize(&mut self, _asset_engine: &mut AssetEngine) {}
 
     fn is_action_just_pressed(&mut self, action_label: &str) -> bool {
         self.actions
@@ -129,11 +128,11 @@ impl InputEngine for DesktopInputEngine {
         is_button_pressed(&self.controller_states, index, &button)
     }
 
-    fn joystick(&mut self, joystick: emerald::Joystick, index: u8) -> emerald::Vector2<f32> {
+    fn joystick(&mut self, _joystick: emerald::Joystick, _index: u8) -> emerald::Vector2<f32> {
         todo!()
     }
 
-    fn joystick_raw(&mut self, joystick: emerald::Joystick, index: u8) -> emerald::Vector2<f32> {
+    fn joystick_raw(&mut self, _joystick: emerald::Joystick, _index: u8) -> emerald::Vector2<f32> {
         todo!()
     }
 
@@ -155,7 +154,7 @@ impl InputEngine for DesktopInputEngine {
             .add_button(gamepad_index, button);
     }
 
-    fn remove_action_key(&mut self, action_label: &str, key_code: emerald::KeyCode) {
+    fn remove_action_key(&mut self, _action_label: &str, _key_code: emerald::KeyCode) {
         todo!()
     }
 
@@ -170,7 +169,7 @@ impl InputEngine for DesktopInputEngine {
             .map(|action| action.remove_button(gamepad_index, button));
     }
 
-    fn remove_action(&mut self, action_label: &str) -> Option<emerald::Action> {
+    fn remove_action(&mut self, _action_label: &str) -> Option<emerald::Action> {
         todo!()
     }
 

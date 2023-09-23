@@ -7,7 +7,7 @@ impl DesktopFileLoader {
     }
 }
 impl FileLoader for DesktopFileLoader {
-    fn load_file(&mut self, filepath: &str) -> Vec<u8> {
+    fn load_file(&mut self, _filepath: &str) -> Vec<u8> {
         todo!()
     }
 }
