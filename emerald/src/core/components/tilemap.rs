@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 use crate::{texture::TextureKey, *};
 
@@ -31,17 +31,17 @@ fn load_tileset_resource<T: Into<String>>(
 }
 
 #[derive(Deserialize, Serialize)]
-struct TilemapSchema {
+pub struct TilemapSchema {
     width: usize,
     height: usize,
-    #[serde(default)]
-    tileset: Option<TilesetResource>,
     #[serde(default)]
     resource: Option<String>,
     #[serde(default = "default_visibility")]
     visible: bool,
     #[serde(default)]
     z_index: f32,
+    #[serde(default)]
+    tileset: Option<TilesetResource>,
 
     /// Takes a list of tiles, rather than a grid for usability.
     #[serde(default)]
@@ -195,6 +195,44 @@ impl Tilemap {
 
     pub fn set_tilesheet(&mut self, tilesheet: TextureKey) {
         self.tilesheet = tilesheet
+    }
+}
+
+impl Serialize for Tilemap {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut tiles: Vec<TileSchema> = vec![];
+        for (i, tile_id) in self.tiles.iter().enumerate() {
+            if tile_id.is_none() {
+                continue;
+            }
+
+            tiles.push(TileSchema {
+                x: i % self.width(),
+                y: i / self.width(),
+                id: tile_id.unwrap(),
+            });
+        }
+
+        let resource = TilesetResource {
+            height: self.tilesheet_height,
+            width: self.tilesheet_width,
+            texture: String::from(self.tilesheet.label()),
+        };
+
+        let tilemap_schema = TilemapSchema {
+            width: self.width(),
+            height: self.height(),
+            tileset: Some(resource),
+            resource: None,
+            visible: self.visible,
+            z_index: self.z_index,
+            tiles,
+        };
+
+        TilemapSchema::serialize(&tilemap_schema, serializer)
     }
 }
 

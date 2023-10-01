@@ -1,4 +1,4 @@
-use emerald::{tilemap::Tilemap, *};
+use emerald::{tilemap::Tilemap, tilemap::TilemapSchema, *};
 
 pub fn main() {
     emerald::start(
@@ -23,7 +23,14 @@ impl Game for TilemapExample {
         tilemap.set_tile(0, 1, Some(2)).unwrap();
         tilemap.set_tile(1, 1, Some(3)).unwrap();
 
-        self.world.spawn((tilemap, Transform::default()));
+        //This is how you serialize/deserialize a tilemap:
+        let serialized_schema = toml::to_string(&tilemap).unwrap();
+        let deserialized_schema: TilemapSchema = toml::from_str(&serialized_schema).unwrap();
+        let deserialized_tilemap: Tilemap =
+            deserialized_schema.to_tilemap(&mut emd.loader()).unwrap();
+
+        self.world
+            .spawn((deserialized_tilemap, Transform::default()));
     }
 
     fn update(&mut self, _emd: Emerald) {}
