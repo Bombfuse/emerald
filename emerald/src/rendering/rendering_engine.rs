@@ -371,56 +371,14 @@ pub trait RenderingEngine {
         asset_engine: &mut AssetEngine,
         color_rect: &ColorRect,
         transform: &Transform,
-    ) -> Result<(), EmeraldError> {
-        if !color_rect.visible {
-            return Ok(());
-        }
-
-        // TODO: use created texture to draw a color rect scaling up to the target size
-
-        // self.draw_textured_quad(DrawTexturedQuadCommand {
-        //     texture_target_area: sprite.target.clone(),
-        //     asset_engine,
-        //     texture_asset_id: color_rect.texture_key.asset_id(),
-        //     offset: color_rect.offset.clone(),
-        //     scale: Vector2::new(1.0, 1.0),
-        //     rotation: color_rect.rotation,
-        //     centered: color_rect.centered,
-        //     color: color_rect.color,
-        //     transform,
-        //     current_render_target_size: self.current_render_target_size(),
-        //     pixel_snap: true,
-        //     frustrum_culling: true,
-        // })
-        todo!()
-    }
+    ) -> Result<(), EmeraldError>;
 
     fn draw_color_tri(
         &mut self,
         asset_engine: &mut AssetEngine,
         color_tri: &ColorTri,
         transform: &Transform,
-    ) -> Result<(), EmeraldError> {
-        // draw_textured_tri(
-        //     asset_engine,
-        //     self.color_rect_texture.asset_key.asset_id,
-        //     self.color_rect_texture.bind_group_key.asset_id,
-        //     color_tri.points,
-        //     [
-        //         Vector2::new(0.0, 0.0),
-        //         Vector2::new(1.0, 1.0),
-        //         Vector2::new(0.0, 1.0),
-        //     ],
-        //     color_tri.color,
-        //     transform,
-        //     self.active_size.clone(),
-        //     &mut self.vertices,
-        //     &mut self.indices,
-        //     &mut self.draw_queue,
-        //     &self.settings,
-        // )
-        todo!()
-    }
+    ) -> Result<(), EmeraldError>;
 
     /// Begin a render pass
     fn begin(&mut self, _asset_store: &mut AssetEngine) -> Result<(), EmeraldError>;

@@ -2,7 +2,9 @@ use emerald::assets::asset_engine::AssetEngine;
 use emerald::font::{Font, FontKey};
 use emerald::render_settings::RenderSettings;
 use emerald::rendering::components::get_bounding_box_of_triangle;
-use emerald::rendering_engine::{RenderingEngine, ScreenSize};
+use emerald::rendering_engine::{
+    DrawTexturedQuadCommand, DrawTexturedTriCommand, RenderingEngine, ScreenSize,
+};
 use emerald::{Color, EmeraldError, Rectangle, Transform, Vector2};
 use std::{
     collections::{HashMap, VecDeque},
@@ -365,7 +367,7 @@ impl DesktopRenderingEngine {
 }
 
 impl RenderingEngine for DesktopRenderingEngine {
-    fn initialize(&mut self, _asset_engine: &mut AssetEngine) {}
+    fn initialize(&mut self, asset_engine: &mut AssetEngine) {}
 
     #[inline]
     fn update_font_texture(
@@ -798,6 +800,57 @@ impl RenderingEngine for DesktopRenderingEngine {
 
     fn layout_mut(&mut self) -> &mut Layout {
         &mut self.layout
+    }
+
+    fn draw_color_rect(
+        &mut self,
+        asset_engine: &mut AssetEngine,
+        color_rect: &emerald::ColorRect,
+        transform: &Transform,
+    ) -> Result<(), EmeraldError> {
+        if !color_rect.visible {
+            return Ok(());
+        }
+        // let texture_asset_id = self.get_default_texture_asset_id()?;
+        // self.draw_textured_tri(DrawTexturedQuadCommand {
+        //     texture_target_area: todo!(),
+        //     asset_engine,
+        //     texture_asset_id: todo!(),
+        //     offset: todo!(),
+        //     scale: todo!(),
+        //     rotation: todo!(),
+        //     centered: todo!(),
+        //     color: todo!(),
+        //     transform,
+        //     current_render_target_size: todo!(),
+        //     pixel_snap: todo!(),
+        //     frustrum_culling: todo!(),
+        // })
+        Ok(())
+    }
+
+    fn draw_color_tri(
+        &mut self,
+        asset_engine: &mut AssetEngine,
+        color_tri: &emerald::ColorTri,
+        transform: &Transform,
+    ) -> Result<(), EmeraldError> {
+        if !color_tri.visible {
+            return Ok(());
+        }
+        // self.draw_textured_tri(DrawTexturedTriCommand {
+        //     texture_target_area: Rectangle::zeroed(),
+        //     asset_engine,
+        //     texture_asset_id: texture_asset_id,
+        //     offset: Vector2::new(0.0, 0.0),
+        //     scale: Vector2::new(1.0, 1.0),
+        //     rotation: 0.0,
+        //     centered: true,
+        //     color: color_tri.color,
+        //     transform,
+        //     current_render_target_size: self.current_render_target_size(),
+        // })
+        Ok(())
     }
 }
 

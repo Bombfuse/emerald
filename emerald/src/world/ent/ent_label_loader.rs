@@ -20,6 +20,8 @@ pub(crate) struct EntLabelSchema {
     pub size: u16,
     pub text: Option<String>,
     pub offset: Option<Vec2f32Schema>,
+
+    pub visible: Option<bool>,
     /// options: "bottom", "middle", "top"
     pub vertical_align: Option<String>,
 
@@ -72,6 +74,8 @@ pub(crate) fn load_ent_label<'a>(
     let text = schema.text.unwrap_or("".into());
     let mut label = Label::new(text, font, schema.size);
     label.z_index = schema.z_index;
+
+    schema.visible.map(|v| label.visible = v);
 
     if let Some(offset) = schema.offset {
         label.offset = Vector2::new(offset.x, offset.y);

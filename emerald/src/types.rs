@@ -4,7 +4,7 @@ pub use hecs::Entity;
 pub use rapier2d::na::Vector2;
 pub use rapier2d::na::Vector3;
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Default)]
 pub struct Rectangle {
     pub x: f32,
     pub y: f32,
