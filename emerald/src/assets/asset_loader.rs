@@ -169,23 +169,14 @@ impl<'c> AssetLoader<'c> {
     }
 
     /// Loads a `.aseprite` file.
-    #[cfg(feature = "aseprite")]
     pub fn aseprite<T: AsRef<str>>(&mut self, path: T) -> Result<Aseprite, EmeraldError> {
         let path = path.as_ref();
         let data = self.asset_bytes(path)?;
-        Aseprite::new(
-            &self.rendering_engine.bind_group_layouts,
-            &self.rendering_engine.device,
-            &self.rendering_engine.queue,
-            self.asset_engine,
-            path,
-            data,
-        )
+        Aseprite::new(self.asset_engine, path, data)
     }
 
     /// Loads an exported Aseprite sprite sheet. The animations json file should
     /// have been exported in the "Array" mode.
-    #[cfg(feature = "aseprite")]
     pub fn aseprite_with_animations<T: AsRef<str>>(
         &mut self,
         path_to_texture: T,

@@ -11,7 +11,6 @@ use self::{
     ent_sound_player_loader::SOUND_PLAYER_SCHEMA_KEY, ent_sprite_loader::load_ent_sprite,
     ent_transform_loader::load_ent_transform,
 };
-#[cfg(feature = "aseprite")]
 pub(crate) mod ent_aseprite_loader;
 
 pub(crate) mod ent_color_rect_loader;
@@ -100,16 +99,13 @@ pub(crate) fn load_ent(
                     }
                 }
                 ASEPRITE_SCHEMA_KEY => {
-                    #[cfg(feature = "aseprite")]
-                    {
-                        if let Some(aseprite_value) = table.remove(ASEPRITE_SCHEMA_KEY) {
-                            ent_aseprite_loader::load_ent_aseprite(
-                                loader,
-                                entity,
-                                world,
-                                &aseprite_value,
-                            )?;
-                        }
+                    if let Some(aseprite_value) = table.remove(ASEPRITE_SCHEMA_KEY) {
+                        ent_aseprite_loader::load_ent_aseprite(
+                            loader,
+                            entity,
+                            world,
+                            &aseprite_value,
+                        )?;
                     }
                 }
                 _ => {

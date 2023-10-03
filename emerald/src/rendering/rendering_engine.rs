@@ -15,8 +15,8 @@ use crate::{
     font::{CharacterInfo, Font, FontImage, FontKey},
     render_settings::RenderSettings,
     tilemap::Tilemap,
-    AssetEngine, Color, EmeraldError, Rectangle, Scale, Transform, Translation, UIButton, World,
-    WHITE,
+    Aseprite, AssetEngine, Color, EmeraldError, Rectangle, Scale, Transform, Translation, UIButton,
+    World, WHITE,
 };
 
 use super::components::{get_bounding_box_of_triangle, Camera, ColorRect, ColorTri, Label, Sprite};
@@ -160,7 +160,7 @@ pub trait RenderingEngine {
         let cmd_adder = DrawCommandAdder::new(world);
         let mut draw_queue = Vec::new();
 
-        // cmd_adder.add_draw_commands::<Aseprite>(&mut draw_queue, world, asset_store);
+        cmd_adder.add_draw_commands::<Aseprite>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<AutoTilemap>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<Tilemap>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<Sprite>(&mut draw_queue, world, asset_store);
@@ -194,8 +194,8 @@ pub trait RenderingEngine {
 
         match draw_command.drawable_type {
             DrawableType::Aseprite => {
-                // let aseprite = world.get::<&Aseprite>(draw_command.entity)?;
-                // self.draw_aseprite(asset_engine, &aseprite, &transform)?;
+                let aseprite = world.get::<&Aseprite>(draw_command.entity)?;
+                self.draw_aseprite(asset_engine, &aseprite, &transform)?;
             }
             DrawableType::Sprite => {
                 let sprite = world.get::<&Sprite>(draw_command.entity)?;
@@ -246,19 +246,19 @@ pub trait RenderingEngine {
         todo!()
     }
 
-    // fn draw_aseprite(
-    //     &mut self,
-    //     asset_engine: &mut AssetEngine,
-    //     aseprite: &Aseprite,
-    //     transform: &Transform,
-    // ) -> Result<(), EmeraldError> {
-    //     if !aseprite.visible {
-    //         return Ok(());
-    //     }
+    fn draw_aseprite(
+        &mut self,
+        asset_engine: &mut AssetEngine,
+        aseprite: &Aseprite,
+        transform: &Transform,
+    ) -> Result<(), EmeraldError> {
+        if !aseprite.visible {
+            return Ok(());
+        }
 
-    //     let sprite = aseprite.get_sprite();
-    //     draw_textured_quad(cmd)
-    // }
+        let sprite = aseprite.get_sprite();
+        self.draw_sprite(asset_engine, sprite, transform)
+    }
 
     fn draw_tilemap(
         &mut self,
@@ -774,10 +774,6 @@ impl ToDrawable for AutoTilemap {
     }
 }
 
-#[cfg(feature = "aseprite")]
-use crate::rendering::components::Aseprite;
-
-#[cfg(feature = "aseprite")]
 impl ToDrawable for Aseprite {
     fn get_visible_bounds(
         &self,
