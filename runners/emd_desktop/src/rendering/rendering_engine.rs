@@ -811,22 +811,20 @@ impl RenderingEngine for DesktopRenderingEngine {
         if !color_rect.visible {
             return Ok(());
         }
-        // let texture_asset_id = self.get_default_texture_asset_id()?;
-        // self.draw_textured_tri(DrawTexturedQuadCommand {
-        //     texture_target_area: todo!(),
-        //     asset_engine,
-        //     texture_asset_id: todo!(),
-        //     offset: todo!(),
-        //     scale: todo!(),
-        //     rotation: todo!(),
-        //     centered: todo!(),
-        //     color: todo!(),
-        //     transform,
-        //     current_render_target_size: todo!(),
-        //     pixel_snap: todo!(),
-        //     frustrum_culling: todo!(),
-        // })
-        Ok(())
+        self.draw_textured_quad(DrawTexturedQuadCommand {
+            texture_target_area: Rectangle::new(0.0, 0.0, 1.0, 1.0),
+            asset_engine,
+            texture_asset_id: self.color_rect_texture.asset_id(),
+            offset: color_rect.offset.clone(),
+            scale: Vector2::new(color_rect.width as f32, color_rect.height as f32),
+            rotation: color_rect.rotation,
+            centered: color_rect.centered,
+            color: color_rect.color,
+            transform,
+            current_render_target_size: self.current_render_target_size(),
+            pixel_snap: true,
+            frustrum_culling: true,
+        })
     }
 
     fn draw_color_tri(
