@@ -29,14 +29,14 @@ pub struct World {
     pub(crate) physics_engine: Option<PhysicsEngine>,
     pub(crate) inner: hecs::World,
     resources: Resources,
-    merge_handler: Option<WorldMergeHandler>,
+    merge_handlers: Vec<WorldMergeHandler>,
 }
 impl Default for World {
     fn default() -> Self {
         World {
             physics_engine: None,
             inner: hecs::World::default(),
-            merge_handler: None,
+            merge_handlers: Vec::new(),
             resources: Resources::new(),
         }
     }
@@ -48,12 +48,12 @@ impl World {
 
     pub fn new_with_merge_handler(world_merge_handler: WorldMergeHandler) -> Self {
         let mut world = World::new();
-        world.set_merge_handler(world_merge_handler);
+        world.add_merge_handler(world_merge_handler);
         world
     }
 
-    pub fn set_merge_handler(&mut self, world_merge_handler: WorldMergeHandler) {
-        self.merge_handler = Some(world_merge_handler);
+    pub fn add_merge_handler(&mut self, world_merge_handler: WorldMergeHandler) {
+        self.merge_handlers.push(world_merge_handler);
     }
 
     /// Absorbs another world into this one. Resets and changes the Entity ids of the other worlds, when they are merged into this world.
@@ -89,9 +89,11 @@ impl World {
             self.merge_physics_entity(other_world.physics_engine(), old_id, new_id)?;
         }
 
-        if let Some(merge_handler) = self.merge_handler {
-            (merge_handler)(self, &mut other_world, entity_id_shift_map)?;
-        }
+        self.merge_handlers
+            .clone()
+            .iter()
+            .map(|merge_handler| (merge_handler)(self, &mut other_world, &mut entity_id_shift_map))
+            .collect::<Result<Vec<()>, EmeraldError>>()?;
 
         Ok(())
     }
@@ -381,13 +383,15 @@ impl World {
 
 pub struct WorldLoadConfig {
     pub transform_offset: Transform,
-    pub merge_handler: Option<WorldMergeHandler>,
+
+    /// A list of user provided merge handlers, to automatically be bound to any worlds loaded via the AssetLoader.
+    pub merge_handlers: Vec<WorldMergeHandler>,
 }
 impl Default for WorldLoadConfig {
     fn default() -> Self {
         Self {
             transform_offset: Default::default(),
-            merge_handler: None,
+            merge_handlers: Vec::new(),
         }
     }
 }
@@ -412,14 +416,15 @@ pub(crate) fn load_world(
     let mut toml = toml.parse::<toml::Value>()?;
     let mut world = World::new();
 
-    if let Some(merge_handler) = loader
+    loader
         .asset_engine
         .load_config
         .world_load_config
-        .merge_handler
-    {
-        world.set_merge_handler(merge_handler);
-    }
+        .merge_handlers
+        .iter()
+        .for_each(|handler| {
+            world.add_merge_handler(*handler);
+        });
 
     if let Some(table) = toml.as_table_mut() {
         if let Some(physics_val) = table.remove(PHYSICS_SCHEMA_KEY) {
@@ -430,17 +435,10 @@ pub(crate) fn load_world(
             // TODO: if any sub world fails to merge, log the error
             values.as_array_mut().map(|values| {
                 for value in values {
-                    value
-                        .to_owned()
-                        .try_into::<WorldMerge>()
-                        .ok()
-                        .map(|world_merge| {
-                            loader.string(&world_merge.path).ok().map(|toml_str| {
-                                load_world(loader, toml_str).ok().map(|sub_world| {
-                                    world.merge(sub_world, world_merge.transform).ok();
-                                });
-                            });
-                        });
+                    let world_merge = value.to_owned().try_into::<WorldMerge>().unwrap();
+                    let toml_str = loader.string(&world_merge.path).unwrap();
+                    let sub_world = load_world(loader, toml_str).unwrap();
+                    world.merge(sub_world, world_merge.transform).unwrap();
                 }
             });
         }
