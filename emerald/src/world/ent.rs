@@ -1,3 +1,5 @@
+use std::any::TypeId;
+
 use hecs::Entity;
 use serde::{Deserialize, Serialize};
 
@@ -125,10 +127,19 @@ pub(crate) fn load_ent(
     }
 
     // Custom components are loaded after all engine components
-    if let Some(custom_component_loader) = loader.asset_engine.load_config.custom_component_loader {
-        for (key, value) in custom_components {
-            custom_component_loader(loader, entity, world, value, key)?;
-        }
+    for (key, value) in custom_components {
+        loader
+            .asset_engine
+            .load_config
+            .custom_component_loader
+            .map(|loader_fn| loader_fn(loader, entity, world, value.clone(), key.clone()).unwrap());
+
+        loader
+            .asset_engine
+            .load_config
+            .component_deser_registry
+            .get(&key)
+            .map(|load_fn| load_fn(value, world, entity));
     }
 
     Ok(entity)

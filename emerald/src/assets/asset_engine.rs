@@ -3,6 +3,9 @@ use std::{
     collections::HashMap,
 };
 
+use hecs::Component;
+use serde::de::DeserializeOwned;
+
 use crate::{
     asset_key::{Asset, AssetId, AssetKey},
     asset_storage::AssetStorage,

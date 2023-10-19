@@ -210,6 +210,16 @@ impl World {
         self.inner.spawn_batch::<I>(iter)
     }
 
+    pub fn despawn_batch<T: Into<Vec<Entity>>>(&mut self, entities: T) -> Result<(), EmeraldError> {
+        let entities: Vec<Entity> = entities.into();
+
+        entities
+            .into_iter()
+            .map(|id| self.despawn(id))
+            .collect::<Result<Vec<()>, EmeraldError>>()?;
+        Ok(())
+    }
+
     pub fn despawn(&mut self, entity: Entity) -> Result<(), EmeraldError> {
         self.physics_engine().remove_body(entity);
 

@@ -1,3 +1,8 @@
+use hecs::Component;
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use toml::Value;
+
 use crate::asset_key::AssetKey;
 use crate::assets::*;
 use crate::audio::*;
@@ -9,6 +14,8 @@ use crate::rendering::components::Sprite;
 use crate::rendering_engine::RenderingEngine;
 use crate::*;
 
+use std::any::Any;
+use std::any::TypeId;
 use std::collections::HashMap;
 use std::ffi::OsStr;
 
@@ -39,6 +46,8 @@ pub struct AssetLoadConfig {
     pub custom_component_loader: Option<CustomComponentLoader>,
 
     pub world_resource_loader: Option<WorldResourceLoader>,
+
+    pub component_deser_registry: HashMap<String, Box<dyn Fn(Value, &mut World, Entity)>>,
 }
 impl Default for AssetLoadConfig {
     fn default() -> Self {
@@ -46,7 +55,24 @@ impl Default for AssetLoadConfig {
             world_load_config: Default::default(),
             custom_component_loader: None,
             world_resource_loader: None,
+            component_deser_registry: HashMap::new(),
         }
+    }
+}
+impl AssetLoadConfig {
+    fn register_deserializable_component<T: for<'de> Deserialize<'de> + 'static + Send + Sync>(
+        &mut self,
+        tag: &str,
+    ) {
+        self.component_deser_registry.insert(
+            tag.to_string(),
+            Box::new(|value, world, entity| {
+                value
+                    .try_into::<T>()
+                    .ok()
+                    .map(|component| world.insert_one(entity, component).ok());
+            }),
+        );
     }
 }
 
@@ -74,6 +100,12 @@ impl<'c> AssetLoader<'c> {
 
     pub fn set_world_resource_loader(&mut self, world_resource_loader: WorldResourceLoader) {
         self.asset_engine.load_config.world_resource_loader = Some(world_resource_loader);
+    }
+
+    pub fn register_component<T: Component + DeserializeOwned>(&mut self, tag: &str) {
+        self.asset_engine
+            .load_config
+            .register_deserializable_component::<T>(tag);
     }
 
     /// Add a merge handler to automatically be bound to any world loaded via ``emd.loader().world("example.wrld")```

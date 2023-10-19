@@ -9,6 +9,8 @@ pub use components::*;
 pub use error::*;
 pub use game::*;
 pub use game_settings::*;
+use hecs::Component;
+use serde::Deserialize;
 
 use crate::assets::*;
 use crate::audio::*;
