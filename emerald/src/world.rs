@@ -30,6 +30,7 @@ pub struct World {
     pub(crate) inner: hecs::World,
     resources: Resources,
     merge_handlers: Vec<WorldMergeHandler>,
+    merge_handlers_by_tag: HashMap<String, fn(&mut World, &mut World)>,
 }
 impl Default for World {
     fn default() -> Self {
@@ -37,6 +38,7 @@ impl Default for World {
             physics_engine: None,
             inner: hecs::World::default(),
             merge_handlers: Vec::new(),
+            merge_handlers_by_tag: HashMap::new(),
             resources: Resources::new(),
         }
     }
@@ -57,7 +59,8 @@ impl World {
     }
 
     /// Absorbs another world into this one. Resets and changes the Entity ids of the other worlds, when they are merged into this world.
-    /// All entities are placed into this world at their current transform.
+    /// All entities are placed into this world at their current transform + the given offset.
+    /// Resources in the other_world will be inserted into the primary world only if they do not already exist in the primary world.
     /// The camera of the primary world will remain the current camera.
     /// If physics is enabled, will keep its own physics settings.
     /// Returns a map of OldEntity -> NewEntity. If you have components that store Entity references, use this map to update your references.
@@ -94,6 +97,11 @@ impl World {
             .iter()
             .map(|merge_handler| (merge_handler)(self, &mut other_world, &mut entity_id_shift_map))
             .collect::<Result<Vec<()>, EmeraldError>>()?;
+
+        self.merge_handlers_by_tag
+            .clone()
+            .iter()
+            .for_each(|(_, handler)| (handler)(self, &mut other_world));
 
         Ok(())
     }
@@ -396,13 +404,31 @@ pub struct WorldLoadConfig {
 
     /// A list of user provided merge handlers, to automatically be bound to any worlds loaded via the AssetLoader.
     pub merge_handlers: Vec<WorldMergeHandler>,
+
+    pub merge_handlers_by_tag: HashMap<String, fn(&mut World, &mut World)>,
 }
 impl Default for WorldLoadConfig {
     fn default() -> Self {
         Self {
             transform_offset: Default::default(),
             merge_handlers: Vec::new(),
+            merge_handlers_by_tag: HashMap::new(),
         }
+    }
+}
+impl WorldLoadConfig {
+    pub fn add_merge_handler_by_tag<T: Send + Sync + 'static>(&mut self, tag: &str) {
+        self.merge_handlers_by_tag
+            .insert(tag.to_string(), |world, other_world| {
+                if world.resources().contains::<T>() {
+                    return;
+                }
+
+                other_world
+                    .resources()
+                    .remove::<T>()
+                    .map(|resource| world.resources().insert(resource));
+            });
     }
 }
 
@@ -434,6 +460,16 @@ pub(crate) fn load_world(
         .iter()
         .for_each(|handler| {
             world.add_merge_handler(*handler);
+        });
+
+    loader
+        .asset_engine
+        .load_config
+        .world_load_config
+        .merge_handlers_by_tag
+        .iter()
+        .for_each(|(tag, f)| {
+            world.merge_handlers_by_tag.insert(tag.clone(), f.clone());
         });
 
     if let Some(table) = toml.as_table_mut() {
@@ -485,10 +521,19 @@ pub(crate) fn load_world(
             }
         }
 
-        if let Some(world_resource_loader) = loader.asset_engine.load_config.world_resource_loader {
-            for (key, value) in table.to_owned() {
-                (world_resource_loader)(loader, &mut world, value, key)?;
-            }
+        for (key, value) in table.to_owned() {
+            loader
+                .asset_engine
+                .load_config
+                .world_resource_deser_registry
+                .get(&key)
+                .map(|f| f(value.clone(), &mut world));
+
+            loader
+                .asset_engine
+                .load_config
+                .world_resource_loader
+                .map(|load_fn| (load_fn)(loader, &mut world, value, key));
         }
     }
 

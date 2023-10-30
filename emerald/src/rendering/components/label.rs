@@ -42,4 +42,12 @@ impl Label {
             max_width: Some(300.0),
         }
     }
+
+    pub fn is_text_fully_revealed(&self) -> bool {
+        self.visible_characters >= self.text.len() as i64 - 1
+    }
+
+    pub fn reveal_all_characters(&mut self) {
+        self.visible_characters = self.text.len() as i64
+    }
 }

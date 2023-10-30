@@ -48,6 +48,7 @@ pub struct AssetLoadConfig {
     pub world_resource_loader: Option<WorldResourceLoader>,
 
     pub component_deser_registry: HashMap<String, Box<dyn Fn(Value, &mut World, Entity)>>,
+    pub world_resource_deser_registry: HashMap<String, Box<dyn Fn(Value, &mut World)>>,
 }
 impl Default for AssetLoadConfig {
     fn default() -> Self {
@@ -56,6 +57,7 @@ impl Default for AssetLoadConfig {
             custom_component_loader: None,
             world_resource_loader: None,
             component_deser_registry: HashMap::new(),
+            world_resource_deser_registry: HashMap::new(),
         }
     }
 }
@@ -71,6 +73,22 @@ impl AssetLoadConfig {
                     .try_into::<T>()
                     .ok()
                     .map(|component| world.insert_one(entity, component).ok());
+            }),
+        );
+    }
+    fn register_deserializable_world_resource<
+        T: for<'de> Deserialize<'de> + 'static + Send + Sync,
+    >(
+        &mut self,
+        tag: &str,
+    ) {
+        self.world_resource_deser_registry.insert(
+            tag.to_string(),
+            Box::new(|value, world| {
+                value
+                    .try_into::<T>()
+                    .ok()
+                    .map(|resource| world.resources().insert(resource));
             }),
         );
     }
@@ -106,6 +124,20 @@ impl<'c> AssetLoader<'c> {
         self.asset_engine
             .load_config
             .register_deserializable_component::<T>(tag);
+    }
+
+    pub fn register_world_resource<T: DeserializeOwned + Send + Sync + 'static>(
+        &mut self,
+        tag: &str,
+    ) {
+        self.asset_engine
+            .load_config
+            .register_deserializable_world_resource::<T>(tag);
+
+        self.asset_engine
+            .load_config
+            .world_load_config
+            .add_merge_handler_by_tag::<T>(tag);
     }
 
     /// Add a merge handler to automatically be bound to any world loaded via ``emd.loader().world("example.wrld")```
