@@ -483,6 +483,10 @@ pub trait RenderingEngine {
             label.visible_characters
         };
 
+        if remaining_char_count == 0 {
+            return Ok(());
+        }
+
         let mut to_draw = Vec::new();
         for glyph in self.layout().glyphs() {
             let glyph_key = glyph.key;
