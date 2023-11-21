@@ -122,11 +122,11 @@ impl DesktopRenderingEngine {
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: capabilities.formats[0],
-            view_formats: capabilities.formats.clone(),
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::AutoNoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
+            view_formats: Vec::new(),
         };
         surface.configure(&device, &config);
 
