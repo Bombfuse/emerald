@@ -3,10 +3,13 @@ use hecs::Entity;
 use rapier2d::na::Vector2;
 use serde::{Deserialize, Serialize};
 
-use crate::{rendering::components::Label, AssetLoader, EmeraldError, World};
+use crate::{rendering::components::Label, AssetLoader, Color, EmeraldError, World};
 
 use super::Vec2f32Schema;
 
+fn default_centered() -> bool {
+    true
+}
 #[derive(Deserialize, Serialize)]
 pub(crate) struct EntLabelSchema {
     pub font: Option<String>,
@@ -27,6 +30,16 @@ pub(crate) struct EntLabelSchema {
 
     /// options: "center", "left", "right"
     pub horizontal_align: Option<String>,
+
+    pub visible_characters: Option<i64>,
+
+    pub color: Option<Color>,
+
+    pub max_width: Option<f32>,
+    pub max_height: Option<f32>,
+
+    #[serde(default = "default_centered")]
+    pub centered: bool,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -74,8 +87,17 @@ pub(crate) fn load_ent_label<'a>(
     let text = schema.text.unwrap_or("".into());
     let mut label = Label::new(text, font, schema.size);
     label.z_index = schema.z_index;
+    label.max_width = schema.max_width;
+    label.max_height = schema.max_height;
+    label.centered = schema.centered;
+    schema.color.map(|c| {
+        label.color = c;
+    });
 
     schema.visible.map(|v| label.visible = v);
+    schema
+        .visible_characters
+        .map(|i| label.visible_characters = i);
 
     if let Some(offset) = schema.offset {
         label.offset = Vector2::new(offset.x, offset.y);

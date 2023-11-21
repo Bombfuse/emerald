@@ -1,7 +1,14 @@
 use hecs::Entity;
+use rapier2d::na::Vector2;
 use serde::{Deserialize, Serialize};
 
-use crate::{rendering::components::ColorRect, AssetLoader, Color, EmeraldError, World};
+use crate::{
+    rendering::components::ColorRect, AssetLoader, Color, EmeraldError, Translation, World,
+};
+
+fn default_visibility() -> bool {
+    true
+}
 
 #[derive(Deserialize, Serialize)]
 pub(crate) struct EntColorRectSchema {
@@ -10,7 +17,13 @@ pub(crate) struct EntColorRectSchema {
     pub height: u32,
 
     #[serde(default)]
+    pub offset: Translation,
+
+    #[serde(default)]
     pub z_index: f32,
+
+    #[serde(default = "default_visibility")]
+    pub visible: bool,
 }
 
 pub(crate) fn load_ent_color_rect<'a>(
@@ -28,6 +41,8 @@ pub(crate) fn load_ent_color_rect<'a>(
     let schema: EntColorRectSchema = toml::from_str(&toml.to_string())?;
     let mut color_rect = ColorRect::new(schema.color, schema.width, schema.height);
     color_rect.z_index = schema.z_index;
+    color_rect.visible = schema.visible;
+    color_rect.offset = Vector2::new(schema.offset.x, schema.offset.y);
     world.insert_one(entity, color_rect)?;
 
     Ok(())

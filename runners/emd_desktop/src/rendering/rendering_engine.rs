@@ -124,7 +124,7 @@ impl DesktopRenderingEngine {
             format: capabilities.formats[0],
             width: size.width,
             height: size.height,
-            present_mode: wgpu::PresentMode::AutoNoVsync,
+            present_mode: wgpu::PresentMode::AutoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: Vec::new(),
         };
@@ -294,7 +294,6 @@ impl DesktopRenderingEngine {
         }
 
         self.queue.submit([encoder.finish()]);
-
         Ok(())
     }
 
@@ -751,6 +750,7 @@ impl RenderingEngine for DesktopRenderingEngine {
         self.render_to_view(asset_store, view, "Surface Pass")?;
 
         surface_texture.present();
+
         Ok(())
     }
 
