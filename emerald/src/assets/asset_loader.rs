@@ -14,8 +14,6 @@ use crate::rendering::components::Sprite;
 use crate::rendering_engine::RenderingEngine;
 use crate::*;
 
-use std::any::Any;
-use std::any::TypeId;
 use std::collections::HashMap;
 use std::ffi::OsStr;
 
@@ -33,6 +31,8 @@ pub type WorldResourceLoader =
 /// This is so that you can manage resource merging according to your games logic.
 pub type WorldMergeHandler =
     fn(&mut World, &mut World, &mut HashMap<Entity, Entity>) -> Result<(), EmeraldError>;
+
+pub type OnWorldLoadHook = fn(&mut World) -> Result<(), EmeraldError>;
 
 pub struct AssetLoadContext<'a> {
     pub path: &'a String,
@@ -120,6 +120,10 @@ impl<'c> AssetLoader<'c> {
         self.asset_engine.load_config.world_resource_loader = Some(world_resource_loader);
     }
 
+    pub fn get_asset_path(&self, path: &str) -> String {
+        self.asset_engine.get_full_asset_path(path)
+    }
+
     pub fn register_component<T: Component + DeserializeOwned>(&mut self, tag: &str) {
         self.asset_engine
             .load_config
@@ -148,6 +152,14 @@ impl<'c> AssetLoader<'c> {
             .world_load_config
             .merge_handlers
             .push(handler);
+    }
+
+    pub fn add_on_world_load_hook(&mut self, hook: OnWorldLoadHook) {
+        self.asset_engine
+            .load_config
+            .world_load_config
+            .on_load_hooks
+            .push(hook);
     }
 
     pub fn set_on_asset_load_callback(&mut self, callback: OnAssetLoadCallback) {

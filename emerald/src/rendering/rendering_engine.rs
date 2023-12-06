@@ -255,9 +255,22 @@ pub trait RenderingEngine {
         if !aseprite.visible {
             return Ok(());
         }
-
         let sprite = aseprite.get_sprite();
-        self.draw_sprite(asset_engine, sprite, transform)
+
+        self.draw_textured_quad(DrawTexturedQuadCommand {
+            texture_target_area: sprite.target.clone(),
+            asset_engine,
+            texture_asset_id: sprite.texture_key.asset_id(),
+            offset: aseprite.offset.clone(),
+            scale: aseprite.scale.clone(),
+            rotation: aseprite.rotation,
+            centered: aseprite.centered,
+            color: aseprite.color.clone(),
+            transform,
+            current_render_target_size: self.current_render_target_size(),
+            pixel_snap: true,
+            frustrum_culling: true,
+        })
     }
 
     fn draw_tilemap(

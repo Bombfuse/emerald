@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::{
     rendering::components::Camera, resources::Resources, AssetLoadConfig, AssetLoader,
-    EmeraldError, PhysicsEngine, PhysicsHandler, Transform, WorldMergeHandler,
+    EmeraldError, OnWorldLoadHook, PhysicsEngine, PhysicsHandler, Transform, WorldMergeHandler,
 };
 
 use hecs::{
@@ -406,6 +406,8 @@ pub struct WorldLoadConfig {
     pub merge_handlers: Vec<WorldMergeHandler>,
 
     pub merge_handlers_by_tag: HashMap<String, fn(&mut World, &mut World)>,
+
+    pub on_load_hooks: Vec<OnWorldLoadHook>,
 }
 impl Default for WorldLoadConfig {
     fn default() -> Self {
@@ -413,6 +415,7 @@ impl Default for WorldLoadConfig {
             transform_offset: Default::default(),
             merge_handlers: Vec::new(),
             merge_handlers_by_tag: HashMap::new(),
+            on_load_hooks: Vec::new(),
         }
     }
 }
@@ -536,6 +539,15 @@ pub(crate) fn load_world(
                 .map(|load_fn| (load_fn)(loader, &mut world, value, key));
         }
     }
+
+    loader
+        .asset_engine
+        .load_config
+        .world_load_config
+        .on_load_hooks
+        .iter()
+        .map(|f| (f)(&mut world))
+        .collect::<Result<Vec<()>, EmeraldError>>()?;
 
     Ok(world)
 }

@@ -50,12 +50,17 @@ impl Clone for AssetKey {
 }
 impl Drop for AssetKey {
     fn drop(&mut self) {
-        self.ref_sender
+        match self.ref_sender
             .send(RefChange::Decrement(self.asset_id))
-            .expect(&format!(
-                "Fatal Error: Failed to drop asset {:?}",
-                (self.type_id, self.asset_id)
-            ));
+            {
+                Ok(_) =>{},
+                Err(e) => {
+                    println!("{:?}", format!(
+                        "Fatal Error: Failed to drop asset {:?}",
+                        (self.type_id, self.asset_id, e.to_string())
+                    ));
+                }
+            }
     }
 }
 
