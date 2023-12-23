@@ -10,7 +10,7 @@ pub enum SoundFormat {
 #[derive(Clone, Debug, Copy, Hash, Eq, PartialEq)]
 pub struct SoundInstanceId(usize);
 impl SoundInstanceId {
-    pub(crate) fn new(id: usize) -> Self {
+    pub fn new(id: usize) -> Self {
         SoundInstanceId(id)
     }
 }
@@ -18,40 +18,20 @@ impl SoundInstanceId {
 /// A key to sound data in the engine.
 #[derive(Clone, Debug)]
 pub struct SoundKey {
-    pub(crate) asset_key: AssetKey,
+    asset_key: AssetKey,
     format: SoundFormat,
 }
 impl SoundKey {
     pub fn new(asset_key: AssetKey, format: SoundFormat) -> Self {
         SoundKey { asset_key, format }
     }
+
+    pub fn asset_key(&self) -> &AssetKey {
+        &self.asset_key
+    }
 }
 
 pub use sound_backend::*;
-
-// Kira sound backend
-#[cfg(feature = "audio")]
-mod sound_backend {
-    use crate::audio::sound::*;
-
-    #[derive(Clone)]
-    pub struct Sound {
-        pub(crate) inner: kira::sound::Sound,
-    }
-    impl Sound {
-        pub(crate) fn new(bytes: Vec<u8>, format: SoundFormat) -> Result<Self, EmeraldError> {
-            let reader = std::io::Cursor::new(bytes);
-            let settings = kira::sound::SoundSettings::new();
-
-            let inner = match format {
-                SoundFormat::Ogg => kira::sound::Sound::from_ogg_reader(reader, settings),
-                SoundFormat::Wav => kira::sound::Sound::from_wav_reader(reader, settings),
-            }?;
-
-            Ok(Sound { inner })
-        }
-    }
-}
 
 // Dummy sound backend
 #[cfg(not(feature = "audio"))]

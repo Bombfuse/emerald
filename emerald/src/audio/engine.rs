@@ -11,4 +11,18 @@ pub trait AudioEngine {
 
     /// Clear all mixers and audio.
     fn clear(&mut self) -> Result<(), EmeraldError>;
+
+    fn is_sound_loaded(&self, path: &str, asset_engine: &mut AssetEngine) -> bool;
+    fn load_sound(
+        &mut self,
+        path: &str,
+        bytes: Vec<u8>,
+        format: SoundFormat,
+        asset_engine: &mut AssetEngine,
+    ) -> Result<SoundKey, EmeraldError>;
+    fn get_sound_key(
+        &mut self,
+        path: &str,
+        asset_engine: &mut AssetEngine,
+    ) -> Result<SoundKey, EmeraldError>;
 }

@@ -44,7 +44,7 @@ pub fn start(game: Box<dyn Game>, settings: GameSettings) {
     let mut game_engine = GameEngine::new(
         game,
         rendering_engine,
-        Box::new(DesktopAudioEngine {}),
+        Box::new(DesktopAudioEngine::new()),
         Box::new(DesktopInputEngine::new()),
         Box::new(DesktopFileLoader::new()),
         asset_engine,

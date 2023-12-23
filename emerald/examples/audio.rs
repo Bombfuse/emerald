@@ -10,7 +10,7 @@ pub fn main() {
         ..Default::default()
     };
     settings.render_settings = render_settings;
-    emerald::start(
+    emd_desktop::start(
         Box::new(Example {
             world: World::new(),
         }),

@@ -97,18 +97,18 @@ impl AssetLoadConfig {
 pub struct AssetLoader<'c> {
     pub(crate) asset_engine: &'c mut AssetEngine,
     rendering_engine: &'c mut Box<dyn RenderingEngine>,
-    _audio_engine: &'c mut Box<dyn AudioEngine>,
+    audio_engine: &'c mut Box<dyn AudioEngine>,
 }
 impl<'c> AssetLoader<'c> {
     pub(crate) fn new(
         asset_engine: &'c mut AssetEngine,
         rendering_engine: &'c mut Box<dyn RenderingEngine>,
-        _audio_engine: &'c mut Box<dyn AudioEngine>,
+        audio_engine: &'c mut Box<dyn AudioEngine>,
     ) -> Self {
         AssetLoader {
             asset_engine,
             rendering_engine,
-            _audio_engine,
+            audio_engine,
         }
     }
 
@@ -311,6 +311,10 @@ impl<'c> AssetLoader<'c> {
     /// Returns the sound handle to play the sound with.
     pub fn sound<T: AsRef<str>>(&mut self, path: T) -> Result<SoundKey, EmeraldError> {
         let path: &str = path.as_ref();
+        if self.audio_engine.is_sound_loaded(path, self.asset_engine) {
+            return self.audio_engine.get_sound_key(path, self.asset_engine);
+        }
+
         let file_path = std::path::Path::new(&path);
         let sound_format = match file_path.extension().and_then(OsStr::to_str) {
             Some("wav") => SoundFormat::Wav,
@@ -323,14 +327,9 @@ impl<'c> AssetLoader<'c> {
             }
         };
 
-        if let Some(asset_key) = self.asset_engine.get_asset_key_by_label::<Sound>(path) {
-            return Ok(SoundKey::new(asset_key, sound_format));
-        }
-
-        let sound_bytes = self.asset_bytes(path.clone())?;
-        let sound = Sound::new(sound_bytes, sound_format)?;
-        let asset_key = self.asset_engine.add_asset(Box::new(sound))?;
-        Ok(SoundKey::new(asset_key, sound_format))
+        let sound_bytes = self.asset_bytes(path)?;
+        self.audio_engine
+            .load_sound(path, sound_bytes, sound_format, self.asset_engine)
     }
 
     pub fn pack_asset_bytes(
