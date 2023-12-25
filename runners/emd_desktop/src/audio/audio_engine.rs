@@ -70,7 +70,7 @@ impl AudioEngine for DesktopAudioEngine {
             StaticSoundSettings::default(),
         ) {
             Ok(s) => Ok(s),
-            Err(e) => Err(EmeraldError::new(
+            Err(_) => Err(EmeraldError::new(
                 "Unable to load static sound data from bytes given",
             )),
         }?;
