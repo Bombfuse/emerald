@@ -51,7 +51,7 @@ impl GameEngine {
         let profile_cache = ProfileCache::new(Default::default());
         let logging_engine = LoggingEngine::new();
 
-        let starting_amount = 50;
+        let starting_amount = 100;
         let mut fps_tracker = VecDeque::with_capacity(starting_amount);
         fps_tracker.resize(starting_amount, 1.0 / 60.0);
 
