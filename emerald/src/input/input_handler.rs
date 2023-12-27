@@ -62,6 +62,11 @@ impl<'a> InputHandler<'a> {
     }
 
     #[inline]
+    pub fn is_action_just_released(&mut self, action_id: &ActionId) -> bool {
+        self.engine.is_action_just_released(action_id)
+    }
+
+    #[inline]
     pub fn is_key_pressed(&mut self, key: KeyCode) -> bool {
         self.engine.is_key_pressed(key)
     }

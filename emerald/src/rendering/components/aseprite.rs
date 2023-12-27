@@ -40,6 +40,18 @@ impl Aseprite {
         Ok(Self::from_data(data))
     }
 
+    pub fn play_animation(
+        world: &mut World,
+        id: Entity,
+        animation: &str,
+    ) -> Result<(), EmeraldError> {
+        world
+            .get::<&mut Aseprite>(id)
+            .ok()
+            .map(|mut a| a.play(animation));
+        Ok(())
+    }
+
     pub(crate) fn from_exported(
         sprite: Sprite,
         animation_json: Vec<u8>,

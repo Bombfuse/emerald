@@ -12,6 +12,7 @@ use crate::font::FontImage;
 use crate::font::FontKey;
 use crate::rendering::components::Sprite;
 use crate::rendering_engine::RenderingEngine;
+use crate::resources::Resources;
 use crate::*;
 
 use std::collections::HashMap;
@@ -32,7 +33,11 @@ pub type WorldResourceLoader =
 pub type WorldMergeHandler =
     fn(&mut World, &mut World, &mut HashMap<Entity, Entity>) -> Result<(), EmeraldError>;
 
-pub type OnWorldLoadHook = fn(&mut World) -> Result<(), EmeraldError>;
+pub struct OnWorldLoadContext<'a> {
+    pub resources: &'a mut Resources,
+}
+
+pub type OnWorldLoadHook = fn(ctx: OnWorldLoadContext, &mut World) -> Result<(), EmeraldError>;
 
 pub struct AssetLoadContext<'a> {
     pub path: &'a String,

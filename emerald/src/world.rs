@@ -7,7 +7,8 @@ use std::collections::HashMap;
 
 use crate::{
     rendering::components::Camera, resources::Resources, AssetLoadConfig, AssetLoader,
-    EmeraldError, OnWorldLoadHook, PhysicsEngine, PhysicsHandler, Transform, WorldMergeHandler,
+    EmeraldError, OnWorldLoadContext, OnWorldLoadHook, PhysicsEngine, PhysicsHandler, Transform,
+    WorldMergeHandler,
 };
 
 use hecs::{
@@ -540,13 +541,14 @@ pub(crate) fn load_world(
         }
     }
 
+    let resources = &mut loader.resources;
     loader
         .asset_engine
         .load_config
         .world_load_config
         .on_load_hooks
         .iter()
-        .map(|f| (f)(&mut world))
+        .map(|f| (f)(OnWorldLoadContext { resources }, &mut world))
         .collect::<Result<Vec<()>, EmeraldError>>()?;
 
     Ok(world)

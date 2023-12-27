@@ -213,4 +213,16 @@ impl InputEngine for DesktopInputEngine {
             }
         });
     }
+
+    fn is_action_just_released(&mut self, action_label: &str) -> bool {
+        todo!()
+    }
+
+    fn is_key_just_released(&mut self, key: KeyCode) -> bool {
+        todo!()
+    }
+
+    fn is_button_just_released(&mut self, button: Button, index: u8) -> bool {
+        todo!()
+    }
 }

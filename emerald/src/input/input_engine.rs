@@ -49,14 +49,17 @@ pub trait InputEngine {
     fn initialize(&mut self, asset_engine: &mut AssetEngine);
 
     fn is_action_just_pressed(&mut self, action_label: &str) -> bool;
+    fn is_action_just_released(&mut self, action_label: &str) -> bool;
     fn is_action_pressed(&mut self, action_label: &str) -> bool;
 
     fn mouse(&self) -> MouseState;
 
     fn is_key_just_pressed(&mut self, key: KeyCode) -> bool;
+    fn is_key_just_released(&mut self, key: KeyCode) -> bool;
     fn is_key_pressed(&mut self, key: KeyCode) -> bool;
 
     fn is_button_just_pressed(&mut self, button: Button, index: u8) -> bool;
+    fn is_button_just_released(&mut self, button: Button, index: u8) -> bool;
     fn is_button_pressed(&mut self, button: Button, index: u8) -> bool;
 
     fn joystick(&mut self, joystick: Joystick, index: u8) -> Vector2<f32>;

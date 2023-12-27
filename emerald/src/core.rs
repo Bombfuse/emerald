@@ -60,8 +60,8 @@ impl<'c> Emerald<'c> {
         }
     }
 
-    pub fn set_asset_folder_root(&mut self, root: String) {
-        self.asset_engine.asset_folder_root = root;
+    pub fn set_asset_folder_root<T: Into<String>>(&mut self, root: T) {
+        self.asset_engine.asset_folder_root = root.into();
     }
 
     pub fn set_user_data_folder_root(&mut self, root: String) {
@@ -127,6 +127,7 @@ impl<'c> Emerald<'c> {
             &mut self.asset_engine,
             &mut self.rendering_engine,
             &mut self.audio_engine,
+            &mut self.resources,
         )
     }
 
