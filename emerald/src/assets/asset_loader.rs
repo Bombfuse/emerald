@@ -103,17 +103,20 @@ pub struct AssetLoader<'c> {
     pub(crate) asset_engine: &'c mut AssetEngine,
     rendering_engine: &'c mut Box<dyn RenderingEngine>,
     audio_engine: &'c mut Box<dyn AudioEngine>,
+    pub(crate) resources: &'c mut Resources,
 }
 impl<'c> AssetLoader<'c> {
     pub(crate) fn new(
         asset_engine: &'c mut AssetEngine,
         rendering_engine: &'c mut Box<dyn RenderingEngine>,
         audio_engine: &'c mut Box<dyn AudioEngine>,
+        resources: &'c mut Resources,
     ) -> Self {
         AssetLoader {
             asset_engine,
             rendering_engine,
             audio_engine,
+            resources,
         }
     }
 

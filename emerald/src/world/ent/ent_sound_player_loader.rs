@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{audio::components::sound_player::SoundPlayer, AssetLoader, EmeraldError, World};
 
-use super::Vec2f32Schema;
-
 #[derive(Deserialize, Serialize)]
 pub(crate) struct EntSoundSchema {
     /// Label for the sound key

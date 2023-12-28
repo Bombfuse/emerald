@@ -447,11 +447,27 @@ struct WorldMerge {
 
     #[serde(default)]
     transform: Transform,
+
+    #[serde(default)]
+    settings: WorldLoadSettings,
 }
 
-pub(crate) fn load_world(
+#[derive(Deserialize)]
+struct WorldLoadSettings {
+    enable_load_hooks: bool,
+}
+impl Default for WorldLoadSettings {
+    fn default() -> Self {
+        Self {
+            enable_load_hooks: true,
+        }
+    }
+}
+
+fn load_world_ext(
     loader: &mut AssetLoader<'_>,
     toml: String,
+    settings: WorldLoadSettings,
 ) -> Result<World, EmeraldError> {
     let mut toml = toml.parse::<toml::Value>()?;
     let mut world = World::new();
@@ -487,7 +503,7 @@ pub(crate) fn load_world(
                 for value in values {
                     let world_merge = value.to_owned().try_into::<WorldMerge>().unwrap();
                     let toml_str = loader.string(&world_merge.path).unwrap();
-                    let sub_world = load_world(loader, toml_str).unwrap();
+                    let sub_world = load_world_ext(loader, toml_str, world_merge.settings).unwrap();
                     world.merge(sub_world, world_merge.transform).unwrap();
                 }
             });
@@ -541,17 +557,26 @@ pub(crate) fn load_world(
         }
     }
 
-    let resources = &mut loader.resources;
-    loader
-        .asset_engine
-        .load_config
-        .world_load_config
-        .on_load_hooks
-        .iter()
-        .map(|f| (f)(OnWorldLoadContext { resources }, &mut world))
-        .collect::<Result<Vec<()>, EmeraldError>>()?;
+    if settings.enable_load_hooks {
+        let resources = &mut loader.resources;
+        loader
+            .asset_engine
+            .load_config
+            .world_load_config
+            .on_load_hooks
+            .iter()
+            .map(|f| (f)(OnWorldLoadContext { resources }, &mut world))
+            .collect::<Result<Vec<()>, EmeraldError>>()?;
+    }
 
     Ok(world)
+}
+
+pub(crate) fn load_world(
+    loader: &mut AssetLoader<'_>,
+    toml: String,
+) -> Result<World, EmeraldError> {
+    load_world_ext(loader, toml, Default::default())
 }
 
 #[cfg(test)]
