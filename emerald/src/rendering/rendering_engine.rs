@@ -1,10 +1,13 @@
 use std::{
     any::TypeId,
+    cmp::Ordering,
     collections::{HashMap, VecDeque},
+    convert::TryInto,
     hash::Hash,
     ops::Range,
 };
 
+use anymap::any::UncheckedAnyExt;
 use fontdue::layout::{GlyphRasterConfig, Layout, LayoutSettings, TextStyle};
 use hecs::Entity;
 use rapier2d::{na::Vector2, prelude::RigidBodyHandle};
@@ -15,8 +18,8 @@ use crate::{
     font::{CharacterInfo, Font, FontImage, FontKey},
     render_settings::RenderSettings,
     tilemap::Tilemap,
-    Aseprite, AssetEngine, Color, EmeraldError, Rectangle, Scale, Transform, Translation, UIButton,
-    World, WHITE,
+    Aseprite, AssetEngine, Color, EmeraldError, GraphicsStack, Rectangle, Scale, Transform,
+    Translation, UIButton, World, WHITE,
 };
 
 use super::components::{get_bounding_box_of_triangle, Camera, ColorRect, ColorTri, Label, Sprite};
@@ -167,6 +170,7 @@ pub trait RenderingEngine {
         cmd_adder.add_draw_commands::<UIButton>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<ColorRect>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<Label>(&mut draw_queue, world, asset_store);
+        cmd_adder.add_draw_commands::<GraphicsStack>(&mut draw_queue, world, asset_store);
         draw_queue.sort_by(|a, b| a.z_index.partial_cmp(&b.z_index).unwrap());
         for draw_command in draw_queue {
             self.draw(asset_store, world, draw_command, &camera, &camera_transform)?;
@@ -193,6 +197,10 @@ pub trait RenderingEngine {
         };
 
         match draw_command.drawable_type {
+            DrawableType::GfxStack => {
+                let gfx_stack = world.get::<&GraphicsStack>(draw_command.entity)?;
+                self.draw_gfx_stack(asset_engine, &gfx_stack, &transform)?;
+            }
             DrawableType::Aseprite => {
                 let aseprite = world.get::<&Aseprite>(draw_command.entity)?;
                 self.draw_aseprite(asset_engine, &aseprite, &transform)?;
@@ -271,6 +279,31 @@ pub trait RenderingEngine {
             pixel_snap: true,
             frustrum_culling: true,
         })
+    }
+
+    fn draw_gfx_stack(
+        &mut self,
+        asset_engine: &mut AssetEngine,
+        gfx_stack: &GraphicsStack,
+        transform: &Transform,
+    ) -> Result<(), EmeraldError> {
+        if !gfx_stack.visible {
+            return Ok(());
+        }
+
+        for (label, drawable_type) in &gfx_stack.drawable_types {
+            match drawable_type {
+                DrawableType::ColorRect => {
+                    if let Some(component) = gfx_stack.components.get(label) {
+                        let color_rect = unsafe { component.downcast_ref_unchecked::<ColorRect>() };
+                        self.draw_color_rect(asset_engine, color_rect, transform)?;
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        Ok(())
     }
 
     fn draw_tilemap(
@@ -732,7 +765,7 @@ fn get_camera_and_camera_transform(world: &World) -> (Camera, Transform) {
     (cam, cam_transform)
 }
 
-trait ToDrawable {
+pub trait ToDrawable {
     /// Returns a rectangle representing the visual size of this drawable, if a
     /// culling check should be performed. `None` can be returned to skip the
     /// culling check.
@@ -745,6 +778,7 @@ trait ToDrawable {
     fn get_type(&self) -> DrawableType;
 
     fn z_index(&self) -> f32;
+    fn set_z_index(&mut self, new_z_index: f32);
 }
 
 impl ToDrawable for Tilemap {
@@ -772,6 +806,9 @@ impl ToDrawable for Tilemap {
     fn z_index(&self) -> f32 {
         self.z_index
     }
+    fn set_z_index(&mut self, new_z_index: f32) {
+        self.z_index = new_z_index;
+    }
 }
 impl ToDrawable for AutoTilemap {
     fn get_visible_bounds(
@@ -788,6 +825,9 @@ impl ToDrawable for AutoTilemap {
 
     fn z_index(&self) -> f32 {
         self.tilemap.z_index
+    }
+    fn set_z_index(&mut self, new_z_index: f32) {
+        self.tilemap.z_index = new_z_index;
     }
 }
 
@@ -818,6 +858,9 @@ impl ToDrawable for Aseprite {
 
     fn z_index(&self) -> f32 {
         self.z_index
+    }
+    fn set_z_index(&mut self, new_z_index: f32) {
+        self.z_index = new_z_index;
     }
 
     fn get_type(&self) -> DrawableType {
@@ -866,6 +909,9 @@ impl ToDrawable for Sprite {
     fn get_type(&self) -> DrawableType {
         DrawableType::Sprite
     }
+    fn set_z_index(&mut self, new_z_index: f32) {
+        self.z_index = new_z_index;
+    }
 }
 
 impl ToDrawable for UIButton {
@@ -891,6 +937,9 @@ impl ToDrawable for UIButton {
 
     fn get_type(&self) -> DrawableType {
         DrawableType::UIButton
+    }
+    fn set_z_index(&mut self, new_z_index: f32) {
+        self.z_index = new_z_index;
     }
 }
 
@@ -920,6 +969,9 @@ impl ToDrawable for ColorRect {
     fn get_type(&self) -> DrawableType {
         DrawableType::ColorRect
     }
+    fn set_z_index(&mut self, new_z_index: f32) {
+        self.z_index = new_z_index;
+    }
 }
 
 impl ToDrawable for Label {
@@ -938,6 +990,9 @@ impl ToDrawable for Label {
     fn get_type(&self) -> DrawableType {
         DrawableType::Label
     }
+    fn set_z_index(&mut self, new_z_index: f32) {
+        self.z_index = new_z_index;
+    }
 }
 
 pub enum DrawableType {
@@ -949,6 +1004,7 @@ pub enum DrawableType {
     UIButton,
     ColorTri,
     Label,
+    GfxStack,
 }
 
 pub struct DrawCommand {

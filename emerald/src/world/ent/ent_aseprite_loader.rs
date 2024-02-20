@@ -1,7 +1,7 @@
 use hecs::Entity;
 use serde::{Deserialize, Serialize};
 
-use crate::{AssetLoader, EmeraldError, World};
+use crate::{Aseprite, AssetLoader, EmeraldError, World};
 
 use super::Vec2f32Schema;
 
@@ -24,21 +24,12 @@ pub(crate) struct AsepriteDefaultAnimationSchema {
     pub looping: Option<bool>,
 }
 
-pub(crate) fn load_ent_aseprite<'a>(
+pub(crate) fn load_aseprite<'a>(
     loader: &mut AssetLoader<'a>,
-    entity: Entity,
-    world: &mut World,
-    toml: &toml::Value,
-) -> Result<(), EmeraldError> {
-    if !toml.is_table() {
-        return Err(EmeraldError::new(
-            "Cannot load aseprite from a non-table toml value.",
-        ));
-    }
-    let schema: EntAsepriteSchema = toml::from_str(&toml.to_string())?;
-
+    schema: EntAsepriteSchema,
+) -> Result<Aseprite, EmeraldError> {
     if (schema.animations.is_none() || schema.texture.is_none()) && schema.aseprite.is_none() {
-        return Err(EmeraldError::new(format!("Failed to load Aseprite for entity {:?}. Either (animations AND texture) OR aseprite must be provided.", entity)));
+        return Err(EmeraldError::new("Failed to load Aseprite for entity. Either (animations AND texture) OR aseprite must be provided."));
     }
 
     let mut aseprite = None;
@@ -75,6 +66,22 @@ pub(crate) fn load_ent_aseprite<'a>(
         }
     }
 
+    Ok(aseprite)
+}
+
+pub(crate) fn load_ent_aseprite<'a>(
+    loader: &mut AssetLoader<'a>,
+    entity: Entity,
+    world: &mut World,
+    toml: &toml::Value,
+) -> Result<(), EmeraldError> {
+    if !toml.is_table() {
+        return Err(EmeraldError::new(
+            "Cannot load aseprite from a non-table toml value.",
+        ));
+    }
+    let schema: EntAsepriteSchema = toml::from_str(&toml.to_string())?;
+    let aseprite = load_aseprite(loader, schema)?;
     world.insert_one(entity, aseprite)?;
 
     Ok(())

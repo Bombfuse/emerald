@@ -26,8 +26,19 @@ pub(crate) struct EntColorRectSchema {
     pub visible: bool,
 }
 
-pub(crate) fn load_ent_color_rect<'a>(
+pub(crate) fn load_color_rect<'a>(
     _loader: &mut AssetLoader<'a>,
+    schema: EntColorRectSchema,
+) -> Result<ColorRect, EmeraldError> {
+    let mut color_rect = ColorRect::new(schema.color, schema.width, schema.height);
+    color_rect.z_index = schema.z_index;
+    color_rect.visible = schema.visible;
+    color_rect.offset = Vector2::new(schema.offset.x, schema.offset.y);
+    Ok(color_rect)
+}
+
+pub(crate) fn load_ent_color_rect<'a>(
+    loader: &mut AssetLoader<'a>,
     entity: Entity,
     world: &mut World,
     toml: &toml::Value,
@@ -39,10 +50,7 @@ pub(crate) fn load_ent_color_rect<'a>(
     }
 
     let schema: EntColorRectSchema = toml::from_str(&toml.to_string())?;
-    let mut color_rect = ColorRect::new(schema.color, schema.width, schema.height);
-    color_rect.z_index = schema.z_index;
-    color_rect.visible = schema.visible;
-    color_rect.offset = Vector2::new(schema.offset.x, schema.offset.y);
+    let color_rect = load_color_rect(loader, schema)?;
     world.insert_one(entity, color_rect)?;
 
     Ok(())

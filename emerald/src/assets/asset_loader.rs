@@ -26,12 +26,21 @@ pub type CustomComponentLoader =
 pub type WorldResourceLoader =
     fn(&mut AssetLoader<'_>, &mut World, toml::Value, String) -> Result<(), EmeraldError>;
 
+pub struct WorldMergeContext {
+    /// User data on the merge
+    pub data: Option<toml::Value>,
+}
+
 /// A function defined by the user that handles merge results.
 /// Given the base world, the other world, and a mapping of OldEntity -> NewEntity ids.
 /// Note: The other world will have had all of its entities removed by this point, but its resources will be in tact.
 /// This is so that you can manage resource merging according to your games logic.
-pub type WorldMergeHandler =
-    fn(&mut World, &mut World, &mut HashMap<Entity, Entity>) -> Result<(), EmeraldError>;
+pub type WorldMergeHandler = fn(
+    &mut World,
+    &mut World,
+    &mut HashMap<Entity, Entity>,
+    ctx: &WorldMerge,
+) -> Result<(), EmeraldError>;
 
 pub struct OnWorldLoadContext<'a> {
     pub resources: &'a mut Resources,
@@ -258,8 +267,16 @@ impl<'c> AssetLoader<'c> {
     }
 
     pub fn world<T: AsRef<str>>(&mut self, path: T) -> Result<World, EmeraldError> {
+        self.world_ext(path, Default::default())
+    }
+
+    pub fn world_ext<T: AsRef<str>>(
+        &mut self,
+        path: T,
+        settings: WorldLoadSettings,
+    ) -> Result<World, EmeraldError> {
         let toml = self.string(path)?;
-        load_world(self, toml)
+        load_world(self, toml, settings)
     }
 
     /// Loads a `.aseprite` file.

@@ -4,8 +4,8 @@ use hecs::Entity;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    autotilemap::load_ent_autotilemap, tilemap::load_ent_tilemap, AssetLoader, EmeraldError,
-    Transform, World,
+    autotilemap::load_ent_autotilemap, gfx_stack, tilemap::load_ent_tilemap, AssetLoader,
+    EmeraldError, Transform, World,
 };
 
 use self::{
@@ -25,6 +25,7 @@ pub(crate) mod ent_transform_loader;
 const SPRITE_SCHEMA_KEY: &str = "sprite";
 const RIGID_BODY_SCHEMA_KEY: &str = "rigid_body";
 const ASEPRITE_SCHEMA_KEY: &str = "aseprite";
+const GRAPHICS_STACK_SCHEMA_KEY: &str = "gfx_stack";
 pub(crate) const TRANSFORM_SCHEMA_KEY: &str = "transform";
 const LABEL_SCHEMA_KEY: &str = "label";
 const COLOR_RECT_SCHEMA_KEY: &str = "color_rect";
@@ -108,6 +109,11 @@ pub(crate) fn load_ent(
                             world,
                             &aseprite_value,
                         )?;
+                    }
+                }
+                GRAPHICS_STACK_SCHEMA_KEY => {
+                    if let Some(gfx_value) = table.remove(GRAPHICS_STACK_SCHEMA_KEY) {
+                        gfx_stack::load_ent_gfx_stack(loader, entity, world, gfx_value)?;
                     }
                 }
                 _ => {

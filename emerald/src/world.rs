@@ -3,12 +3,15 @@ pub mod physics;
 pub mod ent;
 pub mod world_physics_loader;
 
-use std::collections::HashMap;
+use std::{
+    collections::{HashMap, HashSet},
+    path,
+};
 
 use crate::{
     rendering::components::Camera, resources::Resources, AssetLoadConfig, AssetLoader,
     EmeraldError, OnWorldLoadContext, OnWorldLoadHook, PhysicsEngine, PhysicsHandler, Transform,
-    WorldMergeHandler,
+    WorldMergeContext, WorldMergeHandler,
 };
 
 use hecs::{
@@ -65,9 +68,9 @@ impl World {
     /// The camera of the primary world will remain the current camera.
     /// If physics is enabled, will keep its own physics settings.
     /// Returns a map of OldEntity -> NewEntity. If you have components that store Entity references, use this map to update your references.
-    pub fn merge(&mut self, mut other_world: World, offset: Transform) -> Result<(), EmeraldError> {
+    pub fn merge(&mut self, mut other_world: World, merge: WorldMerge) -> Result<(), EmeraldError> {
         for (_, transform) in other_world.query::<&mut Transform>().iter() {
-            *transform = transform.clone() + offset.clone();
+            *transform = transform.clone() + merge.transform.clone();
         }
 
         let mut entity_id_shift_map = HashMap::new();
@@ -96,7 +99,9 @@ impl World {
         self.merge_handlers
             .clone()
             .iter()
-            .map(|merge_handler| (merge_handler)(self, &mut other_world, &mut entity_id_shift_map))
+            .map(|merge_handler| {
+                (merge_handler)(self, &mut other_world, &mut entity_id_shift_map, &merge)
+            })
             .collect::<Result<Vec<()>, EmeraldError>>()?;
 
         self.merge_handlers_by_tag
@@ -441,25 +446,51 @@ const ENTITIES_SCHEMA_KEY: &str = "entities";
 const ENTITIES_ALT_SCHEMA_KEY: &str = "entity";
 const WORLD_MERGE_SCHEMA_KEY: &str = "world_merge";
 
-#[derive(Deserialize)]
-struct WorldMerge {
-    path: String,
+#[derive(Deserialize, Default)]
+pub struct WorldMerge {
+    pub path: String,
 
     #[serde(default)]
-    transform: Transform,
+    pub transform: Transform,
 
     #[serde(default)]
-    settings: WorldLoadSettings,
+    pub settings: WorldLoadSettings,
+
+    #[serde(default)]
+    pub data: Option<toml::Value>,
+}
+
+fn default_enable_sub_world_metadata() -> bool {
+    false
 }
 
 #[derive(Deserialize)]
-struct WorldLoadSettings {
+pub struct WorldLoadSettings {
     enable_load_hooks: bool,
+
+    #[serde(default = "default_enable_sub_world_metadata")]
+    /// Loads metadata surrounding merged subworlds into the worlds resources.
+    enable_sub_world_metadata: bool,
 }
 impl Default for WorldLoadSettings {
     fn default() -> Self {
         Self {
             enable_load_hooks: true,
+            enable_sub_world_metadata: false,
+        }
+    }
+}
+
+/// Metadata about the subworlds on load
+#[derive(Default, Clone)]
+pub struct SubWorldMetadata {
+    /// The paths of all sub worlds loaded into this world
+    pub loaded_sub_worlds: HashSet<String>,
+}
+impl SubWorldMetadata {
+    pub fn merge(&mut self, other: &SubWorldMetadata) {
+        for path in other.loaded_sub_worlds.iter() {
+            self.loaded_sub_worlds.insert(path.clone());
         }
     }
 }
@@ -467,7 +498,7 @@ impl Default for WorldLoadSettings {
 fn load_world_ext(
     loader: &mut AssetLoader<'_>,
     toml: String,
-    settings: WorldLoadSettings,
+    settings: &WorldLoadSettings,
 ) -> Result<World, EmeraldError> {
     let mut toml = toml.parse::<toml::Value>()?;
     let mut world = World::new();
@@ -503,8 +534,26 @@ fn load_world_ext(
                 for value in values {
                     let world_merge = value.to_owned().try_into::<WorldMerge>().unwrap();
                     let toml_str = loader.string(&world_merge.path).unwrap();
-                    let sub_world = load_world_ext(loader, toml_str, world_merge.settings).unwrap();
-                    world.merge(sub_world, world_merge.transform).unwrap();
+                    let sub_world =
+                        load_world_ext(loader, toml_str, &world_merge.settings).unwrap();
+
+                    if settings.enable_sub_world_metadata {
+                        if !world.resources().contains::<SubWorldMetadata>() {
+                            world.resources().insert(SubWorldMetadata::default());
+                        }
+
+                        world.resources().get_mut::<SubWorldMetadata>().map(
+                            |s: &mut SubWorldMetadata| {
+                                s.loaded_sub_worlds.insert(world_merge.path.to_string());
+                                sub_world
+                                    .resources_ref()
+                                    .get::<SubWorldMetadata>()
+                                    .map(|s2| s.merge(s2));
+                            },
+                        );
+                    }
+
+                    world.merge(sub_world, world_merge).unwrap();
                 }
             });
         }
@@ -575,8 +624,9 @@ fn load_world_ext(
 pub(crate) fn load_world(
     loader: &mut AssetLoader<'_>,
     toml: String,
+    settings: WorldLoadSettings,
 ) -> Result<World, EmeraldError> {
-    load_world_ext(loader, toml, Default::default())
+    load_world_ext(loader, toml, &settings)
 }
 
 #[cfg(test)]
