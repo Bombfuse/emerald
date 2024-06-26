@@ -36,6 +36,12 @@ fn is_key_just_pressed(key_states: &HashMap<KeyCode, ButtonState>, key: &KeyCode
         .map(|state| state.is_just_pressed())
         .unwrap_or(false)
 }
+fn is_key_just_released(key_states: &HashMap<KeyCode, ButtonState>, key: &KeyCode) -> bool {
+    key_states
+        .get(&key)
+        .map(|state| state.is_just_released())
+        .unwrap_or(false)
+}
 fn is_key_pressed(key_states: &HashMap<KeyCode, ButtonState>, key: &KeyCode) -> bool {
     key_states
         .get(&key)
@@ -51,6 +57,18 @@ fn is_button_just_pressed(
     controller_states
         .get(&index)
         .map(|c| c.get(&button).map(|b| b.is_just_pressed()))
+        .flatten()
+        .unwrap_or(false)
+}
+
+fn is_button_just_released(
+    controller_states: &ControllerStates,
+    index: u8,
+    button: &Button,
+) -> bool {
+    controller_states
+        .get(&index)
+        .map(|c| c.get(&button).map(|b| b.is_just_released()))
         .flatten()
         .unwrap_or(false)
 }
@@ -215,7 +233,26 @@ impl InputEngine for DesktopInputEngine {
     }
 
     fn is_action_just_released(&mut self, action_label: &str) -> bool {
-        todo!()
+        self.actions
+            .get(action_label)
+            .map(|action| {
+                for key in &action.key_bindings {
+                    if is_key_just_released(&self.key_states, key) {
+                        return true;
+                    }
+                }
+
+                for (index, buttons) in &action.button_bindings {
+                    for button in buttons {
+                        if is_button_just_released(&self.controller_states, *index as u8, &button) {
+                            return true;
+                        }
+                    }
+                }
+
+                false
+            })
+            .unwrap_or(false)
     }
 
     fn is_key_just_released(&mut self, key: KeyCode) -> bool {

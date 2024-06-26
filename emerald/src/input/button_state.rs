@@ -17,4 +17,8 @@ impl ButtonState {
     pub fn is_just_pressed(&self) -> bool {
         !self.was_pressed && self.is_pressed
     }
+    #[inline]
+    pub fn is_just_released(&self) -> bool {
+        self.was_pressed && !self.is_pressed
+    }
 }

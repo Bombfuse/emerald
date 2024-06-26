@@ -466,11 +466,11 @@ fn default_enable_sub_world_metadata() -> bool {
 
 #[derive(Deserialize)]
 pub struct WorldLoadSettings {
-    enable_load_hooks: bool,
+    pub enable_load_hooks: bool,
 
     #[serde(default = "default_enable_sub_world_metadata")]
     /// Loads metadata surrounding merged subworlds into the worlds resources.
-    enable_sub_world_metadata: bool,
+    pub enable_sub_world_metadata: bool,
 }
 impl Default for WorldLoadSettings {
     fn default() -> Self {

@@ -1,9 +1,22 @@
 #[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
 pub enum Button {
-    South,
+    DPadNorth,
+    DPadSouth,
+    DPadWest,
+    DPadEast,
     North,
-    East,
+    South,
     West,
+    East,
+    LeftShoulder,
+    RightShoulder,
+    LeftTrigger,
+    RightTrigger,
+    RightStick,
+    LeftStick,
+    Menu,
+    Select,
+    Start,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
