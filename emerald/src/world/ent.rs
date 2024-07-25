@@ -117,15 +117,8 @@ pub(crate) fn load_ent(
                     }
                 }
                 _ => {
-                    if loader
-                        .asset_engine
-                        .load_config
-                        .custom_component_loader
-                        .is_some()
-                    {
-                        if let Some(value) = table.remove(&key) {
-                            custom_components.push((key, value));
-                        }
+                    if let Some(value) = table.remove(&key) {
+                        custom_components.push((key, value));
                     }
                 }
             }
