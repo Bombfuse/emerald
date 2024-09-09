@@ -6,7 +6,7 @@ use rapier2d::prelude::*;
 
 use crate::crossbeam;
 use hecs::{Entity, World};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// A physics engine unique to a game world. This handles the RigidBodies of the game.
 pub struct PhysicsEngine {
@@ -29,7 +29,7 @@ pub struct PhysicsEngine {
     body_entities: HashMap<RigidBodyHandle, Entity>,
     body_colliders: HashMap<RigidBodyHandle, Vec<ColliderHandle>>,
     collider_body: HashMap<ColliderHandle, RigidBodyHandle>,
-    entity_collisions: HashMap<Entity, Vec<Entity>>,
+    entity_collisions: HashMap<Entity, HashSet<Entity>>,
     physics_hooks: Box<dyn PhysicsHooks>,
     query_pipeline: QueryPipeline,
 }
@@ -164,14 +164,14 @@ impl PhysicsEngine {
         let entity_one_collisions = self
             .entity_collisions
             .entry(entity_one)
-            .or_insert_with(Vec::new);
-        entity_one_collisions.push(entity_two);
+            .or_insert_with(HashSet::new);
+        entity_one_collisions.insert(entity_two);
 
         let entity_two_collisions = self
             .entity_collisions
             .entry(entity_two)
-            .or_insert_with(Vec::new);
-        entity_two_collisions.push(entity_one);
+            .or_insert_with(HashSet::new);
+        entity_two_collisions.insert(entity_one);
     }
 
     #[inline]
@@ -188,7 +188,10 @@ impl PhysicsEngine {
     #[inline]
     pub(crate) fn get_colliding_entities(&self, entity: Entity) -> Vec<Entity> {
         if let Some(colliding_bodies) = self.entity_collisions.get(&entity) {
-            return colliding_bodies.clone();
+            return colliding_bodies
+                .clone()
+                .into_iter()
+                .collect::<Vec<Entity>>();
         }
 
         Vec::new()

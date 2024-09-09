@@ -99,7 +99,10 @@ impl std::ops::Add for Scale {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct Translation {
+    #[serde(default)]
     pub x: f32,
+
+    #[serde(default)]
     pub y: f32,
 }
 impl Translation {
