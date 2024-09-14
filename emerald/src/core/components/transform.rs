@@ -2,7 +2,7 @@ use rapier2d::na::{Translation2, Vector2};
 use serde::{Deserialize, Serialize};
 
 /// The core piece of an entity, determines it's transformative state and position in the world.
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Transform {
     #[serde(default)]
     pub translation: Translation,
@@ -61,7 +61,7 @@ impl std::ops::Add for Transform {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Scale {
     pub x: f32,
     pub y: f32,
@@ -97,7 +97,7 @@ impl std::ops::Add for Scale {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Translation {
     #[serde(default)]
     pub x: f32,
