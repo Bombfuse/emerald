@@ -6,7 +6,9 @@ mod rendering;
 use audio::audio_engine::DesktopAudioEngine;
 use emerald::core::game_engine::GameEngine;
 use emerald::game_engine::GameEngineContext;
+use emerald::project::Project;
 use emerald::rendering_engine::ScreenSize;
+use emerald::schedule::Schedule;
 use emerald::{AssetEngine, Game, GameSettings, KeyCode, KeyState, MouseButton, Vector2};
 use file_loader::DesktopFileLoader;
 use input::input_engine::DesktopInputEngine;
@@ -16,7 +18,7 @@ use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 
-pub fn start(game: Box<dyn Game>, settings: GameSettings) {
+pub fn start(project: Project, settings: GameSettings) {
     let mut ctx = GameEngineContext {
         user_requesting_quit: false,
     };
@@ -42,7 +44,7 @@ pub fn start(game: Box<dyn Game>, settings: GameSettings) {
             .unwrap(),
     );
     let mut game_engine = GameEngine::new(
-        game,
+        project,
         rendering_engine,
         Box::new(DesktopAudioEngine::new()),
         Box::new(DesktopInputEngine::new()),

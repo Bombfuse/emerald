@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "emerald",
-    "editor",
     "runners/emd_desktop"
-]
+, "runners/emd_headless", "editor/editor", "editor/desktop", "editor/editor-core", "editor/cli"]
 resolver = "2"
