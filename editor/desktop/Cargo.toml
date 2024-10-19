@@ -4,6 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-editor = { path = "../editor" }
 emd_desktop = { path = "../../runners/emd_desktop" } 
 emerald = { path = "../../emerald" }

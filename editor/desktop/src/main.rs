@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet};
 
-use editor::game::Editor;
 use emerald::Schedule;
 
 fn main() {

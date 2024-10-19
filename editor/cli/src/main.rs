@@ -1,3 +1,5 @@
+use editor_core::generate_module::generate_module;
+
 fn main() {
-    println!("Hello, world!");
+    generate_module("test");
 }
