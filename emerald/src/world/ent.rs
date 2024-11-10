@@ -1,11 +1,10 @@
-use std::any::TypeId;
-
+use alloc::{string::String, vec::Vec};
 use hecs::Entity;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    autotilemap::load_ent_autotilemap, gfx_stack, tilemap::load_ent_tilemap, AssetLoader,
-    EmeraldError, Transform, World,
+    autotilemap::load_ent_autotilemap, tilemap::load_ent_tilemap, AssetLoader, EmeraldError,
+    Transform, World,
 };
 
 use self::{
@@ -13,11 +12,9 @@ use self::{
     ent_sound_player_loader::SOUND_PLAYER_SCHEMA_KEY, ent_sprite_loader::load_ent_sprite,
     ent_transform_loader::load_ent_transform,
 };
-pub(crate) mod ent_aseprite_loader;
 
 pub(crate) mod ent_color_rect_loader;
 pub(crate) mod ent_label_loader;
-pub(crate) mod ent_rigid_body_loader;
 pub(crate) mod ent_sound_player_loader;
 pub(crate) mod ent_sprite_loader;
 pub(crate) mod ent_transform_loader;
@@ -40,13 +37,13 @@ pub struct EntLoadConfig {
 pub(crate) fn load_ent(
     loader: &mut AssetLoader<'_>,
     world: &mut World,
-    toml: &mut crate::toml::Value,
+    toml: &mut crate::serde_json::Value,
     transform: Transform,
 ) -> Result<Entity, EmeraldError> {
     let entity = world.spawn((transform,));
     let mut custom_components = Vec::new();
 
-    if let Some(table) = toml.as_table_mut() {
+    if let Some(table) = toml.as_object_mut() {
         let table_keys = table
             .keys()
             .into_iter()
@@ -91,31 +88,6 @@ pub(crate) fn load_ent(
                         )?;
                     }
                 }
-                RIGID_BODY_SCHEMA_KEY => {
-                    if let Some(rigid_body_value) = table.remove(RIGID_BODY_SCHEMA_KEY) {
-                        ent_rigid_body_loader::load_ent_rigid_body(
-                            loader,
-                            entity,
-                            world,
-                            &rigid_body_value,
-                        )?;
-                    }
-                }
-                ASEPRITE_SCHEMA_KEY => {
-                    if let Some(aseprite_value) = table.remove(ASEPRITE_SCHEMA_KEY) {
-                        ent_aseprite_loader::load_ent_aseprite(
-                            loader,
-                            entity,
-                            world,
-                            &aseprite_value,
-                        )?;
-                    }
-                }
-                GRAPHICS_STACK_SCHEMA_KEY => {
-                    if let Some(gfx_value) = table.remove(GRAPHICS_STACK_SCHEMA_KEY) {
-                        gfx_stack::load_ent_gfx_stack(loader, entity, world, gfx_value)?;
-                    }
-                }
                 _ => {
                     if let Some(value) = table.remove(&key) {
                         custom_components.push((key, value));
@@ -150,7 +122,7 @@ pub(crate) fn load_ent_from_toml(
     toml: String,
     transform: Transform,
 ) -> Result<Entity, EmeraldError> {
-    let mut value = toml.parse::<toml::Value>()?;
+    let mut value = toml.parse::<serde_json::Value>()?;
     load_ent(loader, world, &mut value, transform)
 }
 

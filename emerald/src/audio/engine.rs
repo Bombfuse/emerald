@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use crate::{audio::*, AssetEngine, EmeraldError};
 
 pub trait AudioEngine {

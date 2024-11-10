@@ -5,6 +5,8 @@ pub mod game_engine;
 pub mod game_settings;
 pub mod project;
 
+use alloc::boxed::Box;
+use alloc::string::String;
 pub use components::transform::*;
 pub use components::*;
 pub use error::*;

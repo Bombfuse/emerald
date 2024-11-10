@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use alloc::string::String;
+use hashbrown::HashMap;
 
 use crate::{Emerald, World};
 

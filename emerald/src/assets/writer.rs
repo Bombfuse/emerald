@@ -1,6 +1,6 @@
+use alloc::string::String;
+
 use crate::EmeraldError;
-use std::fs::File;
-use std::io::prelude::Write;
 
 #[derive(Clone)]
 pub struct Writer {
@@ -16,9 +16,6 @@ impl Writer {
         bytes: &[u8],
         relative_path: T,
     ) -> Result<(), EmeraldError> {
-        let path = self.user_directory.clone() + &relative_path.into();
-        let mut file = File::create(path)?;
-        file.write_all(bytes)?;
-        Ok(())
+        todo!()
     }
 }

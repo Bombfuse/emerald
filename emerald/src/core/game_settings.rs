@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 use crate::render_settings::RenderSettings;
 
 #[derive(Clone, Debug)]

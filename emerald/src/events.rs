@@ -1,9 +1,8 @@
-use std::{
-    any::TypeId,
-    collections::{HashMap, HashSet},
-};
+use core::any::TypeId;
 
-use anymap::{any::Any, AnyMap};
+use alloc::{boxed::Box, vec::Vec};
+use anymap::any::Any;
+use hashbrown::{HashMap, HashSet};
 
 use crate::{Emerald, World};
 pub type EventHandler<T> = fn(emd: &mut Emerald, world: &mut World, event: T);

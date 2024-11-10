@@ -1,6 +1,8 @@
-use std::{any::TypeId, collections::HashMap};
+use core::any::TypeId;
 
-use rapier2d::crossbeam::channel::TryRecvError;
+use alloc::{string::String, vec::Vec};
+use hashbrown::HashMap;
+use thingbuf::mpsc::errors::TryRecvError;
 
 use crate::{
     asset_key::{Asset, AssetId, AssetKey, RefChange, RefChangeChannel},
@@ -162,16 +164,19 @@ impl AssetStorage {
                 break;
             }
 
-            let ref_change = match self.ref_change_channel.receiver.try_recv() {
-                Ok(message) => message,
-                Err(TryRecvError::Empty) => break,
-                Err(TryRecvError::Disconnected) => return Err(EmeraldError::new("")),
-            };
-
-            match ref_change {
-                RefChange::Increment(id) => increment_by_asset_id(&mut changes_by_asset_id, id),
-                RefChange::Decrement(id) => decrement_by_asset_id(&mut changes_by_asset_id, id),
-            };
+            match self.ref_change_channel.receiver.try_recv() {
+                Ok(ref_change) => {
+                    match ref_change {
+                        RefChange::Increment(id) => {
+                            increment_by_asset_id(&mut changes_by_asset_id, id)
+                        }
+                        RefChange::Decrement(id) => {
+                            decrement_by_asset_id(&mut changes_by_asset_id, id)
+                        }
+                    };
+                }
+                Err(_) => break,
+            }
         }
 
         let mut to_free = Vec::new();
@@ -197,11 +202,11 @@ impl AssetStorage {
     }
 
     fn free_asset(&mut self, id: &AssetId) {
-        self.asset_references.remove(&id);
-        self.assets.remove(&id);
+        self.asset_references.remove(id);
+        self.assets.remove(id);
 
         self.asset_paths
-            .remove(&id)
+            .remove(id)
             .map(|path| self.label_asset_ids.remove(&path));
     }
 }

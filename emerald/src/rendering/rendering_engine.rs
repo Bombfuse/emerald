@@ -1,25 +1,20 @@
-use std::{
-    any::TypeId,
-    cmp::Ordering,
-    collections::{HashMap, VecDeque},
-    convert::TryInto,
-    hash::Hash,
-    ops::Range,
-};
+use core::ops::Range;
 
+use alloc::{format, vec::Vec};
 use anymap::any::UncheckedAnyExt;
+use fixed::traits::ToFixed;
 use fontdue::layout::{GlyphRasterConfig, Layout, LayoutSettings, TextStyle};
 use hecs::Entity;
-use rapier2d::{na::Vector2, prelude::RigidBodyHandle};
 
 use crate::{
     asset_key::{AssetId, AssetKey},
     autotilemap::AutoTilemap,
     font::{CharacterInfo, Font, FontImage, FontKey},
+    math::Vector2,
     render_settings::RenderSettings,
     tilemap::Tilemap,
-    Aseprite, AssetEngine, Color, EmeraldError, GraphicsStack, Rectangle, Scale, Transform,
-    Translation, UIButton, World, WHITE,
+    AssetEngine, Color, EmeraldError, Rectangle, Scale, Transform, Translation, UIButton, World,
+    WHITE,
 };
 
 use super::components::{get_bounding_box_of_triangle, Camera, ColorRect, ColorTri, Label, Sprite};
@@ -90,8 +85,8 @@ pub struct DrawTexturedQuadCommand<'a> {
     pub texture_target_area: Rectangle,
     pub asset_engine: &'a mut AssetEngine,
     pub texture_asset_id: AssetId,
-    pub offset: Vector2<f32>,
-    pub scale: Vector2<f32>,
+    pub offset: Vector2,
+    pub scale: Vector2,
     pub rotation: f32,
     pub centered: bool,
     pub color: Color,
@@ -110,8 +105,8 @@ pub struct DrawTexturedTriCommand<'a> {
     pub texture_target_area: Rectangle,
     pub asset_engine: &'a mut AssetEngine,
     pub texture_asset_id: AssetId,
-    pub offset: Vector2<f32>,
-    pub scale: Vector2<f32>,
+    pub offset: Vector2,
+    pub scale: Vector2,
     pub rotation: f32,
     pub centered: bool,
     pub color: Color,
@@ -163,14 +158,12 @@ pub trait RenderingEngine {
         let cmd_adder = DrawCommandAdder::new(world);
         let mut draw_queue = Vec::new();
 
-        cmd_adder.add_draw_commands::<Aseprite>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<AutoTilemap>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<Tilemap>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<Sprite>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<UIButton>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<ColorRect>(&mut draw_queue, world, asset_store);
         cmd_adder.add_draw_commands::<Label>(&mut draw_queue, world, asset_store);
-        cmd_adder.add_draw_commands::<GraphicsStack>(&mut draw_queue, world, asset_store);
         draw_queue.sort_by(|a, b| a.z_index.partial_cmp(&b.z_index).unwrap());
         for draw_command in draw_queue {
             self.draw(asset_store, world, draw_command, &camera, &camera_transform)?;
@@ -197,14 +190,6 @@ pub trait RenderingEngine {
         };
 
         match draw_command.drawable_type {
-            DrawableType::GfxStack => {
-                let gfx_stack = world.get::<&GraphicsStack>(draw_command.entity)?;
-                self.draw_gfx_stack(asset_engine, &gfx_stack, &transform)?;
-            }
-            DrawableType::Aseprite => {
-                let aseprite = world.get::<&Aseprite>(draw_command.entity)?;
-                self.draw_aseprite(asset_engine, &aseprite, &transform)?;
-            }
             DrawableType::Sprite => {
                 let sprite = world.get::<&Sprite>(draw_command.entity)?;
                 self.draw_sprite(asset_engine, &sprite, &transform)?;
@@ -252,58 +237,6 @@ pub trait RenderingEngine {
         // let cmd = DrawTexturedQuadCommand { asset_engine };
         // self.draw_textured_quad(cmd)
         todo!()
-    }
-
-    fn draw_aseprite(
-        &mut self,
-        asset_engine: &mut AssetEngine,
-        aseprite: &Aseprite,
-        transform: &Transform,
-    ) -> Result<(), EmeraldError> {
-        if !aseprite.visible {
-            return Ok(());
-        }
-        let sprite = aseprite.get_sprite();
-
-        self.draw_textured_quad(DrawTexturedQuadCommand {
-            texture_target_area: sprite.target.clone(),
-            asset_engine,
-            texture_asset_id: sprite.texture_key.asset_id(),
-            offset: aseprite.offset.clone(),
-            scale: aseprite.scale.clone(),
-            rotation: aseprite.rotation,
-            centered: aseprite.centered,
-            color: aseprite.color.clone(),
-            transform,
-            current_render_target_size: self.current_render_target_size(),
-            pixel_snap: true,
-            frustrum_culling: true,
-        })
-    }
-
-    fn draw_gfx_stack(
-        &mut self,
-        asset_engine: &mut AssetEngine,
-        gfx_stack: &GraphicsStack,
-        transform: &Transform,
-    ) -> Result<(), EmeraldError> {
-        if !gfx_stack.visible {
-            return Ok(());
-        }
-
-        for (label, drawable_type) in &gfx_stack.drawable_types {
-            match drawable_type {
-                DrawableType::ColorRect => {
-                    if let Some(component) = gfx_stack.components.get(label) {
-                        let color_rect = unsafe { component.downcast_ref_unchecked::<ColorRect>() };
-                        self.draw_color_rect(asset_engine, color_rect, transform)?;
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        Ok(())
     }
 
     fn draw_tilemap(
@@ -561,10 +494,10 @@ pub trait RenderingEngine {
                 );
 
                 let mut transform = transform.clone();
-                transform.translation.x += label.offset.x + left_coord;
-                transform.translation.y += label.offset.y + top_coord;
+                transform.translation.x += label.offset.x.to_bits() as f32 + left_coord;
+                transform.translation.y += label.offset.y.to_bits() as f32 + top_coord;
 
-                let scale = Vector2::new(label.scale, label.scale);
+                let scale = Vector2::from_float(label.scale, label.scale);
                 let offset = label.offset;
                 let rotation = 0.0;
                 if label.centered {
@@ -787,8 +720,8 @@ impl ToDrawable for Tilemap {
         transform: &Transform,
         _asset_store: &mut AssetEngine,
     ) -> Option<Rectangle> {
-        let width = self.width * self.tile_size.x;
-        let height = self.height * self.tile_size.y;
+        let width = self.width * self.tile_size.x.to_bits() as usize;
+        let height = self.height * self.tile_size.y.to_bits() as usize;
         let visible_bounds = Rectangle::new(
             transform.translation.x,
             transform.translation.y,
@@ -828,43 +761,6 @@ impl ToDrawable for AutoTilemap {
     }
     fn set_z_index(&mut self, new_z_index: f32) {
         self.tilemap.z_index = new_z_index;
-    }
-}
-
-impl ToDrawable for Aseprite {
-    fn get_visible_bounds(
-        &self,
-        transform: &Transform,
-        asset_store: &mut AssetEngine,
-    ) -> Option<Rectangle> {
-        let mut sprite = self.get_sprite().clone();
-        sprite.offset = self.offset.clone();
-
-        sprite.get_visible_bounds(transform, asset_store)
-    }
-
-    // fn to_drawable(&self, _ctx: &DrawableContext) -> Drawable {
-    //     Drawable::Aseprite {
-    //         sprite: self.get_sprite().clone(),
-    //         offset: self.offset,
-    //         scale: self.scale,
-    //         centered: self.centered,
-    //         color: self.color,
-    //         rotation: self.rotation,
-    //         z_index: self.z_index,
-    //         visible: self.visible,
-    //     }
-    // }
-
-    fn z_index(&self) -> f32 {
-        self.z_index
-    }
-    fn set_z_index(&mut self, new_z_index: f32) {
-        self.z_index = new_z_index;
-    }
-
-    fn get_type(&self) -> DrawableType {
-        DrawableType::Aseprite
     }
 }
 
@@ -950,8 +846,8 @@ impl ToDrawable for ColorRect {
         _asset_store: &mut AssetEngine,
     ) -> Option<Rectangle> {
         let mut bounds = Rectangle::new(
-            transform.translation.x + self.offset.x,
-            transform.translation.y + self.offset.y,
+            transform.translation.x.to_bits() as f32 + self.offset.x.to_bits() as f32,
+            transform.translation.y.to_bits() as f32 + self.offset.y.to_bits() as f32,
             self.width as f32,
             self.height as f32,
         );
@@ -996,7 +892,6 @@ impl ToDrawable for Label {
 }
 
 pub enum DrawableType {
-    Aseprite,
     Sprite,
     Tilemap,
     Autotilemap,
@@ -1004,7 +899,6 @@ pub enum DrawableType {
     UIButton,
     ColorTri,
     Label,
-    GfxStack,
 }
 
 pub struct DrawCommand {

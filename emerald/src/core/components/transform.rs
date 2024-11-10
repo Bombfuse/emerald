@@ -1,5 +1,6 @@
-use rapier2d::na::{Translation2, Vector2};
 use serde::{Deserialize, Serialize};
+
+use crate::math::Vector2;
 
 /// The core piece of an entity, determines it's transformative state and position in the world.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
@@ -30,7 +31,7 @@ impl Default for Transform {
         }
     }
 }
-impl std::ops::Sub for Transform {
+impl core::ops::Sub for Transform {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self::Output {
@@ -45,7 +46,7 @@ impl std::ops::Sub for Transform {
         }
     }
 }
-impl std::ops::Add for Transform {
+impl core::ops::Add for Transform {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
@@ -76,7 +77,7 @@ impl Default for Scale {
         Scale::new(1.0, 1.0)
     }
 }
-impl std::ops::Sub for Scale {
+impl core::ops::Sub for Scale {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self::Output {
@@ -86,7 +87,7 @@ impl std::ops::Sub for Scale {
         }
     }
 }
-impl std::ops::Add for Scale {
+impl core::ops::Add for Scale {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
@@ -115,16 +116,16 @@ impl Default for Translation {
         Translation::new(0.0, 0.0)
     }
 }
-impl From<Vector2<f32>> for Translation {
+impl From<Vector2> for Translation {
     #[inline]
-    fn from(v: Vector2<f32>) -> Self {
-        Self::new(v.x, v.y)
+    fn from(v: Vector2) -> Self {
+        Self::new(v.x.to_bits() as f32, v.y.to_bits() as f32)
     }
 }
-impl From<Translation> for Vector2<f32> {
+impl From<Translation> for Vector2 {
     #[inline]
     fn from(t: Translation) -> Self {
-        Vector2::new(t.x, t.y)
+        Vector2::from_float(t.x, t.y)
     }
 }
 
@@ -134,7 +135,7 @@ impl From<(f32, f32)> for Translation {
     }
 }
 
-impl std::ops::Add for Translation {
+impl core::ops::Add for Translation {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
@@ -145,14 +146,14 @@ impl std::ops::Add for Translation {
     }
 }
 
-impl std::ops::AddAssign for Translation {
+impl core::ops::AddAssign for Translation {
     fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
     }
 }
 
-impl std::ops::Sub for Translation {
+impl core::ops::Sub for Translation {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self::Output {
@@ -163,14 +164,14 @@ impl std::ops::Sub for Translation {
     }
 }
 
-impl std::ops::SubAssign for Translation {
+impl core::ops::SubAssign for Translation {
     fn sub_assign(&mut self, rhs: Self) {
         self.x -= rhs.x;
         self.y -= rhs.y;
     }
 }
 
-impl std::ops::Mul<f32> for Translation {
+impl core::ops::Mul<f32> for Translation {
     type Output = Self;
 
     fn mul(self, scalar: f32) -> Self::Output {
@@ -181,14 +182,14 @@ impl std::ops::Mul<f32> for Translation {
     }
 }
 
-impl std::ops::MulAssign<f32> for Translation {
+impl core::ops::MulAssign<f32> for Translation {
     fn mul_assign(&mut self, scalar: f32) {
         self.x *= scalar;
         self.y *= scalar;
     }
 }
 
-impl std::ops::Div<f32> for Translation {
+impl core::ops::Div<f32> for Translation {
     type Output = Self;
 
     fn div(self, scalar: f32) -> Self::Output {
@@ -199,7 +200,7 @@ impl std::ops::Div<f32> for Translation {
     }
 }
 
-impl std::ops::DivAssign<f32> for Translation {
+impl core::ops::DivAssign<f32> for Translation {
     fn div_assign(&mut self, scalar: f32) {
         self.x /= scalar;
         self.y /= scalar;

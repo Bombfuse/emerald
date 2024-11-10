@@ -1,8 +1,11 @@
-use std::{
-    any::{Any, TypeId},
-    collections::HashMap,
-};
+use core::any::{Any, TypeId};
 
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
+use hashbrown::HashMap;
 use hecs::Component;
 use serde::de::DeserializeOwned;
 
@@ -34,7 +37,7 @@ impl AssetEngine {
     }
 
     pub fn get_asset_by_label<T: Any>(&self, label: &str) -> Option<&T> {
-        let type_id = std::any::TypeId::of::<T>();
+        let type_id = TypeId::of::<T>();
 
         self.asset_stores
             .get(&type_id)
@@ -45,7 +48,7 @@ impl AssetEngine {
     }
 
     pub fn get_asset_mut_by_label<T: Any>(&mut self, label: &str) -> Option<&mut T> {
-        let type_id = std::any::TypeId::of::<T>();
+        let type_id = TypeId::of::<T>();
 
         self.asset_stores
             .get_mut(&type_id)
@@ -56,7 +59,7 @@ impl AssetEngine {
     }
 
     pub fn get_asset_key_by_label<T: Any>(&self, path: &str) -> Option<AssetKey> {
-        let type_id = std::any::TypeId::of::<T>();
+        let type_id = TypeId::of::<T>();
 
         self.asset_stores
             .get(&type_id)
@@ -65,7 +68,7 @@ impl AssetEngine {
     }
 
     pub fn get_asset_key_by_id<T: Any>(&self, id: &AssetId) -> Option<AssetKey> {
-        let type_id = std::any::TypeId::of::<T>();
+        let type_id = TypeId::of::<T>();
 
         self.asset_stores
             .get(&type_id)
@@ -74,7 +77,7 @@ impl AssetEngine {
     }
 
     pub fn get_asset<T: Any>(&self, asset_id: &AssetId) -> Option<&T> {
-        let type_id = std::any::TypeId::of::<T>();
+        let type_id = TypeId::of::<T>();
         self.asset_stores
             .get(&type_id)
             .map(|store| {
@@ -87,7 +90,7 @@ impl AssetEngine {
     }
 
     pub fn get_asset_mut<T: Any>(&mut self, asset_id: &AssetId) -> Option<&mut T> {
-        let type_id = std::any::TypeId::of::<T>();
+        let type_id = TypeId::of::<T>();
         self.asset_stores
             .get_mut(&type_id)
             .map(|store| {
@@ -135,19 +138,20 @@ impl AssetEngine {
 
     pub fn read_asset_file(&mut self, relative_path: &str) -> Result<Vec<u8>, EmeraldError> {
         let full_path = self.get_full_asset_path(relative_path);
-        read_file(&full_path).map(|bytes| {
-            if let Some(callback) = &self.on_asset_load_callback {
-                let context = AssetLoadContext { path: &full_path };
-                (callback)(context)
-            }
+        todo!("use file reader")
+        // read_file(&full_path).map(|bytes| {
+        //     if let Some(callback) = &self.on_asset_load_callback {
+        //         let context = AssetLoadContext { path: &full_path };
+        //         (callback)(context)
+        //     }
 
-            bytes
-        })
+        //     bytes
+        // })
     }
 
     pub fn read_user_file(&mut self, relative_path: &str) -> Result<Vec<u8>, EmeraldError> {
         let full_path = self.get_full_user_data_path(relative_path);
-        read_file(&full_path)
+        todo!("use file reader")
     }
 
     pub fn get_full_user_data_path(&self, path: &str) -> String {
@@ -182,7 +186,7 @@ impl AssetEngine {
     }
 
     pub fn count<T: Any>(&self) -> usize {
-        let type_id = std::any::TypeId::of::<T>();
+        let type_id = TypeId::of::<T>();
 
         self.asset_stores
             .get(&type_id)
@@ -256,59 +260,6 @@ mod tests {
         engine.update().unwrap();
         assert!(!engine.asset_stores.contains_key(&type_id));
     }
-}
-
-#[cfg(target_arch = "wasm32")]
-fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
-    Err(EmeraldError::new(format!(
-        "Unable to get bytes for {}",
-        path
-    )))
-}
-
-#[cfg(target_os = "android")]
-fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
-    // Based on https://github.com/not-fl3/miniquad/blob/4be5328760ff356494caf59cc853bcb395bce5d2/src/fs.rs#L38-L53
-
-    let filename = std::ffi::CString::new(path).unwrap();
-
-    let mut data: sapp_android::android_asset = unsafe { std::mem::zeroed() };
-
-    unsafe { sapp_android::sapp_load_asset(filename.as_ptr(), &mut data as _) };
-
-    if data.content.is_null() == false {
-        let slice = unsafe { std::slice::from_raw_parts(data.content, data.content_length as _) };
-        let response = slice.iter().map(|c| *c as _).collect::<Vec<_>>();
-        Ok(response)
-    } else {
-        Err(EmeraldError::new(format!(
-            "Unable to load asset `{}`",
-            path
-        )))
-    }
-}
-
-#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
-fn read_file(path: &str) -> Result<Vec<u8>, EmeraldError> {
-    use std::fs::File;
-    use std::io::Read;
-
-    let current_dir = std::env::current_dir()?;
-    let file_path = current_dir.join(path);
-    let file_path = file_path.into_os_string().into_string()?;
-
-    let mut contents = vec![];
-    let mut file = match File::open(file_path) {
-        Ok(file) => file,
-        Err(e) => {
-            return Err(EmeraldError::new(format!(
-                "Error loading file {:?}: {:?}",
-                path, e
-            )))
-        }
-    };
-    file.read_to_end(&mut contents)?;
-    Ok(contents)
 }
 
 // // Source

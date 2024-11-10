@@ -16,9 +16,9 @@ pub(crate) fn load_ent_transform<'a>(
     _loader: &mut AssetLoader<'a>,
     entity: Entity,
     world: &mut World,
-    toml: &toml::Value,
+    toml: &serde_json::Value,
 ) -> Result<(), EmeraldError> {
-    if !toml.is_table() {
+    if !toml.is_object() {
         return Err(EmeraldError::new(
             "Cannot load transform from a non-table toml value.",
         ));
@@ -31,8 +31,10 @@ pub(crate) fn load_ent_transform<'a>(
     Ok(())
 }
 
-pub(crate) fn load_transform_from_toml(toml: &toml::Value) -> Result<Transform, EmeraldError> {
-    let schema: EntTransformSchema = toml::from_str(&toml.to_string())?;
+pub(crate) fn load_transform_from_toml(
+    toml: &serde_json::Value,
+) -> Result<Transform, EmeraldError> {
+    let schema: EntTransformSchema = serde_json::from_value(toml.clone())?;
     let mut transform = Transform::default();
 
     if let Some(translation) = schema.translation {

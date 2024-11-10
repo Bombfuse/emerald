@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use alloc::{boxed::Box, collections::vec_deque::VecDeque};
 
 use crate::{
     file_loader::FileLoader, rendering_engine::RenderingEngine, resources::Resources,

@@ -1,9 +1,9 @@
 use hecs::Entity;
-use rapier2d::na::Vector2;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    rendering::components::ColorRect, AssetLoader, Color, EmeraldError, Translation, World,
+    math::Vector2, rendering::components::ColorRect, AssetLoader, Color, EmeraldError, Translation,
+    World,
 };
 
 fn default_visibility() -> bool {
@@ -33,7 +33,7 @@ pub(crate) fn load_color_rect<'a>(
     let mut color_rect = ColorRect::new(schema.color, schema.width, schema.height);
     color_rect.z_index = schema.z_index;
     color_rect.visible = schema.visible;
-    color_rect.offset = Vector2::new(schema.offset.x, schema.offset.y);
+    color_rect.offset = Vector2::from_float(schema.offset.x, schema.offset.y);
     Ok(color_rect)
 }
 
@@ -41,15 +41,15 @@ pub(crate) fn load_ent_color_rect<'a>(
     loader: &mut AssetLoader<'a>,
     entity: Entity,
     world: &mut World,
-    toml: &toml::Value,
+    toml: &serde_json::Value,
 ) -> Result<(), EmeraldError> {
-    if !toml.is_table() {
+    if !toml.is_object() {
         return Err(EmeraldError::new(
             "Cannot load color_rect from a non-table toml value.",
         ));
     }
 
-    let schema: EntColorRectSchema = toml::from_str(&toml.to_string())?;
+    let schema: EntColorRectSchema = serde_json::from_value(toml.clone())?;
     let color_rect = load_color_rect(loader, schema)?;
     world.insert_one(entity, color_rect)?;
 

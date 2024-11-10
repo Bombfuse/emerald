@@ -1,8 +1,6 @@
-use rapier2d::na::Vector2;
+use hashbrown::{HashMap, HashSet};
 
-use crate::{input::*, AssetEngine, EmeraldError};
-
-use std::collections::{HashMap, HashSet};
+use crate::{input::*, math::Vector2, AssetEngine, EmeraldError};
 
 pub enum KeyState {
     Pressed,
@@ -62,8 +60,8 @@ pub trait InputEngine {
     fn is_button_just_released(&mut self, button: Button, index: u8) -> bool;
     fn is_button_pressed(&mut self, button: Button, index: u8) -> bool;
 
-    fn joystick(&mut self, joystick: Joystick, index: u8) -> Vector2<f32>;
-    fn joystick_raw(&mut self, joystick: Joystick, index: u8) -> Vector2<f32>;
+    fn joystick(&mut self, joystick: Joystick, index: u8) -> Vector2;
+    fn joystick_raw(&mut self, joystick: Joystick, index: u8) -> Vector2;
 
     fn add_action(&mut self, action_label: &str, action: Action);
     fn add_action_key(&mut self, action_label: &str, key_code: KeyCode);
@@ -75,7 +73,7 @@ pub trait InputEngine {
     fn key_states_mut(&mut self) -> &mut HashMap<KeyCode, ButtonState>;
     fn controller_states_mut(&mut self) -> &mut HashMap<u8, HashMap<Button, ButtonState>>;
 
-    fn handle_cursor_move(&mut self, new_position: Vector2<f32>);
+    fn handle_cursor_move(&mut self, new_position: Vector2);
     fn handle_mouse_input(&mut self, button: MouseButton, is_pressed: bool);
     fn handle_key_input(&mut self, key_code: KeyCode, state: KeyState);
 

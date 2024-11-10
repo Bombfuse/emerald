@@ -1,9 +1,9 @@
+use alloc::{format, string::String};
 use fontdue::layout::{HorizontalAlign, VerticalAlign};
 use hecs::Entity;
-use rapier2d::na::Vector2;
 use serde::{Deserialize, Serialize};
 
-use crate::{rendering::components::Label, AssetLoader, Color, EmeraldError, World};
+use crate::{math::Vector2, rendering::components::Label, AssetLoader, Color, EmeraldError, World};
 
 use super::Vec2f32Schema;
 
@@ -55,15 +55,15 @@ pub(crate) fn load_ent_label<'a>(
     loader: &mut AssetLoader<'a>,
     entity: Entity,
     world: &mut World,
-    toml: &toml::Value,
+    toml: &serde_json::Value,
 ) -> Result<(), EmeraldError> {
-    if !toml.is_table() {
+    if !toml.is_object() {
         return Err(EmeraldError::new(
             "Cannot load label from a non-table toml value.",
         ));
     }
 
-    let schema: EntLabelSchema = toml::from_str(&toml.to_string())?;
+    let schema: EntLabelSchema = serde_json::from_value(toml.clone())?;
 
     if (schema.font.is_none() || schema.font_size.is_none()) && schema.resource.is_none() {
         return Err(EmeraldError::new(format!("Failure loading entity {:?}: Labels require either a resource OR a (font AND font_size).", entity)));
@@ -75,7 +75,7 @@ pub(crate) fn load_ent_label<'a>(
         font = Some(loader.font(font_path, font_size)?);
     } else if let Some(resource_file) = schema.resource {
         let resource_data = loader.string(resource_file)?;
-        let resource: FontResource = toml::from_str(&resource_data)?;
+        let resource: FontResource = serde_json::from_str(&resource_data)?;
         font = Some(loader.font(resource.font, resource.size)?);
     }
 
@@ -100,7 +100,7 @@ pub(crate) fn load_ent_label<'a>(
         .map(|i| label.visible_characters = i);
 
     if let Some(offset) = schema.offset {
-        label.offset = Vector2::new(offset.x, offset.y);
+        label.offset = Vector2::from_float(offset.x, offset.y);
     }
 
     if let Some(vertical_align) = schema.vertical_align {

@@ -1,4 +1,8 @@
-use std::collections::HashMap;
+use alloc::{
+    format,
+    string::{String, ToString},
+};
+use hashbrown::HashMap;
 
 use crate::{Emerald, EmeraldError, SoundInstanceId, SoundKey};
 

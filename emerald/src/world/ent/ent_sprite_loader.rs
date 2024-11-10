@@ -1,3 +1,5 @@
+use alloc::string::String;
+use fixed::traits::ToFixed;
 use hecs::Entity;
 use serde::{Deserialize, Serialize};
 
@@ -34,12 +36,12 @@ pub(crate) fn load_sprite<'a>(
     sprite.visible = schema.visible.unwrap_or(true);
 
     if let Some(offset) = schema.offset {
-        sprite.offset.x = offset.x;
-        sprite.offset.y = offset.y;
+        sprite.offset.x = offset.x.to_fixed();
+        sprite.offset.y = offset.y.to_fixed();
     }
     if let Some(scale) = schema.scale {
-        sprite.scale.x = scale.x;
-        sprite.scale.y = scale.y;
+        sprite.scale.x = scale.x.to_fixed();
+        sprite.scale.y = scale.y.to_fixed();
     }
 
     schema.target.map(|t| sprite.target = t);
@@ -51,15 +53,15 @@ pub(crate) fn load_ent_sprite<'a>(
     loader: &mut AssetLoader<'a>,
     entity: Entity,
     world: &mut World,
-    toml: &toml::Value,
+    toml: &serde_json::Value,
 ) -> Result<(), EmeraldError> {
-    if !toml.is_table() {
+    if !toml.is_object() {
         return Err(EmeraldError::new(
             "Cannot load sprite from a non-table toml value.",
         ));
     }
 
-    let schema: EntSpriteSchema = toml::from_str(&toml.to_string())?;
+    let schema: EntSpriteSchema = serde_json::from_value(toml.clone())?;
     let sprite = load_sprite(loader, schema)?;
 
     world.insert_one(entity, sprite)?;

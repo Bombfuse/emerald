@@ -1,9 +1,11 @@
+use math::Vector2;
+
 use crate::*;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ColorRect {
     pub color: Color,
-    pub offset: Vector2<f32>,
+    pub offset: Vector2,
     pub visible: bool,
     pub width: u32,
     pub height: u32,
@@ -25,7 +27,7 @@ impl Default for ColorRect {
     fn default() -> ColorRect {
         ColorRect {
             color: WHITE,
-            offset: Vector2::new(0.0, 0.0),
+            offset: Vector2::from_float(0.0, 0.0),
             visible: true,
             width: 32,
             height: 32,

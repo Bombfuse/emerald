@@ -1,7 +1,13 @@
+use alloc::boxed::Box;
+use alloc::format;
+use alloc::string::String;
+use alloc::string::ToString;
+use alloc::vec::Vec;
+use hashbrown::HashMap;
 use hecs::Component;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
-use toml::Value;
+use serde_json::Value;
 
 use crate::asset_key::AssetKey;
 use crate::assets::*;
@@ -15,20 +21,20 @@ use crate::rendering_engine::RenderingEngine;
 use crate::resources::Resources;
 use crate::*;
 
-use std::collections::HashMap;
-use std::ffi::OsStr;
-
-use crate::rendering::components::Aseprite;
-
-pub type CustomComponentLoader =
-    fn(&mut AssetLoader<'_>, Entity, &mut World, toml::Value, String) -> Result<(), EmeraldError>;
+pub type CustomComponentLoader = fn(
+    &mut AssetLoader<'_>,
+    Entity,
+    &mut World,
+    serde_json::Value,
+    String,
+) -> Result<(), EmeraldError>;
 
 pub type WorldResourceLoader =
-    fn(&mut AssetLoader<'_>, &mut World, toml::Value, String) -> Result<(), EmeraldError>;
+    fn(&mut AssetLoader<'_>, &mut World, serde_json::Value, String) -> Result<(), EmeraldError>;
 
 pub struct WorldMergeContext {
     /// User data on the merge
-    pub data: Option<toml::Value>,
+    pub data: Option<serde_json::Value>,
 }
 
 /// A function defined by the user that handles merge results.
@@ -83,10 +89,8 @@ impl AssetLoadConfig {
         self.component_deser_registry.insert(
             tag.to_string(),
             Box::new(|value, world, entity| {
-                value
-                    .try_into::<T>()
-                    .ok()
-                    .map(|component| world.insert_one(entity, component).ok());
+                let value: Option<T> = serde_json::from_value(value).ok();
+                value.map(|component| world.insert_one(entity, component).ok());
             }),
         );
     }
@@ -99,10 +103,8 @@ impl AssetLoadConfig {
         self.world_resource_deser_registry.insert(
             tag.to_string(),
             Box::new(|value, world| {
-                value
-                    .try_into::<T>()
-                    .ok()
-                    .map(|resource| world.resources().insert(resource));
+                let value: Option<T> = serde_json::from_value(value).ok();
+                value.map(|resource| world.resources().insert(resource));
             }),
         );
     }
@@ -215,7 +217,8 @@ impl<'c> AssetLoader<'c> {
     /// Loads bytes from given path as a string
     pub fn string<T: AsRef<str>>(&mut self, file_path: T) -> Result<String, EmeraldError> {
         let bytes = self.asset_bytes(file_path)?;
-        let string = String::from_utf8(bytes)?;
+        // TODO: handle the utf8 error
+        let string = String::from_utf8(bytes).unwrap();
 
         Ok(string)
     }
@@ -279,30 +282,6 @@ impl<'c> AssetLoader<'c> {
         load_world(self, toml, settings)
     }
 
-    /// Loads a `.aseprite` file.
-    pub fn aseprite<T: AsRef<str>>(&mut self, path: T) -> Result<Aseprite, EmeraldError> {
-        let path = path.as_ref();
-        let data = self.asset_bytes(path)?;
-        Aseprite::new(self.asset_engine, path, data)
-    }
-
-    /// Loads an exported Aseprite sprite sheet. The animations json file should
-    /// have been exported in the "Array" mode.
-    pub fn aseprite_with_animations<T: AsRef<str>>(
-        &mut self,
-        path_to_texture: T,
-        path_to_animations: T,
-    ) -> Result<Aseprite, EmeraldError> {
-        let texture_path: &str = path_to_texture.as_ref();
-        let animation_path: &str = path_to_animations.as_ref();
-        let aseprite_data = self.asset_bytes(animation_path)?;
-
-        let sprite = self.sprite(texture_path)?;
-        let aseprite = Aseprite::from_exported(sprite, aseprite_data)?;
-
-        Ok(aseprite)
-    }
-
     pub fn texture<T: AsRef<str>>(&mut self, path: T) -> Result<AssetKey, EmeraldError> {
         let path: &str = path.as_ref();
 
@@ -340,18 +319,22 @@ impl<'c> AssetLoader<'c> {
             return self.audio_engine.get_sound_key(path, self.asset_engine);
         }
 
-        let file_path = std::path::Path::new(&path);
-        let sound_format = match file_path.extension().and_then(OsStr::to_str) {
-            Some("wav") => SoundFormat::Wav,
-            Some("ogg") => SoundFormat::Ogg,
-            _ => {
-                return Err(EmeraldError::new(format!(
-                    "File must be wav or ogg. Found {:?}",
-                    file_path
-                )))
-            }
+        let sound_format = if path.contains(".ogg") {
+            Some(SoundFormat::Ogg)
+        } else if path.contains(".wav") {
+            Some(SoundFormat::Wav)
+        } else {
+            None
         };
 
+        if sound_format.is_none() {
+            return Err(EmeraldError::new(format!(
+                "File must be wav or ogg. Found {:?}",
+                path
+            )));
+        }
+
+        let sound_format = sound_format.unwrap();
         let sound_bytes = self.asset_bytes(path)?;
         self.audio_engine
             .load_sound(path, sound_bytes, sound_format, self.asset_engine)

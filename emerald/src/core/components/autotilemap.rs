@@ -1,9 +1,14 @@
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
 use hecs::Entity;
-use rapier2d::na::Vector2;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     asset_key::AssetKey,
+    math::Vector2,
     tilemap::{get_tilemap_index, TileId, Tilemap, TilesetResource},
     AssetLoader, Emerald, EmeraldError, World,
 };
@@ -19,7 +24,7 @@ pub fn load_autotile_rulesets_from_resource<T: Into<String>>(
     resource_path: T,
 ) -> Result<Vec<AutoTileRuleset>, EmeraldError> {
     let data = loader.string(resource_path.into())?;
-    let resource = crate::toml::from_str::<AutoTileRulesetsResource>(&data)?;
+    let resource = crate::serde_json::from_str::<AutoTileRulesetsResource>(&data)?;
     let rulesets = resource
         .rulesets
         .into_iter()
@@ -66,11 +71,11 @@ impl AutoTileRulesetSchema {
                 )));
             }
 
-            let position = Vector2::new(
+            let position = Vector2::from_int(
                 (AUTOTILE_RULESET_GRID_SIZE / 2) as i8 + tile.x,
                 (AUTOTILE_RULESET_GRID_SIZE / 2) as i8 + tile.y,
             );
-            grid[position.x as usize][position.y as usize] = tile.value;
+            grid[position.x.to_bits() as usize][position.y.to_bits() as usize] = tile.value;
         }
 
         // We require the center of the grid to be the target tile.
@@ -277,7 +282,7 @@ impl AutoTileMapSchema {
 
         if let Some(resource) = &self.rulesets_resource {
             let toml = loader.string(resource.clone())?;
-            let resource = crate::toml::from_str::<AutoTileRulesetsResource>(&toml)?;
+            let resource = crate::serde_json::from_str::<AutoTileRulesetsResource>(&toml)?;
             ruleset_schemas = resource.rulesets;
         }
 
@@ -285,7 +290,7 @@ impl AutoTileMapSchema {
             resource
         } else {
             let data = loader.string(&self.tileset_resource.unwrap())?;
-            crate::toml::from_str::<TilesetResource>(&data)?
+            crate::serde_json::from_str::<TilesetResource>(&data)?
         };
 
         ruleset_schemas.extend(self.rulesets);
@@ -294,7 +299,8 @@ impl AutoTileMapSchema {
             .map(|ruleset_schema| ruleset_schema.to_ruleset())
             .collect::<Result<Vec<AutoTileRuleset>, EmeraldError>>()?;
         let texture = loader.texture(tileset_resource.texture)?;
-        let tile_size = Vector2::new(tileset_resource.tile_width, tileset_resource.tile_height);
+        let tile_size =
+            Vector2::from_int(tileset_resource.tile_width, tileset_resource.tile_height);
         let mut autotilemap = AutoTilemap::new(
             texture,
             tile_size,
@@ -325,7 +331,7 @@ impl AutoTilemap {
     pub fn new(
         tilesheet: AssetKey,
         // Size of a tile in the grid, in pixels
-        tile_size: Vector2<usize>,
+        tile_size: Vector2,
         // Width of tilesheet in tiles
         tilesheet_width: usize,
         // Height of tilesheet in tiles
@@ -389,7 +395,7 @@ impl AutoTilemap {
         self.tilemap.tilesheet.clone()
     }
 
-    pub fn tile_size(&self) -> Vector2<usize> {
+    pub fn tile_size(&self) -> Vector2 {
         self.tilemap.tile_size.clone()
     }
 
@@ -490,9 +496,9 @@ pub(crate) fn load_ent_autotilemap<'a>(
     loader: &mut AssetLoader<'a>,
     entity: Entity,
     world: &mut World,
-    toml: &toml::Value,
+    toml: &serde_json::Value,
 ) -> Result<(), EmeraldError> {
-    let schema: AutoTileMapSchema = toml::from_str(&toml.to_string())?;
+    let schema: AutoTileMapSchema = serde_json::from_str(&toml.to_string())?;
     let mut autotilemap = schema.to_autotilemap(loader)?;
     autotilemap.bake()?;
     world.insert_one(entity, autotilemap)?;

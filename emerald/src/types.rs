@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 pub use hecs::Entity;
-pub use rapier2d::na::Vector2;
-pub use rapier2d::na::Vector3;
+
+use crate::math::{FixedPoint, Vector2};
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Default)]
 pub struct Rectangle {
@@ -26,18 +26,15 @@ impl Rectangle {
     }
 
     /// Creates a `Rectangle` from its bottom-left point and its size.
-    pub fn from_point_and_size(
-        point: impl Into<crate::Vector2<f32>>,
-        size: impl Into<crate::Vector2<f32>>,
-    ) -> Self {
-        let point = point.into();
-        let size = size.into();
+    pub fn from_point_and_size(point: impl Into<Vector2>, size: impl Into<Vector2>) -> Self {
+        let point: Vector2 = point.into();
+        let size: Vector2 = size.into();
 
         Self {
-            x: point.x,
-            y: point.y,
-            width: size.x,
-            height: size.y,
+            x: point.x.to_bits() as f32,
+            y: point.y.to_bits() as f32,
+            width: size.x.to_bits() as f32,
+            height: size.y.to_bits() as f32,
         }
     }
 
@@ -73,18 +70,18 @@ impl Rectangle {
     }
 
     #[inline]
-    pub fn bottom_left(&self) -> Vector2<f32> {
-        Vector2::new(self.left(), self.bottom())
+    pub fn bottom_left(&self) -> Vector2 {
+        Vector2::from_float(self.left(), self.bottom())
     }
 
     #[inline]
-    pub fn size(&self) -> crate::Vector2<f32> {
-        Vector2::new(self.width, self.height)
+    pub fn size(&self) -> Vector2 {
+        Vector2::from_float(self.width, self.height)
     }
 
     #[inline]
-    pub fn center(&self) -> crate::Vector2<f32> {
-        self.bottom_left() + self.size() / 2.0
+    pub fn center(&self) -> Vector2 {
+        self.bottom_left() + self.size() / FixedPoint::from_num(2)
     }
 
     /// Whether or not the given rectangle and this rectangle intersect

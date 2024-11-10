@@ -1,36 +1,25 @@
-pub mod physics;
-
 pub mod ent;
-pub mod world_physics_loader;
-
-use std::{
-    collections::{HashMap, HashSet},
-    path,
-};
 
 use crate::{
-    rendering::components::Camera, resources::Resources, AssetLoadConfig, AssetLoader,
-    EmeraldError, OnWorldLoadContext, OnWorldLoadHook, PhysicsEngine, PhysicsHandler, Transform,
-    WorldMergeContext, WorldMergeHandler,
+    rendering::components::Camera, resources::Resources, AssetLoader, EmeraldError,
+    OnWorldLoadContext, OnWorldLoadHook, Transform, WorldMergeHandler,
 };
 
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
+use hashbrown::{HashMap, HashSet};
 use hecs::{
     Bundle, Component, ComponentRef, DynamicBundle, Entity, EntityRef, NoSuchEntity, Query,
     QueryBorrow, QueryItem, QueryOne, RefMut, SpawnBatchIter,
 };
-use rapier2d::prelude::{RigidBodyBuilder, RigidBodyHandle};
 use serde::Deserialize;
 
-use self::{
-    ent::{
-        ent_transform_loader::load_transform_from_toml, load_ent, EntLoadConfig,
-        TRANSFORM_SCHEMA_KEY,
-    },
-    world_physics_loader::load_world_physics,
-};
+use self::ent::{ent_transform_loader::load_transform_from_toml, load_ent, TRANSFORM_SCHEMA_KEY};
 
 pub struct World {
-    pub(crate) physics_engine: Option<PhysicsEngine>,
     pub(crate) inner: hecs::World,
     resources: Resources,
     merge_handlers: Vec<WorldMergeHandler>,
@@ -39,7 +28,6 @@ pub struct World {
 impl Default for World {
     fn default() -> Self {
         World {
-            physics_engine: None,
             inner: hecs::World::default(),
             merge_handlers: Vec::new(),
             merge_handlers_by_tag: HashMap::new(),
@@ -93,7 +81,6 @@ impl World {
 
             let new_id = self.inner.spawn(bundle);
             entity_id_shift_map.insert(old_id.clone(), new_id.clone());
-            self.merge_physics_entity(other_world.physics_engine(), old_id, new_id)?;
         }
 
         self.merge_handlers
@@ -110,48 +97,6 @@ impl World {
             .for_each(|(_, handler)| (handler)(self, &mut other_world));
 
         Ok(())
-    }
-
-    /// Helper function for [`merge`]
-    fn merge_physics_entity(
-        &mut self,
-        other_world_physics: &mut PhysicsEngine,
-        old_id: Entity,
-        new_id: Entity,
-    ) -> Result<(), EmeraldError> {
-        // create physics engine if it doesnt exist
-        self.physics_engine();
-
-        let mut colliders = Vec::new();
-        for c_id in other_world_physics.get_colliders_handles(old_id.clone()) {
-            if let Some(collider) = other_world_physics.remove_collider(c_id) {
-                colliders.push(collider);
-            }
-        }
-
-        if let Some(rigid_body) = other_world_physics.remove_body(old_id.clone()) {
-            let physics_engine = self.physics_engine.as_mut().unwrap();
-            let new_rbh = physics_engine.add_body(new_id.clone(), rigid_body, &mut self.inner)?;
-
-            for collider in colliders {
-                physics_engine.add_collider(new_rbh, collider);
-            }
-        }
-
-        Ok(())
-    }
-
-    /// We use this function to get the physics engine because we need to create one if it does not exist yet.
-    /// We by default have no engine to save memory and make worlds lighter.
-    /// Many worlds do not require physics and by not including it until it's needed,
-    /// we're more freely able to spam world creation.
-    pub(crate) fn physics_engine(&mut self) -> &mut PhysicsEngine {
-        if self.physics_engine.is_none() {
-            self.physics_engine = Some(PhysicsEngine::new());
-        }
-
-        // I'm not stoked on unwrapping internally, but this should be fine.
-        self.physics_engine.as_mut().unwrap()
     }
 
     #[inline]
@@ -205,17 +150,6 @@ impl World {
         self.inner.spawn(components)
     }
 
-    pub fn spawn_with_body(
-        &mut self,
-        components: impl DynamicBundle,
-        body_builder: RigidBodyBuilder,
-    ) -> Result<(Entity, RigidBodyHandle), EmeraldError> {
-        let entity = self.spawn(components);
-        let rbh = self.physics().build_body(entity, body_builder)?;
-
-        Ok((entity, rbh))
-    }
-
     pub fn spawn_batch<I>(&mut self, iter: I) -> SpawnBatchIter<'_, I::IntoIter>
     where
         I: IntoIterator,
@@ -235,8 +169,6 @@ impl World {
     }
 
     pub fn despawn(&mut self, entity: Entity) -> Result<(), EmeraldError> {
-        self.physics_engine().remove_body(entity);
-
         match self.inner.despawn(entity.clone()) {
             Ok(()) => Ok(()),
             Err(e) => Err(EmeraldError::new(format!(
@@ -248,7 +180,6 @@ impl World {
 
     pub fn clear(&mut self) {
         self.inner.clear();
-        self.physics_engine = None;
     }
 
     pub fn query<Q: Query>(&self) -> QueryBorrow<'_, Q> {
@@ -398,11 +329,6 @@ impl World {
             ))),
         }
     }
-
-    pub fn physics(&mut self) -> PhysicsHandler<'_> {
-        self.physics_engine();
-        PhysicsHandler::new(self.physics_engine.as_mut().unwrap(), &mut self.inner)
-    }
 }
 
 pub struct WorldLoadConfig {
@@ -457,7 +383,7 @@ pub struct WorldMerge {
     pub settings: WorldLoadSettings,
 
     #[serde(default)]
-    pub data: Option<toml::Value>,
+    pub data: Option<serde_json::Value>,
 }
 
 fn default_enable_sub_world_metadata() -> bool {
@@ -500,7 +426,7 @@ fn load_world_ext(
     toml: String,
     settings: &WorldLoadSettings,
 ) -> Result<World, EmeraldError> {
-    let mut toml = toml.parse::<toml::Value>()?;
+    let mut toml = toml.parse::<serde_json::Value>()?;
     let mut world = World::new();
 
     loader
@@ -523,16 +449,12 @@ fn load_world_ext(
             world.merge_handlers_by_tag.insert(tag.clone(), f.clone());
         });
 
-    if let Some(table) = toml.as_table_mut() {
-        if let Some(physics_val) = table.remove(PHYSICS_SCHEMA_KEY) {
-            load_world_physics(loader, &mut world, &physics_val)?;
-        }
-
+    if let Some(table) = toml.as_object_mut() {
         if let Some(mut values) = table.remove(WORLD_MERGE_SCHEMA_KEY) {
             // TODO: if any sub world fails to merge, log the error
             values.as_array_mut().map(|values| {
                 for value in values {
-                    let world_merge = value.to_owned().try_into::<WorldMerge>().unwrap();
+                    let world_merge: WorldMerge = serde_json::from_value(value.clone()).unwrap();
                     let toml_str = loader.string(&world_merge.path).unwrap();
                     let sub_world =
                         load_world_ext(loader, toml_str, &world_merge.settings).unwrap();
@@ -570,10 +492,10 @@ fn load_world_ext(
             if let Some(entities) = val.as_array_mut() {
                 for value in entities {
                     // check if this is a ent path reference
-                    if let Some(path) = value.as_table_mut().map(|e| e.remove("path")).flatten() {
+                    if let Some(path) = value.as_object_mut().map(|e| e.remove("path")).flatten() {
                         if let Some(path) = path.as_str() {
-                            let transform = if let Some(toml) = value
-                                .as_table_mut()
+                            let transform: Transform = if let Some(toml) = value
+                                .as_object_mut()
                                 .map(|e| e.remove(TRANSFORM_SCHEMA_KEY))
                                 .flatten()
                             {
@@ -590,7 +512,7 @@ fn load_world_ext(
             }
         }
 
-        for (key, value) in table.to_owned() {
+        for (key, value) in table.clone() {
             loader
                 .asset_engine
                 .load_config

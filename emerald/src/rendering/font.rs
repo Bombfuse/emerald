@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-
+use alloc::{slice, string::String, vec};
 use fontdue::layout::GlyphRasterConfig;
+use hashbrown::HashMap;
 
 use crate::{
     asset_key::AssetKey, rendering_engine::RenderingEngine, AssetEngine, Color, EmeraldError,
@@ -38,7 +38,7 @@ pub struct CharacterInfo {
 }
 
 pub struct FontImage {
-    pub bytes: Vec<u8>,
+    pub bytes: vec::Vec<u8>,
     pub width: u16,
     pub height: u16,
 }
@@ -61,8 +61,6 @@ impl FontImage {
     }
 
     pub fn get_image_data_mut(&mut self) -> &mut [Color] {
-        use std::slice;
-
         unsafe {
             slice::from_raw_parts_mut(
                 self.bytes.as_mut_ptr() as *mut Color,

@@ -1,3 +1,4 @@
+use alloc::{string::String, vec::Vec};
 use hecs::Entity;
 use serde::{Deserialize, Serialize};
 
@@ -24,15 +25,15 @@ pub(crate) fn load_ent_sound_player<'a>(
     loader: &mut AssetLoader<'a>,
     entity: Entity,
     world: &mut World,
-    toml: &toml::Value,
+    toml: &serde_json::Value,
 ) -> Result<(), EmeraldError> {
-    if !toml.is_table() {
+    if !toml.is_object() {
         return Err(EmeraldError::new(
             "Cannot load sprite from a non-table toml value.",
         ));
     }
 
-    let schema: EntSoundPlayerSchema = toml::from_str(&toml.to_string())?;
+    let schema: EntSoundPlayerSchema = serde_json::from_value(toml.clone())?;
     let mut sound_player = SoundPlayer::new(schema.mixer);
 
     for sound_schema in schema.sounds {

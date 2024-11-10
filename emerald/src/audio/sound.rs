@@ -36,6 +36,8 @@ pub use sound_backend::*;
 // Dummy sound backend
 #[cfg(not(feature = "audio"))]
 mod sound_backend {
+    use alloc::vec::Vec;
+
     use crate::audio::sound::*;
 
     #[derive(Clone)]

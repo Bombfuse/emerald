@@ -1,6 +1,7 @@
-use std::any::{Any, TypeId};
+use core::any::{Any, TypeId};
 
-use rapier2d::crossbeam::channel::{Receiver, Sender};
+use alloc::boxed::Box;
+use thingbuf::mpsc::{channel, Receiver, Sender};
 
 pub type AssetId = usize;
 
@@ -14,7 +15,7 @@ pub struct AssetKey {
 }
 impl AssetKey {
     pub(crate) fn new(asset_id: AssetId, type_id: TypeId, ref_sender: Sender<RefChange>) -> Self {
-        ref_sender.send(RefChange::Increment(asset_id)).unwrap();
+        ref_sender.send(RefChange::Increment(asset_id));
 
         Self {
             type_id,
@@ -37,9 +38,7 @@ impl PartialEq for AssetKey {
 }
 impl Clone for AssetKey {
     fn clone(&self) -> Self {
-        self.ref_sender
-            .send(RefChange::Increment(self.asset_id))
-            .unwrap();
+        self.ref_sender.send(RefChange::Increment(self.asset_id));
 
         Self {
             type_id: self.type_id.clone(),
@@ -50,33 +49,31 @@ impl Clone for AssetKey {
 }
 impl Drop for AssetKey {
     fn drop(&mut self) {
-        match self.ref_sender
-            .send(RefChange::Decrement(self.asset_id))
-            {
-                Ok(_) =>{},
-                Err(e) => {
-                    println!("{:?}", format!(
-                        "Fatal Error: Failed to drop asset {:?}",
-                        (self.type_id, self.asset_id, e.to_string())
-                    ));
-                }
-            }
+        self.ref_sender.send(RefChange::Decrement(self.asset_id));
     }
 }
 
+#[derive(Clone, Debug)]
 pub(crate) enum RefChange {
     Increment(AssetId),
     Decrement(AssetId),
 }
 
-#[derive(Clone)]
+impl Default for RefChange {
+    fn default() -> Self {
+        RefChange::Decrement(0)
+    }
+}
+
+const REF_CHANGE_CHANNEL_SIZE: usize = 50;
+
 pub(crate) struct RefChangeChannel {
     pub sender: Sender<RefChange>,
     pub receiver: Receiver<RefChange>,
 }
 impl Default for RefChangeChannel {
     fn default() -> Self {
-        let (sender, receiver) = crate::crossbeam::channel::unbounded();
+        let (sender, receiver) = channel(REF_CHANGE_CHANNEL_SIZE);
         RefChangeChannel { sender, receiver }
     }
 }

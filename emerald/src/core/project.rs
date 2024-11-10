@@ -1,5 +1,5 @@
-use std::collections::{HashMap, HashSet};
-
+use alloc::string::String;
+use hashbrown::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 
 use crate::schedule::Schedule;

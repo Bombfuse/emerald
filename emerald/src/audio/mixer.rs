@@ -1,9 +1,7 @@
+use alloc::{boxed::Box, vec::Vec};
+
 use crate::{audio::sound::SoundInstanceId, AssetEngine, EmeraldError, SoundKey};
 
-#[cfg(target_arch = "wasm32")]
-pub type ThreadSafeMixer = Box<dyn Mixer>;
-
-#[cfg(not(target_arch = "wasm32"))]
 pub type ThreadSafeMixer = Box<dyn Mixer + Send + Sync>;
 
 pub trait Mixer {

@@ -1,7 +1,7 @@
-use rapier2d::na::Vector2;
+use alloc::{boxed::Box, vec::Vec};
+use hashbrown::HashMap;
 
-use crate::input::*;
-use std::collections::HashMap;
+use crate::{input::*, math::Vector2};
 
 pub struct InputHandler<'a> {
     engine: &'a mut Box<dyn InputEngine>,
@@ -122,24 +122,24 @@ impl<'a> InputHandler<'a> {
 
     /// Gets joystick value assuming first gamepad, defaulting to (0.0, 0.0).
     #[inline]
-    pub fn joystick(&mut self, joystick: Joystick) -> Vector2<f32> {
+    pub fn joystick(&mut self, joystick: Joystick) -> Vector2 {
         self.engine.joystick(joystick, 0)
     }
     /// Gets joystick value assuming first gamepad, defaulting to (0.0, 0.0).
     #[inline]
-    pub fn joystick_for(&mut self, joystick: Joystick, index: u8) -> Vector2<f32> {
+    pub fn joystick_for(&mut self, joystick: Joystick, index: u8) -> Vector2 {
         self.engine.joystick(joystick, index)
     }
 
     /// Gets joystick value assuming first gamepad, defaulting to (0, 0)
     #[inline]
-    pub fn joystick_raw(&mut self, joystick: Joystick) -> Vector2<f32> {
+    pub fn joystick_raw(&mut self, joystick: Joystick) -> Vector2 {
         self.engine.joystick_raw(joystick, 0)
     }
 
     /// Gets joystick value assuming first gamepad, defaulting to (0, 0)
     #[inline]
-    pub fn joystick_raw_for(&mut self, joystick: Joystick, index: u8) -> Vector2<f32> {
+    pub fn joystick_raw_for(&mut self, joystick: Joystick, index: u8) -> Vector2 {
         self.engine.joystick_raw(joystick, index)
     }
 }

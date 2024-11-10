@@ -1,3 +1,6 @@
+use alloc::boxed::Box;
+use alloc::format;
+
 use crate::EmeraldError;
 use crate::{audio::*, AssetEngine};
 

@@ -1,3 +1,5 @@
+use alloc::{format, string::String, vec::Vec};
+use math::Vector2;
 use serde::{Deserialize, Serialize};
 
 use crate::{asset_key::AssetKey, *};
@@ -33,7 +35,7 @@ fn load_tileset_resource<T: Into<String>>(
     resource_path: T,
 ) -> Result<TilesetResource, EmeraldError> {
     let data = emd.loader().string(resource_path.into())?;
-    let resource = crate::toml::from_str::<TilesetResource>(&data)?;
+    let resource = crate::serde_json::from_str::<TilesetResource>(&data)?;
 
     Ok(resource)
 }
@@ -67,11 +69,11 @@ impl TilemapSchema {
             resource
         } else {
             let data = loader.string(&self.resource.unwrap())?;
-            crate::toml::from_str::<TilesetResource>(&data)?
+            crate::serde_json::from_str::<TilesetResource>(&data)?
         };
 
         let texture = loader.texture(resource.texture.clone())?;
-        let tile_size = Vector2::new(resource.tile_width, resource.tile_height);
+        let tile_size = Vector2::from_int(resource.tile_width, resource.tile_height);
         let mut tilemap = Tilemap::new(
             texture,
             tile_size,
@@ -97,7 +99,7 @@ pub struct Tilemap {
     pub(crate) width: usize,
     pub(crate) height: usize,
     pub(crate) tilesheet: AssetKey,
-    pub(crate) tile_size: Vector2<usize>,
+    pub(crate) tile_size: Vector2,
     pub(crate) tiles: Vec<Option<TileId>>,
     // Width of tilesheet in tiles
     pub(crate) tilesheet_width: usize,
@@ -110,7 +112,7 @@ impl Tilemap {
     pub fn new(
         tilesheet: AssetKey,
         // Size of a tile in the grid, in pixels
-        tile_size: Vector2<usize>,
+        tile_size: Vector2,
         // Width of tilesheet in tiles
         tilesheet_width: usize,
         // Height of tilesheet in tiles
@@ -178,8 +180,8 @@ impl Tilemap {
         Err(EmeraldError::new(err_msg))
     }
 
-    pub fn size(&self) -> Vector2<usize> {
-        Vector2::new(self.width, self.height)
+    pub fn size(&self) -> Vector2 {
+        Vector2::from_int(self.width, self.height)
     }
 
     pub fn width(&self) -> usize {
@@ -191,11 +193,11 @@ impl Tilemap {
     }
 
     pub fn tile_width(&self) -> usize {
-        self.tile_size.x
+        self.tile_size.x.to_bits() as usize
     }
 
     pub fn tile_height(&self) -> usize {
-        self.tile_size.y
+        self.tile_size.y.to_bits() as usize
     }
 
     pub fn set_tilesheet(&mut self, tilesheet: AssetKey) {
@@ -230,9 +232,9 @@ pub(crate) fn load_ent_tilemap<'a>(
     loader: &mut AssetLoader<'a>,
     entity: Entity,
     world: &mut World,
-    toml: &toml::Value,
+    toml: &serde_json::Value,
 ) -> Result<(), EmeraldError> {
-    let schema: TilemapSchema = toml::from_str(&toml.to_string())?;
+    let schema: TilemapSchema = serde_json::from_value(toml.clone())?;
     let tilemap = schema.to_tilemap(loader)?;
     world.insert_one(entity, tilemap)?;
 

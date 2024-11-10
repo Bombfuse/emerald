@@ -1,12 +1,14 @@
 use crate::*;
 use crate::{font::FontKey, rendering::*};
 
+use alloc::string::String;
 pub use fontdue::layout::{HorizontalAlign, VerticalAlign, WrapStyle};
+use math::Vector2;
 
 #[derive(Clone)]
 pub struct Label {
     pub text: String,
-    pub offset: Vector2<f32>,
+    pub offset: Vector2,
     pub scale: f32,
     pub font_key: FontKey,
     pub font_size: u16,
@@ -28,7 +30,7 @@ impl Label {
             font_key,
             text: text.into(),
             font_size,
-            offset: Vector2::new(0.0, 0.0),
+            offset: Vector2::from_float(0.0, 0.0),
             scale: 1.0,
             z_index: 0.0,
             centered: true,
