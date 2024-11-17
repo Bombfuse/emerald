@@ -230,7 +230,10 @@ fn increment_by_asset_id(changes_by_asset_id: &mut HashMap<AssetId, isize>, id: 
 
 #[cfg(test)]
 mod tests {
-    use std::any::Any;
+
+    use core::any::Any;
+
+    use alloc::boxed::Box;
 
     use super::AssetStorage;
 

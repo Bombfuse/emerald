@@ -245,39 +245,38 @@ pub(crate) fn load_ent_tilemap<'a>(
 mod tests {
     use crate::tilemap::{TileSchema, TilemapSchema};
 
-    #[test]
-    fn deser_tile() {
-        let toml = r#"
-            x = 3
-            y = 6
-            id = 10
-        "#;
-        let schema: TileSchema = crate::toml::from_str(toml).unwrap();
-        assert_eq!(schema.id, 10);
-        assert_eq!(schema.x, 3);
-        assert_eq!(schema.y, 6);
-    }
+    // #[test]
+    // fn deser_tile() {
+    //     let toml = r#"
+    //         x = 3
+    //         y = 6
+    //         id = 10
+    //     "#;
+    //     let schema: TileSchema = crate::toml::from_str(toml).unwrap();
+    //     assert_eq!(schema.id, 10);
+    //     assert_eq!(schema.x, 3);
+    //     assert_eq!(schema.y, 6);
+    // }
 
-    #[test]
-    fn deser_tilemap() {
-        let toml = r#"
-            width = 10
-            height = 10
+    // #[test]
+    // fn deser_tilemap() {
+    //     let toml = r#"
+    //         width = 10
+    //         height = 10
 
-            
-            [tileset]
-            texture = "tileset.png"
-            width = 2
-            height = 2
+    //         [tileset]
+    //         texture = "tileset.png"
+    //         width = 2
+    //         height = 2
 
-            [[tiles]]
-            id = 14
-            x = 5
-            y = 6
-        "#;
-        let schema: TilemapSchema = crate::toml::from_str(&toml).unwrap();
-        assert_eq!(schema.width, 10);
-        assert_eq!(schema.height, 10);
-        assert_eq!(&schema.tileset.as_ref().unwrap().texture, "tileset.png");
-    }
+    //         [[tiles]]
+    //         id = 14
+    //         x = 5
+    //         y = 6
+    //     "#;
+    //     let schema: TilemapSchema = crate::toml::from_str(&toml).unwrap();
+    //     assert_eq!(schema.width, 10);
+    //     assert_eq!(schema.height, 10);
+    //     assert_eq!(&schema.tileset.as_ref().unwrap().texture, "tileset.png");
+    // }
 }

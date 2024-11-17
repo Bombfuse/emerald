@@ -220,7 +220,10 @@ impl Drop for AssetEngine {
 
 #[cfg(test)]
 mod tests {
-    use std::any::Any;
+
+    use core::any::Any;
+
+    use alloc::boxed::Box;
 
     use crate::AssetEngine;
     struct TestAsset {}

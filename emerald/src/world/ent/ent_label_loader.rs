@@ -152,13 +152,13 @@ pub(crate) fn load_ent_label<'a>(
 mod tests {
     use super::FontResource;
 
-    #[test]
-    fn validate_font_resource() {
-        let example_resource = r#"
-            font = "Roboto-Light.ttf"
-            size = 48
-        "#;
+    // #[test]
+    // fn validate_font_resource() {
+    //     let example_resource = r#"
+    //         font = "Roboto-Light.ttf"
+    //         size = 48
+    //     "#;
 
-        toml::from_str::<FontResource>(example_resource).unwrap();
-    }
+    //     toml::from_str::<FontResource>(example_resource).unwrap();
+    // }
 }

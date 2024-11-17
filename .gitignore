@@ -3,3 +3,4 @@ book
 Cargo.lock
 emerald.log
 .idea
+/bin

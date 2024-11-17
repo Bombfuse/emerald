@@ -1,7 +1,8 @@
 [package]
-name = "editor-core"
+name = "emd_playdate_platform"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 emerald = { path = "../../emerald" }
+playdate = "0.2.3"

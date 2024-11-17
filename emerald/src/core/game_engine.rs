@@ -3,7 +3,7 @@ use alloc::{boxed::Box, collections::vec_deque::VecDeque};
 use crate::{
     file_loader::FileLoader, rendering_engine::RenderingEngine, resources::Resources,
     schedule::Schedule, system::get_system, world_stack::WorldStack, AssetEngine, AudioEngine,
-    Emerald, EmeraldError, Game, GameSettings, InputEngine, World,
+    Emerald, EmeraldError, InputEngine, World,
 };
 
 use super::project::Project;
@@ -36,7 +36,6 @@ impl GameEngine {
         input_engine: Box<dyn InputEngine>,
         file_loader: Box<dyn FileLoader>,
         asset_engine: AssetEngine,
-        settings: &GameSettings,
     ) -> Result<Self, EmeraldError> {
         let starting_amount = 50;
         let mut fps_tracker = VecDeque::with_capacity(starting_amount);

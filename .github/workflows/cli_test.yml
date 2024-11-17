@@ -1,0 +1,30 @@
+on: 
+  pull_request:
+    branches:
+      - master
+      - development
+
+env:
+  # Disable incremental compilation for faster from-scratch builds
+  CARGO_INCREMENTAL: 0
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build
+        run: cargo build --package cli
+      - name: Generate New Project
+        run: ./target/debug/cli new test_project
+      - run: test -d test_project
+      - name: Generate New Module
+        run: ./target/debug/cli generate module test_module
+      - run: test -e test_module.rs
+      - run: test -d test_module
+      - name: Generate New Component
+        run: ./target/debug/cli generate component velocity
+      - run: test -e velocity_component.rs
+      - name: Generate New System
+        run: ./target/debug/cli generate system velocity
+      - run: test -e velocity_system.rs

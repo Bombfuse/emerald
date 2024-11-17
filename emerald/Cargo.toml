@@ -22,8 +22,10 @@ serde_json = "1.0"
 instant = "0.1.12"
 emd_earcutr = "0.1.0"
 hecs = { version = "0.9", default-features = false }
-serde = { version = "1.0.145", default-features = false, features=["derive"] }
-bytemuck = { version = "1.12.1", default-features = false, features = ["derive"] }
+serde = { version = "1.0.145", default-features = false, features = ["derive"] }
+bytemuck = { version = "1.12.1", default-features = false, features = [
+    "derive",
+] }
 anymap = { version = "0.12.1", default-features = false }
 fixed-sqrt = { version = "0.2.5", default-features = false }
 num-traits = { version = "0.2.19", default-features = false }
@@ -31,7 +33,3 @@ fixed = { version = "1.28.0", default-features = false, features = ["serde"] }
 hashbrown = { version = "0.15.1", features = ["serde"] }
 thingbuf = { version = "0.1.6", default-features = false, features = ["alloc"] }
 pasts = { version = "0.14.3", default-features = false }
-
-
-[dev-dependencies]
-emd_desktop = { path = "../runners/emd_desktop" }

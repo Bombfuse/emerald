@@ -2,7 +2,6 @@ pub mod components;
 pub mod error;
 pub mod game;
 pub mod game_engine;
-pub mod game_settings;
 pub mod project;
 
 use alloc::boxed::Box;
@@ -11,7 +10,6 @@ pub use components::transform::*;
 pub use components::*;
 pub use error::*;
 pub use game::*;
-pub use game_settings::*;
 pub use project::*;
 
 use crate::assets::*;

@@ -146,11 +146,11 @@ impl InputEngine for DesktopInputEngine {
         is_button_pressed(&self.controller_states, index, &button)
     }
 
-    fn joystick(&mut self, _joystick: emerald::Joystick, _index: u8) -> emerald::Vector2<f32> {
+    fn joystick(&mut self, _joystick: emerald::Joystick, _index: u8) -> emerald::Vector2 {
         todo!()
     }
 
-    fn joystick_raw(&mut self, _joystick: emerald::Joystick, _index: u8) -> emerald::Vector2<f32> {
+    fn joystick_raw(&mut self, _joystick: emerald::Joystick, _index: u8) -> emerald::Vector2 {
         todo!()
     }
 
@@ -205,7 +205,7 @@ impl InputEngine for DesktopInputEngine {
         self.mouse.clone()
     }
 
-    fn handle_cursor_move(&mut self, new_position: emerald::Vector2<f32>) {
+    fn handle_cursor_move(&mut self, new_position: emerald::Vector2) {
         self.mouse.translation.x = new_position.x;
         self.mouse.translation.y = new_position.y;
     }

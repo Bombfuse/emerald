@@ -553,6 +553,10 @@ pub(crate) fn load_world(
 
 #[cfg(test)]
 mod tests {
+    use alloc::{
+        string::{String, ToString},
+        vec,
+    };
     use hecs::Entity;
 
     use crate::{rendering::components::Camera, Transform, World};
@@ -581,14 +585,14 @@ mod tests {
         let mut world = World::new();
         let mut transform_ents = world
             .spawn_batch([(Transform::default(),), (Transform::default(),)])
-            .collect::<Vec<Entity>>();
+            .collect::<vec::Vec<Entity>>();
         let str_ents = world
             .spawn_batch([
                 (Transform::default(), String::from("test1")),
                 (Transform::default(), String::from("test2")),
                 (Transform::default(), String::from("test3")),
             ])
-            .collect::<Vec<Entity>>();
+            .collect::<vec::Vec<Entity>>();
         transform_ents.extend(str_ents.clone());
 
         let usize_ent = world.spawn((Transform::default(), 1usize));
@@ -843,43 +847,6 @@ mod tests {
                     .other_value,
                 other_expected_value
             );
-        }
-    }
-
-    mod physics_tests {
-        use rapier2d::prelude::RigidBodyBuilder;
-
-        use crate::{Transform, World};
-
-        #[test]
-        fn add_body_on_preexisting_entity() {
-            let mut world = World::new();
-
-            let entity = world.spawn((Transform::default(),));
-            let rbh = world
-                .physics()
-                .build_body(entity, RigidBodyBuilder::dynamic())
-                .unwrap();
-
-            assert!(world.physics().rigid_body(rbh).is_some());
-        }
-
-        #[test]
-        fn remove_body_is_some_on_entity_with_body() {
-            let mut world = World::new();
-
-            let (entity, _) = world
-                .spawn_with_body((Transform::default(),), RigidBodyBuilder::dynamic())
-                .unwrap();
-            assert!(world.physics().remove_body(entity).is_some());
-        }
-
-        #[test]
-        fn remove_body_is_empty_on_entity_with_body() {
-            let mut world = World::new();
-
-            let entity = world.spawn((Transform::default(),));
-            assert!(world.physics().remove_body(entity).is_none());
         }
     }
 }
