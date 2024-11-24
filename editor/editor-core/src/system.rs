@@ -1,6 +1,9 @@
 use std::{fs::File, io::Write};
 
-use crate::module::EmeraldModule;
+use crate::{
+    module::EmeraldModule,
+    project::{get_project, save_project},
+};
 
 const SYSTEM_TEMPLATE_PT_0: &'static str = r#"
 import emerald::{World, Emerald};
@@ -11,12 +14,17 @@ const SYSTEM_TEMPLATE_PT_2: &'static str = r#"
 }
 "#;
 
-pub fn generate_system(request: GenerateSystemRequest) {}
+pub fn generate_system(request: GenerateSystemRequest) {
+    let mut project = get_project();
+    project.add_system(&request.path);
+    save_project(&project);
+}
 
-struct GenerateSystemRequest {
-    system_name: String,
+pub struct GenerateSystemRequest {
+    path: String,
 }
 fn generate_system_file_content(request: GenerateSystemRequest) -> String {
+    let system_name = get_name_from_module_path(request.path).unwrap();
     let component_declaration_line = format!(
         "pub fn {}_system(emd: &mut Emerald, world: &mut World)",
         request.system_name

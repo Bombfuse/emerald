@@ -23,7 +23,7 @@ pub fn generate_component_file(name: &str) {
 
     // TODO: create file with content
     let mut file = File::create(format!("{}_component.rs", name)).unwrap();
-    file.write_all(file_content.as_bytes());
+    file.write_all(file_content.as_bytes()).unwrap();
 
     // TODO: register newly created component in this modules init function
 }

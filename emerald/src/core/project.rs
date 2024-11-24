@@ -36,14 +36,24 @@ impl Default for Project {
 }
 
 impl Project {
-    pub fn add_system(&mut self, module_path_from_base_module: &str) {
-        // parse out directory and system name from format of `path/to/module/system_name`
-        let system_name = get_name_from_module_path(module_path_from_base_module).unwrap();
-        // add system to the correct module
+    pub fn get_module_mut(&mut self, path: &str) -> Option<&mut ProjectModule> {
+        let mut names = path_to_names_list(path);
+        let mut module = Some(&mut self.root_module);
+        while let Some(name) = names.pop() {
+            if let Some(m) = module.take().unwrap().sub_modules.get_mut(&name) {
+                module = Some(m);
+            }
+        }
 
-        // let system_name = last_word_in_path();
-        // let module = get_module_from_path();
-        // module.add_system(system);
+        module
+    }
+
+    pub fn add_system(&mut self, module_path_from_base_module: &str) {
+        let system_name = get_name_from_module_path(module_path_from_base_module).unwrap();
+        self.get_module_mut(module_path_from_base_module)
+            .map(|module| {
+                module.systems.insert(system_name);
+            });
     }
 
     pub fn add_module(&mut self, path: &str) {
@@ -62,15 +72,18 @@ impl Project {
     }
 }
 
-fn get_name_from_module_path(module_path: &str) -> Option<String> {
-    let mut names = module_path
-        .split("/")
+fn path_to_names_list(path: &str) -> Vec<String> {
+    path.split("/")
         .into_iter()
         .map(|s| s.to_string())
-        .collect::<Vec<String>>();
+        .collect::<Vec<String>>()
+}
 
-    if names.len() == 1 {
-        return Some(names.remove(0));
+fn get_name_from_module_path(module_path: &str) -> Option<String> {
+    let mut names = path_to_names_list(module_path);
+
+    if names.len() > 0 {
+        return Some(names.remove(names.len() - 1));
     }
 
     None
